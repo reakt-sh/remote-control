@@ -1,46 +1,12 @@
 import cv2
 import av
 import zmq
-import queue
 from fractions import Fraction
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot
 from globals import *
-
-class NetworkWorker(QThread):
-    packet_sent = pyqtSignal(int)  # Signal to emit when packet is sent
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.packet_queue = queue.Queue()
-        self.running = True
-        
-    def run(self):
-        context = zmq.Context()
-        socket = context.socket(zmq.PUB)
-        socket.bind("tcp://*:5555")
-        
-        while self.running:
-            try:
-                packet = self.packet_queue.get(timeout=0.1)
-                if packet:
-                    # For H.264 packets, we might want to send NAL units separately
-                    # Here we'll just send the whole packet
-                    socket.send(packet)
-                    self.packet_sent.emit(len(packet))
-            except queue.Empty:
-                continue
-                
-        socket.close()
-        context.term()
-        
-    def stop(self):
-        self.running = False
-        self.wait()
-        
-    def enqueue_packet(self, packet):
-        self.packet_queue.put(packet)
+from NetworkWorker import NetworkWorker
 
 class CameraClient(QWidget):
     def __init__(self):
@@ -52,7 +18,8 @@ class CameraClient(QWidget):
         
     def init_ui(self):
         self.setWindowTitle("Train Client")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(START_X, START_Y, START_X + WINDOW_WIDTH, START_Y + WINDOW_HEIGHT)
+        self.setStyleSheet(f"background-color: {BG_COLOR};")
         
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
@@ -66,6 +33,10 @@ class CameraClient(QWidget):
         self.timer.start(30)  # ~30 FPS
         
     def init_camera(self):
+        # available_resolutions = self.get_available_resolutions()
+        # print("Available Resolutions:", available_resolutions)
+
+
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             raise RuntimeError("Could not open camera")
@@ -73,6 +44,10 @@ class CameraClient(QWidget):
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+
+        print(f"Camera Resolution: {self.width}x{self.height}")
+        print(f"Camera FPS: {self.fps}")
+
         
         # Ensure we have a valid FPS (some cameras return 0)
         if self.fps <= 0:
@@ -111,7 +86,63 @@ class CameraClient(QWidget):
     def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            # Display in UI
+            # Calculate current FPS (if not static)
+            if not hasattr(self, 'frame_count'):
+                self.frame_count = 0
+                self.start_time = cv2.getTickCount()
+            
+            self.frame_count += 1
+            elapsed_time = (cv2.getTickCount() - self.start_time) / cv2.getTickFrequency()
+            current_fps = self.frame_count / elapsed_time
+
+            # Overlay resolution and FPS on the frame
+            text_res = f"Resolution: {self.width}x{self.height}"
+            text_fps = f"FPS: {current_fps:.1f}"
+            text_frame_id = f"Frame ID: {self.frame_count}"
+            
+            # Position and style the text
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.7
+            color = (229, 230, 216)  
+            thickness = 2
+
+            # Draw resolution text (top-left corner)
+            cv2.putText(
+                frame, 
+                text_res, 
+                (10, 30),
+                font, 
+                font_scale, 
+                color, 
+                thickness,
+                cv2.LINE_AA
+            )
+
+            # Draw FPS text (below resolution)
+            cv2.putText(
+                frame, 
+                text_fps, 
+                (10, 60),
+                font, 
+                font_scale, 
+                color, 
+                thickness,
+                cv2.LINE_AA
+            )
+
+            # Draw FrameID text (below FPS)
+            cv2.putText(
+                frame, 
+                text_frame_id,
+                (10, 90),
+                font, 
+                font_scale, 
+                color, 
+                thickness,
+                cv2.LINE_AA
+            )
+
+            # Convert to RGB for PyQt display
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_image.shape
             bytes_per_line = ch * w
