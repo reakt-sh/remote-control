@@ -1,0 +1,6 @@
+pip install opencv-python
+pip install pyav
+pip install ffmpeg-python
+pip install pyqt5
+pip install zmq
+pip install numpy
