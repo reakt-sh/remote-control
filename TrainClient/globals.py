@@ -1,0 +1,26 @@
+# some configuration for components
+
+FRAME_WIDTH = 1280
+FRAME_HEIGHT = 720
+FRAME_RATE = 30
+
+TEXT_FIELD_HEIGHT = 23
+BG_COLOR = "#9CAFB4"
+ID_BG_COLOR = "light green"
+TAG_FONT = ("cabin", 18, "bold")
+TEXT_FONT = ("Open Sans", 18)
+OUTPUT_TEXT_FONT = ("Times New roman", 14)
+CONSOLE_TEXT_FONT = ("Courier New", 14)
+ID_FONT = ("Open Sans", 20, "bold")
+BUTTON_FONT = ("Archivo Black", 16, "bold")
+BUTTON_WIDTH = 10
+BUTTON_BG_COLOR = "#acc3e3"
+BUTTON_FG_COLOR = "black"
+BUTTON_ACTIVE_BG_COLOR = "#7792b8"
+BUTTON_ACTIVE_FG_COLOR = "#65e7ff"
+BUTTON_HIGHLIGHT_COLOR = "white"
+BUTTON_HIGHLIGHT_ACTIVE_COLOR = "red"
+BUTTON_CURSOR = 'hand2'
+TEXT_WIDGET_BG_COLOR = '#cfd5d6'
+TAG_BG_COLOR = TEXT_WIDGET_BG_COLOR
+
