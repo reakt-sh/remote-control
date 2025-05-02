@@ -2,7 +2,7 @@ import cv2
 import av
 import zmq
 from fractions import Fraction
-from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QWidget, QTextEdit, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor
 from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtCore import QDateTime
@@ -51,6 +51,8 @@ class CameraClient(QMainWindow):
 
         # Create the toggle button
         self.capture_button = QPushButton("Stop Capture")
+        self.capture_button.setMinimumWidth(BUTTON_WIDTH)
+        self.capture_button.setMaximumWidth(BUTTON_WIDTH)
         self.capture_button.setStyleSheet("""
             QPushButton {
                 background-color: #f44336;  /* Red */
@@ -66,10 +68,15 @@ class CameraClient(QMainWindow):
         """)
         self.capture_button.clicked.connect(self.toggle_capture)
 
+        # Create VBox layout for the button
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(self.capture_button)
+        button_layout.addStretch()  # This adds spacing at the bottom
+
 
         layout = QGridLayout()
         layout.addWidget(self.image_label, 0, 0)
-        layout.addWidget(self.capture_button, 0, 1, Qt.AlignCenter)
+        layout.addLayout(button_layout, 0, 1)
         layout.addWidget(self.console_log, 1, 0, 1, 2)
 
         self.central_widget.setLayout(layout)
