@@ -76,13 +76,10 @@ class CameraClient(QMainWindow):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
-        self.timer.start(30)  # ~30 FPS
+        self.timer.start(FRAME_RATE)  # ~30 FPS
 
     def init_camera(self):
-        # available_resolutions = self.get_available_resolutions()
-        # print("Available Resolutions:", available_resolutions)
-
-
+        # Initialize camera capture
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             raise RuntimeError("Could not open camera")
@@ -97,7 +94,10 @@ class CameraClient(QMainWindow):
 
         # Ensure we have a valid FPS (some cameras return 0)
         if self.fps <= 0:
-            self.fps = 30  # Default to 30 FPS
+            self.fps = FRAME_RATE  # Default to 30 FPS
+
+        self.frame_count = 0  # Initialize frame count
+        self.start_time = cv2.getTickCount()  # Initialize start time
 
     def init_encoder(self):
         # Create in-memory output container
@@ -148,11 +148,6 @@ class CameraClient(QMainWindow):
     def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            # Calculate current FPS (if not static)
-            if not hasattr(self, 'frame_count'):
-                self.frame_count = 0
-                self.start_time = cv2.getTickCount()
-
             self.frame_count += 1
             elapsed_time = (cv2.getTickCount() - self.start_time) / cv2.getTickFrequency()
             current_fps = self.frame_count / elapsed_time
@@ -162,11 +157,13 @@ class CameraClient(QMainWindow):
             text_res = f"Resolution: {self.width}x{self.height}"
             text_fps = f"FPS: {current_fps:.1f}"
             text_frame_id = f"Frame ID: {self.frame_count}"
-            self.log_message(f"Frame ID: {self.frame_count}")
+
+            if self.frame_count % FRAME_RATE == 0:  # Log every 30 frames
+                self.log_message(f"Frame ID: {self.frame_count}")
 
             # Position and style the text
             font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.7
+            font_scale = 0.5
             color = (229, 230, 216)
             thickness = 2
 
@@ -268,14 +265,7 @@ class CameraClient(QMainWindow):
         self.is_capturing = not self.is_capturing
 
         if self.is_capturing:
-            # Reinitialize camera if needed
-            if not self.cap.isOpened():
-                self.cap = cv2.VideoCapture(0)
-                if not self.cap.isOpened():
-                    self.log_message("Failed to restart camera", "error")
-                    self.is_capturing = False
-                    return
-
+            self.init_camera()
             self.capture_button.setText("Stop Capture")
             self.capture_button.setStyleSheet("""
                 QPushButton {
@@ -290,7 +280,7 @@ class CameraClient(QMainWindow):
                     background-color: #f44335;
                 }
             """)
-            self.timer.start(30)
+            self.timer.start(FRAME_RATE)
             self.log_message("Capture started - camera active")
         else:
             # Properly release camera resources
