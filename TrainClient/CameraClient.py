@@ -121,14 +121,16 @@ class CameraClient(QMainWindow):
 
         # Set some encoding options
         self.stream.options = {
+            'g': '30',
             'gop_size': '30',
-            'keyint': '30',
+            'idr_interval': '30',
+            'keyint_min': '30',
             'forced-idr': '1',
             'preset': 'fast',
+            'level': '3.1',
             'crf': '23',
             'tune': 'zerolatency',
-            'flags': '+global_header',
-            'x264-params': 'repeat-headers=1'
+            'sc_threshold': '0'
         }
         self.manual_sps_pps = False
 
