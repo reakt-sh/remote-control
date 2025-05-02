@@ -254,6 +254,19 @@ class CameraClient(QMainWindow):
                 nal_type = packet_bytes[4] & 0x1F  # H.264 NAL unit type
                 print(f"NAL Unit Type: {nal_type}")
 
+                if nal_type == 7:
+                    self.log_message(f"SPS NAL unit detected for Frame ID: {frame_id}")
+                elif nal_type == 8:
+                    self.log_message(f"PPS NAL unit detected for Frame ID: {frame_id}")
+                elif nal_type == 5:
+                    self.log_message(f"IDR NAL unit detected for Frame ID: {frame_id}")
+                elif nal_type == 1:
+                    print(f"P-frame NAL unit detected for Frame ID: {frame_id}")
+                elif nal_type == 0:
+                    self.log_message(f"B-frame NAL unit detected for Frame ID: {frame_id}")
+                else:
+                    pass
+
             self.network_worker.enqueue_packet(bytes(packet))
             print(f"\n\n\n\n")
 
