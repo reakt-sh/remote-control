@@ -2,16 +2,18 @@ import cv2
 import av
 import zmq
 from fractions import Fraction
-from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QWidget, QTextEdit, QPushButton
+from PyQt5.QtGui import QImage, QPixmap, QTextCursor
 from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QDateTime
+
 from globals import *
 from NetworkWorker import NetworkWorker
 
 # Initialize output container (raw H.264 stream)
 output_file = open(H264_DUMP, 'wb')
 
-class CameraClient(QWidget):
+class CameraClient(QMainWindow):
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -19,17 +21,58 @@ class CameraClient(QWidget):
         self.init_encoder()
         self.init_network()
 
+        self.is_capturing = True  # Track capture state
+
     def init_ui(self):
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+
         self.setWindowTitle("Train Client")
         self.setGeometry(START_X, START_Y, START_X + WINDOW_WIDTH, START_Y + WINDOW_HEIGHT)
         self.setStyleSheet(f"background-color: {BG_COLOR};")
 
+
+        # create a image label to display the camera feed
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.image_label)
-        self.setLayout(layout)
+        # create console log widget
+        self.console_log = QTextEdit()
+        self.console_log.setReadOnly(True)
+        self.console_log.setStyleSheet("""
+            QTextEdit {
+                background-color: #1e1e1e;
+                color: #ffffff;
+                font-family: Consolas, Courier New, monospace;
+                font-size: 10pt;
+                border: 1px solid #444;
+            }
+        """)
+
+        # Create the toggle button
+        self.capture_button = QPushButton("Stop Capture")
+        self.capture_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;  /* Red */
+                color: white;
+                border: none;
+                padding: 8px;
+                font-size: 12pt;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #f44335;
+            }
+        """)
+        self.capture_button.clicked.connect(self.toggle_capture)
+
+
+        layout = QGridLayout()
+        layout.addWidget(self.image_label, 0, 0)
+        layout.addWidget(self.capture_button, 0, 1, Qt.AlignCenter)
+        layout.addWidget(self.console_log, 1, 0, 1, 2)
+
+        self.central_widget.setLayout(layout)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
@@ -119,6 +162,7 @@ class CameraClient(QWidget):
             text_res = f"Resolution: {self.width}x{self.height}"
             text_fps = f"FPS: {current_fps:.1f}"
             text_frame_id = f"Frame ID: {self.frame_count}"
+            self.log_message(f"Frame ID: {self.frame_count}")
 
             # Position and style the text
             font = cv2.FONT_HERSHEY_SIMPLEX
@@ -208,6 +252,65 @@ class CameraClient(QWidget):
 
             self.network_worker.enqueue_packet(bytes(packet))
             print(f"\n\n\n\n")
+
+    def log_message(self, message):
+        timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
+        full_message = f"{timestamp} {message}"
+
+        self.console_log.append(full_message)
+
+        # Auto-scroll to bottom
+        cursor = self.console_log.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        self.console_log.setTextCursor(cursor)
+
+    def toggle_capture(self):
+        self.is_capturing = not self.is_capturing
+
+        if self.is_capturing:
+            # Reinitialize camera if needed
+            if not self.cap.isOpened():
+                self.cap = cv2.VideoCapture(0)
+                if not self.cap.isOpened():
+                    self.log_message("Failed to restart camera", "error")
+                    self.is_capturing = False
+                    return
+
+            self.capture_button.setText("Stop Capture")
+            self.capture_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #f44336;  /* Red */
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    font-size: 12pt;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background-color: #f44335;
+                }
+            """)
+            self.timer.start(30)
+            self.log_message("Capture started - camera active")
+        else:
+            # Properly release camera resources
+            self.timer.stop()
+            self.cap.release()
+            self.capture_button.setText("Start Capture")
+            self.capture_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;  /* Green */
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    font-size: 12pt;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+            """)
+            self.log_message("Capture stopped - camera released")
 
     def closeEvent(self, event):
         self.timer.stop()
