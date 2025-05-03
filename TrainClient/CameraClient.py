@@ -19,7 +19,8 @@ class CameraClient(QMainWindow):
         self.init_encoder()
         self.init_network()
 
-        self.is_capturing = True  # Track capture state
+        self.is_capturing = True   # Track capture state
+        self.is_sending = False    # Start with sending disabled
 
         # Add timestamp to H264_DUMP filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -52,7 +53,7 @@ class CameraClient(QMainWindow):
             }
         """)
 
-        # Create the toggle button
+        # Create the toggle capture button
         self.capture_button = QPushButton("Stop Capture")
         self.capture_button.setMinimumWidth(BUTTON_WIDTH)
         self.capture_button.setMaximumWidth(BUTTON_WIDTH)
@@ -71,9 +72,29 @@ class CameraClient(QMainWindow):
         """)
         self.capture_button.clicked.connect(self.toggle_capture)
 
-        # Create VBox layout for the button
+        # Create the toggle sending button
+        self.sending_button = QPushButton("Start Sending")
+        self.sending_button.setMinimumWidth(BUTTON_WIDTH)
+        self.sending_button.setMaximumWidth(BUTTON_WIDTH)
+        self.sending_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 8px;
+                font-size: 12pt;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        self.sending_button.clicked.connect(self.toggle_sending)
+
+        # Create VBox layout for the buttons
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.capture_button)
+        button_layout.addWidget(self.sending_button)
         button_layout.addStretch()  # This adds spacing at the bottom
 
 
@@ -262,7 +283,9 @@ class CameraClient(QMainWindow):
                     self.output_file.write(packet_bytes)
                     self.output_file.flush()
 
-            self.network_worker.enqueue_packet(packet_bytes)
+            # Only send if sending is enabled
+            if self.is_sending:
+                self.network_worker.enqueue_packet(packet_bytes)
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
@@ -324,12 +347,46 @@ class CameraClient(QMainWindow):
             """)
             self.log_message("Capture stopped - camera released")
 
+    def toggle_sending(self):
+        self.is_sending = not self.is_sending
+        if self.is_sending:
+            self.sending_button.setText("Stop Sending")
+            self.sending_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #f44336;  /* Red */
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    font-size: 12pt;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background-color: #f44335;
+                }
+            """)
+            self.log_message("Sending enabled")
+        else:
+            self.sending_button.setText("Start Sending")
+            self.sending_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    font-size: 12pt;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+            """)
+            self.log_message("Sending disabled")
+
     def closeEvent(self, event):
         self.timer.stop()
         self.cap.release()
         self.output_container.close()
         self.network_worker.stop()
         event.accept()
-        self.output_file.close()
         print("CameraClient closed.")
 
