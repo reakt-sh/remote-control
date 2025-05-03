@@ -1,6 +1,7 @@
 import cv2
 import av
 import zmq
+import datetime
 from fractions import Fraction
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor
@@ -9,9 +10,6 @@ from PyQt5.QtCore import QDateTime
 
 from globals import *
 from NetworkWorker import NetworkWorker
-
-# Initialize output container (raw H.264 stream)
-output_file = open(H264_DUMP, 'wb')
 
 class CameraClient(QMainWindow):
     def __init__(self):
@@ -22,6 +20,11 @@ class CameraClient(QMainWindow):
         self.init_network()
 
         self.is_capturing = True  # Track capture state
+
+        # Add timestamp to H264_DUMP filename
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"{H264_DUMP}_{timestamp}.h264"
+        self.output_file = open(output_filename, 'wb')
 
     def init_ui(self):
         self.central_widget = QWidget(self)
@@ -138,16 +141,6 @@ class CameraClient(QMainWindow):
         }
         self.manual_sps_pps = False
 
-        # After creating the stream, extract headers
-        extradata = self.stream.codec_context.extradata
-
-        # Write headers before any video frames
-        if extradata:
-            output_file.write(extradata)
-            output_file.flush()
-            print(f"Extradata size: {len(extradata)} bytes")
-            print(f"First 16 bytes of extradata: {extradata[:16].hex(' ')}")
-
     def init_network(self):
         self.network_worker = NetworkWorker()
         self.network_worker.packet_sent.connect(self.on_packet_sent)
@@ -261,13 +254,13 @@ class CameraClient(QMainWindow):
 
                 # write to file
                 if nal_type in [0, 1, 7, 8]:
-                    output_file.write(packet_bytes)
-                    output_file.flush()
+                    self.output_file.write(packet_bytes)
+                    self.output_file.flush()
                 elif nal_type == 5:
                     # IDR frame (NAL type 5) - write to file
-                    output_file.write(current_sps_pps)
-                    output_file.write(packet_bytes)
-                    output_file.flush()
+                    self.output_file.write(current_sps_pps)
+                    self.output_file.write(packet_bytes)
+                    self.output_file.flush()
 
             self.network_worker.enqueue_packet(packet_bytes)
 
@@ -302,11 +295,19 @@ class CameraClient(QMainWindow):
                 }
             """)
             self.timer.start(FRAME_RATE)
+
+            # Add timestamp to H264_DUMP filename
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_filename = f"{H264_DUMP}_{timestamp}.h264"
+            self.output_file = open(output_filename, 'wb')
             self.log_message("Capture started - camera active")
         else:
             # Properly release camera resources
             self.timer.stop()
             self.cap.release()
+            self.output_file.flush()
+            self.output_file.close()
+
             self.capture_button.setText("Start Capture")
             self.capture_button.setStyleSheet("""
                 QPushButton {
@@ -329,6 +330,6 @@ class CameraClient(QMainWindow):
         self.output_container.close()
         self.network_worker.stop()
         event.accept()
-        output_file.close()
+        self.output_file.close()
         print("CameraClient closed.")
 
