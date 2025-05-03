@@ -130,7 +130,11 @@ class CameraClient(QMainWindow):
             'level': '3.1',
             'crf': '23',
             'tune': 'zerolatency',
-            'sc_threshold': '0'
+            'sc_threshold': '0',
+            'x264-params': (
+                'keyint=30:min-keyint=30:scenecut=0:'
+                'force-idr=1:repeat_headers=1'  # ← Forces SPS/PPS with each IDR
+            ),
         }
         self.manual_sps_pps = False
 
@@ -230,32 +234,18 @@ class CameraClient(QMainWindow):
             # Last packet: IDR frame (NAL type 5) or P-frame (NAL type 1) or B-frame (NAL type 0)
 
             # After creating the stream, extract headers
-            extradata = self.stream.codec_context.extradata
-
-            # Write headers before any video frames
-            if extradata and not self.manual_sps_pps:
-                output_file.write(extradata)
-                output_file.flush()
-                self.manual_sps_pps = True
-                print(f"Extradata size: {len(extradata)} bytes")
-                print(f"First 16 bytes of extradata: {extradata[:16].hex(' ')}")
-
-
+            current_sps_pps = self.stream.codec_context.extradata
 
             # Get raw bytes from the packet
             packet_bytes = bytes(packet)
-            output_file.write(packet_bytes)
-            output_file.flush()
 
             # Print basic info (first 16 bytes + total size)
-            print(f"\nEncoded Packet ({frame_id}): {len(packet_bytes)} bytes")
-            print(f"First 16 bytes: {packet_bytes[:16].hex(' ')}")
+            # print(f"\nEncoded Packet ({frame_id}): {len(packet_bytes)} bytes")
+            # print(f"First 16 bytes: {packet_bytes[:16].hex(' ')}")
 
             # Optional: Print NAL unit type (for H.264)
             if len(packet_bytes) > 0:
                 nal_type = packet_bytes[4] & 0x1F  # H.264 NAL unit type
-                print(f"NAL Unit Type: {nal_type}")
-
                 if nal_type == 7:
                     self.log_message(f"SPS NAL unit detected for Frame ID: {frame_id}")
                 elif nal_type == 8:
@@ -269,8 +259,17 @@ class CameraClient(QMainWindow):
                 else:
                     pass
 
-            self.network_worker.enqueue_packet(bytes(packet))
-            print(f"\n\n\n\n")
+                # write to file
+                if nal_type in [0, 1, 7, 8]:
+                    output_file.write(packet_bytes)
+                    output_file.flush()
+                elif nal_type == 5:
+                    # IDR frame (NAL type 5) - write to file
+                    output_file.write(current_sps_pps)
+                    output_file.write(packet_bytes)
+                    output_file.flush()
+
+            self.network_worker.enqueue_packet(packet_bytes)
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
