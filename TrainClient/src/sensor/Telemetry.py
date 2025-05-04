@@ -22,6 +22,11 @@ class Telemetry(QObject):
             "speed": 42.0,  # Example value
             "battery": 87.5,
             "temperature": 36.7,
+            "gps": {
+                "latitude": 37.7749,    # Example latitude
+                "longitude": -122.4194, # Example longitude
+                "altitude": 15.2        # Example altitude in meters
+            },
             "timestamp": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in milliseconds
         }
         self.telemetry_ready.emit(data)

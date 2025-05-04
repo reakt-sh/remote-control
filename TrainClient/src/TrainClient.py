@@ -12,6 +12,7 @@ from globals import *
 from NetworkWorker import NetworkWorker
 from sensor.Camera import Camera
 from sensor.Telemetry import Telemetry
+from sensor.IMU import IMU
 from Encoder import Encoder
 
 class TrainClient(QMainWindow):
@@ -34,6 +35,10 @@ class TrainClient(QMainWindow):
         self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
         self.telemetry.start()
 
+        # IMU setup
+        self.imu = IMU()
+        self.imu.imu_ready.connect(self.on_imu_data)
+        self.imu.start()
 
         # Encoder setup
         self.encoder = Encoder()
@@ -149,6 +154,11 @@ class TrainClient(QMainWindow):
         telemetry_message = f"Telemetry Data: {data}"
         self.log_message(telemetry_message)
 
+    def on_imu_data(self, data):
+        # Process IMU data
+        imu_message = f"IMU Data: {data}"
+        self.log_message(imu_message)
+
     def on_encoded_frame(self, encoded_bytes):
         self.output_file.write(encoded_bytes)
         self.output_file.flush()
@@ -173,6 +183,7 @@ class TrainClient(QMainWindow):
         if self.is_capturing:
             self.camera.init_camera()
             self.telemetry.start()
+            self.imu.start()
             self.capture_button.setText("Stop Capture")
             self.capture_button.setStyleSheet("""
                 QPushButton {
@@ -194,6 +205,7 @@ class TrainClient(QMainWindow):
             # Properly release camera resources
             self.camera.stop()
             self.telemetry.stop()
+            self.imu.stop()
             self.output_file.flush()
             self.output_file.close()
 
