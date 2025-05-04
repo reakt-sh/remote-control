@@ -11,6 +11,7 @@ from PyQt5.QtCore import QDateTime
 from globals import *
 from NetworkWorker import NetworkWorker
 from sensor.Camera import Camera
+from sensor.Telemetry import Telemetry
 from Encoder import Encoder
 
 class TrainClient(QMainWindow):
@@ -27,6 +28,12 @@ class TrainClient(QMainWindow):
         self.camera = Camera()
         self.camera.frame_ready.connect(self.on_new_frame)
         self.camera.init_camera()
+
+        # Telemetry setup
+        self.telemetry = Telemetry()
+        self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
+        self.telemetry.start()
+
 
         # Encoder setup
         self.encoder = Encoder()
@@ -137,6 +144,11 @@ class TrainClient(QMainWindow):
         # Encode frame
         self.encoder.encode_frame(frame_id, frame, self.log_message)
 
+    def on_telemetry_data(self, data):
+        # Process telemetry data
+        telemetry_message = f"Telemetry Data: {data}"
+        self.log_message(telemetry_message)
+
     def on_encoded_frame(self, encoded_bytes):
         self.output_file.write(encoded_bytes)
         self.output_file.flush()
@@ -160,6 +172,7 @@ class TrainClient(QMainWindow):
 
         if self.is_capturing:
             self.camera.init_camera()
+            self.telemetry.start()
             self.capture_button.setText("Stop Capture")
             self.capture_button.setStyleSheet("""
                 QPushButton {
@@ -180,6 +193,7 @@ class TrainClient(QMainWindow):
         else:
             # Properly release camera resources
             self.camera.stop()
+            self.telemetry.stop()
             self.output_file.flush()
             self.output_file.close()
 
