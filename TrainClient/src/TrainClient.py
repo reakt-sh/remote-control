@@ -10,7 +10,7 @@ from PyQt5.QtCore import QDateTime
 
 from globals import *
 from NetworkWorker import NetworkWorker
-from Camera import Camera
+from sensor.Camera import Camera
 
 class TrainClient(QMainWindow):
     def __init__(self):
