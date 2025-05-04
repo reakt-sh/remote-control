@@ -10,17 +10,22 @@ from PyQt5.QtCore import QDateTime
 
 from globals import *
 from NetworkWorker import NetworkWorker
+from Camera import Camera
 
-class CameraClient(QMainWindow):
+class TrainClient(QMainWindow):
     def __init__(self):
         super().__init__()
         self.init_ui()
-        self.init_camera()
         self.init_encoder()
         self.init_network()
 
         self.is_capturing = True   # Track capture state
         self.is_sending = False    # Start with sending disabled
+
+        # Camera setup
+        self.camera = Camera()
+        self.camera.frame_ready.connect(self.on_new_frame)
+        self.camera.init_camera()
 
         # Add timestamp to H264_DUMP filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -105,43 +110,18 @@ class CameraClient(QMainWindow):
 
         self.central_widget.setLayout(layout)
 
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_frame)
-        self.timer.start(FRAME_RATE)  # ~30 FPS
-
-    def init_camera(self):
-        # Initialize camera capture
-        self.cap = cv2.VideoCapture(0)
-        if not self.cap.isOpened():
-            raise RuntimeError("Could not open camera")
-
-        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-
-        print(f"Camera Resolution: {self.width}x{self.height}")
-        print(f"Camera FPS: {self.fps}")
-
-
-        # Ensure we have a valid FPS (some cameras return 0)
-        if self.fps <= 0:
-            self.fps = FRAME_RATE  # Default to 30 FPS
-
-        self.frame_count = 0  # Initialize frame count
-        self.start_time = cv2.getTickCount()  # Initialize start time
-
     def init_encoder(self):
         # Create in-memory output container
         self.output_container = av.open('pipe:', mode='w', format='mp4')
 
         # Convert FPS to a fraction
-        fps_fraction = Fraction(self.fps).limit_denominator(1000)
+        fps_fraction = Fraction(FRAME_RATE).limit_denominator(1000)
 
         # Add H.264 video stream
         self.stream = self.output_container.add_stream('h264', rate=fps_fraction)
-        self.stream.width = self.width
-        self.stream.height = self.height
-        self.stream.pix_fmt = 'yuv420p'
+        self.stream.width = FRAME_WIDTH
+        self.stream.height = FRAME_HEIGHT
+        self.stream.pix_fmt = PIXEL_FORMAT
 
         # Set some encoding options
         self.stream.options = {
@@ -172,73 +152,16 @@ class CameraClient(QMainWindow):
         # Optional: Update UI with sent packet info
         pass
 
-    def update_frame(self):
-        ret, frame = self.cap.read()
-        if ret:
-            self.frame_count += 1
-            elapsed_time = (cv2.getTickCount() - self.start_time) / cv2.getTickFrequency()
-            current_fps = self.frame_count / elapsed_time
+    def on_new_frame(self, frame_id, frame):
+        # Convert to RGB for PyQt display
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        self.image_label.setPixmap(QPixmap.fromImage(qt_image))
 
-
-            # Overlay resolution and FPS on the frame
-            text_res = f"Resolution: {self.width}x{self.height}"
-            text_fps = f"FPS: {current_fps:.1f}"
-            text_frame_id = f"Frame ID: {self.frame_count}"
-
-            if self.frame_count % FRAME_RATE == 0:  # Log every 30 frames
-                self.log_message(f"Frame ID: {self.frame_count}")
-
-            # Position and style the text
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.5
-            color = (229, 230, 216)
-            thickness = 2
-
-            # Draw resolution text (top-left corner)
-            cv2.putText(
-                frame,
-                text_res,
-                (10, 30),
-                font,
-                font_scale,
-                color,
-                thickness,
-                cv2.LINE_AA
-            )
-
-            # Draw FPS text (below resolution)
-            cv2.putText(
-                frame,
-                text_fps,
-                (10, 60),
-                font,
-                font_scale,
-                color,
-                thickness,
-                cv2.LINE_AA
-            )
-
-            # Draw FrameID text (below FPS)
-            cv2.putText(
-                frame,
-                text_frame_id,
-                (10, 90),
-                font,
-                font_scale,
-                color,
-                thickness,
-                cv2.LINE_AA
-            )
-
-            # Convert to RGB for PyQt display
-            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = rgb_image.shape
-            bytes_per_line = ch * w
-            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            self.image_label.setPixmap(QPixmap.fromImage(qt_image))
-
-            # Encode frame
-            self.encode_frame(self.frame_count, frame)
+        # Encode frame
+        self.encode_frame(frame_id, frame)
 
     def encode_frame(self, frame_id, frame):
         av_frame = av.VideoFrame.from_ndarray(frame, format='bgr24')
@@ -302,7 +225,7 @@ class CameraClient(QMainWindow):
         self.is_capturing = not self.is_capturing
 
         if self.is_capturing:
-            self.init_camera()
+            self.camera.init_camera()
             self.capture_button.setText("Stop Capture")
             self.capture_button.setStyleSheet("""
                 QPushButton {
@@ -317,7 +240,6 @@ class CameraClient(QMainWindow):
                     background-color: #f44335;
                 }
             """)
-            self.timer.start(FRAME_RATE)
 
             # Add timestamp to H264_DUMP filename
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -326,8 +248,7 @@ class CameraClient(QMainWindow):
             self.log_message("Capture started - camera active")
         else:
             # Properly release camera resources
-            self.timer.stop()
-            self.cap.release()
+            self.camera.stop()
             self.output_file.flush()
             self.output_file.close()
 
@@ -383,8 +304,7 @@ class CameraClient(QMainWindow):
             self.log_message("Sending disabled")
 
     def closeEvent(self, event):
-        self.timer.stop()
-        self.cap.release()
+        self.camera.stop()
         self.output_container.close()
         self.network_worker.stop()
         event.accept()
