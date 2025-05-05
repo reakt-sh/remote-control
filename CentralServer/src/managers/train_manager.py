@@ -1,6 +1,7 @@
 import asyncio
 from typing import Dict
 from fastapi import WebSocket
+from utils.app_logger import logger
 
 class TrainManager:
     def __init__(self):
@@ -20,6 +21,7 @@ class TrainManager:
         for connection in self.active_connections.values():
             await connection.close()
         self.active_connections.clear()
+        logger.debug("All train connections closed.")
 
     async def receive_video(self, train_id: str, data: bytes):
         """Forward video to all control clients"""

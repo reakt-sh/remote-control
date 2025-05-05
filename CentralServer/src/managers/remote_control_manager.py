@@ -1,6 +1,7 @@
 import asyncio
 from typing import Set
 from fastapi import WebSocket
+from utils.app_logger import logger
 
 class RemoteControlManager:
     def __init__(self):
@@ -27,3 +28,4 @@ class RemoteControlManager:
         for connection in list(self.active_connections):
             await connection.close()
         self.active_connections.clear()
+        logger.debug("All remote control connections closed.")

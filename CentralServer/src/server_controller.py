@@ -1,6 +1,7 @@
 import threading
 from typing import Any
-
+from managers.train_manager import TrainManager
+from managers.remote_control_manager import RemoteControlManager
 class ServerController:
     """
     Thread-safe singleton implementation for managing server state and operations.
@@ -29,11 +30,38 @@ class ServerController:
         """Example method with thread-safe operations"""
         with self._lock:
             if not self._running:
+                # Initialize managers
+                self.train_manager = TrainManager()
+                self.remote_control_manager = RemoteControlManager()
                 self._running = True
-                # Actual server start logic here
 
-    def register_client(self, client_id: str, client_info: dict) -> None:
+    async def stop_server(self) -> None:
+        """Example method to stop the server"""
         with self._lock:
-            self._clients[client_id] = client_info
+            if self._running:
+                # Clean up resources
+                await self.train_manager.disconnect_all()
+                await self.remote_control_manager.disconnect_all()
+                del self.train_manager
+                del self.remote_control_manager
+                self._running = False
 
-    # Add other server management methods...
+    async def connect_remote_controller(self, websocket: Any) -> None:
+        await self.remote_control_manager.connect(websocket)
+
+    async def disconnect_remote_controller(self, websocket: Any) -> None:
+        await self.remote_control_manager.disconnect(websocket)
+
+    async def send_to_train(self, command: dict) -> None:
+            train_id = command.get("train_id")
+            if train_id in self.train_manager.active_connections:
+                await self.train_manager.active_connections[train_id].send_json(command)
+
+    async def connect_train(self, train_id: str, websocket: Any) -> None:
+        await self.train_manager.connect(train_id, websocket)
+
+    async def disconnect_train(self, train_id: str) -> None:
+        await self.train_manager.disconnect(train_id)
+
+    async def send_to_remote_control(self, data: bytes) -> None:
+        await self.remote_control_manager.broadcast_video(data)
