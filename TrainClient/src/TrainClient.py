@@ -20,7 +20,9 @@ class TrainClient(QMainWindow):
         super().__init__()
         self.init_ui()
         self.init_network()
-        self.create_dump_file()  # Create dump file with timestamp
+        self.create_dump_file()
+        self.write_to_file = False  # Initially set to False
+
 
         self.is_capturing = True   # Track capture state
         self.is_sending = False    # Start with sending disabled
@@ -58,12 +60,11 @@ class TrainClient(QMainWindow):
         self.setGeometry(START_X, START_Y, START_X + WINDOW_WIDTH, START_Y + WINDOW_HEIGHT)
         self.setStyleSheet(f"background-color: {BG_COLOR};")
 
-
-        # create a image label to display the camera feed
+        # Create an image label to display the camera feed
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
 
-        # create console log widget
+        # Create console log widget
         self.console_log = QTextEdit()
         self.console_log.setReadOnly(True)
         self.console_log.setStyleSheet("""
@@ -114,12 +115,31 @@ class TrainClient(QMainWindow):
         """)
         self.sending_button.clicked.connect(self.toggle_sending)
 
+        # Create the toggle write-to-file button
+        self.write_button = QPushButton("Enable Write")
+        self.write_button.setMinimumWidth(BUTTON_WIDTH)
+        self.write_button.setMaximumWidth(BUTTON_WIDTH)
+        self.write_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 8px;
+                font-size: 12pt;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        self.write_button.clicked.connect(self.toggle_write_to_file)
+
         # Create VBox layout for the buttons
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.capture_button)
         button_layout.addWidget(self.sending_button)
+        button_layout.addWidget(self.write_button)
         button_layout.addStretch()  # This adds spacing at the bottom
-
 
         layout = QGridLayout()
         layout.addWidget(self.image_label, 0, 0)
@@ -160,8 +180,9 @@ class TrainClient(QMainWindow):
         self.log_message(imu_message)
 
     def on_encoded_frame(self, encoded_bytes):
-        self.output_file.write(encoded_bytes)
-        self.output_file.flush()
+        if self.write_to_file:
+            self.output_file.write(encoded_bytes)
+            self.output_file.flush()
         # Only send if sending is enabled
         if self.is_sending:
             self.network_worker.enqueue_packet(encoded_bytes)
@@ -198,16 +219,12 @@ class TrainClient(QMainWindow):
                     background-color: #f44335;
                 }
             """)
-
-            self.create_dump_file()
             self.log_message("Capture started - camera active")
         else:
             # Properly release camera resources
             self.camera.stop()
             self.telemetry.stop()
             self.imu.stop()
-            self.output_file.flush()
-            self.output_file.close()
 
             self.capture_button.setText("Start Capture")
             self.capture_button.setStyleSheet("""
@@ -260,10 +277,46 @@ class TrainClient(QMainWindow):
             """)
             self.log_message("Sending disabled")
 
+    def toggle_write_to_file(self):
+        self.write_to_file = not self.write_to_file
+        if self.write_to_file:
+            self.write_button.setText("Disable Write")
+            self.write_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #f44336;  /* Red */
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    font-size: 12pt;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background-color: #f44335;
+                }
+            """)
+            self.log_message("Write to file enabled")
+        else:
+            self.write_button.setText("Enable Write")
+            self.write_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    font-size: 12pt;
+                    min-width: 120px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+            """)
+            self.log_message("Write to file disabled")
+
     def closeEvent(self, event):
         self.camera.stop()
         self.encoder.close()
         self.network_worker.stop()
+        self.output_file.close()
         event.accept()
         print("CameraClient closed.")
 
