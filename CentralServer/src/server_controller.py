@@ -35,6 +35,8 @@ class ServerController:
                 self.train_manager = TrainManager()
                 self.remote_control_manager = RemoteControlManager()
                 self._running = True
+                self.write_to_file = True
+                self.dump_file = open("dump.h264", 'wb')
 
     async def stop_server(self) -> None:
         """Example method to stop the server"""
@@ -63,7 +65,13 @@ class ServerController:
 
     async def disconnect_train(self, train_id: str) -> None:
         await self.train_manager.disconnect(train_id)
+        if self.write_to_file:
+            self.dump_file.close()
 
     async def send_to_remote_control(self, data: bytes) -> None:
         logger.debug(f"Sending data to remote control, data size: {len(data)}")
-        #await self.remote_control_manager.broadcast_video(data)
+        if self.write_to_file:
+            self.dump_file.write(data)
+            self.dump_file.flush()
+
+        # await self.remote_control_manager.broadcast_video(data)
