@@ -2,6 +2,7 @@ import threading
 from typing import Any
 from managers.train_manager import TrainManager
 from managers.remote_control_manager import RemoteControlManager
+from utils.app_logger import logger
 class ServerController:
     """
     Thread-safe singleton implementation for managing server state and operations.
@@ -64,4 +65,5 @@ class ServerController:
         await self.train_manager.disconnect(train_id)
 
     async def send_to_remote_control(self, data: bytes) -> None:
-        await self.remote_control_manager.broadcast_video(data)
+        logger.debug(f"Sending data to remote control, data size: {len(data)}")
+        #await self.remote_control_manager.broadcast_video(data)

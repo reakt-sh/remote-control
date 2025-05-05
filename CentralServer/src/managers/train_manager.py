@@ -9,13 +9,16 @@ class TrainManager:
         self.telemetry_data: Dict[str, dict] = {}
 
     async def connect(self, train_id: str, websocket: WebSocket):
-        await websocket.accept()
         self.active_connections[train_id] = websocket
 
     async def disconnect(self, train_id: str):
         if train_id in self.active_connections:
-            await self.active_connections[train_id].close()
-            del self.active_connections[train_id]
+            websocket = self.active_connections.pop(train_id, None)
+            if websocket:
+                try:
+                    await websocket.close()
+                except Exception as e:
+                    logger.error(f"WebSocket for train already closed {train_id}: {e}")
 
     async def disconnect_all(self):
         for connection in self.active_connections.values():
