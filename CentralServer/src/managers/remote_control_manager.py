@@ -2,7 +2,7 @@ import asyncio
 from typing import Set
 from fastapi import WebSocket
 
-class ControlManager:
+class RemoteControlManager:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
 

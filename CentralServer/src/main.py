@@ -1,8 +1,10 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from managers.train_manager import TrainManager
-from managers.control_manager import ControlManager
+from managers.remote_control_manager import RemoteControlManager
 from managers.log_manager import logger
+from endpoints import remote_control_gateway
+from endpoints import train_gateway
 
 from config import settings
 
@@ -17,9 +19,8 @@ app.add_middleware(
 )
 
 # Initialize managers
-logger.debug("Initializing managers...")
 train_manager = TrainManager()
-control_manager = ControlManager()
+remote_control_manager = RemoteControlManager()
 
 @app.on_event("startup")
 async def startup():
@@ -28,13 +29,11 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    """Clean up connections"""
     await train_manager.disconnect_all()
-    await control_manager.disconnect_all()
+    await remote_control_manager.disconnect_all()
     logger.info("Shutting down the server...")
     pass
 
 # Include routers
-from endpoints import video, commands
-app.include_router(video.router)
-app.include_router(commands.router)
+app.include_router(train_gateway.router)
+app.include_router(remote_control_gateway.router)

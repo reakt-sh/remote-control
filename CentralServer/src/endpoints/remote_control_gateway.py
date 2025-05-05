@@ -1,14 +1,14 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from managers.control_manager import ControlManager
+from managers.remote_control_manager import RemoteControlManager
 from managers.train_manager import TrainManager
 
-control_manager = ControlManager()
+remote_control_manager = RemoteControlManager()
 train_manager = TrainManager()
 router = APIRouter()
 
 @router.websocket("/ws/control")
 async def control_interface(websocket: WebSocket):
-    await control_manager.connect(websocket)
+    await remote_control_manager.connect(websocket)
     try:
         while True:
             command = await websocket.receive_json()
@@ -17,4 +17,4 @@ async def control_interface(websocket: WebSocket):
             if train_id in train_manager.active_connections:
                 await train_manager.active_connections[train_id].send_json(command)
     except WebSocketDisconnect:
-        await control_manager.disconnect(websocket)
+        await remote_control_manager.disconnect(websocket)
