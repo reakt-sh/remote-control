@@ -10,7 +10,9 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
     "core-js": "^3.8.3",
-    "vue": "^3.2.13"
+    "pinia": "^3.0.2",
+    "vue": "^3.2.13",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -33,7 +35,15 @@
     "parserOptions": {
       "parser": "@babel/eslint-parser"
     },
-    "rules": {}
+    "rules": {
+      "vue/multi-word-component-names": "off"
+    },
+    "globals": {
+      "defineEmits": "readonly",
+      "defineProps": "readonly",
+      "defineExpose": "readonly",
+      "withDefaults": "readonly"
+    }
   },
   "browserslist": [
     "> 1%",
