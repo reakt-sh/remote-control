@@ -71,7 +71,14 @@ class NetworkWorker(QThread):
             try:
                 packet = await asyncio.wait_for(websocket.recv(), timeout=1.0)
                 if packet:
-                    print(f"Received packet: {packet}")
+                    print(f"Received packet of size {len(packet)}")
+                    packet_type = packet[0]
+                    payload = packet[1:]
+                    if packet_type == PACKET_TYPE["keepalive"]:
+                        message = json.loads(payload.decode('utf-8'))
+                        print(f"Keepalive message: {message}")
+                    else:
+                        print(f"Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:
                 continue
             except Exception as e:
@@ -80,15 +87,19 @@ class NetworkWorker(QThread):
 
     async def keepalive(self, websocket):
         print("### Keepalive task started ###")
+        self.keepalive_sequence = 0
         while self.running:
             try:
+                self.keepalive_sequence += 1
                 keepalive_packet = {
-                    "timestamp": asyncio.get_event_loop().time()
+                    "type": "keepalive",
+                    "timestamp": asyncio.get_event_loop().time(),
+                    "sequence": self.keepalive_sequence
                 }
                 packet_data = json.dumps(keepalive_packet).encode('utf-8')
                 packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
                 await websocket.send(packet)
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
             except Exception as e:
                 print(f"Keepalive error: {e}")
                 break
