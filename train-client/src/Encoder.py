@@ -59,7 +59,8 @@ class Encoder(QObject):
                     elif nal_type == 5:
                         log_callback(f"IDR NAL unit detected for Frame ID: {frame_id}")
                     elif nal_type == 1:
-                        print(f"P-frame NAL unit detected for Frame ID: {frame_id}")
+                        # print(f"P-frame NAL unit detected for Frame ID: {frame_id}")
+                        pass
                     elif nal_type == 0:
                         log_callback(f"B-frame NAL unit detected for Frame ID: {frame_id}")
 

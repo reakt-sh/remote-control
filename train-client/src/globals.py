@@ -10,6 +10,21 @@ FRAME_RATE = 30
 H264_DUMP = "../dump_collection/dump"
 PIXEL_FORMAT = "yuv420p"
 
+# Packet Types
+PACKET_TYPE = {
+    "video": 13,
+    "audio": 14,
+    "control": 15,
+    "command": 16,
+    "telemetry": 17,
+    "imu": 18,
+    "lidar": 19,
+    "keepalive": 20
+}
+SERVER_WEBSOCKET_PORT = 8000
+SERVER_URL = f"ws://localhost:{SERVER_WEBSOCKET_PORT}/ws"
+TRAIN_ID = "123"
+
 TEXT_FIELD_HEIGHT = 23
 BG_COLOR = "#9CAFB4"
 ID_BG_COLOR = "light green"

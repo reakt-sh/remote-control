@@ -65,8 +65,6 @@ class ServerController:
 
     async def remove_train(self, train_id: str) -> None:
         await self.train_manager.remove(train_id)
-        if self.write_to_file:
-            self.dump_file.close()
 
     async def send_to_remote_control(self, data: bytes) -> None:
         logger.debug(f"Sending data to remote control, data size: {len(data)}")

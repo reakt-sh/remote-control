@@ -2,6 +2,7 @@ import cv2
 import av
 import zmq
 import datetime
+import struct
 from fractions import Fraction
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor
@@ -151,7 +152,6 @@ class TrainClient(QMainWindow):
     def init_network(self):
         self.network_worker = NetworkWorker()
         self.network_worker.packet_sent.connect(self.on_packet_sent)
-        self.network_worker.start()
 
     @pyqtSlot(int)
     def on_packet_sent(self, size):
@@ -185,6 +185,7 @@ class TrainClient(QMainWindow):
             self.output_file.flush()
         # Only send if sending is enabled
         if self.is_sending:
+            encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
             self.network_worker.enqueue_packet(encoded_bytes)
 
     def log_message(self, message):
@@ -259,6 +260,7 @@ class TrainClient(QMainWindow):
                     background-color: #f44335;
                 }
             """)
+            self.network_worker.start()
             self.log_message("Sending enabled")
         else:
             self.sending_button.setText("Start Sending")
@@ -275,7 +277,9 @@ class TrainClient(QMainWindow):
                     background-color: #45a049;
                 }
             """)
+            self.network_worker.stop()
             self.log_message("Sending disabled")
+
 
     def toggle_write_to_file(self):
         self.write_to_file = not self.write_to_file

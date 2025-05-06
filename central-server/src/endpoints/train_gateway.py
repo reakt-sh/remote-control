@@ -3,6 +3,17 @@ from server_controller import ServerController
 from utils.app_logger import logger
 
 s_controller = ServerController()
+# Packet Types
+PACKET_TYPE = {
+    "video": 13,
+    "audio": 14,
+    "control": 15,
+    "command": 16,
+    "telemetry": 17,
+    "imu": 18,
+    "lidar": 19,
+    "keepalive": 20
+}
 
 router = APIRouter()
 
@@ -14,7 +25,11 @@ async def train_interface(websocket: WebSocket, train_id: str):
     try:
         while True:
             data = await websocket.receive_bytes()
-            await s_controller.send_to_remote_control(data)
+            logger.debug(f"Received data from train {train_id}, {data[0]}")
+            if data[0] == PACKET_TYPE["video"]:
+                await s_controller.send_to_remote_control(data[1:])
+            elif data[0] == PACKET_TYPE["keepalive"]:
+                logger.debug(f"Keepalive packet received from train {train_id}, {data}")
     except WebSocketDisconnect:
         logger.debug(f"Train {train_id} disconnected.")
     except Exception as e:
