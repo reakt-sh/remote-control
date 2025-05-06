@@ -30,20 +30,17 @@ class NetworkWorker(QThread):
         try:
             async with websockets.connect(self.server_url) as websocket:
                 print(f"Connected to server at {self.server_url}")
-                
                 # Create tasks
                 tasks = [
                     asyncio.create_task(self.websocket_sender(websocket)),
                     asyncio.create_task(self.websocket_receiver(websocket)),
                     asyncio.create_task(self.keepalive(websocket))
                 ]
-                
                 # Wait for the first task to complete (which will happen if any fails)
                 done, pending = await asyncio.wait(
                     tasks,
                     return_when=asyncio.FIRST_COMPLETED
                 )
-                
                 # Cancel remaining tasks
                 for task in pending:
                     task.cancel()
@@ -51,7 +48,6 @@ class NetworkWorker(QThread):
                         await task
                     except asyncio.CancelledError:
                         pass
-                        
         except Exception as e:
             print(f"WebSocket connection error: {e}")
 
