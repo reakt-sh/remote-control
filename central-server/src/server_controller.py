@@ -49,22 +49,22 @@ class ServerController:
                 del self.remote_control_manager
                 self._running = False
 
-    async def connect_remote_controller(self, websocket: Any) -> None:
-        await self.remote_control_manager.connect(websocket)
+    async def add_remote_controller(self, websocket: Any) -> None:
+        await self.remote_control_manager.add(websocket)
 
-    async def disconnect_remote_controller(self, websocket: Any) -> None:
-        await self.remote_control_manager.disconnect(websocket)
+    async def remove_remote_controller(self, websocket: Any) -> None:
+        await self.remote_control_manager.remove(websocket)
 
     async def send_to_train(self, command: dict) -> None:
             train_id = command.get("train_id")
             if train_id in self.train_manager.active_connections:
                 await self.train_manager.active_connections[train_id].send_json(command)
 
-    async def connect_train(self, train_id: str, websocket: Any) -> None:
-        await self.train_manager.connect(train_id, websocket)
+    async def add_train(self, train_id: str, websocket: Any) -> None:
+        await self.train_manager.add(train_id, websocket)
 
-    async def disconnect_train(self, train_id: str) -> None:
-        await self.train_manager.disconnect(train_id)
+    async def remove_train(self, train_id: str) -> None:
+        await self.train_manager.remove(train_id)
         if self.write_to_file:
             self.dump_file.close()
 

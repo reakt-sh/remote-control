@@ -9,8 +9,8 @@ router = APIRouter()
 @router.websocket("/ws/train/{train_id}")
 async def train_interface(websocket: WebSocket, train_id: str):
     await websocket.accept()
-    await s_controller.connect_train(train_id, websocket)
-    logger.debug(f"Train {train_id} connected.")
+    await s_controller.add_train(train_id, websocket)
+    logger.debug(f"For Train {train_id}, websocket connection established")
     try:
         while True:
             data = await websocket.receive_bytes()
@@ -21,5 +21,4 @@ async def train_interface(websocket: WebSocket, train_id: str):
         logger.error(f"Error in WebSocket connection for train {train_id}: {e}")
     finally:
         # Ensure the WebSocket is properly closed and the train is disconnected
-        await s_controller.disconnect_train(train_id)
-        pass
+        await s_controller.remove_train(train_id)

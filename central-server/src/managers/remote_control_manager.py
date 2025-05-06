@@ -7,13 +7,16 @@ class RemoteControlManager:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
+    async def add(self, websocket: WebSocket):
         self.active_connections.add(websocket)
 
-    async def disconnect(self, websocket: WebSocket):
-        await websocket.close()
-        self.active_connections.remove(websocket)
+    async def remove(self, websocket: WebSocket):
+        websocket = self.active_connections.pop(websocket)
+        if websocket:
+            try:
+                await websocket.close()
+            except Exception as e:
+                logger.error(f"WebSocket for remote control already closed")
 
     async def broadcast_video(self, data: bytes):
         """Send video to all control clients"""
