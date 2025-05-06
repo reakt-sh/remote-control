@@ -12,3 +12,4 @@ async def remote_control_interface(websocket: WebSocket):
             s_controller.send_to_train(command)
     except WebSocketDisconnect:
         await s_controller.disconnect_remote_controller(websocket)
+        

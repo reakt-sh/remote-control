@@ -4,10 +4,10 @@
       <h1>Train Remote Control System</h1>
       <ConnectionStatus />
     </header>
-    
+
     <main class="app-main">
       <TrainSelector />
-      
+
       <div v-if="selectedTrain" class="train-control-panel">
         <VideoPanel />
         <TelemetryPanel />

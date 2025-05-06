@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+// Define server IP and port as constants
+const SERVER_IP = 'localhost'
+const SERVER_PORT = 8000
+const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`
+const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}`
+
 export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
   const selectedTrainId = ref('')
@@ -14,7 +20,7 @@ export const useTrainStore = defineStore('train', () => {
 
   async function fetchAvailableTrains() {
     try {
-      const response = await fetch('http://localhost:8000/api/trains')
+      const response = await fetch(`${SERVER_URL}/api/trains`)
       const data = await response.json()
       availableTrains.value = data.trains
     } catch (error) {
@@ -34,7 +40,7 @@ export const useTrainStore = defineStore('train', () => {
     selectedTrainId.value = trainId
 
     // Connect to WebSocket
-    socket.value = new WebSocket(`ws://localhost:8000/ws/${trainId}`)
+    socket.value = new WebSocket(`${WS_URL}/ws/${trainId}`)
 
     socket.value.onopen = () => {
       isConnected.value = true
