@@ -1,6 +1,6 @@
 <template>
   <div class="video-panel">
-    <h2>Live Camera: {{ currentTrain.name }}</h2>
+    <h2 v-if="currentTrain">Live Camera: {{ currentTrain.name }}</h2>
     <div class="video-container">
       <div class="video-placeholder" v-if="!isConnected">
         <p>No video feed available</p>

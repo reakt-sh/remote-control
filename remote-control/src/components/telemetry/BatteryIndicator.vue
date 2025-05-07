@@ -1,9 +1,12 @@
 <template>
-  <div class="telemetry-value">
+  <div v-if="currentTrain" class="telemetry-value">
     <div class="battery-level" :style="{ width: currentTrain.battery_level + '%' }"
          :class="{ low: currentTrain.battery_level < 20 }">
     </div>
     <span>{{ currentTrain.battery_level }}%</span>
+  </div>
+  <div v-else class="telemetry-value">
+    No battery data available
   </div>
 </template>
 

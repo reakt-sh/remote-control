@@ -1,6 +1,9 @@
 <template>
-  <div class="telemetry-value status" :class="currentTrain.status">
+  <div v-if="currentTrain" class="telemetry-value status" :class="currentTrain.status">
     {{ currentTrain.status }}
+  </div>
+  <div v-else class="telemetry-value status">
+    No status available
   </div>
 </template>
 

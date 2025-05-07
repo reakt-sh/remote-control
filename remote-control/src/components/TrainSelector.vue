@@ -19,6 +19,7 @@ const { availableTrains, selectedTrainId } = storeToRefs(useTrainStore())
 const { fetchAvailableTrains, connectToTrain } = useTrainStore()
 
 const handleTrainChange = () => {
+  console.log('Here ', selectedTrainId.value)
   connectToTrain(selectedTrainId.value)
 }
 

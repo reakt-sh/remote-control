@@ -3,6 +3,36 @@ from typing import Dict
 from fastapi import WebSocket
 from utils.app_logger import logger
 
+# Mock database of trains
+trains_db_mock = {
+    "train_1": {
+        "name": "Express 2020",
+        "status": "running",
+        "speed": 0,
+        "max_speed": 120,
+        "brake_status": "released",
+        "location": "Station A",
+        "next_station": "Station B",
+        "passenger_count": 156,
+        "temperature": 22,
+        "battery_level": 87,
+        "video_stream_url": "/stream/train_1"
+    },
+    "train_2": {
+        "name": "Freight XL",
+        "status": "stopped",
+        "speed": 0,
+        "max_speed": 80,
+        "brake_status": "applied",
+        "location": "Depot 3",
+        "next_station": "Loading Zone",
+        "passenger_count": 2,
+        "temperature": 18,
+        "battery_level": 45,
+        "video_stream_url": "/stream/train_2"
+    }
+}
+
 class TrainManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
@@ -32,3 +62,6 @@ class TrainManager:
 
     async def update_telemetry(self, train_id: str, data: dict):
         self.telemetry_data[train_id] = data
+
+    def get_trains(self):
+        return trains_db_mock

@@ -22,15 +22,17 @@
         label="Apply Brakes" 
         icon="fa-stop" 
         type="brake" 
+        v-if="currentTrain && currentTrain.brake_status"
         :active="currentTrain.brake_status === 'applied'"
       />
       <EmergencyStop />
-      <ControlButton 
+      <ControlButton
         action="start" 
         :value="true" 
         label="Start Engine" 
         icon="fa-play" 
         type="start" 
+        v-if="currentTrain && currentTrain.status"
         :disabled="currentTrain.status === 'running'"
       />
       <ControlButton 
@@ -39,6 +41,7 @@
         label="Shutdown" 
         icon="fa-power-off" 
         type="shutdown" 
+        v-if="currentTrain && currentTrain.status"
         :disabled="currentTrain.status !== 'running'"
       />
     </div>

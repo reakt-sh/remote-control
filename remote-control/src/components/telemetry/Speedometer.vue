@@ -1,11 +1,11 @@
 <template>
   <div>
-    <div class="telemetry-value">
+    <div v-if="currentTrain" class="telemetry-value">
       {{ currentTrain.speed }}<span class="unit">km/h</span>
     </div>
-    <div class="speedometer">
+    <div v-if="currentTrain" class="speedometer">
       <div class="speedometer-track">
-        <div class="speedometer-progress" 
+        <div class="speedometer-progress"
              :style="{ width: (currentTrain.speed / currentTrain.max_speed) * 100 + '%' }">
         </div>
       </div>
@@ -15,8 +15,13 @@
         <span>{{ currentTrain.max_speed }}</span>
       </div>
     </div>
+    <div v-else>
+      <p>No train data available</p>
+    </div>
   </div>
 </template>
+
+
 
 <script setup>
 import { storeToRefs } from 'pinia'

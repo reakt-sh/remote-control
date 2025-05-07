@@ -11,17 +11,23 @@
       </TelemetryCard>
       
       <TelemetryCard title="Brakes">
-        <div class="telemetry-value" :class="{ warning: currentTrain.brake_status === 'applied' }">
+        <div v-if="currentTrain" class="telemetry-value" :class="{ warning: currentTrain.brake_status === 'applied' }">
           {{ currentTrain.brake_status }}
+        </div>
+        <div v-else class="telemetry-value">
+          No brake data available
         </div>
       </TelemetryCard>
       
       <TelemetryCard title="Location">
-        <div class="telemetry-value">
+        <div v-if="currentTrain" class="telemetry-value">
           {{ currentTrain.location }}
         </div>
-        <div class="telemetry-subvalue">
+        <div v-if="currentTrain" class="telemetry-subvalue">
           Next: {{ currentTrain.next_station }}
+        </div>
+        <div v-else>
+          No location data available
         </div>
       </TelemetryCard>
       
@@ -30,8 +36,11 @@
       </TelemetryCard>
       
       <TelemetryCard title="Temperature">
-        <div class="telemetry-value">
+        <div v-if="currentTrain" class="telemetry-value">
           {{ currentTrain.temperature }}<span class="unit">°C</span>
+        </div>
+        <div v-else>
+          No temperature data available
         </div>
       </TelemetryCard>
     </div>

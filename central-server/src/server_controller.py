@@ -34,9 +34,9 @@ class ServerController:
                 # Initialize managers
                 self.train_manager = TrainManager()
                 self.remote_control_manager = RemoteControlManager()
-                self._running = True
                 self.write_to_file = True
                 self.dump_file = open("dump.h264", 'wb')
+                self._running = True
 
     async def stop_server(self) -> None:
         """Example method to stop the server"""
@@ -71,5 +71,7 @@ class ServerController:
         if self.write_to_file:
             self.dump_file.write(data)
             self.dump_file.flush()
-
         # await self.remote_control_manager.broadcast_video(data)
+
+    def get_trains(self) -> dict:
+        return self.train_manager.get_trains()

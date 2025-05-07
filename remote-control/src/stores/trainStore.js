@@ -22,7 +22,10 @@ export const useTrainStore = defineStore('train', () => {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)
       const data = await response.json()
+      console.log('Available trains:', data)
       availableTrains.value = data.trains
+      console.log('Available trains:', availableTrains.value)
+      console.log('How does it look: ', availableTrains)
     } catch (error) {
       console.error('Error fetching trains:', error)
     }
@@ -40,7 +43,7 @@ export const useTrainStore = defineStore('train', () => {
     selectedTrainId.value = trainId
 
     // Connect to WebSocket
-    socket.value = new WebSocket(`${WS_URL}/ws/${trainId}`)
+    socket.value = new WebSocket(`${WS_URL}/ws/remote_control/${trainId}`)
 
     socket.value.onopen = () => {
       isConnected.value = true
@@ -48,6 +51,8 @@ export const useTrainStore = defineStore('train', () => {
 
       // Get initial train data
       currentTrain.value = { ...availableTrains.value[trainId] }
+      console.log('Initial train data:', currentTrain.value)
+      console.log(currentTrain.value.name)
     }
 
     socket.value.onmessage = (event) => {
