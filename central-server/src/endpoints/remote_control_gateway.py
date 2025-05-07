@@ -29,3 +29,22 @@ async def get_trains():
 async def get_stream(train_id: str):
     logger.debug(f"Fetching stream for train {train_id}")
     return ""
+
+
+@router.post("/api/remote_control/{remote_control_id}/train/{train_id}")
+async def map_client_to_train(remote_control_id: str, train_id: str):
+    logger.debug(f"Mapping remote control {remote_control_id} to train {train_id}")
+    s_controller.map_client_to_train(remote_control_id, train_id)
+    return {
+        "status": "success",
+        "message": f"Mapped {remote_control_id} to {train_id}"
+    }
+
+@router.delete("/api/remote_control/{remote_control_id}/train")
+async def unmap_client_from_train(remote_control_id: str):
+    logger.debug(f"Unmapping remote control {remote_control_id} from train")
+    s_controller.unmap_client_from_train(remote_control_id)
+    return {
+        "status": "success",
+        "message": f"Unmapped {remote_control_id}"
+    }
