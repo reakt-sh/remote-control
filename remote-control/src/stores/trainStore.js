@@ -13,13 +13,19 @@ export const useTrainStore = defineStore('train', () => {
   const currentTrain = ref(null)
   const isConnected = ref(false)
   const webSocket = ref(null)
-  const currentVideoFrame = ref(null) // Add this line
+  const currentVideoFrame = ref(null)
+  const remoteControlId = ref(null)
 
 
   const selectedTrain = computed(() => {
     return availableTrains.value[selectedTrainId.value] || null
   })
-
+  function initializeRemoteControlId() {
+    if(!remoteControlId.value) {
+      remoteControlId.value = crypto.randomUUID()
+      console.log('Remote control ID initialized:', remoteControlId.value)
+    }
+  }
   async function fetchAvailableTrains() {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)
@@ -33,34 +39,33 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function connectToTrain(trainId) {
-    if (!trainId) return
-
+  function connectToServer() {
     // Disconnect previous connection if exists
     if (webSocket.value) {
       webSocket.value.close()
       isConnected.value = false
     }
 
-    selectedTrainId.value = trainId
-
     // Connect to WebSocket
-    webSocket.value = new WebSocket(`${WS_URL}/ws/remote_control/${trainId}`)
+    webSocket.value = new WebSocket(`${WS_URL}/ws/remote_control/${remoteControlId.value}`)
 
     webSocket.value.onopen = () => {
       isConnected.value = true
       console.log('WebSocket connected')
-
-      // Get initial train data
-      currentTrain.value = { ...availableTrains.value[trainId] }
-      console.log('Initial train data:', currentTrain.value)
-      console.log(currentTrain.value.name)
     }
 
-    webSocket.value.onmessage = (event) => {
-      if (event.data instanceof ArrayBuffer) {
-        // Store the raw frame data
-        currentVideoFrame.value = new Uint8Array(event.data)
+    webSocket.value.onmessage = async (event) => {
+      if (event.data instanceof Blob) {
+        try {
+          const arrayBuffer = await event.data.arrayBuffer()
+
+          // Store the raw frame data as Uint8Array
+          currentVideoFrame.value = new Uint8Array(arrayBuffer)
+        } catch (error) {
+          console.error('Error processing Blob data:', error)
+        }
+      } else {
+        console.warn('Unexpected data type received:', typeof event.data)
       }
     }
 
@@ -72,6 +77,39 @@ export const useTrainStore = defineStore('train', () => {
     webSocket.value.onerror = (error) => {
       console.error('WebSocket error:', error)
       isConnected.value = false
+    }
+  }
+
+  async function mappingToTrain(trainId) {
+    if (!trainId) return
+
+    // Update the current train and selected train ID
+    currentTrain.value = { ...availableTrains.value[trainId] }
+    selectedTrainId.value = trainId
+
+    // Send a POST request to assign the train to the remote control
+    if (remoteControlId.value) {
+      const url = `${SERVER_URL}/api/remote_control/${remoteControlId.value}/train/${trainId}`
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to assign train. Status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('Train assigned successfully:', data)
+      } catch (error) {
+        console.error('Error assigning train to remote control:', error)
+      }
+    } else {
+      console.error('Remote control ID is not initialized')
     }
   }
 
@@ -93,9 +131,12 @@ export const useTrainStore = defineStore('train', () => {
     currentTrain,
     isConnected,
     selectedTrain,
-    currentVideoFrame, // Add this line
+    currentVideoFrame,
+    remoteControlId,
+    initializeRemoteControlId,
     fetchAvailableTrains,
-    connectToTrain,
+    connectToServer,
+    mappingToTrain,
     sendCommand
   }
 })

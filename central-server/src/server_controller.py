@@ -104,3 +104,17 @@ class ServerController:
                     logger.warning(f"Train ID {train_id} not found in train_to_clients_map")
             else:
                 logger.warning(f"Remote control ID {remote_control_id} not found in client_to_train_map")
+
+    async def send_video_to_clients(self, train_id: str, video_data: bytes) -> None:
+        if train_id in self.train_to_clients_map:
+            remote_control_ids = self.train_to_clients_map[train_id]
+            for remote_control_id in remote_control_ids:
+                if remote_control_id in self.remote_control_manager.active_connections:
+                    websocket = self.remote_control_manager.active_connections[remote_control_id]
+                    await websocket.send_bytes(video_data)
+
+    async def send_command_to_train(self, remote_control_id: str, command: dict) -> None:
+        train_id = self.client_to_train_map.get(remote_control_id)
+        if train_id and train_id in self.train_manager.active_connections:
+            websocket = self.train_manager.active_connections[train_id]
+            await websocket.send_json(command)

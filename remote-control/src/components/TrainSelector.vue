@@ -16,14 +16,16 @@ import { useTrainStore } from '@/stores/trainStore'
 import { onMounted } from 'vue'
 
 const { availableTrains, selectedTrainId } = storeToRefs(useTrainStore())
-const { fetchAvailableTrains, connectToTrain } = useTrainStore()
+const { fetchAvailableTrains, connectToServer, mappingToTrain, initializeRemoteControlId} = useTrainStore()
 
 const handleTrainChange = () => {
   console.log('Here ', selectedTrainId.value)
-  connectToTrain(selectedTrainId.value)
+  connectToServer()
+  mappingToTrain(selectedTrainId.value)
 }
 
 onMounted(() => {
+  initializeRemoteControlId()
   fetchAvailableTrains()
 })
 </script>

@@ -31,8 +31,13 @@ onMounted(() => {
 
 watch(currentVideoFrame, (newFrame) => {
   if (player && newFrame) {
-    // Feed the new frame to the Broadway.js decoder
-    player.decode(new Uint8Array(newFrame))
+    console.log('New frame received with length:', newFrame.length)
+    try {
+      // Feed the new frame to the Broadway.js decoder
+      player.decode(new Uint8Array(newFrame))
+    } catch (error) {
+      console.error('Error decoding frame:', error)
+    }
   }
 })
 

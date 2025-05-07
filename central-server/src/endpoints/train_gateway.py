@@ -53,7 +53,7 @@ async def train_interface(websocket: WebSocket, train_id: str):
             payload = data[1:]
 
             if packet_type == PACKET_TYPE["video"]:
-                await s_controller.send_to_remote_control(payload)
+                await s_controller.send_video_to_clients(train_id, payload)
             elif packet_type == PACKET_TYPE["keepalive"]:
                 message = json.loads(payload.decode('utf-8'))
                 logger.debug(f"{message}")
