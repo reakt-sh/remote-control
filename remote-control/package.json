@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "broadway": "^4.1.0",
+    "broadwayjs": "^0.0.2",
     "core-js": "^3.8.3",
+    "h264-live-player": "^1.3.1",
     "pinia": "^3.0.2",
     "vue": "^3.2.13",
     "vue-router": "^4.5.1"

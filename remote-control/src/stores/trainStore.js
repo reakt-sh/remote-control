@@ -12,7 +12,9 @@ export const useTrainStore = defineStore('train', () => {
   const selectedTrainId = ref('')
   const currentTrain = ref(null)
   const isConnected = ref(false)
-  const socket = ref(null)
+  const webSocket = ref(null)
+  const currentVideoFrame = ref(null) // Add this line
+
 
   const selectedTrain = computed(() => {
     return availableTrains.value[selectedTrainId.value] || null
@@ -35,17 +37,17 @@ export const useTrainStore = defineStore('train', () => {
     if (!trainId) return
 
     // Disconnect previous connection if exists
-    if (socket.value) {
-      socket.value.close()
+    if (webSocket.value) {
+      webSocket.value.close()
       isConnected.value = false
     }
 
     selectedTrainId.value = trainId
 
     // Connect to WebSocket
-    socket.value = new WebSocket(`${WS_URL}/ws/remote_control/${trainId}`)
+    webSocket.value = new WebSocket(`${WS_URL}/ws/remote_control/${trainId}`)
 
-    socket.value.onopen = () => {
+    webSocket.value.onopen = () => {
       isConnected.value = true
       console.log('WebSocket connected')
 
@@ -55,26 +57,26 @@ export const useTrainStore = defineStore('train', () => {
       console.log(currentTrain.value.name)
     }
 
-    socket.value.onmessage = (event) => {
-      const message = JSON.parse(event.data)
-      if (message.type === 'telemetry') {
-        currentTrain.value = { ...message.data }
+    webSocket.value.onmessage = (event) => {
+      if (event.data instanceof ArrayBuffer) {
+        // Store the raw frame data
+        currentVideoFrame.value = new Uint8Array(event.data)
       }
     }
 
-    socket.value.onclose = () => {
+    webSocket.value.onclose = () => {
       isConnected.value = false
       console.log('WebSocket disconnected')
     }
 
-    socket.value.onerror = (error) => {
+    webSocket.value.onerror = (error) => {
       console.error('WebSocket error:', error)
       isConnected.value = false
     }
   }
 
   function sendCommand(action, value) {
-    if (!isConnected.value || !socket.value) return
+    if (!isConnected.value || !webSocket.value) return
 
     const command = {
       action,
@@ -82,7 +84,7 @@ export const useTrainStore = defineStore('train', () => {
       timestamp: new Date().toISOString()
     }
 
-    socket.value.send(JSON.stringify(command))
+    webSocket.value.send(JSON.stringify(command))
   }
 
   return {
@@ -91,6 +93,7 @@ export const useTrainStore = defineStore('train', () => {
     currentTrain,
     isConnected,
     selectedTrain,
+    currentVideoFrame, // Add this line
     fetchAvailableTrains,
     connectToTrain,
     sendCommand

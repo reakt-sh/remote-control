@@ -5,19 +5,43 @@
       <div class="video-placeholder" v-if="!isConnected">
         <p>No video feed available</p>
       </div>
-      <video v-else controls autoplay muted class="video-feed">
-        <source :src="`http://localhost:8000${currentTrain.video_stream_url}`" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
+      <canvas v-else ref="videoCanvas" class="video-feed"></canvas>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
+import { Player } from 'broadwayjs'
 
-const { currentTrain, isConnected } = storeToRefs(useTrainStore())
+const { currentTrain, isConnected, currentVideoFrame } = storeToRefs(useTrainStore())
+const videoCanvas = ref(null)
+let player = null
+
+onMounted(() => {
+  // Initialize Broadway.js Player
+  player = new Player({
+    useWorker: true, // Use Web Worker for decoding
+    workerFile: '/scripts/broadway/Decoder.js',
+    canvas: videoCanvas.value
+  })
+})
+
+watch(currentVideoFrame, (newFrame) => {
+  if (player && newFrame) {
+    // Feed the new frame to the Broadway.js decoder
+    player.decode(new Uint8Array(newFrame))
+  }
+})
+
+onUnmounted(() => {
+  if (player) {
+    player.canvas = null // Detach the canvas
+    player = null
+  }
+})
 </script>
 
 <style scoped>

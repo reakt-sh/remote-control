@@ -5,8 +5,8 @@ from utils.app_logger import logger
 
 # Mock database of trains
 trains_db_mock = {
-    "train_1": {
-        "name": "Express 2020",
+    "123": {
+        "name": "Linux Dell-Latitude-5440 ",
         "status": "running",
         "speed": 0,
         "max_speed": 120,
@@ -18,8 +18,8 @@ trains_db_mock = {
         "battery_level": 87,
         "video_stream_url": "/stream/train_1"
     },
-    "train_2": {
-        "name": "Freight XL",
+    "526": {
+        "name": "Windows Lenovo 8897",
         "status": "stopped",
         "speed": 0,
         "max_speed": 80,
@@ -43,12 +43,7 @@ class TrainManager:
 
     async def remove(self, train_id: str):
         if train_id in self.active_connections:
-            websocket = self.active_connections.pop(train_id, None)
-            if websocket:
-                try:
-                    await websocket.close()
-                except Exception as e:
-                    logger.error(f"WebSocket for train already closed {train_id}: {e}")
+            self.active_connections.pop(train_id, None)
 
     async def disconnect_all(self):
         for connection in self.active_connections.values():

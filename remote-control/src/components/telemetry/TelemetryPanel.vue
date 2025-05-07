@@ -5,11 +5,11 @@
       <TelemetryCard title="Speed">
         <Speedometer />
       </TelemetryCard>
-      
+
       <TelemetryCard title="Status">
         <StatusIndicator />
       </TelemetryCard>
-      
+
       <TelemetryCard title="Brakes">
         <div v-if="currentTrain" class="telemetry-value" :class="{ warning: currentTrain.brake_status === 'applied' }">
           {{ currentTrain.brake_status }}
@@ -18,7 +18,7 @@
           No brake data available
         </div>
       </TelemetryCard>
-      
+
       <TelemetryCard title="Location">
         <div v-if="currentTrain" class="telemetry-value">
           {{ currentTrain.location }}
@@ -30,11 +30,11 @@
           No location data available
         </div>
       </TelemetryCard>
-      
+
       <TelemetryCard title="Battery">
         <BatteryIndicator />
       </TelemetryCard>
-      
+
       <TelemetryCard title="Temperature">
         <div v-if="currentTrain" class="telemetry-value">
           {{ currentTrain.temperature }}<span class="unit">°C</span>

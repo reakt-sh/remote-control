@@ -49,11 +49,11 @@ class ServerController:
                 del self.remote_control_manager
                 self._running = False
 
-    async def add_remote_controller(self, websocket: Any) -> None:
-        await self.remote_control_manager.add(websocket)
+    async def add_remote_controller(self, websocket: Any, remote_control_id: str) -> None:
+        await self.remote_control_manager.add(websocket, remote_control_id)
 
-    async def remove_remote_controller(self, websocket: Any) -> None:
-        await self.remote_control_manager.remove(websocket)
+    async def remove_remote_controller(self,remote_control_id: str) -> None:
+        await self.remote_control_manager.remove(remote_control_id)
 
     async def send_to_train(self, command: dict) -> None:
             train_id = command.get("train_id")
