@@ -11,21 +11,38 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
-import { Player } from 'broadwayjs'
 
 const { currentTrain, currentVideoFrame } = storeToRefs(useTrainStore())
 const videoCanvas = ref(null)
-let player = null
+let videoDecoder = null
 let recordedFrames = []
-let writeToFile = true
+let writeToFile = false
 let numberofFramesToWrite = 900
-
+let key_frame_found = null
+let sps_pps = null
 
 onMounted(() => {
-  // do nothing
-  console.log('videoCanvas after nextTick:', videoCanvas.value)
-  console.log('Canvas context:', videoCanvas.value.getContext('2d'));
-  console.log('Canvas dimensions:', videoCanvas.value.width, videoCanvas.value.height);
+  console.log('videoCanvas:', videoCanvas.value)
+  console.log('Canvas context:', videoCanvas.value.getContext('2d'))
+  console.log('Canvas dimensions:', videoCanvas.value.width, videoCanvas.value.height)
+  key_frame_found = false;
+  sps_pps = null;
+
+  // Initialize the WebCodecs VideoDecoder with codec configuration
+  videoDecoder = new VideoDecoder({
+    output: (frame) => renderFrame(frame),
+    error: (error) => console.error('VideoDecoder error:', error),
+  })
+
+  // Configure the VideoDecoder with the codec settings
+  videoDecoder.configure({
+    codec: 'avc1.42E01E', // H.264 codec string
+    //codec: 'avc1.64001f',
+    codedWidth: 640, // Replace with the actual video width
+    codedHeight: 480, // Replace with the actual video height
+  })
+
+  console.log('VideoDecoder initialized and configured:', videoDecoder)
 })
 
 watch(currentVideoFrame, (newFrame) => {
@@ -34,54 +51,86 @@ watch(currentVideoFrame, (newFrame) => {
     return
   }
 
-  if (writeToFile)
-  {
+  if (writeToFile) {
     recordedFrames.push(newFrame)
     if (recordedFrames.length > numberofFramesToWrite) {
-      const blob = new Blob(recordedFrames, { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
+      const blob = new Blob(recordedFrames, { type: 'application/octet-stream' })
+      const url = URL.createObjectURL(blob)
 
       // Create a download link
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'video-stream.h264';
-      a.click();
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'video-stream.h264'
+      a.click()
 
       // Clean up
-      URL.revokeObjectURL(url);
-      recordedFrames = [];
+      URL.revokeObjectURL(url)
+      recordedFrames = []
     }
   }
 
-  if (player == null) {
-    console.log('Initializing Broadway.js Player...')
-    videoCanvas.value.width = 640
-    videoCanvas.value.height = 480
-
-    player = new Player({
-      useWorker: true,
-      workerFile: '/scripts/broadway/Decoder.js',
-      canvas: videoCanvas.value,
-      webgl: true,
-    })
-    console.log('Player initialized:', player)
-  }
-
-  if (player) {
-    console.log('New frame received with length:', newFrame.length)
+  if (videoDecoder) {
     try {
-      player.decode(newFrame)
-      console.log('Frame decoded successfully')
+      // Enqueue the frame for decoding
+      let nal_type = newFrame[4] & 0x1F;
+      let frame_type = 'delta';
+
+      if (nal_type === 5) {
+        frame_type = 'key'
+        if (sps_pps === null) {
+          console.log('SPS PPS not found, skipping frame')
+          return
+        }
+        const combinedFrame = new Uint8Array(sps_pps.length + newFrame.length);
+        combinedFrame.set(sps_pps, 0);
+        combinedFrame.set(newFrame, sps_pps.length);
+        newFrame = combinedFrame;
+      }
+
+      if (nal_type === 7) {
+        sps_pps = newFrame;
+        console.log('SPS PPS found');
+        return;
+      }
+
+      if (frame_type === 'key')
+      {
+        key_frame_found = true;
+      }
+
+      if (key_frame_found === true) {
+        console.log('Trying to decode: ',frame_type, newFrame.length)
+        videoDecoder.decode(new EncodedVideoChunk({
+          type: frame_type,
+          timestamp: performance.now(),
+          data: new Uint8Array(newFrame),
+        }))
+      }
     } catch (error) {
       console.error('Error decoding frame:', error)
     }
   }
 })
 
+function renderFrame(frame) {
+  const ctx = videoCanvas.value.getContext('2d')
+  if (!ctx) {
+    console.error('Canvas context is null')
+    return
+  }
+
+  // Draw the decoded frame onto the canvas
+  ctx.drawImage(frame, 0, 0, videoCanvas.value.width, videoCanvas.value.height)
+
+  // Close the frame to release resources
+  frame.close()
+}
+
 onUnmounted(() => {
-  if (player) {
-    player.canvas = null // Detach the canvas
-    player = null
+  if (videoDecoder) {
+    videoDecoder.close()
+    videoDecoder = null
+    console.log('VideoDecoder closed')
   }
 })
 </script>
@@ -91,7 +140,7 @@ onUnmounted(() => {
   background: white;
   border-radius: 5px;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .video-container {
@@ -102,21 +151,8 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.video-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
 .video-feed {
   position: absolute;
-  border: 2px solid red;
   top: 0;
   left: 0;
   width: 100%;
