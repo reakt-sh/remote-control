@@ -4,6 +4,9 @@
     <div class="video-container">
       <canvas ref="videoCanvas" class="video-feed"></canvas>
     </div>
+    <div v-if="loading" class="loading-overlay">
+      Loading FFmpeg ({{ loadedPercentage }}%)...
+    </div>
   </div>
 </template>
 
@@ -11,77 +14,111 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
-import { Player } from 'broadwayjs'
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg'
 
 const { currentTrain, currentVideoFrame } = storeToRefs(useTrainStore())
 const videoCanvas = ref(null)
-let player = null
-let recordedFrames = []
-let writeToFile = true
-let numberofFramesToWrite = 900
+const ffmpeg = ref(null)
+const loading = ref(false)
+const loadedPercentage = ref(0)
+const recordedFrames = ref([])
+const writeToFile = ref(true)
+const numberofFramesToWrite = 900
 
-
-onMounted(() => {
-  // do nothing
-  console.log('videoCanvas after nextTick:', videoCanvas.value)
-  console.log('Canvas context:', videoCanvas.value.getContext('2d'));
-  console.log('Canvas dimensions:', videoCanvas.value.width, videoCanvas.value.height);
+// Initialize FFmpeg
+onMounted(async () => {
+  try {
+    loading.value = true
+    console.log('Initializing FFmpeg...')
+    
+    // Correct FFmpeg initialization
+    ffmpeg.value = createFFmpeg({ 
+      log: true,
+      progress: ({ ratio }) => {
+        loadedPercentage.value = Math.round(ratio * 100)
+      }
+    })
+    
+    await ffmpeg.value.load()
+    console.log('FFmpeg initialized')
+    
+    // Set canvas dimensions
+    if (videoCanvas.value) {
+      videoCanvas.value.width = 1280
+      videoCanvas.value.height = 720
+    }
+  } catch (error) {
+    console.error('FFmpeg initialization failed:', error)
+  } finally {
+    loading.value = false
+  }
 })
 
-watch(currentVideoFrame, (newFrame) => {
+watch(currentVideoFrame, async (newFrame) => {
   if (!newFrame || newFrame.length === 0) {
-    console.warn('Invalid or empty frame data:', newFrame)
+    console.warn('Invalid or empty frame data')
     return
   }
 
-  if (writeToFile)
-  {
-    recordedFrames.push(newFrame)
-    if (recordedFrames.length > numberofFramesToWrite) {
-      const blob = new Blob(recordedFrames, { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
+  if (!ffmpeg.value) {
+    console.warn('FFmpeg not initialized yet')
+    return
+  }
 
-      // Create a download link
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'video-stream.h264';
-      a.click();
-
-      // Clean up
-      URL.revokeObjectURL(url);
-      recordedFrames = [];
+  if (writeToFile.value) {
+    recordedFrames.value.push(newFrame)
+    if (recordedFrames.value.length > numberofFramesToWrite) {
+      downloadRecordedFrames()
     }
   }
 
-  if (player == null) {
-    console.log('Initializing Broadway.js Player...')
-    videoCanvas.value.width = 640
-    videoCanvas.value.height = 480
-
-    player = new Player({
-      useWorker: true,
-      workerFile: '/scripts/broadway/Decoder.js',
-      canvas: videoCanvas.value,
-      webgl: true,
-    })
-    console.log('Player initialized:', player)
-  }
-
-  if (player) {
-    console.log('New frame received with length:', newFrame.length)
-    try {
-      player.decode(newFrame)
-      console.log('Frame decoded successfully')
-    } catch (error) {
-      console.error('Error decoding frame:', error)
+  try {
+    // Write the frame to FFmpeg's virtual filesystem
+    await ffmpeg.value.FS('writeFile', 'input.h264', await fetchFile(new Blob([newFrame])))
+    
+    // Decode the frame (simplified approach)
+    await ffmpeg.value.run(
+      '-i', 'input.h264',
+      '-frames:v', '1',          // Process only one frame
+      '-f', 'image2',            // Output as image
+      '-pix_fmt', 'rgb24',       // Use RGB format
+      'output.png'
+    )
+    
+    // Read the decoded frame
+    const data = ffmpeg.value.FS('readFile', 'output.png')
+    const blob = new Blob([data.buffer], { type: 'image/png' })
+    const url = URL.createObjectURL(blob)
+    
+    // Render to canvas
+    const ctx = videoCanvas.value.getContext('2d')
+    const img = new Image()
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, videoCanvas.value.width, videoCanvas.value.height)
+      URL.revokeObjectURL(url)
     }
+    img.src = url
+    
+  } catch (error) {
+    console.error('Error decoding frame:', error)
   }
 })
 
+const downloadRecordedFrames = () => {
+  const blob = new Blob(recordedFrames.value, { type: 'video/mp4' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'video-stream.mp4'
+  a.click()
+  URL.revokeObjectURL(url)
+  recordedFrames.value = []
+}
+
 onUnmounted(() => {
-  if (player) {
-    player.canvas = null // Detach the canvas
-    player = null
+  if (ffmpeg.value) {
+    ffmpeg.value.exit()
+    ffmpeg.value = null
   }
 })
 </script>
@@ -91,7 +128,8 @@ onUnmounted(() => {
   background: white;
   border-radius: 5px;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .video-container {
@@ -102,25 +140,26 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.video-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
 .video-feed {
   position: absolute;
-  border: 2px solid red;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
 }
 </style>
