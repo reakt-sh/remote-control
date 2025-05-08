@@ -22,6 +22,10 @@ let key_frame_found = null
 let sps_pps = null
 
 onMounted(() => {
+  // Set the canvas dimensions to match the video resolution
+  videoCanvas.value.width = 640; // Video width
+  videoCanvas.value.height = 480; // Video height
+
   console.log('videoCanvas:', videoCanvas.value)
   console.log('Canvas context:', videoCanvas.value.getContext('2d'))
   console.log('Canvas dimensions:', videoCanvas.value.width, videoCanvas.value.height)
