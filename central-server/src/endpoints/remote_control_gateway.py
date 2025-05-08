@@ -15,6 +15,7 @@ async def remote_control_interface(websocket: WebSocket, remote_control_id: str)
             s_controller.send_to_train(command, remote_control_id)
     except WebSocketDisconnect:
         await s_controller.remove_remote_controller(remote_control_id)
+        s_controller.unmap_client_from_train(remote_control_id)
 
 @router.get("/api/trains")
 async def get_trains():
