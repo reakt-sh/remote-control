@@ -21,15 +21,23 @@ const videoCanvas = ref(null)
 let player = null
 
 onMounted(() => {
-  // Initialize Broadway.js Player
-  player = new Player({
-    useWorker: true, // Use Web Worker for decoding
-    workerFile: '/scripts/broadway/Decoder.js',
-    canvas: videoCanvas.value
-  })
+  // do nothing
 })
 
 watch(currentVideoFrame, (newFrame) => {
+
+  if (player == null)
+  {
+    videoCanvas.value.width = 640 // Set canvas width
+    videoCanvas.value.height = 480 // Set canvas height
+
+    // Initialize Broadway.js Player
+    player = new Player({
+      useWorker: true, // Use Web Worker for decoding
+      workerFile: '/scripts/broadway/Decoder.js',
+      canvas: videoCanvas.value
+    })
+  }
   if (player && newFrame) {
     console.log('New frame received with length:', newFrame.length)
     try {
