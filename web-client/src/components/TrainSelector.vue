@@ -1,12 +1,19 @@
 <template>
   <div class="train-selector">
-    <h2>Select Train</h2>
-    <select v-model="selectedTrainId" @change="handleTrainChange">
-      <option value="">-- Select a train --</option>
-      <option v-for="(train, id) in availableTrains" :value="id" :key="id">
-        {{ train.name }} ({{ id }})
-      </option>
-    </select>
+    <template v-if="Object.keys(availableTrains).length > 0">
+      <h2>Select Train</h2>
+      <select v-model="selectedTrainId" @change="handleTrainChange">
+        <option value="">-- Select a train --</option>
+        <option v-for="(train, id) in availableTrains" :value="id" :key="id">
+          {{ train.name }} ({{ id }})
+        </option>
+      </select>
+    </template>
+    <transition name="fade">
+      <div v-if="Object.keys(availableTrains).length === 0" class="no-train-msg">
+        <span>🚂 No train is connected to the central server.</span>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -45,5 +52,30 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+.no-train-msg {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #ffeaea;
+  color: #b71c1c;
+  border: 1px solid #ffbdbd;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  animation: pulse 1.2s infinite alternate;
+}
+
+@keyframes pulse {
+  from { box-shadow: 0 0 0 0 #ffbdbd; }
+  to { box-shadow: 0 0 10px 4px #ffbdbd; }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>
