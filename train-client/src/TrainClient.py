@@ -3,6 +3,7 @@ import av
 import zmq
 import datetime
 import struct
+import os
 from fractions import Fraction
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor
@@ -50,6 +51,10 @@ class TrainClient(QMainWindow):
     def create_dump_file(self):
         # Add timestamp to H264_DUMP filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Ensure directory exists
+        dump_dir = os.path.dirname(H264_DUMP)
+        if (dump_dir and not os.path.exists(dump_dir)):
+            os.makedirs(dump_dir, exist_ok=True)
         output_filename = f"{H264_DUMP}_{timestamp}.h264"
         self.output_file = open(output_filename, 'wb')
 
