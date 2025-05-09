@@ -4,19 +4,8 @@ import struct
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from server_controller import ServerController
 from utils.app_logger import logger
-
+from globals import PACKET_TYPE
 s_controller = ServerController()
-# Packet Types
-PACKET_TYPE = {
-    "video": 13,
-    "audio": 14,
-    "control": 15,
-    "command": 16,
-    "telemetry": 17,
-    "imu": 18,
-    "lidar": 19,
-    "keepalive": 20
-}
 
 router = APIRouter()
 
@@ -25,6 +14,18 @@ async def train_interface(websocket: WebSocket, train_id: str):
     await websocket.accept()
     await s_controller.add_train(train_id, websocket)
     logger.debug(f"For Train {train_id}, websocket connection established")
+
+    # Notify all the remote controllers about the new train connection
+    notify_message = {
+        "type": "notification",
+        "message": f"Train {train_id} connected to the server."
+    }
+    packet_data = json.dumps(notify_message).encode('utf-8')
+    packet = struct.pack("B", PACKET_TYPE["notification"]) + packet_data
+    logger.debug(f"Sending notification to all clients: {packet}")
+    await s_controller.notify_all_clients(packet)
+
+    # inner function for keepalive task
     async def send_keepalive():
         keepalive_sequence = 0
         while True:
@@ -43,7 +44,8 @@ async def train_interface(websocket: WebSocket, train_id: str):
             except Exception as e:
                 logger.error(f"Error sending keepalive to train {train_id}: {e}")
                 break
-    # Start the keepalive task
+
+    # create a task for sending keepalive messages
     keepalive_task = asyncio.create_task(send_keepalive())
 
     try:
@@ -53,7 +55,7 @@ async def train_interface(websocket: WebSocket, train_id: str):
             payload = data[1:]
 
             if packet_type == PACKET_TYPE["video"]:
-                await s_controller.send_video_to_clients(train_id, payload)
+                await s_controller.send_data_to_clients(train_id, data)
             elif packet_type == PACKET_TYPE["keepalive"]:
                 message = json.loads(payload.decode('utf-8'))
                 logger.debug(f"{message}")

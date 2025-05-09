@@ -6,6 +6,19 @@ const SERVER_IP = 'localhost'
 const SERVER_PORT = 8000
 const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`
 const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}`
+// Packet Types
+const PACKET_TYPE = {
+  video: 13,
+  audio: 14,
+  control: 15,
+  command: 16,
+  telemetry: 17,
+  imu: 18,
+  lidar: 19,
+  keepalive: 20,
+  notification: 21
+}
+
 
 export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
@@ -58,9 +71,41 @@ export const useTrainStore = defineStore('train', () => {
       if (event.data instanceof Blob) {
         try {
           const arrayBuffer = await event.data.arrayBuffer()
-
-          // Store the raw frame data as Uint8Array
-          currentVideoFrame.value = new Uint8Array(arrayBuffer)
+          const byteArray = new Uint8Array(arrayBuffer)
+          const packetType = byteArray[0]
+          const payload = byteArray.slice(1)
+          switch (packetType) {
+            case PACKET_TYPE.video:
+              currentVideoFrame.value = new Uint8Array(payload)
+              break
+            case PACKET_TYPE.audio:
+              console.log('Received audio data')
+              break
+            case PACKET_TYPE.control:
+              console.log('Received control data')
+              break
+            case PACKET_TYPE.command:
+              console.log('Received command data')
+              break
+            case PACKET_TYPE.telemetry:
+              console.log('Received telemetry data')
+              break
+            case PACKET_TYPE.imu:
+              console.log('Received IMU data')
+              break
+            case PACKET_TYPE.lidar:
+              console.log('Received LiDAR data')
+              break
+            case PACKET_TYPE.keepalive:
+              console.log('Keepalive packet received')
+              break
+            case PACKET_TYPE.notification:
+              console.log('Notification packet received')
+              fetchAvailableTrains()
+              break
+            default:
+              console.warn('Unknown packet type:', arrayBuffer[0])
+          }
         } catch (error) {
           console.error('Error processing Blob data:', error)
         }

@@ -27,12 +27,12 @@ const { fetchAvailableTrains, connectToServer, mappingToTrain, initializeRemoteC
 
 const handleTrainChange = () => {
   console.log('Here ', selectedTrainId.value)
-  connectToServer()
   mappingToTrain(selectedTrainId.value)
 }
 
 onMounted(() => {
   initializeRemoteControlId()
+  connectToServer()
   fetchAvailableTrains()
 })
 </script>

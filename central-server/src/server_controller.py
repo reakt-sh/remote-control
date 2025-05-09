@@ -67,13 +67,6 @@ class ServerController:
     async def remove_train(self, train_id: str) -> None:
         await self.train_manager.remove(train_id)
 
-    async def send_to_remote_control(self, data: bytes) -> None:
-        # logger.debug(f"Sending data to remote control, data size: {len(data)}")
-        if self.write_to_file:
-            self.dump_file.write(data)
-            self.dump_file.flush()
-        # await self.remote_control_manager.broadcast_video(data)
-
     def get_trains(self) -> dict:
         return self.train_manager.get_trains()
 
@@ -105,16 +98,23 @@ class ServerController:
             else:
                 logger.warning(f"Remote control ID {remote_control_id} not found in client_to_train_map")
 
-    async def send_video_to_clients(self, train_id: str, video_data: bytes) -> None:
+    async def send_data_to_clients(self, train_id: str, data: bytes) -> None:
         if train_id in self.train_to_clients_map:
             remote_control_ids = self.train_to_clients_map[train_id]
             for remote_control_id in remote_control_ids:
                 if remote_control_id in self.remote_control_manager.active_connections:
                     websocket = self.remote_control_manager.active_connections[remote_control_id]
-                    await websocket.send_bytes(video_data)
+                    await websocket.send_bytes(data)
 
-    async def send_command_to_train(self, remote_control_id: str, command: dict) -> None:
+    async def send_data_to_train(self, remote_control_id: str, data: bytes) -> None:
         train_id = self.client_to_train_map.get(remote_control_id)
         if train_id and train_id in self.train_manager.active_connections:
             websocket = self.train_manager.active_connections[train_id]
-            await websocket.send_json(command)
+            await websocket.send_bytes(data)
+
+    async def notify_all_clients(self, data: bytes) -> None:
+        logger.debug(f"Sending notification to all clients, active_connections size: {len(self.remote_control_manager.active_connections)}")
+        for remote_control_id in self.remote_control_manager.active_connections:
+            websocket = self.remote_control_manager.active_connections[remote_control_id]
+            logger.debug(f"Sending notification to {remote_control_id}")
+            await websocket.send_bytes(data)

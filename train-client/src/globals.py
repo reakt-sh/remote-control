@@ -19,7 +19,8 @@ PACKET_TYPE = {
     "telemetry": 17,
     "imu": 18,
     "lidar": 19,
-    "keepalive": 20
+    "keepalive": 20,
+    "notification": 21
 }
 SERVER_WEBSOCKET_PORT = 8000
 SERVER_URL = f"ws://localhost:{SERVER_WEBSOCKET_PORT}/ws"
