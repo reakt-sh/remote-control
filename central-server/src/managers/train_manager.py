@@ -1,12 +1,13 @@
 import asyncio
+from random import randint
 from typing import Dict
 from fastapi import WebSocket
 from utils.app_logger import logger
 
 # Mock database of trains
-trains_db_mock = {
-    "123": {
-        "name": "Linux Dell-Latitude-5440 ",
+trains_db_mock = [
+    {
+        "name": "Train",
         "status": "running",
         "speed": 0,
         "max_speed": 120,
@@ -18,8 +19,8 @@ trains_db_mock = {
         "battery_level": 87,
         "video_stream_url": "/stream/train_1"
     },
-    "526": {
-        "name": "Windows Lenovo 8897",
+    {
+        "name": "Train",
         "status": "stopped",
         "speed": 0,
         "max_speed": 80,
@@ -31,7 +32,7 @@ trains_db_mock = {
         "battery_level": 45,
         "video_stream_url": "/stream/train_2"
     }
-}
+]
 
 class TrainManager:
     def __init__(self):
@@ -51,12 +52,14 @@ class TrainManager:
         self.active_connections.clear()
         logger.debug("All train connections closed.")
 
-    async def receive_video(self, train_id: str, data: bytes):
-        """Forward video to all control clients"""
-        pass
 
     async def update_telemetry(self, train_id: str, data: dict):
         self.telemetry_data[train_id] = data
 
     def get_trains(self):
-        return trains_db_mock
+        train_client_ids = list(self.active_connections.keys())
+        dataToReturn = {}
+        for x in train_client_ids:
+            dataToReturn[x] = trains_db_mock[randint(0, len(trains_db_mock)-1)]
+
+        return dataToReturn

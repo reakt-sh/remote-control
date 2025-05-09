@@ -10,12 +10,13 @@ from globals import *
 class NetworkWorker(QThread):
     packet_sent = pyqtSignal(int)
 
-    def __init__(self, parent=None):
+    def __init__(self, train_client_id, parent=None):
         super().__init__(parent)
         self.packet_queue = queue.Queue()
+        self.train_client_id = train_client_id
         self.running = False
         self.loop = None
-        self.server_url = f"{SERVER_URL}/train/{TRAIN_ID}"
+        self.server_url = f"{SERVER_URL}/train/{train_client_id}"
 
     def run(self):
         self.running = True

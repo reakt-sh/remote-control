@@ -4,6 +4,8 @@ import zmq
 import datetime
 import struct
 import os
+import uuid
+
 from fractions import Fraction
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor
@@ -16,10 +18,10 @@ from sensor.Camera import Camera
 from sensor.Telemetry import Telemetry
 from sensor.IMU import IMU
 from Encoder import Encoder
-
 class TrainClient(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.train_client_id = self.initialize_train_client_id()
         self.init_ui()
         self.init_network()
         self.create_dump_file()
@@ -47,6 +49,11 @@ class TrainClient(QMainWindow):
         # Encoder setup
         self.encoder = Encoder()
         self.encoder.encode_ready.connect(self.on_encoded_frame)
+
+    def initialize_train_client_id(self):
+        client_id = str(uuid.uuid4())
+        print(f"TrainClient ID initialized: {client_id}")
+        return client_id
 
     def create_dump_file(self):
         # Add timestamp to H264_DUMP filename
@@ -155,7 +162,7 @@ class TrainClient(QMainWindow):
         self.central_widget.setLayout(layout)
 
     def init_network(self):
-        self.network_worker = NetworkWorker()
+        self.network_worker = NetworkWorker(self.train_client_id)
         self.network_worker.packet_sent.connect(self.on_packet_sent)
 
     @pyqtSlot(int)
