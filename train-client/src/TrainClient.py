@@ -170,6 +170,7 @@ class TrainClient(QMainWindow):
     def init_network(self):
         self.network_worker = NetworkWorker(self.train_client_id)
         self.network_worker.packet_sent.connect(self.on_packet_sent)
+        self.network_worker.start()
 
     @pyqtSlot(int)
     def on_packet_sent(self, size):
@@ -278,7 +279,6 @@ class TrainClient(QMainWindow):
                     background-color: #f44335;
                 }
             """)
-            self.network_worker.start()
             self.log_message("Sending enabled")
         else:
             self.sending_button.setText("Start Sending")
@@ -295,7 +295,6 @@ class TrainClient(QMainWindow):
                     background-color: #45a049;
                 }
             """)
-            self.network_worker.stop()
             self.log_message("Sending disabled")
 
 
