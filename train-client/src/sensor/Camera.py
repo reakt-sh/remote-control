@@ -12,7 +12,7 @@ class Camera(QObject):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.capture_frame)
 
-    def init_camera(self):
+    def init_capture(self):
         # Initialize camera capture
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():

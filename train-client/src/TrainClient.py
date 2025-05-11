@@ -18,6 +18,7 @@ from sensor.Camera import Camera
 from sensor.Telemetry import Telemetry
 from sensor.IMU import IMU
 from Encoder import Encoder
+from sensor.FileProcessor import FileProcessor
 class TrainClient(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -31,10 +32,15 @@ class TrainClient(QMainWindow):
         self.is_capturing = True   # Track capture state
         self.is_sending = False    # Start with sending disabled
 
-        # Camera setup
-        self.camera = Camera()
-        self.camera.frame_ready.connect(self.on_new_frame)
-        self.camera.init_camera()
+        # # Camera setup
+        # self.video_source = Camera()
+        # self.video_source.frame_ready.connect(self.on_new_frame)
+        # self.video_source.init_capture()
+
+        # FileProcessor setup
+        self.video_source = FileProcessor()
+        self.video_source.frame_ready.connect(self.on_new_frame)
+        self.video_source.init_capture()
 
         # Telemetry setup
         self.telemetry = Telemetry()
@@ -215,7 +221,7 @@ class TrainClient(QMainWindow):
         self.is_capturing = not self.is_capturing
 
         if self.is_capturing:
-            self.camera.init_camera()
+            self.video_source.init_capture()
             self.telemetry.start()
             self.imu.start()
             self.capture_button.setText("Stop Capture")
@@ -235,7 +241,7 @@ class TrainClient(QMainWindow):
             self.log_message("Capture started - camera active")
         else:
             # Properly release camera resources
-            self.camera.stop()
+            self.video_source.stop()
             self.telemetry.stop()
             self.imu.stop()
 
@@ -329,7 +335,7 @@ class TrainClient(QMainWindow):
             self.log_message("Write to file disabled")
 
     def closeEvent(self, event):
-        self.camera.stop()
+        self.video_source.stop()
         self.encoder.close()
         self.network_worker.stop()
         self.output_file.close()
