@@ -8,8 +8,8 @@ import uuid
 
 from fractions import Fraction
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
-from PyQt5.QtGui import QImage, QPixmap, QTextCursor
-from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QImage, QPixmap, QTextCursor, QIcon
+from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtCore import QDateTime
 
 from globals import *
@@ -103,12 +103,14 @@ class TrainClient(QMainWindow):
                 color: #fff;
                 border: none;
                 border-radius: 18px;
-                padding: 10px 0;
+                padding: 10px 0 10px 36px;  /* left padding for icon space */
                 font-size: 13pt;
-                min-width: 140px;
+                min-width: 175px;
                 font-weight: 600;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                 transition: background 0.2s, color 0.2s;
+                qproperty-iconSize: 24px 24px;
+                text-align: left; /* optional: aligns text to the left */
             }
             QPushButton:hover {
                 background-color: #1b5fa7;
@@ -123,31 +125,39 @@ class TrainClient(QMainWindow):
             }
         """
 
+        icon_dir = os.path.join(os.path.dirname(__file__), "icons")
+
         # Capture button (blue)
-        self.capture_button = QPushButton("Stop Capture")
+        self.capture_button = QPushButton("  Stop Capture")
         self.capture_button.setMinimumWidth(BUTTON_WIDTH)
         self.capture_button.setMaximumWidth(BUTTON_WIDTH)
         self.capture_button_style = self.button_style
         self.capture_button_style_red = self.button_style.replace("#2d89ef", "#f44336").replace("#1b5fa7", "#f44335").replace("#174c88", "#b71c1c")
-        self.capture_button.setStyleSheet(self.capture_button_style)
+        self.capture_button.setStyleSheet(self.capture_button_style_red)
+        self.capture_button.setIcon(QIcon(os.path.join(icon_dir, "video-solid.png")))  # Font Awesome "video"
+        self.capture_button.setIconSize(QSize(24, 24))
         self.capture_button.clicked.connect(self.toggle_capture)
 
         # Sending button (green)
-        self.sending_button = QPushButton("Start Sending")
+        self.sending_button = QPushButton("  Start Sending")
         self.sending_button.setMinimumWidth(BUTTON_WIDTH)
         self.sending_button.setMaximumWidth(BUTTON_WIDTH)
         self.sending_button_style = self.button_style.replace("#2d89ef", "#43b581").replace("#1b5fa7", "#2e8c5a").replace("#174c88", "#256b45")
         self.sending_button_style_red = self.button_style.replace("#2d89ef", "#f44336").replace("#1b5fa7", "#f44335").replace("#174c88", "#b71c1c")
         self.sending_button.setStyleSheet(self.sending_button_style)
+        self.sending_button.setIcon(QIcon(os.path.join(icon_dir, "paper-plane-solid.png")))  # Font Awesome "paper-plane"
+        self.sending_button.setIconSize(QSize(24, 24))
         self.sending_button.clicked.connect(self.toggle_sending)
 
         # Write button (orange)
-        self.write_button = QPushButton("Enable Write")
+        self.write_button = QPushButton("  Enable Write")
         self.write_button.setMinimumWidth(BUTTON_WIDTH)
         self.write_button.setMaximumWidth(BUTTON_WIDTH)
         self.write_button_style = self.button_style.replace("#2d89ef", "#ff9800").replace("#1b5fa7", "#e68900").replace("#174c88", "#b36b00")
         self.write_button_style_red = self.button_style.replace("#2d89ef", "#f44336").replace("#1b5fa7", "#f44335").replace("#174c88", "#b71c1c")
         self.write_button.setStyleSheet(self.write_button_style)
+        self.write_button.setIcon(QIcon(os.path.join(icon_dir, "file-arrow-down-solid.png")))  # Font Awesome "file-arrow-down"
+        self.write_button.setIconSize(QSize(24, 24))
         self.write_button.clicked.connect(self.toggle_write_to_file)
 
         # Create VBox layout for the buttons
@@ -222,7 +232,7 @@ class TrainClient(QMainWindow):
             self.video_source.init_capture()
             self.telemetry.start()
             self.imu.start()
-            self.capture_button.setText("Stop Capture")
+            self.capture_button.setText("  Stop Capture")
             self.capture_button.setStyleSheet(self.capture_button_style_red)
             self.log_message("Capture started - camera active")
         else:
@@ -231,18 +241,18 @@ class TrainClient(QMainWindow):
             self.telemetry.stop()
             self.imu.stop()
 
-            self.capture_button.setText("Start Capture")
+            self.capture_button.setText("  Start Capture")
             self.capture_button.setStyleSheet(self.capture_button_style)
             self.log_message("Capture stopped - camera released")
 
     def toggle_sending(self):
         self.is_sending = not self.is_sending
         if self.is_sending:
-            self.sending_button.setText("Stop Sending")
+            self.sending_button.setText("  Stop Sending")
             self.sending_button.setStyleSheet(self.sending_button_style_red)
             self.log_message("Sending enabled")
         else:
-            self.sending_button.setText("Start Sending")
+            self.sending_button.setText("  Start Sending")
             self.sending_button.setStyleSheet(self.sending_button_style)
             self.log_message("Sending disabled")
 
@@ -250,11 +260,11 @@ class TrainClient(QMainWindow):
     def toggle_write_to_file(self):
         self.write_to_file = not self.write_to_file
         if self.write_to_file:
-            self.write_button.setText("Disable Write")
+            self.write_button.setText("  Disable Write")
             self.write_button.setStyleSheet(self.write_button_style_red)
             self.log_message("Write to file enabled")
         else:
-            self.write_button.setText("Enable Write")
+            self.write_button.setText("  Enable Write")
             self.write_button.setStyleSheet(self.write_button_style)
             self.log_message("Write to file disabled")
 
