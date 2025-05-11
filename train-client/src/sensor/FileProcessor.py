@@ -55,15 +55,18 @@ class FileProcessor(QObject):
         if self.cap:
             ret, frame = self.cap.read()
             if not ret:
-                self.stop()
-                return
+                # If video ends, restart from the beginning for infinite loop
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame = self.cap.read()
+                if not ret:
+                    self.stop()
+                    return
             self.frame_count += 1
             elapsed_time = (cv2.getTickCount() - self.start_time) / cv2.getTickFrequency()
             current_fps = self.frame_count / elapsed_time if elapsed_time > 0 else 0
 
             # Overlay info
             text_res = f"Resolution: {self.width}x{self.height}"
-            text_fps = f"FPS: {current_fps:.1f}"
             text_frame_id = f"Frame ID: {self.frame_count}"
             now = datetime.now()
             text_date = now.strftime("Date: %y:%m:%d")
@@ -78,10 +81,9 @@ class FileProcessor(QObject):
 
             positions = [
                 (10, 30, text_res),
-                (10, 60, text_fps),
-                (10, 90, text_frame_id),
-                (10, 120, text_date),
-                (10, 150, text_time),
+                (10, 60, text_frame_id),
+                (10, 90, text_date),
+                (10, 120, text_time),
             ]
 
             for pos in positions:
