@@ -24,13 +24,8 @@ class FileProcessor(QObject):
         self.height = 0
         self.original_fps = 60
         self.current_fps = 60
-        self.speed_map = {
-            120: 60,  # 120 KM/h -> 60 FPS
-            60: 30,   # 60 KM/h -> 30 FPS
-            10: 5     # 10 KM/h -> 5 FPS
-        }
 
-    def init_capture(self, speed_kmh=120):
+    def init_capture(self, speed_kmh=60):
         self.cap = cv2.VideoCapture(self.video_path)
         if not self.cap.isOpened():
             raise RuntimeError("Could not open video file")
@@ -44,7 +39,8 @@ class FileProcessor(QObject):
         self.timer.start(int(1000 / self.current_fps))
 
     def set_speed(self, speed_kmh):
-        self.current_fps = self.speed_map.get(speed_kmh, 60)
+        # FPS is directly equal to speed (max 60)
+        self.current_fps = min(max(int(speed_kmh), 1), 60)
         if self.timer.isActive():
             self.timer.stop()
             self.timer.start(int(1000 / self.current_fps))
