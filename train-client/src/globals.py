@@ -22,8 +22,35 @@ PACKET_TYPE = {
     "keepalive": 20,
     "notification": 21
 }
+
 SERVER_WEBSOCKET_PORT = 8000
 SERVER_URL = f"ws://localhost:{SERVER_WEBSOCKET_PORT}/ws"
+
+STATION_LIST = [
+    {"name": "Malente",                     "latitude": 54.1722,        "longitude": 10.5597},
+    {"name": "Gremsmühlen",                 "latitude": 53.9036,        "longitude": 10.3111},
+    {"name": "Plön",                        "latitude": 54.1624,        "longitude": 10.4234},
+    {"name": "Ascheberg",                   "latitude": 54.1500,        "longitude": 10.3450},
+    {"name": "Preetz",                      "latitude": 54.2353,        "longitude": 10.2775},
+    {"name": "Raisdorf Rosenthal",          "latitude": 54.2500,        "longitude": 10.2333},
+    {"name": "Raisdorf Schwentinebrücke",   "latitude": 54.2480,        "longitude": 10.2300},
+    {"name": "Rastorfer Kreuz",             "latitude": 54.2700,        "longitude": 10.3000},
+    {"name": "Wildenhorst",                 "latitude": 54.2800,        "longitude": 10.3500},
+    {"name": "Rastorfer Passau",            "latitude": 54.2750,        "longitude": 10.3200},
+    {"name": "Fuhlenbrügge",                "latitude": 54.2850,        "longitude": 10.4000},
+    {"name": "Wittenberger Passau",         "latitude": 54.2900,        "longitude": 10.4500},
+    {"name": "Martensrade Hohenklampen",    "latitude": 54.2800,        "longitude": 10.5000},
+    {"name": "Wehdenweg",                   "latitude": 54.2900,        "longitude": 10.5200},
+    {"name": "Dorfplatz",                   "latitude": 54.2930,        "longitude": 10.5500},
+    {"name": "Bellin-Lammershagen",         "latitude": 54.2950,        "longitude": 10.5600},
+    {"name": "Abzw. Jettkrog-Giekau",       "latitude": 54.2960,        "longitude": 10.5700},
+    {"name": "Seekrug",                     "latitude": 54.2940,        "longitude": 10.5800},
+    {"name": "Giekau-Fresendorf Klamp/B",   "latitude": 54.2930,        "longitude": 10.5850},
+    {"name": "Klamp Winterfeld-Klamp",      "latitude": 54.2940,        "longitude": 10.5860},
+    {"name": "Schulzentrum-Lütjenburg",     "latitude": 54.2945,        "longitude": 10.5864},
+    {"name": "Lütjenburg",                  "latitude": 54.2941,        "longitude": 10.5868}
+]
+
 
 TEXT_FIELD_HEIGHT = 23
 BG_COLOR = "#9CAFB4"

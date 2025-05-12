@@ -43,7 +43,7 @@ class TrainClient(QMainWindow):
         self.video_source.init_capture()
 
         # Telemetry setup
-        self.telemetry = Telemetry()
+        self.telemetry = Telemetry(self.train_client_id)
         self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
         self.telemetry.start()
 
