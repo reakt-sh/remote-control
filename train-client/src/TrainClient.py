@@ -107,8 +107,6 @@ class TrainClient(QMainWindow):
                 font-size: 13pt;
                 min-width: 175px;
                 font-weight: 600;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                transition: background 0.2s, color 0.2s;
                 qproperty-iconSize: 24px 24px;
                 text-align: left; /* optional: aligns text to the left */
             }

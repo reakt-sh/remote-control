@@ -1,19 +1,23 @@
 import cv2
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
+import random
+import os
 
 class FileProcessor(QObject):
     frame_ready = pyqtSignal(object, object)  # Emits (frame_count, frame)
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.video_path = "asset/Train_Driver_View_640x480_60FPS_Sample_03.mp4"
 
-        # print current working directory
-        import os
-        print("Current working directory:", os.getcwd())
-        self.video_path = os.path.join(os.getcwd(), self.video_path)
-
+        asset_dir = os.path.join(os.getcwd(), "asset")
+        # List all video files in the asset directory (you can filter by extension if needed)
+        video_files = [f for f in os.listdir(asset_dir) if f.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
+        if not video_files:
+            raise RuntimeError("No video files found in asset directory")
+        selected_video = random.choice(video_files)
+        self.video_path = os.path.join(asset_dir, selected_video)
+        print(f"Selected video: {self.video_path}")
 
         self.cap = None
         self.timer = QTimer(self)
