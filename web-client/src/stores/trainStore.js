@@ -74,6 +74,8 @@ export const useTrainStore = defineStore('train', () => {
           const byteArray = new Uint8Array(arrayBuffer)
           const packetType = byteArray[0]
           const payload = byteArray.slice(1)
+          let telemetryData = {}
+          let jsonString = ""
           switch (packetType) {
             case PACKET_TYPE.video:
               currentVideoFrame.value = new Uint8Array(payload)
@@ -88,7 +90,11 @@ export const useTrainStore = defineStore('train', () => {
               console.log('Received command data')
               break
             case PACKET_TYPE.telemetry:
-              console.log('Received telemetry data')
+              // Step 1: Convert Uint8Array to string
+              jsonString = new TextDecoder().decode(payload)
+              // Step 2: Parse JSON string
+              telemetryData = JSON.parse(jsonString)
+              console.log('Received telemetry data:', telemetryData)
               break
             case PACKET_TYPE.imu:
               console.log('Received IMU data')

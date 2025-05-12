@@ -5,6 +5,7 @@ import datetime
 import struct
 import os
 import uuid
+import json
 
 from fractions import Fraction
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
@@ -197,6 +198,12 @@ class TrainClient(QMainWindow):
         # Process telemetry data
         telemetry_message = f"Telemetry Data: {data}"
         self.log_message(telemetry_message)
+
+        # Only send if sending is enabled
+        if self.is_sending:
+            packet_data = json.dumps(telemetry_message).encode('utf-8')
+            packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
+            self.network_worker.enqueue_packet(packet)
 
     def on_imu_data(self, data):
         # Process IMU data
