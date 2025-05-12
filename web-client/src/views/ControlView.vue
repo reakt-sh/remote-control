@@ -8,7 +8,7 @@
     <main class="app-main">
       <TrainSelector />
 
-      <div v-if="selectedTrainId" class="train-control-panel">
+      <div v-if="selectedTrainId && availableTrains.length !== 0" class="train-control-panel">
         <VideoPanel />
         <TelemetryPanel />
         <ControlPanel />
@@ -26,7 +26,7 @@ import VideoPanel from '@/components/VideoPanel.vue'
 import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
 
-const { selectedTrainId } = storeToRefs(useTrainStore())
+const { selectedTrainId, availableTrains } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>
