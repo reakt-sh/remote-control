@@ -1,16 +1,16 @@
 <template>
   <div class="train-selector">
-    <template v-if="Object.keys(availableTrains).length > 0">
+    <template v-if="availableTrains.length > 0">
       <h2>Select Train</h2>
       <select v-model="selectedTrainId" @change="handleTrainChange">
         <option disabled value="" hidden>Please choose one train to control</option>
-        <option v-for="(train, id) in availableTrains" :value="id" :key="id">
-          {{ train.name }} ({{ id }})
+        <option v-for="id in availableTrains" :value="id" :key="id">
+          Train ({{ id }})
         </option>
       </select>
     </template>
     <transition name="fade">
-      <div v-if="Object.keys(availableTrains).length === 0" class="no-train-msg">
+      <div v-if="availableTrains.length === 0" class="no-train-msg">
         <span>🚂 No train is connected to the central server.</span>
       </div>
     </transition>

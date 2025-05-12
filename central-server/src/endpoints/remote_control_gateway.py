@@ -19,12 +19,9 @@ async def remote_control_interface(websocket: WebSocket, remote_control_id: str)
 
 @router.get("/api/trains")
 async def get_trains():
-    logger.debug("Fetching trains from server controller")
     data = s_controller.get_trains()
-    logger.debug(f"Trains data: {data}")
-    return {
-        "trains": data
-    }
+    logger.debug(f"currently connected list of train ids: {data}")
+    return data
 
 @router.get("/stream/{train_id}")
 async def get_stream(train_id: str):

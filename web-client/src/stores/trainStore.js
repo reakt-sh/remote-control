@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 // Define server IP and port as constants
 const SERVER_IP = 'localhost'
@@ -29,10 +29,6 @@ export const useTrainStore = defineStore('train', () => {
   const currentVideoFrame = ref(null)
   const remoteControlId = ref(null)
 
-
-  const selectedTrain = computed(() => {
-    return availableTrains.value[selectedTrainId.value] || null
-  })
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
       remoteControlId.value = crypto.randomUUID()
@@ -43,8 +39,9 @@ export const useTrainStore = defineStore('train', () => {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)
       const data = await response.json()
-      availableTrains.value = data.trains
-      console.log('Available trains:', availableTrains.value)
+      console.log('Available trains:', data)
+      availableTrains.value = data
+      console.log('after write availableTrains :', availableTrains.value)
     } catch (error) {
       console.error('Error fetching trains:', error)
     }
@@ -181,7 +178,6 @@ export const useTrainStore = defineStore('train', () => {
     selectedTrainId,
     isConnected,
     telemetryData,
-    selectedTrain,
     currentVideoFrame,
     remoteControlId,
     initializeRemoteControlId,
