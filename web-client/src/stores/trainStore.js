@@ -100,7 +100,7 @@ export const useTrainStore = defineStore('train', () => {
               console.log('Keepalive packet received')
               break
             case PACKET_TYPE.notification:
-              console.log('Notification packet received')
+              console.log('Notification packet received', payload)
               fetchAvailableTrains()
               break
             default:

@@ -1,7 +1,7 @@
 <template>
   <div class="control-view">
     <header class="app-header">
-      <h1>Train Remote Control System</h1>
+      <h1>Remote Control System</h1>
       <ConnectionStatus />
     </header>
 

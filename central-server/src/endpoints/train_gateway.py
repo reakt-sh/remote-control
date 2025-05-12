@@ -4,9 +4,11 @@ import struct
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from server_controller import ServerController
 from utils.app_logger import logger
+from utils.packet_builder import PacketBuilder
 from globals import PACKET_TYPE
-s_controller = ServerController()
 
+s_controller = ServerController()
+packet_builder = PacketBuilder()
 router = APIRouter()
 
 @router.websocket("/ws/train/{train_id}")
@@ -16,13 +18,7 @@ async def train_interface(websocket: WebSocket, train_id: str):
     logger.debug(f"For Train {train_id}, websocket connection established")
 
     # Notify all the remote controllers about the new train connection
-    notify_message = {
-        "type": "notification",
-        "message": f"Train {train_id} connected to the server."
-    }
-    packet_data = json.dumps(notify_message).encode('utf-8')
-    packet = struct.pack("B", PACKET_TYPE["notification"]) + packet_data
-    logger.debug(f"Sending notification to all clients: {packet}")
+    packet = packet_builder.make_train_notification(train_id, "connected")
     await s_controller.notify_all_clients(packet)
 
     # inner function for keepalive task
@@ -63,6 +59,9 @@ async def train_interface(websocket: WebSocket, train_id: str):
                 logger.debug(f"Received unknown packet type {packet_type} from train {train_id}")
     except WebSocketDisconnect:
         logger.debug(f"Train {train_id} disconnected.")
+        # Notify all the remote controllers about the new train connection
+        packet = packet_builder.make_train_notification(train_id, "disconnected")
+        await s_controller.notify_all_clients(packet)
     except Exception as e:
         logger.error(f"Error in WebSocket connection for train {train_id}: {e}")
     finally:
