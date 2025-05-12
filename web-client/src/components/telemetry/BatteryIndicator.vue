@@ -1,9 +1,9 @@
 <template>
-  <div v-if="currentTrain" class="telemetry-value">
-    <div class="battery-level" :style="{ width: currentTrain.battery_level + '%' }"
-         :class="{ low: currentTrain.battery_level < 20 }">
+  <div v-if="telemetryData && telemetryData.battery_level" class="telemetry-value">
+    <div class="battery-level" :style="{ width: telemetryData.battery_level + '%' }"
+         :class="{ low: telemetryData.battery_level < 20 }">
     </div>
-    <span>{{ currentTrain.battery_level }}%</span>
+    <span>{{ telemetryData.battery_level }}%</span>
   </div>
   <div v-else class="telemetry-value">
     No battery data available
@@ -14,7 +14,7 @@
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { currentTrain } = storeToRefs(useTrainStore())
+const { telemetryData } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>

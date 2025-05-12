@@ -1,6 +1,6 @@
 <template>
-  <div v-if="currentTrain" class="telemetry-value status" :class="currentTrain.status">
-    {{ currentTrain.status }}
+  <div v-if="telemetryData && telemetryData.status" class="telemetry-value status" :class="telemetryData.status">
+    {{ telemetryData.status }}
   </div>
   <div v-else class="telemetry-value status">
     No status available
@@ -11,7 +11,7 @@
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { currentTrain } = storeToRefs(useTrainStore())
+const { telemetryData } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>

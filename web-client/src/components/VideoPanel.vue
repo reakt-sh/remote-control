@@ -1,6 +1,6 @@
 <template>
   <div class="video-panel">
-    <h2 v-if="currentTrain">Live Camera: {{ currentTrain.name }}</h2>
+    <h2 v-if="telemetryData && telemetryData.name">Live Camera: {{ telemetryData.name }}</h2>
     <div class="video-container">
       <canvas ref="videoCanvas" class="video-feed"></canvas>
     </div>
@@ -12,7 +12,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { currentTrain, currentVideoFrame } = storeToRefs(useTrainStore())
+const { telemetryData, currentVideoFrame } = storeToRefs(useTrainStore())
 const videoCanvas = ref(null)
 let videoDecoder = null
 let recordedFrames = []

@@ -23,7 +23,7 @@ const PACKET_TYPE = {
 export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
   const selectedTrainId = ref('')
-  const currentTrain = ref(null)
+  const telemetryData = ref(null)
   const isConnected = ref(false)
   const webSocket = ref(null)
   const currentVideoFrame = ref(null)
@@ -43,10 +43,8 @@ export const useTrainStore = defineStore('train', () => {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)
       const data = await response.json()
-      console.log('Available trains:', data)
       availableTrains.value = data.trains
       console.log('Available trains:', availableTrains.value)
-      console.log('How does it look: ', availableTrains)
     } catch (error) {
       console.error('Error fetching trains:', error)
     }
@@ -74,7 +72,7 @@ export const useTrainStore = defineStore('train', () => {
           const byteArray = new Uint8Array(arrayBuffer)
           const packetType = byteArray[0]
           const payload = byteArray.slice(1)
-          let telemetryData = {}
+          let jsonData = {}
           let jsonString = ""
           switch (packetType) {
             case PACKET_TYPE.video:
@@ -90,11 +88,13 @@ export const useTrainStore = defineStore('train', () => {
               console.log('Received command data')
               break
             case PACKET_TYPE.telemetry:
-              // Step 1: Convert Uint8Array to string
               jsonString = new TextDecoder().decode(payload)
-              // Step 2: Parse JSON string
-              telemetryData = JSON.parse(jsonString)
-              console.log('Received telemetry data:', telemetryData)
+              jsonData = JSON.parse(jsonString)
+              console.log('Received telemetry data:', jsonData)
+              telemetryData.value = jsonData
+              console.log('Train Name :', telemetryData.value.name)
+              console.log('Train Battery :', telemetryData.value.battery_level)
+              console.log('train status :', telemetryData.value.status)
               break
             case PACKET_TYPE.imu:
               console.log('Received IMU data')
@@ -106,7 +106,9 @@ export const useTrainStore = defineStore('train', () => {
               console.log('Keepalive packet received')
               break
             case PACKET_TYPE.notification:
-              console.log('Notification packet received', payload)
+              jsonString = new TextDecoder().decode(payload)
+              jsonData = JSON.parse(jsonString)
+              console.log('Notification packet received', jsonData)
               fetchAvailableTrains()
               break
             default:
@@ -133,9 +135,7 @@ export const useTrainStore = defineStore('train', () => {
 
   async function mappingToTrain(trainId) {
     if (!trainId) return
-
-    // Update the current train and selected train ID
-    currentTrain.value = { ...availableTrains.value[trainId] }
+    telemetryData.value = {}
     selectedTrainId.value = trainId
 
     // Send a POST request to assign the train to the remote control
@@ -179,8 +179,8 @@ export const useTrainStore = defineStore('train', () => {
   return {
     availableTrains,
     selectedTrainId,
-    currentTrain,
     isConnected,
+    telemetryData,
     selectedTrain,
     currentVideoFrame,
     remoteControlId,

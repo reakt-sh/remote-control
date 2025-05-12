@@ -11,8 +11,8 @@
       </TelemetryCard>
 
       <TelemetryCard title="Brakes">
-        <div v-if="currentTrain" class="telemetry-value" :class="{ warning: currentTrain.brake_status === 'applied' }">
-          {{ currentTrain.brake_status }}
+        <div v-if="telemetryData && telemetryData.brake_status" class="telemetry-value" :class="{ warning: telemetryData.brake_status === 'applied' }">
+          {{ telemetryData.brake_status }}
         </div>
         <div v-else class="telemetry-value">
           No brake data available
@@ -20,11 +20,11 @@
       </TelemetryCard>
 
       <TelemetryCard title="Location">
-        <div v-if="currentTrain" class="telemetry-value">
-          {{ currentTrain.location }}
+        <div v-if="telemetryData && telemetryData.location" class="telemetry-value">
+          {{ telemetryData.location }}
         </div>
-        <div v-if="currentTrain" class="telemetry-subvalue">
-          Next: {{ currentTrain.next_station }}
+        <div v-if="telemetryData && telemetryData.next_station" class="telemetry-subvalue">
+          Next: {{ telemetryData.next_station }}
         </div>
         <div v-else>
           No location data available
@@ -36,8 +36,8 @@
       </TelemetryCard>
 
       <TelemetryCard title="Temperature">
-        <div v-if="currentTrain" class="telemetry-value">
-          {{ currentTrain.temperature }}<span class="unit">°C</span>
+        <div v-if="telemetryData && telemetryData.temperature" class="telemetry-value">
+          {{ telemetryData.temperature }}<span class="unit">°C</span>
         </div>
         <div v-else>
           No temperature data available
@@ -55,7 +55,7 @@ import Speedometer from './Speedometer.vue'
 import StatusIndicator from './StatusIndicator.vue'
 import BatteryIndicator from './BatteryIndicator.vue'
 
-const { currentTrain } = storeToRefs(useTrainStore())
+const { telemetryData } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>

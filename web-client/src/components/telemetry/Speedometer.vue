@@ -1,18 +1,18 @@
 <template>
   <div>
-    <div v-if="currentTrain" class="telemetry-value">
-      {{ currentTrain.speed }}<span class="unit">km/h</span>
+    <div v-if="telemetryData && telemetryData.speed" class="telemetry-value">
+      {{ telemetryData.speed }}<span class="unit">km/h</span>
     </div>
-    <div v-if="currentTrain" class="speedometer">
+    <div v-if="telemetryData && telemetryData.speed" class="speedometer">
       <div class="speedometer-track">
         <div class="speedometer-progress"
-             :style="{ width: (currentTrain.speed / currentTrain.max_speed) * 100 + '%' }">
+             :style="{ width: (telemetryData.speed / telemetryData.max_speed) * 100 + '%' }">
         </div>
       </div>
       <div class="speedometer-markers">
         <span>0</span>
-        <span>{{ currentTrain.max_speed / 2 }}</span>
-        <span>{{ currentTrain.max_speed }}</span>
+        <span>{{ telemetryData.max_speed / 2 }}</span>
+        <span>{{ telemetryData.max_speed }}</span>
       </div>
     </div>
     <div v-else>
@@ -27,7 +27,7 @@
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { currentTrain } = storeToRefs(useTrainStore())
+const { telemetryData } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>

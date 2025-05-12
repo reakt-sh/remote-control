@@ -2,47 +2,47 @@
   <div class="control-panel">
     <h2>Train Controls</h2>
     <div class="control-buttons">
-      <ControlButton 
-        action="accelerate" 
-        value="5" 
-        label="Accelerate" 
-        icon="fa-arrow-up" 
-        type="accelerate" 
+      <ControlButton
+        action="accelerate"
+        value="5"
+        label="Accelerate"
+        icon="fa-arrow-up"
+        type="accelerate"
       />
-      <ControlButton 
-        action="decelerate" 
-        value="5" 
-        label="Decelerate" 
-        icon="fa-arrow-down" 
-        type="decelerate" 
+      <ControlButton
+        action="decelerate"
+        value="5"
+        label="Decelerate"
+        icon="fa-arrow-down"
+        type="decelerate"
       />
-      <ControlButton 
-        action="brake" 
-        :value="true" 
-        label="Apply Brakes" 
-        icon="fa-stop" 
-        type="brake" 
-        v-if="currentTrain && currentTrain.brake_status"
-        :active="currentTrain.brake_status === 'applied'"
+      <ControlButton
+        action="brake"
+        :value="true"
+        label="Apply Brakes"
+        icon="fa-stop"
+        type="brake"
+        v-if="telemetryData && telemetryData.brake_status"
+        :active="telemetryData.brake_status === 'applied'"
       />
       <EmergencyStop />
       <ControlButton
-        action="start" 
-        :value="true" 
-        label="Start Engine" 
-        icon="fa-play" 
-        type="start" 
-        v-if="currentTrain && currentTrain.status"
-        :disabled="currentTrain.status === 'running'"
+        action="start"
+        :value="true"
+        label="Start Engine"
+        icon="fa-play"
+        type="start"
+        v-if="telemetryData && telemetryData.status"
+        :disabled="telemetryData.status === 'running'"
       />
-      <ControlButton 
-        action="shutdown" 
-        :value="true" 
-        label="Shutdown" 
-        icon="fa-power-off" 
-        type="shutdown" 
-        v-if="currentTrain && currentTrain.status"
-        :disabled="currentTrain.status !== 'running'"
+      <ControlButton
+        action="shutdown"
+        :value="true"
+        label="Shutdown"
+        icon="fa-power-off"
+        type="shutdown"
+        v-if="telemetryData && telemetryData.status"
+        :disabled="telemetryData.status !== 'running'"
       />
     </div>
   </div>
@@ -54,7 +54,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import ControlButton from './ControlButton.vue'
 import EmergencyStop from './EmergencyStop.vue'
 
-const { currentTrain } = storeToRefs(useTrainStore())
+const { telemetryData } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>
