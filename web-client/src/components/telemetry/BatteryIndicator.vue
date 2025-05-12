@@ -3,7 +3,7 @@
     <div class="battery-level" :style="{ width: telemetryData.battery_level + '%' }"
          :class="{ low: telemetryData.battery_level < 20 }">
     </div>
-    <span>{{ telemetryData.battery_level }}%</span>
+    <span>{{ Number(telemetryData.battery_level).toFixed(2) }}%</span>
   </div>
   <div v-else class="telemetry-value">
     No battery data available
