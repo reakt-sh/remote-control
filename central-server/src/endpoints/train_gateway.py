@@ -40,7 +40,7 @@ async def train_interface(websocket: WebSocket, train_id: str):
                 packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
                 await websocket.send_bytes(packet)
                 logger.debug(f"Sent keepalive packet to train {train_id}")
-                await asyncio.sleep(3)  # Send keepalive every 5 seconds
+                await asyncio.sleep(25)  # Send keepalive every 5 seconds
             except Exception as e:
                 logger.error(f"Error sending keepalive to train {train_id}: {e}")
                 break

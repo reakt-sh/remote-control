@@ -72,6 +72,16 @@ class ServerController:
 
     def map_client_to_train(self, remote_control_id: str, train_id: str) -> None:
         with self._lock:
+            # remove existing mapping if it exists
+            if remote_control_id in self.client_to_train_map:
+                existing_train_id = self.client_to_train_map[remote_control_id]
+                if existing_train_id != train_id:
+                    self.train_to_clients_map[existing_train_id].discard(remote_control_id)
+                    if not self.train_to_clients_map[existing_train_id]:
+                        del self.train_to_clients_map[existing_train_id]
+                        logger.debug(f"Removed empty entry for train {existing_train_id} from train_to_clients_map")
+
+            # add new mapping
             self.client_to_train_map[remote_control_id] = train_id
             logger.debug(f"Mapped {remote_control_id} to {train_id}")
 

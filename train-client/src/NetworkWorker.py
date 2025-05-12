@@ -100,7 +100,7 @@ class NetworkWorker(QThread):
                 packet_data = json.dumps(keepalive_packet).encode('utf-8')
                 packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
                 await websocket.send(packet)
-                await asyncio.sleep(3)
+                await asyncio.sleep(25)
             except Exception as e:
                 print(f"Keepalive error: {e}")
                 break
