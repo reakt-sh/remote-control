@@ -3,7 +3,7 @@
     <template v-if="Object.keys(availableTrains).length > 0">
       <h2>Select Train</h2>
       <select v-model="selectedTrainId" @change="handleTrainChange">
-        <option value="">-- Select a train --</option>
+        <option disabled value="" hidden>Please choose one train to control</option>
         <option v-for="(train, id) in availableTrains" :value="id" :key="id">
           {{ train.name }} ({{ id }})
         </option>
