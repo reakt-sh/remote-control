@@ -195,79 +195,84 @@ const ticks = computed(() => {
 }
 
 .target-slider {
-  width: 100%;
-  height: 18px;
-  margin-top: 16px;
-  accent-color: #f1c40f;
-  background: transparent;
-  /* Remove default appearance for custom styling */
+  width: 220px;         /* Similar to lever-container width */
+  height: 40px;         /* Thumb height */
+  background: #333;
+  border-radius: 20px;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
+  margin: 0 auto;
+  display: block;
+  padding: 0;
+  outline: none;
   -webkit-appearance: none;
   appearance: none;
+  position: relative;
   cursor: pointer;
-  outline: none;
 }
 
 /* Track styles */
 .target-slider::-webkit-slider-runnable-track {
-  height: 10px;
-  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  width: 100%;
+  height: 40px;
+  background: #333;
+  border-radius: 20px;
 }
 .target-slider::-moz-range-track {
-  height: 10px;
-  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  width: 100%;
+  height: 40px;
+  background: #333;
+  border-radius: 20px;
 }
 .target-slider::-ms-fill-lower,
 .target-slider::-ms-fill-upper {
-  height: 10px;
-  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
-  border-radius: 6px;
+  background: #333;
+  border-radius: 20px;
 }
 
 /* Thumb styles */
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f1c40f;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  width: 80px;
+  height: 40px;
+  background: linear-gradient(to right, #555, #333);
+  border-radius: 5px;
+  border: 2px solid #222;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  cursor: ew-resize;
   transition: background 0.2s;
-  margin-top: -9px; /* Center thumb on track */
+  margin-top: 0; /* Center thumb on track */
 }
 .target-slider:focus::-webkit-slider-thumb {
-  background: #ffe066;
+  background: #666;
 }
 
 .target-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f1c40f;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  width: 80px;
+  height: 40px;
+  background: linear-gradient(to right, #555, #333);
+  border-radius: 5px;
+  border: 2px solid #222;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  cursor: ew-resize;
   transition: background 0.2s;
 }
 .target-slider:focus::-moz-range-thumb {
-  background: #ffe066;
+  background: #666;
 }
 
 .target-slider::-ms-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f1c40f;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  width: 80px;
+  height: 40px;
+  background: linear-gradient(to right, #555, #333);
+  border-radius: 5px;
+  border: 2px solid #222;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  cursor: ew-resize;
   transition: background 0.2s;
 }
 .target-slider:focus::-ms-thumb {
-  background: #ffe066;
+  background: #666;
 }
 
 /* Remove outline on Firefox */
