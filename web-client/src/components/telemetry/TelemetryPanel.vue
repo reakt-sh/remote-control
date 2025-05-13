@@ -2,8 +2,13 @@
   <div class="telemetry-panel">
     <h2>Telemetry Data</h2>
     <div class="telemetry-grid">
-      <TelemetryCard title="Speed">
-        <Speedometer />
+      <TelemetryCard title="Passenger Count">
+        <div v-if="telemetryData && telemetryData.passenger_count !== undefined && telemetryData.passenger_count !== null">
+          <PassengerCount :passenger-count="telemetryData.passenger_count" />
+        </div>
+        <div v-else class="telemetry-value">
+          No passenger count data available
+        </div>
       </TelemetryCard>
 
       <TelemetryCard title="Status">
@@ -51,9 +56,9 @@
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from './TelemetryCard.vue'
-import Speedometer from './Speedometer.vue'
 import StatusIndicator from './StatusIndicator.vue'
 import BatteryIndicator from './BatteryIndicator.vue'
+import PassengerCount from './PassengerCount.vue'
 
 const { telemetryData } = storeToRefs(useTrainStore())
 </script>
