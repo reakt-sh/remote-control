@@ -19,7 +19,7 @@
           @update:targetSpeed="val => targetSpeed = val"
         />
         <SystemStatus
-          :status="systemStatus"
+          :system-status="systemStatus"
           :battery-level="batteryLevel"
           :engine-temp="engineTemp"
           :fuel-level="fuelLevel"
@@ -69,7 +69,7 @@ const emergencyBrakeActive = ref(false);
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0);
-const systemStatus = computed(() => telemetryData.value?.status || 'offline');
+const systemStatus = computed(() => telemetryData.value?.status || "offline");
 const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
 const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
 const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
