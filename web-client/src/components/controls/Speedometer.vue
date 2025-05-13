@@ -187,7 +187,7 @@ const ticks = computed(() => {
   min-width: 300px;
   color: #fff;
   background: #222;
-  padding: 30px 18px 18px 18px;
+  padding: 10px 10px 10px 10px;
   border-radius: 18px;
   margin-top: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
@@ -195,12 +195,13 @@ const ticks = computed(() => {
 }
 
 .target-slider {
-  width: 220px;         /* Similar to lever-container width */
-  height: 40px;         /* Thumb height */
+  width: 280px;         /* Similar to lever-container width */
+  height: 55px;         /* Thumb height */
   background: #333;
   border-radius: 20px;
   box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
   margin: 0 auto;
+  margin-top: 5px;
   display: block;
   padding: 0;
   outline: none;
@@ -286,6 +287,8 @@ const ticks = computed(() => {
 }
 .target-speed-value {
   top: 0;
+  max-width: 155px;
+  margin-left: 58px;
   background: #596f72;
   color: #222;
   font-weight: bold;
