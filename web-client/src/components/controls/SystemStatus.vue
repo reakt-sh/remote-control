@@ -10,7 +10,7 @@
         <div class="status-label">BATTERY</div>
         <div class="status-meter">
           <div class="meter-fill" :style="{ width: `${batteryLevel}%` }"></div>
-          <div class="meter-text">{{ batteryLevel }}%</div>
+          <div class="meter-text">{{ Number(batteryLevel).toFixed(2) }}%</div>
         </div>
       </div>
       
@@ -23,7 +23,7 @@
         <div class="status-label">FUEL</div>
         <div class="status-meter">
           <div class="meter-fill" :style="{ width: `${fuelLevel}%` }"></div>
-          <div class="meter-text">{{ fuelLevel }}%</div>
+          <div class="meter-text">{{ Number(fuelLevel).toFixed(2) }}%</div>
         </div>
       </div>
     </div>
@@ -53,10 +53,11 @@ const props = defineProps({
 });
 
 const statusClass = computed(() => {
+  console.log("TheKing--> props.systemStatus = ", props.systemStatus);
   return {
-    'status-online': props.systemStatus === 'RUNNING',
-    'status-warning': props.systemStatus === 'STANDBY',
-    'status-offline': props.systemStatus === 'OFFLINE'
+    'status-online': props.systemStatus === 'running',
+    'status-warning': props.systemStatus === 'standby',
+    'status-offline': props.systemStatus === 'offline'
   };
 });
 

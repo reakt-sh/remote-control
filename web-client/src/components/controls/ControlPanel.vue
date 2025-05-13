@@ -18,7 +18,7 @@
           :target-speed="targetSpeed"
           @update:targetSpeed="val => targetSpeed = val"
         />
-        <SystemStatus 
+        <SystemStatus
           :status="systemStatus"
           :battery-level="batteryLevel"
           :engine-temp="engineTemp"
@@ -28,7 +28,7 @@
 
       <!-- Right: Emergency controls -->
       <div class="emergency-panel">
-        <EmergencyControls 
+        <EmergencyControls
           :emergency-brake-active="emergencyBrakeActive"
           @emergency-brake="activateEmergencyBrake"
           @reset-emergency="resetEmergency"
@@ -70,9 +70,9 @@ const emergencyBrakeActive = ref(false);
 
 // Computed
 const systemStatus = computed(() => telemetryData.value?.status || 'offline');
-const batteryLevel = computed(() => telemetryData.value?.battery || 0);
-const engineTemp = computed(() => telemetryData.value?.engine_temp || 0);
-const fuelLevel = computed(() => telemetryData.value?.fuel || 0);
+const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
+const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
+const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
 // const hasDoors = computed(() => telemetryData.value?.has_doors || false);
 
 // Methods
@@ -153,7 +153,10 @@ const resetEmergency = () => {
   flex-direction: column;
   align-items: flex-end; /* Align to the right */
   justify-content: flex-start; /* Or center, if you prefer */
-  height: 100%;
+  padding-top: 20px;
+  height: 350px;             /* Set a fixed height for both */
+  min-height: 80px;
+  max-height: 350px;
 }
 
 .indicators-panel :deep(.system-status),

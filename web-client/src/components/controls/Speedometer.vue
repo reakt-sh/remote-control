@@ -281,7 +281,7 @@ const ticks = computed(() => {
 }
 .target-speed-value {
   top: 0;
-  background: #0aa1b5;
+  background: #596f72;
   color: #222;
   font-weight: bold;
   padding: 2px 10px;
