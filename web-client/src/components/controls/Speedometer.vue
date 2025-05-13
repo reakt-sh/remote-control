@@ -9,9 +9,12 @@
       <div class="center"></div>
     </div>
     <div class="speed-display">
-      <div class="current-speed">{{ formattedSpeed }}</div>
-      <div class="speed-unit">km/h</div>
-      <div class="target-speed">TARGET: {{ props.targetSpeed }}
+      <div class="speed-row">
+        <div class="current-speed">{{ formattedSpeed }}</div>
+        <div class="speed-unit">km/h</div>
+      </div>
+      <div class="target-speed">
+        <div class="target-speed-value">Target: {{ props.targetSpeed }} km/h</div>
         <input
           type="range"
           min="0"
@@ -158,31 +161,134 @@ const ticks = computed(() => {
   color: #fff;
 }
 
+.speed-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
 .current-speed {
   font-size: 3rem;
   font-weight: bold;
   font-family: 'Segment7', monospace;
   color: #f1c40f;
-  margin-bottom: -10px;
+  margin-bottom: 0;
 }
 
 .speed-unit {
   font-size: 1.2rem;
   opacity: 0.7;
-  margin-bottom: 5px;
+  margin-bottom: 0;
 }
 
 .target-speed {
   font-size: 1rem;
-  color: #777;
-  background: #333;
-  padding: 5px 10px;
-  border-radius: 15px;
+  min-width: 300px;
+  color: #fff;
+  background: #222;
+  padding: 30px 18px 18px 18px;
+  border-radius: 18px;
+  margin-top: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  position: relative;
 }
 
 .target-slider {
   width: 100%;
-  margin-top: 8px;
+  height: 18px;
+  margin-top: 16px;
   accent-color: #f1c40f;
+  background: transparent;
+  /* Remove default appearance for custom styling */
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Track styles */
+.target-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.target-slider::-moz-range-track {
+  height: 10px;
+  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.target-slider::-ms-fill-lower,
+.target-slider::-ms-fill-upper {
+  height: 10px;
+  background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
+  border-radius: 6px;
+}
+
+/* Thumb styles */
+.target-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1c40f;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: background 0.2s;
+  margin-top: -9px; /* Center thumb on track */
+}
+.target-slider:focus::-webkit-slider-thumb {
+  background: #ffe066;
+}
+
+.target-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1c40f;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: background 0.2s;
+}
+.target-slider:focus::-moz-range-thumb {
+  background: #ffe066;
+}
+
+.target-slider::-ms-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1c40f;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: background 0.2s;
+}
+.target-slider:focus::-ms-thumb {
+  background: #ffe066;
+}
+
+/* Remove outline on Firefox */
+.target-slider::-moz-focus-outer {
+  border: 0;
+}
+
+/* Value label above the slider thumb */
+.target-speed {
+  position: relative;
+}
+.target-speed-value {
+  top: 0;
+  background: #0aa1b5;
+  color: #222;
+  font-weight: bold;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 1.1em;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  pointer-events: none;
+  z-index: 2;
 }
 </style>

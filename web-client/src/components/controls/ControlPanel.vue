@@ -131,9 +131,9 @@ const resetEmergency = () => {
   justify-content: center;
   align-items: stretch;      /* Make children take full height */
   gap: 4px;                  /* Reduce gap between them */
-  height: 400px;             /* Set a fixed height for both */
+  height: 350px;             /* Set a fixed height for both */
   min-height: 80px;
-  max-height: 280px;
+  max-height: 350px;
 }
 
 .secondary-controls {
