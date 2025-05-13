@@ -12,10 +12,11 @@
 
       <!-- Center: Indicators -->
       <div class="indicators-panel">
-        <Speedometer 
+        <Speedometer
           :current-speed="currentSpeed"
-          :target-speed="targetSpeed"
           :max-speed="maxSpeed"
+          :target-speed="targetSpeed"
+          @update:targetSpeed="val => targetSpeed = val"
         />
         <SystemStatus 
           :status="systemStatus"

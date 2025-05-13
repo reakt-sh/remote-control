@@ -11,7 +11,16 @@
     <div class="speed-display">
       <div class="current-speed">{{ formattedSpeed }}</div>
       <div class="speed-unit">km/h</div>
-      <div class="target-speed">TARGET: {{ targetSpeed }}</div>
+      <div class="target-speed">TARGET: {{ props.targetSpeed }}
+        <input
+          type="range"
+          min="0"
+          max="60"
+          :value="props.targetSpeed"
+          @input="e => emit('update:targetSpeed', Number(e.target.value))"
+          class="target-slider"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -33,6 +42,7 @@ const props = defineProps({
     default: 120
   }
 });
+const emit = defineEmits(['update:targetSpeed']);
 
 const needleRotation = computed(() => {
   const ratio = props.currentSpeed / props.maxSpeed;
@@ -168,5 +178,11 @@ const ticks = computed(() => {
   background: #333;
   padding: 5px 10px;
   border-radius: 15px;
+}
+
+.target-slider {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: #f1c40f;
 }
 </style>
