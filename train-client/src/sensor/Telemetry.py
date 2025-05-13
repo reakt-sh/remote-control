@@ -28,6 +28,7 @@ class Telemetry(QObject):
         self.engine_temperature_min = random.randint(70, 85)
         self.engine_temperature_max = self.engine_temperature_min + random.randint(3, 10)
         self.fuel_level = round(random.uniform(70, 99), 2)
+        self.network_signal_strength = random.randint(0,100)
 
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
@@ -68,7 +69,8 @@ class Telemetry(QObject):
             },
             "timestamp": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in milliseconds,
             "engine_temperature": random.randint(self.engine_temperature_min, self.engine_temperature_max),
-            "fuel_level": self.fuel_level
+            "fuel_level": self.fuel_level,
+            "network_signal_strength": self.network_signal_strength
         }
         self.location_index = self.next_station_index
         self.next_station_index = self.get_next_station(self.location_index)
@@ -79,6 +81,7 @@ class Telemetry(QObject):
         self.fuel_level -= random.uniform(0.1, 0.5) # Simulate fuel drain
         if self.fuel_level < 0:
             self.fuel_level = 0
+        self.network_signal_strength = random.randint(0,100)
 
         # Emit the telemetry data
         self.telemetry_ready.emit(data)
