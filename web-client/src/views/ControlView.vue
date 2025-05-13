@@ -11,7 +11,7 @@
       <div v-if="selectedTrainId && availableTrains.length !== 0" class="train-control-panel">
         <VideoPanel />
         <TelemetryPanel />
-        <ControlPanel />
+        <ControlPanel class="full-width-panel" />
       </div>
     </main>
   </div>
@@ -63,11 +63,19 @@ const { selectedTrainId, availableTrains } = storeToRefs(useTrainStore())
   grid-template-columns: 2fr 1fr;
   grid-gap: 1rem;
   margin-top: 1rem;
+  width: 100%;
+}
+
+.full-width-panel {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 1024px) {
   .train-control-panel {
     grid-template-columns: 1fr;
+  }
+  .full-width-panel {
+    grid-column: 1;
   }
 }
 </style>

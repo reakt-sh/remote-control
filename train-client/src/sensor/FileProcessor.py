@@ -44,7 +44,7 @@ class FileProcessor(QObject):
 
     def set_speed(self, speed_kmh):
         # FPS is directly equal to speed (max 60)
-        self.current_fps = min(max(int(speed_kmh), 1), 60)
+        self.current_fps = min(max(int(speed_kmh), 0), 60)
         if self.timer.isActive():
             self.timer.stop()
             self.timer.start(int(1000 / self.current_fps))
