@@ -57,9 +57,8 @@ import EmergencyControls from './EmergencyControls.vue';
 const { telemetryData } = storeToRefs(useTrainStore());
 
 // State
-const currentSpeed = ref(0);
 const targetSpeed = ref(0);
-const maxSpeed = ref(120); // km/h
+const maxSpeed = ref(80); // km/h
 const powerLevel = ref(0);
 const emergencyBrakeActive = ref(false);
 // const headlightsOn = ref(true);
@@ -69,6 +68,7 @@ const emergencyBrakeActive = ref(false);
 // const activeAlerts = ref([]);
 
 // Computed
+const currentSpeed = computed(() => telemetryData.value?.speed || 0);
 const systemStatus = computed(() => telemetryData.value?.status || 'offline');
 const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
 const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
