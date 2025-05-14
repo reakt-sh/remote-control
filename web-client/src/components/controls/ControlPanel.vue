@@ -59,7 +59,6 @@ const trainStore = useTrainStore();
 const { telemetryData } = storeToRefs(trainStore);
 
 // State
-const targetSpeed = ref(0);
 const maxSpeed = ref(80); // km/h
 const powerLevel = ref(0);
 const emergencyBrakeActive = ref(false);
@@ -75,6 +74,7 @@ const systemStatus = computed(() => telemetryData.value?.status || "offline");
 const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
 const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
 const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
+const targetSpeed = computed(() => telemetryData.value?.speed || 0);
 // const hasDoors = computed(() => telemetryData.value?.has_doors || false);
 
 // Methods
