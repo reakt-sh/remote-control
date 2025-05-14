@@ -11,7 +11,8 @@ async def remote_control_interface(websocket: WebSocket, remote_control_id: str)
     await s_controller.add_remote_controller(websocket, remote_control_id)
     try:
         while True:
-            command = await websocket.receive_json()
+            command = await websocket.receive_bytes()
+            logger.debug(f"Received bytes from web-client: {remote_control_id}")
             s_controller.send_to_train(command, remote_control_id)
     except WebSocketDisconnect:
         await s_controller.remove_remote_controller(remote_control_id)

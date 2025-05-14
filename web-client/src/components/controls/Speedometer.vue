@@ -21,6 +21,7 @@
           max="60"
           :value="props.targetSpeed"
           @input="e => emit('update:targetSpeed', Number(e.target.value))"
+          @change="e => emit('change:targetSpeed', Number(e.target.value))"
           class="target-slider"
         />
       </div>
@@ -45,7 +46,7 @@ const props = defineProps({
     default: 120
   }
 });
-const emit = defineEmits(['update:targetSpeed']);
+const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
 const needleRotation = computed(() => {
   const ratio = props.currentSpeed / props.maxSpeed;

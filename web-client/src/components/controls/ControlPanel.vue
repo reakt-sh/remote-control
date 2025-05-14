@@ -2,7 +2,7 @@
   <div class="driver-console">
     <div class="control-panel">
       <!-- Left: Master controller -->
-      <MasterController 
+      <MasterController
         :speed="currentSpeed"
         :max-speed="maxSpeed"
         :power-level="powerLevel"
@@ -16,7 +16,8 @@
           :current-speed="currentSpeed"
           :max-speed="maxSpeed"
           :target-speed="targetSpeed"
-          @update:targetSpeed="val => targetSpeed = val"
+          @update:targetSpeed="onTargetSpeedChange"
+          @change:targetSpeed="onTargetSpeedCommit"
         />
         <SystemStatus
           :system-status="systemStatus"
@@ -54,7 +55,8 @@ import EmergencyControls from './EmergencyControls.vue';
 // import HornControl from './HornControl.vue';
 // import AlertPanel from './AlertPanel.vue';
 
-const { telemetryData } = storeToRefs(useTrainStore());
+const trainStore = useTrainStore();
+const { telemetryData } = storeToRefs(trainStore);
 
 // State
 const targetSpeed = ref(0);
@@ -95,6 +97,19 @@ const resetEmergency = () => {
   emergencyBrakeActive.value = false;
   // Reset emergency state
 };
+
+function onTargetSpeedChange(val) {
+  targetSpeed.value = val;
+}
+
+function onTargetSpeedCommit(val) {
+  let data = {
+    "instruction": "CHANGE_TARGET_SPEED",
+    "train_id": telemetryData.value.train_id,
+    "target_speed": val
+  }
+  trainStore.sendCommand(data);
+}
 
 // Other methods...
 </script>

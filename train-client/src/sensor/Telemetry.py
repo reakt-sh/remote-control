@@ -13,6 +13,7 @@ class Telemetry(QObject):
         self.poll_interval_ms = poll_interval_ms
 
         self.name = "Train"
+        self.train_id = train_id
         self.status = "running"
         self.speed = 60
         self.max_speed = 60
@@ -77,6 +78,7 @@ class Telemetry(QObject):
         # Replace this with actual telemetry data acquisition logic
         data =  {
             "name": self.name,
+            "train_id": self.train_id,
             "status": self.status,
             "speed": self.speed,
             "max_speed": self.max_speed,

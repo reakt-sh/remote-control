@@ -161,16 +161,25 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function sendCommand(action, value) {
-    if (!isConnected.value || !webSocket.value) return
-
-    const command = {
-      action,
-      value,
-      timestamp: new Date().toISOString()
+  async function sendCommand(command) {
+    if (!isConnected.value || !webSocket.value) {
+      console.log("No Train Connected or No websocket Connection established")
+      return
     }
+    try {
+      // Convert command object to JSON and then to Uint8Array
+      const jsonString = JSON.stringify(command)
+      const jsonBytes = new TextEncoder().encode(jsonString)
 
-    webSocket.value.send(JSON.stringify(command))
+      // Create a new Uint8Array with the first byte as PACKET_TYPE.command
+      const packet = new Uint8Array(1 + jsonBytes.length)
+      packet[0] = PACKET_TYPE.command
+      packet.set(jsonBytes, 1)
+
+      webSocket.value.send(packet)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   return {
