@@ -6,7 +6,7 @@ from globals import STATION_LIST
 class Telemetry(QObject):
     telemetry_ready = pyqtSignal(dict)  # Emits a dictionary with telemetry data
 
-    def __init__(self, train_id: str, poll_interval_ms=3000, parent=None):
+    def __init__(self, train_id: str, poll_interval_ms=1000, parent=None):
         super().__init__(parent)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._poll_telemetry)
@@ -20,15 +20,21 @@ class Telemetry(QObject):
         self.location_index = random.randint(0, len(STATION_LIST) - 1)
         self.next_station_index = self.get_next_station(self.location_index)
         self.passenger_count = random.randint(100, 200)
+
         self.temperature_min = random.randint(-5, 30)
         self.temperature_max = self.temperature_min + random.randint(3, 10)
+        self.temperature = random.randint(self.temperature_min, self.temperature_max)
+
         self.battery_level = round(random.uniform(70, 99), 2)
         self.video_stream_url = "/stream/" + train_id
 
         self.engine_temperature_min = random.randint(70, 85)
         self.engine_temperature_max = self.engine_temperature_min + random.randint(3, 10)
+        self.engine_temperature = random.randint(self.engine_temperature_min, self.engine_temperature_max)
+
         self.fuel_level = round(random.uniform(70, 99), 2)
         self.network_signal_strength = random.randint(0,100)
+        self.counter = 0
 
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
@@ -48,6 +54,24 @@ class Telemetry(QObject):
 
     def stop(self):
         self.timer.stop()
+
+    def simulte_data(self):
+        self.counter += 1
+        if self.counter % 5 == 0:
+            self.location_index = self.next_station_index
+            self.next_station_index = self.get_next_station(self.location_index)
+            self.network_signal_strength = random.randint(10,100)
+            self.temperature = random.randint(self.temperature_min, self.temperature_max),
+
+
+        self.battery_level -= random.uniform(0.1, 0.4)  # Simulate battery drain
+        if self.battery_level < 0:
+            self.battery_level = 0
+
+        self.fuel_level -= random.uniform(0.1, 0.4) # Simulate fuel drain
+        if self.fuel_level < 0:
+            self.fuel_level = 0
+
 
     def _poll_telemetry(self):
         # Replace this with actual telemetry data acquisition logic
@@ -72,16 +96,8 @@ class Telemetry(QObject):
             "fuel_level": self.fuel_level,
             "network_signal_strength": self.network_signal_strength
         }
-        self.location_index = self.next_station_index
-        self.next_station_index = self.get_next_station(self.location_index)
-        self.battery_level -= random.uniform(0.1, 0.5)  # Simulate battery drain
-        if self.battery_level < 0:
-            self.battery_level = 0
 
-        self.fuel_level -= random.uniform(0.1, 0.5) # Simulate fuel drain
-        if self.fuel_level < 0:
-            self.fuel_level = 0
-        self.network_signal_strength = random.randint(0,100)
+        self.simulte_data()
 
         # Emit the telemetry data
         self.telemetry_ready.emit(data)
