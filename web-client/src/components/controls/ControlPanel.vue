@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watchEffect } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useTrainStore } from '@/stores/trainStore';
 
@@ -61,6 +61,7 @@ const { telemetryData } = storeToRefs(trainStore);
 // State
 const maxSpeed = ref(80); // km/h
 const powerLevel = ref(0);
+const targetSpeed = ref(0);
 const emergencyBrakeActive = ref(false);
 // const headlightsOn = ref(true);
 // const taillightsOn = ref(true);
@@ -74,8 +75,12 @@ const systemStatus = computed(() => telemetryData.value?.status || "offline");
 const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
 const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
 const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
-const targetSpeed = computed(() => telemetryData.value?.speed || 0);
 // const hasDoors = computed(() => telemetryData.value?.has_doors || false);
+
+watchEffect(() => {
+  // Keep the slider in sync with telemetry updates
+  targetSpeed.value = telemetryData.value?.speed || 0;
+});
 
 // Methods
 const handleThrottleChange = (level) => {
@@ -100,6 +105,7 @@ const resetEmergency = () => {
 
 function onTargetSpeedChange(val) {
   targetSpeed.value = val;
+  console.log('onTargetSpeedChange: ', targetSpeed.value)
 }
 
 function onTargetSpeedCommit(val) {
