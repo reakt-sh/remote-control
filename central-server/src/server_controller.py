@@ -118,7 +118,9 @@ class ServerController:
 
     async def send_data_to_train(self, remote_control_id: str, data: bytes) -> None:
         train_id = self.client_to_train_map.get(remote_control_id)
+        logger.debug(f"train_id fond = {train_id}")
         if train_id and train_id in self.train_manager.active_connections:
+            logger.debug(f"websocket connection also found for {train_id}")
             websocket = self.train_manager.active_connections[train_id]
             await websocket.send_bytes(data)
 

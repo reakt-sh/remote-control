@@ -1,6 +1,10 @@
+import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from server_controller import ServerController
 from utils.app_logger import logger
+from globals import PACKET_TYPE
+
+
 s_controller = ServerController()
 router = APIRouter()
 
@@ -11,9 +15,17 @@ async def remote_control_interface(websocket: WebSocket, remote_control_id: str)
     await s_controller.add_remote_controller(websocket, remote_control_id)
     try:
         while True:
-            command = await websocket.receive_bytes()
-            logger.debug(f"Received bytes from web-client: {remote_control_id}")
-            s_controller.send_to_train(command, remote_control_id)
+            data = await websocket.receive_bytes()
+            await s_controller.send_data_to_train(remote_control_id, data)
+            packet_type = data[0]
+            payload = data[1:]
+            if packet_type == PACKET_TYPE["command"]:
+                message = json.loads(payload.decode('utf-8'))
+                train_id = message['train_id']
+                logger.debug(f"{train_id} : {message}")
+            else:
+                logger.debug("Unknown message type")
+            #s_controller.send_to_train(command, remote_control_id)
     except WebSocketDisconnect:
         await s_controller.remove_remote_controller(remote_control_id)
         s_controller.unmap_client_from_train(remote_control_id)

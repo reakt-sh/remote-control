@@ -78,6 +78,10 @@ class NetworkWorker(QThread):
                     if packet_type == PACKET_TYPE["keepalive"]:
                         message = json.loads(payload.decode('utf-8'))
                         print(f"Keepalive message: {message}")
+                    elif packet_type == PACKET_TYPE["command"]:
+                        message = json.loads(payload.decode('utf-8'))
+                        if message['instruction'] == 'CHANGE_TARGET_SPEED':
+                            print("Target Speed Received: ", message['target_speed'])
                     else:
                         print(f"Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:
