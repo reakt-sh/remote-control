@@ -70,6 +70,7 @@ const tempClass = computed(() => {
 
 <style scoped>
 .system-status {
+  min-width: 300px;
   background: #1a1a1a;
   border-radius: 15px;
   padding: 15px;

@@ -2,13 +2,13 @@
   <div class="driver-console">
     <div class="control-panel">
       <!-- Left: Master controller -->
-      <MasterController
+      <!-- <MasterController
         :speed="currentSpeed"
         :max-speed="maxSpeed"
         :power-level="powerLevel"
         @throttle-change="handleThrottleChange"
         @brake-change="handleBrakeChange"
-      />
+      /> -->
 
       <!-- Center: Indicators -->
       <div class="indicators-panel">
@@ -28,13 +28,13 @@
       </div>
 
       <!-- Right: Emergency controls -->
-      <div class="emergency-panel">
+      <!-- <div class="emergency-panel">
         <EmergencyControls
           :emergency-brake-active="emergencyBrakeActive"
           @emergency-brake="activateEmergencyBrake"
           @reset-emergency="resetEmergency"
         />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -45,10 +45,10 @@ import { storeToRefs } from 'pinia';
 import { useTrainStore } from '@/stores/trainStore';
 
 // Components
-import MasterController from './MasterController.vue';
 import Speedometer from './Speedometer.vue';
 import SystemStatus from './SystemStatus.vue';
-import EmergencyControls from './EmergencyControls.vue';
+// import MasterController from './MasterController.vue';
+// import EmergencyControls from './EmergencyControls.vue';
 // import LightingControls from './LightingControls.vue';
 // import DoorControls from './DoorControls.vue';
 // import CommunicationPanel from './CommunicationPanel.vue';
@@ -60,9 +60,9 @@ const { telemetryData } = storeToRefs(trainStore);
 
 // State
 const maxSpeed = ref(80); // km/h
-const powerLevel = ref(0);
 const targetSpeed = ref(0);
-const emergencyBrakeActive = ref(false);
+// const powerLevel = ref(0);
+// const emergencyBrakeActive = ref(false);
 // const headlightsOn = ref(true);
 // const taillightsOn = ref(true);
 // const doorsOpen = ref(false);
@@ -78,25 +78,25 @@ const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
 // const hasDoors = computed(() => telemetryData.value?.has_doors || false);
 
 // Methods
-const handleThrottleChange = (level) => {
-  powerLevel.value = level;
-  // Send command to backend
-};
+// const handleThrottleChange = (level) => {
+//   powerLevel.value = level;
+//   // Send command to backend
+// };
 
-const handleBrakeChange = (level) => {
-  // Handle brake application
-  console.log(level)
-};
+// const handleBrakeChange = (level) => {
+//   // Handle brake application
+//   console.log(level)
+// };
 
-const activateEmergencyBrake = () => {
-  emergencyBrakeActive.value = true;
-  // Send emergency command
-};
+// const activateEmergencyBrake = () => {
+//   emergencyBrakeActive.value = true;
+//   // Send emergency command
+// };
 
-const resetEmergency = () => {
-  emergencyBrakeActive.value = false;
-  // Reset emergency state
-};
+// const resetEmergency = () => {
+//   emergencyBrakeActive.value = false;
+//   // Reset emergency state
+// };
 
 function onTargetSpeedChange(val) {
   targetSpeed.value = val;
@@ -153,6 +153,7 @@ watch(
 
 .indicators-panel {
   display: flex;
+  margin-left: 340px;
   flex-direction: row;
   justify-content: center;
   align-items: stretch;      /* Make children take full height */
