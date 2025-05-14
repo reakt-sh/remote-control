@@ -8,7 +8,7 @@ import websockets
 from globals import *
 
 class NetworkWorker(QThread):
-    packet_sent = pyqtSignal(int)
+    process_command = pyqtSignal(object)
 
     def __init__(self, train_client_id, parent=None):
         super().__init__(parent)
@@ -59,7 +59,6 @@ class NetworkWorker(QThread):
                 packet = self.packet_queue.get_nowait()
                 if packet:
                     await websocket.send(packet)
-                    self.packet_sent.emit(len(packet))
             except queue.Empty:
                 await asyncio.sleep(0.1)  # Increased sleep to yield to other tasks
             except Exception as e:
@@ -79,9 +78,7 @@ class NetworkWorker(QThread):
                         message = json.loads(payload.decode('utf-8'))
                         print(f"Keepalive message: {message}")
                     elif packet_type == PACKET_TYPE["command"]:
-                        message = json.loads(payload.decode('utf-8'))
-                        if message['instruction'] == 'CHANGE_TARGET_SPEED':
-                            print("Target Speed Received: ", message['target_speed'])
+                        self.process_command.emit(payload)
                     else:
                         print(f"Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:

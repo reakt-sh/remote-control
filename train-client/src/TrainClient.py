@@ -175,13 +175,13 @@ class TrainClient(QMainWindow):
 
     def init_network(self):
         self.network_worker = NetworkWorker(self.train_client_id)
-        self.network_worker.packet_sent.connect(self.on_packet_sent)
+        self.network_worker.process_command.connect(self.on_new_command)
         self.network_worker.start()
 
-    @pyqtSlot(int)
-    def on_packet_sent(self, size):
-        # Optional: Update UI with sent packet info
-        pass
+    def on_new_command(self, payload):
+        message = json.loads(payload.decode('utf-8'))
+        if message['instruction'] == 'CHANGE_TARGET_SPEED':
+            self.video_source.set_speed(message['target_speed'])
 
     def on_new_frame(self, frame_id, frame):
         # Convert to RGB for PyQt display
