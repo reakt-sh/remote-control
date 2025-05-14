@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watchEffect } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useTrainStore } from '@/stores/trainStore';
 
@@ -77,11 +77,6 @@ const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
 const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
 // const hasDoors = computed(() => telemetryData.value?.has_doors || false);
 
-watchEffect(() => {
-  // Keep the slider in sync with telemetry updates
-  targetSpeed.value = telemetryData.value?.speed || 0;
-});
-
 // Methods
 const handleThrottleChange = (level) => {
   powerLevel.value = level;
@@ -116,6 +111,16 @@ function onTargetSpeedCommit(val) {
   }
   trainStore.sendCommand(data);
 }
+
+watch(
+  () => telemetryData.value?.train_id, // or selectedTrainId if you have it in this component
+  (newTrainId, oldTrainId) => {
+    if (newTrainId && newTrainId !== oldTrainId) {
+      // Set targetSpeed to the current speed of the new train
+      targetSpeed.value = telemetryData.value?.speed || 0;
+    }
+  }
+);
 
 // Other methods...
 </script>

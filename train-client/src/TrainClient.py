@@ -184,9 +184,6 @@ class TrainClient(QMainWindow):
         message = json.loads(payload.decode('utf-8'))
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
-            self.video_source.set_speed(self.target_speed)
-            if self.telemetry.get_speed != self.target_speed:
-                self.telemetry.set_speed(self.target_speed)
 
     def on_new_frame(self, frame_id, frame):
         # Convert to RGB for PyQt display
@@ -208,6 +205,18 @@ class TrainClient(QMainWindow):
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
             self.network_worker.enqueue_packet(packet)
+
+            current_speed = self.telemetry.get_speed()
+            delta = 0
+            if current_speed > self.target_speed:
+                delta = 0 - min(5, current_speed - self.target_speed)
+            elif current_speed < self.target_speed:
+                delta = min(5, self.target_speed - current_speed)
+            else:
+                delta = 0
+
+            self.video_source.set_speed(current_speed + delta)
+            self.telemetry.set_speed(current_speed + delta)
 
     def on_imu_data(self, data):
         # Process IMU data
