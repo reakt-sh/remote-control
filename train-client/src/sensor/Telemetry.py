@@ -40,6 +40,9 @@ class Telemetry(QObject):
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
 
+    def get_speed(self):
+        return self.speed
+
     def set_speed(self, speed: int):
         if 0 <= speed <= self.max_speed:
             self.speed = speed

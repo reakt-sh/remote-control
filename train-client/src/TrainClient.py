@@ -57,6 +57,8 @@ class TrainClient(QMainWindow):
         self.encoder = Encoder()
         self.encoder.encode_ready.connect(self.on_encoded_frame)
 
+        self.target_speed = 60
+
     def initialize_train_client_id(self):
         client_id = str(uuid.uuid4())
         print(f"TrainClient ID initialized: {client_id}")
@@ -181,7 +183,10 @@ class TrainClient(QMainWindow):
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
-            self.video_source.set_speed(message['target_speed'])
+            self.target_speed = message['target_speed']
+            self.video_source.set_speed(self.target_speed)
+            if self.telemetry.get_speed != self.target_speed:
+                self.telemetry.set_speed(self.target_speed)
 
     def on_new_frame(self, frame_id, frame):
         # Convert to RGB for PyQt display
