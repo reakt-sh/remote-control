@@ -1,6 +1,6 @@
 <template>
-  <div class="connection-status" :class="{ connected: isConnected }">
-    {{ isConnected ? 'CONNECTED' : 'DISCONNECTED' }}
+  <div class="connection-status" :class="{ connected: selectedTrainId }">
+    {{ selectedTrainId ? 'CONNECTED' : 'DISCONNECTED' }}
   </div>
 </template>
 
@@ -8,7 +8,7 @@
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { isConnected } = storeToRefs(useTrainStore())
+const { selectedTrainId } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>
