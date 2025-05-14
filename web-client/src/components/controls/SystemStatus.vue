@@ -88,6 +88,7 @@ const fuelFillColor = computed(() => {
 
 <style scoped>
 .system-status {
+  margin-top: 200px;
   min-width: 300px;
   background: #1a1a1a;
   border-radius: 15px;

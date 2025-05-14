@@ -59,7 +59,7 @@ const trainStore = useTrainStore();
 const { telemetryData } = storeToRefs(trainStore);
 
 // State
-const maxSpeed = ref(80); // km/h
+const maxSpeed = ref(60); // km/h
 const targetSpeed = ref(0);
 // const powerLevel = ref(0);
 // const emergencyBrakeActive = ref(false);
@@ -158,9 +158,8 @@ watch(
   justify-content: center;
   align-items: stretch;      /* Make children take full height */
   gap: 4px;                  /* Reduce gap between them */
-  height: 350px;             /* Set a fixed height for both */
-  min-height: 80px;
-  max-height: 350px;
+  min-height: 360px;
+  max-height: 360px;
 }
 
 .secondary-controls {
@@ -197,6 +196,10 @@ watch(
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.indicators-panel :deep(.system-status) {
+  margin-top: 120px
 }
 
 @media (max-width: 1200px) {

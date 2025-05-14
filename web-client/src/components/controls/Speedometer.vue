@@ -2,8 +2,12 @@
   <div class="speedometer">
     <div class="gauge">
       <div class="ticks">
-        <div v-for="tick in ticks" :key="tick.value" 
-             class="tick" :style="tick.style"></div>
+        <div v-for="tick in majorTicks" :key="tick.value"
+             class="tick major-tick" :style="tick.style">
+          <span class="tick-number" :style="tick.numberStyle">{{ tick.value * 2 }}</span>
+        </div>
+        <div v-for="tick in minorTicks" :key="tick.value"
+             class="tick minor-tick" :style="tick.style"></div>
       </div>
       <div class="needle" :style="{ transform: `rotate(${needleRotation}deg)` }"></div>
       <div class="center"></div>
@@ -18,7 +22,7 @@
         <input
           type="range"
           min="0"
-          max="60"
+          :max="props.maxSpeed"
           :value="props.targetSpeed"
           @input="e => emit('update:targetSpeed', Number(e.target.value))"
           @change="e => emit('change:targetSpeed', Number(e.target.value))"
@@ -43,13 +47,17 @@ const props = defineProps({
   },
   maxSpeed: {
     type: Number,
-    default: 120
+    default: 60
   }
 });
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
+// Visual range is 0-80, but functional max is 60
+const visualMaxSpeed = 80;
+
 const needleRotation = computed(() => {
-  const ratio = props.currentSpeed / props.maxSpeed;
+  // Calculate ratio based on visual range (0-80)
+  const ratio = Math.min(props.currentSpeed, props.maxSpeed) / visualMaxSpeed;
   return ratio * 180 - 90;
 });
 
@@ -57,17 +65,47 @@ const formattedSpeed = computed(() => {
   return Math.round(props.currentSpeed).toString().padStart(3, '0');
 });
 
-const ticks = computed(() => {
-  const tickCount = 12;
+const majorTicks = computed(() => {
+  const tickCount = 4; // 0, 10, 20, ..., 80
   const ticks = [];
   for (let i = 0; i <= tickCount; i++) {
-    const value = Math.round((i / tickCount) * props.maxSpeed);
-    const angle = (i / tickCount) * 180 - 90;
+    const value = i * 10; // 0, 10, 20, ..., 80
+    const angle = (value / visualMaxSpeed) * 180 - 90;
+    const radius = 90; // Distance from center to numbers
+    
+    // Calculate position for numbers
+    const radian = (angle * Math.PI) / 180;
+    const x = Math.cos(radian) * radius;
+    const y = Math.sin(radian) * radius;
+    
     ticks.push({
       value,
       style: {
         transform: `rotate(${angle}deg)`,
-        color: value <= 80 ? '#2ecc71' : value <= 100 ? '#f1c40f' : '#e74c3c'
+      },
+      numberStyle: {
+        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${-angle}deg)`,
+        color: value <= 40 ? '#2ecc71' : value <= 60 ? '#f1c40f' : '#e74c3c'
+      }
+    });
+  }
+  return ticks;
+});
+
+const minorTicks = computed(() => {
+  const majorTickCount = 4; // For 0-80 in steps of 10
+  const minorTicksPerMajor = 5; // Results in ticks every 2 km/h (80/8/5 = 2)
+  const ticks = [];
+  for (let i = 0; i <= majorTickCount * minorTicksPerMajor; i++) {
+    // Skip major ticks (they're already handled)
+    if (i % minorTicksPerMajor === 0) continue;
+
+    const value = (i / (majorTickCount * minorTicksPerMajor)) * visualMaxSpeed;
+    const angle = (value / visualMaxSpeed) * 180 - 90;
+    ticks.push({
+      value: Math.round(value) * 2,
+      style: {
+        transform: `rotate(${angle}deg)`,
       }
     });
   }
@@ -76,6 +114,7 @@ const ticks = computed(() => {
 </script>
 
 <style scoped>
+/* All the existing styles remain exactly the same */
 .speedometer {
   background: #1a1a1a;
   border-radius: 15px;
@@ -104,10 +143,10 @@ const ticks = computed(() => {
   height: 100%;
   background: conic-gradient(
     #2ecc71 0deg, 
-    #2ecc71 80deg, 
-    #f1c40f 80deg,
-    #f1c40f 100deg,
-    #e74c3c 100deg,
+    #2ecc71 90deg,  /* 40/80*180 = 90deg for green range */
+    #f1c40f 90deg,
+    #f1c40f 135deg, /* 60/80*180 = 135deg for yellow range */
+    #e74c3c 135deg,
     #e74c3c 180deg
   );
   clip-path: ellipse(100% 50% at 50% 100%);
@@ -125,10 +164,32 @@ const ticks = computed(() => {
   position: absolute;
   left: 50%;
   bottom: 0;
+  transform-origin: bottom center;
+}
+
+.major-tick {
   width: 2px;
   height: 15px;
   background: #fff;
-  transform-origin: bottom center;
+}
+
+.minor-tick {
+  width: 1px;
+  height: 10px;
+  background: #aaa;
+}
+
+.tick-number {
+  position: absolute;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
 }
 
 .needle {
