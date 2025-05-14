@@ -9,7 +9,7 @@
       <div class="status-item">
         <div class="status-label">BATTERY</div>
         <div class="status-meter">
-          <div class="meter-fill" :style="{ width: `${batteryLevel}%` }"></div>
+          <div class="meter-fill" :style="{ width: `${batteryLevel}%`, background: batteryFillColor }"></div>
           <div class="meter-text">{{ Number(batteryLevel).toFixed(2) }}%</div>
         </div>
       </div>
@@ -22,7 +22,7 @@
       <div class="status-item">
         <div class="status-label">FUEL</div>
         <div class="status-meter">
-          <div class="meter-fill" :style="{ width: `${fuelLevel}%` }"></div>
+          <div class="meter-fill" :style="{ width: `${fuelLevel}%`, background: fuelFillColor }"></div>
           <div class="meter-text">{{ Number(fuelLevel).toFixed(2) }}%</div>
         </div>
       </div>
@@ -65,6 +65,24 @@ const tempClass = computed(() => {
   if (props.engineTemp > 100) return 'status-danger';
   if (props.engineTemp > 80) return 'status-warning';
   return 'status-normal';
+});
+
+const batteryFillColor = computed(() => {
+  // batteryLevel: 0 (red) to 100 (green)
+  const percent = Math.max(0, Math.min(100, props.batteryLevel)) / 100;
+  // Interpolate between red (low) and green (full)
+  const r = Math.round(255 * (1 - percent));
+  const g = Math.round(204 * percent); // 204 is green in #2ecc71
+  const b = Math.round(71 * percent);  // 71 is blue in #2ecc71
+  return `rgb(${r},${g},${b})`;
+});
+
+const fuelFillColor = computed(() => {
+  const percent = Math.max(0, Math.min(100, props.fuelLevel)) / 100;
+  const r = Math.round(255 * (1 - percent));
+  const g = Math.round(204 * percent);
+  const b = Math.round(71 * percent);
+  return `rgb(${r},${g},${b})`;
 });
 </script>
 
@@ -147,9 +165,14 @@ const tempClass = computed(() => {
 }
 
 .meter-fill {
+  position: absolute;
+  left: 0;
+  right: auto;
+  top: 0;
+  bottom: 0;
   height: 100%;
-  background: linear-gradient(to right, #2ecc71, #f1c40f);
-  transition: width 0.5s;
+  /* background will be set dynamically */
+  transition: width 0.5s, background 0.5s;
 }
 
 .meter-text {
