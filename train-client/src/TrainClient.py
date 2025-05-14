@@ -231,6 +231,7 @@ class TrainClient(QMainWindow):
         if self.is_sending:
             encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
             self.network_worker.enqueue_packet(encoded_bytes)
+            self.telemetry.notify_new_frame_processed()
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")

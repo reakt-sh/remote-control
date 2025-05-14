@@ -35,7 +35,8 @@ class Telemetry(QObject):
 
         self.fuel_level = round(random.uniform(70, 99), 2)
         self.network_signal_strength = random.randint(0,100)
-        self.counter = 0
+        self.last_simulation_at_frame = 0
+        self.frame_counter = 0
 
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
@@ -59,13 +60,18 @@ class Telemetry(QObject):
     def stop(self):
         self.timer.stop()
 
-    def simulte_data(self):
-        self.counter += 1
-        if self.counter % 5 == 0:
+    def notify_new_frame_processed(self):
+        self.frame_counter += 1
+        if self.frame_counter > self.last_simulation_at_frame + (60*5):
+            self.last_simulation_at_frame = self.frame_counter
+            self.simulte_data(True)
+
+    def simulte_data(self, everything=False):
+        if everything:
             self.location_index = self.next_station_index
             self.next_station_index = self.get_next_station(self.location_index)
             self.network_signal_strength = random.randint(10,100)
-            self.temperature = random.randint(self.temperature_min, self.temperature_max),
+            self.temperature = random.randint(self.temperature_min, self.temperature_max)
 
 
         self.battery_level -= random.uniform(0.1, 0.4)  # Simulate battery drain
@@ -89,7 +95,7 @@ class Telemetry(QObject):
             "location": STATION_LIST[self.location_index]["name"],
             "next_station": STATION_LIST[self.next_station_index]["name"],
             "passenger_count": self.passenger_count,
-            "temperature": random.randint(self.temperature_min, self.temperature_max),
+            "temperature": self.temperature,
             "battery_level": self.battery_level,
             "video_stream_url": self.video_stream_url,
             "gps": {
