@@ -7,7 +7,7 @@ import websockets
 
 from globals import *
 
-class NetworkWorker(QThread):
+class NetworkWorkerWS(QThread):
     process_command = pyqtSignal(object)
 
     def __init__(self, train_client_id, parent=None):

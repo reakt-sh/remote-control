@@ -3,7 +3,7 @@ import queue
 from PyQt5.QtCore import QThread
 from aioquic.asyncio import connect
 
-class QuicNetworkWorker(QThread):
+class NetworkWorkerQuic(QThread):
     def __init__(self, server_host, server_port, parent=None):
         super().__init__(parent)
         self.server_host = server_host

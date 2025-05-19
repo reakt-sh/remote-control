@@ -14,7 +14,8 @@ from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtCore import QDateTime
 
 from globals import *
-from network_worker_ws import NetworkWorker
+from network_worker_ws import NetworkWorkerWS
+from network_worker_quic import NetworkWorkerQuic
 from sensor.camera import Camera
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
@@ -176,9 +177,9 @@ class TrainClient(QMainWindow):
         self.central_widget.setLayout(layout)
 
     def init_network(self):
-        self.network_worker = NetworkWorker(self.train_client_id)
-        self.network_worker.process_command.connect(self.on_new_command)
-        self.network_worker.start()
+        self.network_worker_ws = NetworkWorkerWS(self.train_client_id)
+        self.network_worker_ws.process_command.connect(self.on_new_command)
+        self.network_worker_ws.start()
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
@@ -204,7 +205,7 @@ class TrainClient(QMainWindow):
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
-            self.network_worker.enqueue_packet(packet)
+            self.network_worker_ws.enqueue_packet(packet)
 
             current_speed = self.telemetry.get_speed()
             delta = 0
@@ -230,7 +231,7 @@ class TrainClient(QMainWindow):
         # Only send if sending is enabled
         if self.is_sending:
             encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
-            self.network_worker.enqueue_packet(encoded_bytes)
+            self.network_worker_ws.enqueue_packet(encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 
     def log_message(self, message):
@@ -290,7 +291,7 @@ class TrainClient(QMainWindow):
     def closeEvent(self, event):
         self.video_source.stop()
         self.encoder.close()
-        self.network_worker.stop()
+        self.network_worker_ws.stop()
         self.output_file.close()
         event.accept()
         print("CameraClient closed.")
