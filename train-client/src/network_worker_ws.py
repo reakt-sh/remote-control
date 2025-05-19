@@ -16,7 +16,7 @@ class NetworkWorkerWS(QThread):
         self.train_client_id = train_client_id
         self.running = False
         self.loop = None
-        self.server_url = f"{SERVER_URL}/train/{train_client_id}"
+        self.server_url = f"{WEBSOCKET_URL}/train/{train_client_id}"
 
     def run(self):
         self.running = True

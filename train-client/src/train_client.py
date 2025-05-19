@@ -181,6 +181,9 @@ class TrainClient(QMainWindow):
         self.network_worker_ws.process_command.connect(self.on_new_command)
         self.network_worker_ws.start()
 
+        self.network_worker_quic = NetworkWorkerQuic(self.train_client_id)
+        self.network_worker_quic.start()
+
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
@@ -231,7 +234,8 @@ class TrainClient(QMainWindow):
         # Only send if sending is enabled
         if self.is_sending:
             encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
-            self.network_worker_ws.enqueue_packet(encoded_bytes)
+            # self.network_worker_ws.enqueue_packet(encoded_bytes)
+            self.network_worker_quic.enqueue_packet(encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 
     def log_message(self, message):

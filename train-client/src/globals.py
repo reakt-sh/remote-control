@@ -23,8 +23,11 @@ PACKET_TYPE = {
     "notification": 21
 }
 
-SERVER_WEBSOCKET_PORT = 8000
-SERVER_URL = f"ws://localhost:{SERVER_WEBSOCKET_PORT}/ws"
+
+SERVER_HOST = "localhost"
+SERVER_PORT = 8000
+QUIC_PORT = 4433
+WEBSOCKET_URL = f"ws://{SERVER_HOST}:{SERVER_PORT}/ws"
 
 STATION_LIST = [
     {"name": "Malente",                     "latitude": 54.1722,        "longitude": 10.5597},
