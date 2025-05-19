@@ -29,6 +29,11 @@ export const useTrainStore = defineStore('train', () => {
   const currentVideoFrame = ref(null)
   const remoteControlId = ref(null)
 
+  // Add these variables for FPS calculation
+  let frame_count = 0
+  let lst_time = Date.now() / 1000 // seconds
+  let fps = 0
+
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
       remoteControlId.value = crypto.randomUUID()
@@ -74,6 +79,16 @@ export const useTrainStore = defineStore('train', () => {
           switch (packetType) {
             case PACKET_TYPE.video:
               currentVideoFrame.value = new Uint8Array(payload)
+              // calculate FPS here
+              frame_count++
+              // difference between current frame_counter and frame_counter received 1 second ago
+              if (Date.now() / 1000 - lst_time > 1)
+              {
+                fps = frame_count
+                frame_count = 0
+                lst_time = Date.now() / 1000
+                console.log('FPS:', fps)
+              }
               break
             case PACKET_TYPE.audio:
               console.log('Received audio data')

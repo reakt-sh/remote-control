@@ -1,6 +1,7 @@
 import asyncio
 import json
 import struct
+import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from server_controller import ServerController
 from utils.app_logger import logger
@@ -16,6 +17,9 @@ async def train_interface(websocket: WebSocket, train_id: str):
     await websocket.accept()
     await s_controller.add_train(train_id, websocket)
     logger.debug(f"For Train {train_id}, websocket connection established")
+
+    last_time = time.time()
+    frame_counter = 0
 
     # Notify all the remote controllers about the new train connection
     packet = packet_builder.make_train_notification(train_id, "connected")
@@ -57,6 +61,17 @@ async def train_interface(websocket: WebSocket, train_id: str):
                 logger.debug(f"{message}")
             else:
                 logger.debug(f"Received unknown packet type {packet_type} from train {train_id}")
+
+            # calculate number of frames per seconds for video packets
+            if packet_type == PACKET_TYPE["video"]:
+                frame_counter += 1
+                # difference of current frame_counter and frame_counter received 1 second ago
+                if time.time() - last_time > 1:
+                    fps = frame_counter / (time.time() - last_time)
+                    logger.debug(f"FPS: {fps}")
+                    frame_counter = 0
+                    last_time = time.time()
+
     except WebSocketDisconnect:
         logger.debug(f"Train {train_id} disconnected.")
         # Notify all the remote controllers about the new train connection

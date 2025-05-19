@@ -24,6 +24,8 @@ let videoWidth = 640
 let videoHeight = 480
 let displayWidth = 0
 let displayHeight = 0
+const frameQueue = []
+let isRendering = false
 
 onMounted(() => {
   updateCanvasSize()
@@ -124,17 +126,37 @@ watch(currentVideoFrame, (newFrame) => {
       }
 
       if (key_frame_found === true) {
-        videoDecoder.decode(new EncodedVideoChunk({
-          type: frame_type,
-          timestamp: performance.now(),
-          data: new Uint8Array(newFrame),
-        }))
+        frameQueue.push(newFrame)
+        if (!isRendering) {
+          isRendering = true
+          requestAnimationFrame(renderNextFrame)
+        }
       }
     } catch (error) {
       console.error('Error decoding frame:', error)
     }
   }
 })
+
+function renderNextFrame() {
+  if (frameQueue.length === 0) {
+    isRendering = false
+    return
+  }
+  const frameData = frameQueue.shift()
+  if (videoDecoder) {
+    try {
+      videoDecoder.decode(new EncodedVideoChunk({
+        type: 'key', // or 'delta', as appropriate
+        timestamp: performance.now(),
+        data: new Uint8Array(frameData),
+      }))
+    } catch (error) {
+      console.error('Error decoding frame:', error)
+    }
+  }
+  requestAnimationFrame(renderNextFrame)
+}
 
 function renderFrame(frame) {
   const ctx = videoCanvas.value.getContext('2d')
