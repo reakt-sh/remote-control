@@ -14,12 +14,12 @@ from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtCore import QDateTime
 
 from globals import *
-from NetworkWorker import NetworkWorker
-from sensor.Camera import Camera
-from sensor.Telemetry import Telemetry
-from sensor.IMU import IMU
-from Encoder import Encoder
-from sensor.FileProcessor import FileProcessor
+from network_worker_ws import NetworkWorker
+from sensor.camera import Camera
+from sensor.telemetry import Telemetry
+from sensor.imu import IMU
+from encoder import Encoder
+from sensor.file_processor import FileProcessor
 class TrainClient(QMainWindow):
     def __init__(self):
         super().__init__()

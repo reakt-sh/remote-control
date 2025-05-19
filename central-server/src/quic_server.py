@@ -2,7 +2,7 @@ import asyncio
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 from aioquic.quic.events import StreamDataReceived
-
+from utils.app_logger import logger
 QUIC_PORT = 4433
 QUIC_HOST = "0.0.0.0"
 
@@ -15,6 +15,7 @@ class QuicRelayProtocol(QuicConnectionProtocol):
         super().__init__(*args, **kwargs)
         self.train_id = None
         self.is_train = False
+        logger.debug("QUIC Relay Protocol initialized")
 
     def quic_event_received(self, event):
         if isinstance(event, StreamDataReceived):
@@ -23,7 +24,7 @@ class QuicRelayProtocol(QuicConnectionProtocol):
                 self.is_train = True
                 self.train_id = event.data.decode().split(":")[1]
                 QuicRelayProtocol.train_clients[self.train_id] = self
-                print(f"Train {self.train_id} connected via QUIC")
+                logger.debug(f"Train {self.train_id} connected via QUIC")
                 return
             if self.is_train:
                 # Relay to all web clients for this train
@@ -36,10 +37,11 @@ class QuicRelayProtocol(QuicConnectionProtocol):
                 if event.data.startswith(b"CLIENT:"):
                     self.train_id = event.data.decode().split(":")[1]
                     QuicRelayProtocol.web_clients.add(self)
-                    print(f"Web client for train {self.train_id} connected via QUIC")
+                    logger.debug(f"Web client for train {self.train_id} connected via QUIC")
 
 async def run_quic_server():
     # Use a real TLS certificate in production!
+    logger.debug("Starting QUIC server")
     await serve(
         QUIC_HOST,
         QUIC_PORT,

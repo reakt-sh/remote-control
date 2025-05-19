@@ -1,7 +1,7 @@
 
 import sys
 from PyQt5.QtWidgets import QApplication
-from TrainClient import TrainClient
+from train_client import TrainClient
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
