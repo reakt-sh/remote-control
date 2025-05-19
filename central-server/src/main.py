@@ -1,3 +1,5 @@
+import threading
+import asyncio
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from server_controller import ServerController
@@ -5,6 +7,7 @@ from utils.app_logger import logger
 from endpoints import remote_control_gateway
 from endpoints import train_gateway
 from config import settings
+from quic_server import run_quic_server
 
 app = FastAPI()
 
@@ -22,7 +25,10 @@ serverController = ServerController()
 async def startup():
     logger.info("Starting up the server...")
     serverController.start_server()
-    pass
+
+    # Start QUIC server in a background thread
+    threading.Thread(target=lambda: asyncio.run(run_quic_server()), daemon=True).start()
+
 
 @app.on_event("shutdown")
 async def shutdown():
