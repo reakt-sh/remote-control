@@ -15,12 +15,13 @@ from PyQt5.QtCore import QDateTime
 
 from globals import *
 from network_worker_ws import NetworkWorkerWS
-from network_worker_quic import NetworkWorkerQuic
+from network_worker_quic import NetworkWorkerQUIC
 from sensor.camera import Camera
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
 from sensor.file_processor import FileProcessor
+
 class TrainClient(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -181,7 +182,7 @@ class TrainClient(QMainWindow):
         self.network_worker_ws.process_command.connect(self.on_new_command)
         self.network_worker_ws.start()
 
-        self.network_worker_quic = NetworkWorkerQuic(self.train_client_id)
+        self.network_worker_quic = NetworkWorkerQUIC(self.train_client_id)
         self.network_worker_quic.start()
 
     def on_new_command(self, payload):

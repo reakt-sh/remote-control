@@ -1,12 +1,18 @@
 import asyncio
+import ssl
+
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 from aioquic.quic.events import StreamDataReceived
+from aioquic.quic.configuration import QuicConfiguration
+
 from utils.app_logger import logger
+
+
 QUIC_PORT = 4433
 QUIC_HOST = "0.0.0.0"
 
-class QuicRelayProtocol(QuicConnectionProtocol):
+class QUICRelayProtocol(QuicConnectionProtocol):
     # Store connected web clients for relaying video
     web_clients = set()
     train_clients = {}
@@ -23,12 +29,12 @@ class QuicRelayProtocol(QuicConnectionProtocol):
             if not self.is_train and event.data.startswith(b"TRAIN:"):
                 self.is_train = True
                 self.train_id = event.data.decode().split(":")[1]
-                QuicRelayProtocol.train_clients[self.train_id] = self
+                QUICRelayProtocol.train_clients[self.train_id] = self
                 logger.debug(f"Train {self.train_id} connected via QUIC")
                 return
             if self.is_train:
                 # Relay to all web clients for this train
-                for client in list(QuicRelayProtocol.web_clients):
+                for client in list(QUICRelayProtocol.web_clients):
                     if getattr(client, "train_id", None) == self.train_id:
                         client._quic.send_stream_data(event.stream_id, event.data)
                         asyncio.create_task(client.transmit())
@@ -36,15 +42,26 @@ class QuicRelayProtocol(QuicConnectionProtocol):
                 # Assume web client sends: b"CLIENT:<train_id>"
                 if event.data.startswith(b"CLIENT:"):
                     self.train_id = event.data.decode().split(":")[1]
-                    QuicRelayProtocol.web_clients.add(self)
+                    QUICRelayProtocol.web_clients.add(self)
                     logger.debug(f"Web client for train {self.train_id} connected via QUIC")
 
 async def run_quic_server():
     # Use a real TLS certificate in production!
-    logger.debug("Starting QUIC server")
+    logger.debug("QUIC server starting...")
+    configuration = QuicConfiguration(is_client=False)
+    # configuration.load_cert_chain(certfile="path/to/cert.pem", keyfile="path/to/key.pem")
+
+    # for testing, verfy mode disable
+    configuration.veryfy_mode = ssl.CERT_NONE
+
     await serve(
         QUIC_HOST,
         QUIC_PORT,
         configuration=None,
-        create_protocol=QuicRelayProtocol,
+        create_protocol=QUICRelayProtocol,
     )
+    # show which port and host the server is running on
+    logger.debug(f"QUIC server running on {QUIC_HOST}:{QUIC_PORT}")
+
+    # Keep server running forever
+    await asyncio.Future()

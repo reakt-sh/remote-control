@@ -10,6 +10,7 @@ python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ### ✅ General Conventions
 - Follow [PEP 8](https://peps.python.org/pep-0008/) for coding style.
 - Use [type hints](https://peps.python.org/pep-0484/) wherever possible.
+- Use [Variable Annotations](https://peps.python.org/pep-0526/) wherever possible.
 - Keep functions small and focused on a single responsibility.
 - Use **async/await** where applicable to leverage FastAPI's asynchronous capabilities.
 - Use meaningful names for variables, functions, and classes.
