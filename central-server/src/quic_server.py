@@ -24,6 +24,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug("QUIC Relay Protocol initialized")
 
     def quic_event_received(self, event):
+        logger.debug(f"QUIC event received: {event}")
         if isinstance(event, StreamDataReceived):
             # First message from train: b"TRAIN:<train_id>"
             if not self.is_train and event.data.startswith(b"TRAIN:"):
@@ -49,15 +50,15 @@ async def run_quic_server():
     # Use a real TLS certificate in production!
     logger.debug("QUIC server starting...")
     configuration = QuicConfiguration(is_client=False)
-    # configuration.load_cert_chain(certfile="path/to/cert.pem", keyfile="path/to/key.pem")
+    configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/cert.pem", keyfile="/etc/ssl/quic_conf/key.pem")
 
     # for testing, verfy mode disable
-    configuration.veryfy_mode = ssl.CERT_NONE
+    configuration.verify_mode = ssl.CERT_NONE
 
     await serve(
         QUIC_HOST,
         QUIC_PORT,
-        configuration=None,
+        configuration=configuration,
         create_protocol=QUICRelayProtocol,
     )
     # show which port and host the server is running on

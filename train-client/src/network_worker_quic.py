@@ -43,19 +43,29 @@ class NetworkWorkerQUIC(threading.Thread):
                 self.server_port,
                 configuration=self.configuration,
             ) as client:
+                if client is None:
+                    print("QUIC: connection failed")
+                    return
+                else:
+                    print(f"QUIC: connection established: {client._quic._peer_cid}")
                 # Send train identification first
                 stream_id = client._quic.get_next_available_stream_id()
                 handshake = f"TRAIN:{self.train_client_id}".encode()
                 client._quic.send_stream_data(stream_id, handshake)
-                await client.transmit()
                 print(f"QUIC: handshake sent, stream ID: {stream_id}")
+                result = client.transmit()
+                if result is not None:
+                    await result
+                print(f"QUIC: the loop is starting with stream id: {stream_id}")
 
                 while self.running:
                     try:
                         packet = self.packet_queue.get_nowait()
                         if packet:
                             client._quic.send_stream_data(stream_id, packet)
-                            await client.transmit()
+                            result = client.transmit()
+                            if result is not None:
+                                await result
                     except queue.Empty:
                         await asyncio.sleep(0.01)
                     except Exception as e:
