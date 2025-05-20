@@ -7,10 +7,8 @@ from aioquic.quic.events import StreamDataReceived
 from aioquic.quic.configuration import QuicConfiguration
 
 from utils.app_logger import logger
+from globals import *
 
-
-QUIC_PORT = 4433
-QUIC_HOST = "0.0.0.0"
 
 class QUICRelayProtocol(QuicConnectionProtocol):
     # Store connected web clients for relaying video
@@ -24,27 +22,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug("QUIC Relay Protocol initialized")
 
     def quic_event_received(self, event):
-        logger.debug(f"QUIC event received: {event}")
         if isinstance(event, StreamDataReceived):
-            # First message from train: b"TRAIN:<train_id>"
-            if not self.is_train and event.data.startswith(b"TRAIN:"):
-                self.is_train = True
-                self.train_id = event.data.decode().split(":")[1]
-                QUICRelayProtocol.train_clients[self.train_id] = self
-                logger.debug(f"Train {self.train_id} connected via QUIC")
-                return
-            if self.is_train:
-                # Relay to all web clients for this train
-                for client in list(QUICRelayProtocol.web_clients):
-                    if getattr(client, "train_id", None) == self.train_id:
-                        client._quic.send_stream_data(event.stream_id, event.data)
-                        asyncio.create_task(client.transmit())
+            if event.data[0] == PACKET_TYPE["video"]:
+                logger.debug(f"QUIC: Received video packet on stream {event.data}")
             else:
-                # Assume web client sends: b"CLIENT:<train_id>"
-                if event.data.startswith(b"CLIENT:"):
-                    self.train_id = event.data.decode().split(":")[1]
-                    QUICRelayProtocol.web_clients.add(self)
-                    logger.debug(f"Web client for train {self.train_id} connected via QUIC")
+                logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
 async def run_quic_server():
     # Use a real TLS certificate in production!

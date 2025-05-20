@@ -10,3 +10,6 @@ PACKET_TYPE = {
     "keepalive": 20,
     "notification": 21
 }
+
+QUIC_PORT = 4433
+QUIC_HOST = "0.0.0.0"
