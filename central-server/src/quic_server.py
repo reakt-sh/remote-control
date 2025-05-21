@@ -19,14 +19,39 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         super().__init__(*args, **kwargs)
         self.train_id = None
         self.is_train = False
+
+        self.file = open("video_dump.h264", "wb")
+        self.current_frame = bytearray()
+        self.current_frame_id = -1
         logger.debug("QUIC Relay Protocol initialized")
 
     def quic_event_received(self, event):
         if isinstance(event, StreamDataReceived):
             if event.data[0] == PACKET_TYPE["video"]:
-                logger.debug(f"QUIC: Received video packet on stream {event.data}")
+                # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id
+                packet_type = event.data[0]
+                frame_id = int.from_bytes(event.data[1:5], byteorder='big')
+                number_of_packets = int.from_bytes(event.data[5:7], byteorder='big')
+                packet_id = int.from_bytes(event.data[7:9], byteorder='big')
+                payload = event.data[9:]
+                logger.debug(f"QUIC: Received video packet on stream frame_id: {frame_id}, number_of_packets: {number_of_packets}, packet_id: {packet_id}, payload size: {len(payload)}")
+
+                if self.current_frame_id != frame_id:
+                    self.current_frame = bytearray()
+                    self.current_frame_id = frame_id
+                    self.current_frame.extend(payload)
+                else:
+                    self.current_frame.extend(payload)
+                    if packet_id == number_of_packets:
+                        # Send the complete frame to all web clients
+                        # now write to a file to test
+                        self.file.write(self.current_frame)
+                        self.file.flush()
+                        logger.debug(f"QUIC: Received complete video frame {frame_id} of size {len(self.current_frame)}")
+
             else:
-                logger.debug(f"QUIC: Received unhandled data : {event.data}")
+                pass
+                #logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
 async def run_quic_server():
     # Use a real TLS certificate in production!
