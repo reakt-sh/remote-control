@@ -77,5 +77,30 @@ class NetworkWorkerQUIC(threading.Thread):
     def stop(self):
         self.running = False
 
+    def enqueue_video_frame(self, frame_id, frame):
+        # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id
+        number_of_packets = (len(frame) // MAX_PACKET_SIZE) + 1
+        packet_id = 1
+        while(len(frame) > MAX_PACKET_SIZE):
+            header = bytearray()
+            header.append(PACKET_TYPE["video"])
+            header.extend(frame_id.to_bytes(4, byteorder='big'))
+            header.extend(number_of_packets.to_bytes(2, byteorder='big'))
+            header.extend(packet_id.to_bytes(2, byteorder='big'))
+            packet = header + frame[:MAX_PACKET_SIZE]
+            self.enqueue_packet(packet)
+            frame = frame[MAX_PACKET_SIZE:]
+            packet_id += 1
+
+        # send the last packet
+        header = bytearray()
+        header.append(PACKET_TYPE["video"])
+        header.extend(frame_id.to_bytes(4, byteorder='big'))
+        header.extend(number_of_packets.to_bytes(2, byteorder='big'))
+        header.extend(packet_id.to_bytes(2, byteorder='big'))
+        packet = header + frame
+        self.enqueue_packet(packet)
+
+
     def enqueue_packet(self, packet):
         self.packet_queue.put(packet)

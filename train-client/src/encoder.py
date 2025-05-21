@@ -3,7 +3,7 @@ from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
 from globals import *
 class Encoder(QObject):
-    encode_ready = pyqtSignal(object)  # Emits the encoded bytes
+    encode_ready = pyqtSignal(int, object)  # Emits the encoded bytes
     def __init__(self, parent=None):
         super().__init__(parent)
         self.width = FRAME_WIDTH
@@ -65,9 +65,11 @@ class Encoder(QObject):
                         log_callback(f"B-frame NAL unit detected for Frame ID: {frame_id}")
 
                 if nal_type == 5:  # IDR frame
-                    self.encode_ready.emit(current_sps_pps)
-
-                self.encode_ready.emit(packet_bytes)
+                    # Prepend SPS and PPS to the IDR frame
+                    sps_pps_idr = current_sps_pps + packet_bytes
+                    self.encode_ready.emit(frame_id, sps_pps_idr)
+                else:
+                    self.encode_ready.emit(frame_id, packet_bytes)
 
     def close(self):
         self.output_container.close()

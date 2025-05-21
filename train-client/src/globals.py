@@ -29,6 +29,7 @@ SERVER_PORT = 8000
 QUIC_HOST = "127.0.0.1"
 QUIC_PORT = 4433
 WEBSOCKET_URL = f"ws://{SERVER_HOST}:{SERVER_PORT}/ws"
+MAX_PACKET_SIZE = 1200
 
 STATION_LIST = [
     {"name": "Malente",                     "latitude": 54.1722,        "longitude": 10.5597},

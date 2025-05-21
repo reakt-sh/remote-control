@@ -228,16 +228,16 @@ class TrainClient(QMainWindow):
         imu_message = f"IMU Data: {data}"
         self.log_message(imu_message)
 
-    def on_encoded_frame(self, encoded_bytes):
+    def on_encoded_frame(self, frame_id, encoded_bytes):
         if self.write_to_file:
             self.output_file.write(encoded_bytes)
             self.output_file.flush()
         # Only send if sending is enabled
         if self.is_sending:
             encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
-            # self.network_worker_ws.enqueue_packet(encoded_bytes)
-            self.network_worker_quic.enqueue_packet(encoded_bytes)
+            self.network_worker_quic.enqueue_video_frame(frame_id, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
+            print("Encoded frame to network worker quic enqueue, length:", len(encoded_bytes))
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
@@ -297,6 +297,7 @@ class TrainClient(QMainWindow):
         self.video_source.stop()
         self.encoder.close()
         self.network_worker_ws.stop()
+        self.network_worker_quic.stop()
         self.output_file.close()
         event.accept()
         print("CameraClient closed.")
