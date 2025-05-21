@@ -4,10 +4,11 @@ import { ref } from 'vue'
 // Define server IP and port as constants
 const SERVER = 'localhost'
 const SERVER_PORT = 8000
+const QUIC_HOST = "127.0.0.1"
 const QUIC_PORT = 4437
 const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
 const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
-const QUIC_URL = `https://${SERVER}:${QUIC_PORT}`
+const QUIC_URL = `https://${QUIC_HOST}:${QUIC_PORT}`
 // Packet Types
 const PACKET_TYPE = {
   video: 13,
@@ -56,7 +57,7 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function connectToServer() {
+  async function connectToServer() {
     connectToWebTransport()
     // Disconnect previous connection if exists
     if (webSocket.value) {
@@ -83,17 +84,7 @@ export const useTrainStore = defineStore('train', () => {
           let jsonString = ""
           switch (packetType) {
             case PACKET_TYPE.video:
-              currentVideoFrame.value = new Uint8Array(payload)
-              // calculate FPS here
-              frame_count++
-              // difference between current frame_counter and frame_counter received 1 second ago
-              if (Date.now() / 1000 - lst_time > 1)
-              {
-                fps = frame_count
-                frame_count = 0
-                lst_time = Date.now() / 1000
-                console.log('FPS:', fps)
-              }
+              // This is now handled by WebTransport
               break
             case PACKET_TYPE.audio:
               console.log('Received audio data')
@@ -204,18 +195,36 @@ export const useTrainStore = defineStore('train', () => {
 
   async function connectToWebTransport() {
     if (webTransport.value) {
-      webTransport.value.close()
-      webTransport.value = null
+        webTransport.value.close()
+        webTransport.value = null
     }
 
     try {
-      webTransport.value = new WebTransport(QUIC_URL)
-      await webTransport.value.ready
-      console.log('WebTransport connected')
+        console.log('Connecting to WebTransport...')
+
+        // Convert the hex string to Uint8Array
+        const hashHex = "9f92c16a0b20029b3ba4a1e46cbb2348e2cd916f22f3bd7fbad8ee16753f6bc6"
+        const hashBytes = new Uint8Array(
+            hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16))
+        )
+
+        webTransport.value = new WebTransport(QUIC_URL, {
+            serverCertificateHashes: [{
+                algorithm: "sha-256",
+                value: hashBytes  // Now using Uint8Array instead of string
+            }]
+        });
+        await webTransport.value.ready
+        console.log('WebTransport connected')
 
       // Create a stream reader for video
-      const videoStream = webTransport.value.createBidirectionalStream()
-      videoStreamReader.value = videoStream.readable.getReader()
+      // Use createUnidirectionalStream for receiving data
+      const stream = await webTransport.value.incomingUnidirectionalStreams.getReader().read();
+      if (stream.done) {
+        console.log("No more streams available.");
+        return;
+      }
+      videoStreamReader.value = stream.value.getReader();
 
       // Start reading from the stream
       readVideoStream()

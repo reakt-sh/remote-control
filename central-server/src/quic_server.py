@@ -26,6 +26,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug("QUIC Relay Protocol initialized")
 
     def quic_event_received(self, event):
+        logger.debug(f"QUIC: Received event: {event}")
         if isinstance(event, StreamDataReceived):
             # Identify client type
             if not self.is_train and not self.is_web_client:
@@ -94,13 +95,14 @@ async def run_quic_server():
     configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/cert.pem", keyfile="/etc/ssl/quic_conf/key.pem")
 
     # for testing, verfy mode disable
-    configuration.verify_mode = ssl.CERT_NONE
+    # configuration.verify_mode = ssl.CERT_NONE
 
     await serve(
         HOST,
         QUIC_PORT,
         configuration=configuration,
         create_protocol=QUICRelayProtocol,
+        # webtransport=True  # Enable WebTransport support
     )
     # show which port and host the server is running on
     logger.debug(f"QUIC: server running on {HOST}:{QUIC_PORT}")
