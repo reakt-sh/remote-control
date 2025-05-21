@@ -234,8 +234,7 @@ class TrainClient(QMainWindow):
             self.output_file.flush()
         # Only send if sending is enabled
         if self.is_sending:
-            encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
-            self.network_worker_quic.enqueue_video_frame(frame_id, encoded_bytes)
+            self.network_worker_quic.enqueue_frame(frame_id, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
             print("Encoded frame to network worker quic enqueue, length:", len(encoded_bytes))
 

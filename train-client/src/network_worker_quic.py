@@ -20,7 +20,7 @@ class NetworkWorkerQUIC(threading.Thread):
 
         self.server_host = QUIC_HOST
         self.server_port = QUIC_PORT
-        self.packet_queue = queue.Queue()
+        self.frame_queue = queue.Queue()
         self.running = False
         self.loop = None
         print(f"QUIC: server URL: {self.server_host}:{self.server_port}")
@@ -60,8 +60,9 @@ class NetworkWorkerQUIC(threading.Thread):
 
                 while self.running:
                     try:
-                        packet = self.packet_queue.get_nowait()
-                        if packet:
+                        (frame_id, frame) = self.frame_queue.get_nowait()
+                        packet_list = self.get_packets(frame_id, frame)
+                        for packet in packet_list:
                             client._quic.send_stream_data(stream_id, packet)
                             result = client.transmit()
                             if result is not None:
@@ -77,10 +78,11 @@ class NetworkWorkerQUIC(threading.Thread):
     def stop(self):
         self.running = False
 
-    def enqueue_video_frame(self, frame_id, frame):
+    def get_packets(self, frame_id, frame):
         # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id
         number_of_packets = (len(frame) // MAX_PACKET_SIZE) + 1
         packet_id = 1
+        packet_list = []
         while(len(frame) > MAX_PACKET_SIZE):
             header = bytearray()
             header.append(PACKET_TYPE["video"])
@@ -88,7 +90,9 @@ class NetworkWorkerQUIC(threading.Thread):
             header.extend(number_of_packets.to_bytes(2, byteorder='big'))
             header.extend(packet_id.to_bytes(2, byteorder='big'))
             packet = header + frame[:MAX_PACKET_SIZE]
-            self.enqueue_packet(packet)
+            packet_list.append(packet)
+
+            # remove the first MAX_PACKET_SIZE bytes from the frame
             frame = frame[MAX_PACKET_SIZE:]
             packet_id += 1
 
@@ -99,8 +103,9 @@ class NetworkWorkerQUIC(threading.Thread):
         header.extend(number_of_packets.to_bytes(2, byteorder='big'))
         header.extend(packet_id.to_bytes(2, byteorder='big'))
         packet = header + frame
-        self.enqueue_packet(packet)
+        packet_list.append(packet)
+        return packet_list
 
 
-    def enqueue_packet(self, packet):
-        self.packet_queue.put(packet)
+    def enqueue_frame(self, frame_id, frame):
+        self.frame_queue.put((frame_id, frame))
