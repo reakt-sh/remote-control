@@ -28,13 +28,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
     def quic_event_received(self, event):
         if isinstance(event, StreamDataReceived):
             if event.data[0] == PACKET_TYPE["video"]:
-                # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id
+                # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id, 36 byte for train_id
                 packet_type = event.data[0]
                 frame_id = int.from_bytes(event.data[1:5], byteorder='big')
                 number_of_packets = int.from_bytes(event.data[5:7], byteorder='big')
                 packet_id = int.from_bytes(event.data[7:9], byteorder='big')
-                payload = event.data[9:]
-                logger.debug(f"QUIC: Received video packet on stream frame_id: {frame_id}, number_of_packets: {number_of_packets}, packet_id: {packet_id}, payload size: {len(payload)}")
+                train_id = event.data[9:45].decode('utf-8')
+                payload = event.data[45:]
+                logger.debug(f"QUIC: {train_id} - Video Packet ==> frame_id: {frame_id}, number_of_packets: {number_of_packets}, packet_id: {packet_id}, payload size: {len(payload)}")
 
                 if self.current_frame_id != frame_id:
                     self.current_frame = bytearray()

@@ -14,6 +14,7 @@ class NetworkWorkerQUIC(threading.Thread):
     def __init__(self, train_client_id, parent=None):
         super().__init__(parent)
         self.train_client_id = train_client_id
+        self.train_client_id_bytes = train_client_id.encode('utf-8')
 
         self.configuration = QuicConfiguration(is_client=True)
         self.configuration.verify_mode = ssl.CERT_NONE  # For testing, disable verification mode
@@ -79,7 +80,7 @@ class NetworkWorkerQUIC(threading.Thread):
         self.running = False
 
     def get_packets(self, frame_id, frame):
-        # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id
+        # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id, 36 byte for train_id
         number_of_packets = (len(frame) // MAX_PACKET_SIZE) + 1
         packet_id = 1
         packet_list = []
@@ -89,6 +90,7 @@ class NetworkWorkerQUIC(threading.Thread):
             header.extend(frame_id.to_bytes(4, byteorder='big'))
             header.extend(number_of_packets.to_bytes(2, byteorder='big'))
             header.extend(packet_id.to_bytes(2, byteorder='big'))
+            header.extend(self.train_client_id_bytes)
             packet = header + frame[:MAX_PACKET_SIZE]
             packet_list.append(packet)
 
@@ -102,6 +104,7 @@ class NetworkWorkerQUIC(threading.Thread):
         header.extend(frame_id.to_bytes(4, byteorder='big'))
         header.extend(number_of_packets.to_bytes(2, byteorder='big'))
         header.extend(packet_id.to_bytes(2, byteorder='big'))
+        header.extend(self.train_client_id_bytes)
         packet = header + frame
         packet_list.append(packet)
         return packet_list

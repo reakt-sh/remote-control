@@ -236,7 +236,7 @@ class TrainClient(QMainWindow):
         if self.is_sending:
             self.network_worker_quic.enqueue_frame(frame_id, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
-            print("Encoded frame to network worker quic enqueue, length:", len(encoded_bytes))
+            # print("Encoded frame to network worker quic enqueue, length:", len(encoded_bytes))
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
