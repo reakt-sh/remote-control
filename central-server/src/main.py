@@ -7,6 +7,7 @@ from utils.app_logger import logger
 from endpoints import remote_control_gateway
 from endpoints import train_gateway
 from config import settings
+
 from quic_server import run_quic_server
 
 app = FastAPI()
@@ -28,6 +29,7 @@ async def startup():
 
     # Start QUIC server in a background thread
     threading.Thread(target=lambda: asyncio.run(run_quic_server()), daemon=True).start()
+
 
 
 @app.on_event("shutdown")

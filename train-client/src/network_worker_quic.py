@@ -16,8 +16,13 @@ class NetworkWorkerQUIC(threading.Thread):
         self.train_client_id = train_client_id
         self.train_client_id_bytes = train_client_id.encode('utf-8')
 
-        self.configuration = QuicConfiguration(is_client=True)
+        self.configuration = QuicConfiguration(
+            is_client=True,
+            alpn_protocols=["h3", "webtransport"],
+            max_datagram_frame_size=65536
+        )
         self.configuration.verify_mode = ssl.CERT_NONE  # For testing, disable verification mode
+        # self.configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/cert.pem", keyfile="/etc/ssl/quic_conf/key.pem")
 
         self.server_host = QUIC_HOST
         self.server_port = QUIC_PORT

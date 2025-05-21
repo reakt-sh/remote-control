@@ -11,5 +11,5 @@ PACKET_TYPE = {
     "notification": 21
 }
 
-QUIC_PORT = 4433
-QUIC_HOST = "0.0.0.0"
+HOST = "0.0.0.0"
+QUIC_PORT = 4437

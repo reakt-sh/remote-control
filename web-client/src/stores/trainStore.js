@@ -4,7 +4,7 @@ import { ref } from 'vue'
 // Define server IP and port as constants
 const SERVER = 'localhost'
 const SERVER_PORT = 8000
-const QUIC_PORT = 4433
+const QUIC_PORT = 4437
 const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
 const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
 const QUIC_URL = `https://${SERVER}:${QUIC_PORT}`
