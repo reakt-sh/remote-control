@@ -51,12 +51,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                         logger.debug(f"QUIC: Received complete video frame {frame_id} of size {len(self.current_frame)}")
 
             else:
-                pass
-                #logger.debug(f"QUIC: Received unhandled data : {event.data}")
+                logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
 async def run_quic_server():
     # Use a real TLS certificate in production!
-    logger.debug("QUIC server starting...")
+    logger.debug("QUIC: server starting...")
     configuration = QuicConfiguration(is_client=False)
     configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/cert.pem", keyfile="/etc/ssl/quic_conf/key.pem")
 
@@ -70,7 +69,7 @@ async def run_quic_server():
         create_protocol=QUICRelayProtocol,
     )
     # show which port and host the server is running on
-    logger.debug(f"QUIC server running on {QUIC_HOST}:{QUIC_PORT}")
+    logger.debug(f"QUIC: server running on {QUIC_HOST}:{QUIC_PORT}")
 
     # Keep server running forever
     await asyncio.Future()

@@ -2,10 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 // Define server IP and port as constants
-const SERVER_IP = 'localhost'
+const SERVER = 'localhost'
 const SERVER_PORT = 8000
-const SERVER_URL = `http://${SERVER_IP}:${SERVER_PORT}`
-const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}`
+const QUIC_PORT = 4433
+const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
+const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
+const QUIC_URL = `https://${SERVER}:${QUIC_PORT}`
 // Packet Types
 const PACKET_TYPE = {
   video: 13,
@@ -28,6 +30,8 @@ export const useTrainStore = defineStore('train', () => {
   const webSocket = ref(null)
   const currentVideoFrame = ref(null)
   const remoteControlId = ref(null)
+  const webTransport = ref(null)
+  const videoStreamReader = ref(null)
 
   // Add these variables for FPS calculation
   let frame_count = 0
@@ -53,6 +57,7 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   function connectToServer() {
+    connectToWebTransport()
     // Disconnect previous connection if exists
     if (webSocket.value) {
       webSocket.value.close()
@@ -197,6 +202,56 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  async function connectToWebTransport() {
+    if (webTransport.value) {
+      webTransport.value.close()
+      webTransport.value = null
+    }
+
+    try {
+      webTransport.value = new WebTransport(QUIC_URL)
+      await webTransport.value.ready
+      console.log('WebTransport connected')
+
+      // Create a stream reader for video
+      const videoStream = webTransport.value.createBidirectionalStream()
+      videoStreamReader.value = videoStream.readable.getReader()
+
+      // Start reading from the stream
+      readVideoStream()
+    } catch (error) {
+      console.error('WebTransport connection error:', error)
+    }
+  }
+  async function readVideoStream() {
+    if (!videoStreamReader.value) return
+
+    try {
+      const { done, value } = await videoStreamReader.value.read()
+      if (done) {
+        console.log('Video stream closed')
+        return
+      }
+
+      // Process the video frame
+      currentVideoFrame.value = new Uint8Array(value)
+      // calculate FPS here
+      frame_count++
+      // difference between current frame_counter and frame_counter received 1 second ago
+      if (Date.now() / 1000 - lst_time > 1)
+      {
+        fps = frame_count
+        frame_count = 0
+        lst_time = Date.now() / 1000
+        console.log('FPS:', fps)
+      }
+
+      // Continue reading from the stream
+      readVideoStream()
+    } catch (error) {
+      console.error('Error reading video stream:', error)
+    }
+  }
   return {
     availableTrains,
     selectedTrainId,

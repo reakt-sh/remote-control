@@ -19,7 +19,6 @@ class TrainManager:
         for connection in self.active_connections.values():
             await connection.close()
         self.active_connections.clear()
-        logger.debug("All train connections closed.")
 
 
     async def update_telemetry(self, train_id: str, data: dict):

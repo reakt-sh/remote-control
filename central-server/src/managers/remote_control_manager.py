@@ -27,4 +27,3 @@ class RemoteControlManager:
         for connection in list(self.active_connections):
             await connection.close()
         self.active_connections.clear()
-        logger.debug("All remote control connections closed.")
