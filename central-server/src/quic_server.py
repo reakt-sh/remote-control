@@ -1,10 +1,14 @@
 import asyncio
 import ssl
+from typing import Dict, Optional
 
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
-from aioquic.quic.events import DatagramFrameReceived, StreamDataReceived, ConnectionIdIssued
+from aioquic.quic.events import QuicEvent, DatagramFrameReceived, StreamDataReceived, ConnectionIdIssued
+from aioquic.quic.events import  ProtocolNegotiated
 from aioquic.quic.configuration import QuicConfiguration
+from aioquic.h3.connection import H3Connection
+from aioquic.h3.events import H3Event, HeadersReceived
 
 from utils.app_logger import logger
 from globals import *
@@ -20,13 +24,24 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.train_id = None
         self.is_train = False
         self.is_web_client = False
+
         self.file = open("video_dump.h264", "wb")
         self.current_frame = bytearray()
         self.current_frame_id = -1
+
+        self.h3_connection: Optional[H3Connection] = None
+
         logger.debug("QUIC Relay Protocol initialized")
 
-    def quic_event_received(self, event):
+    def quic_event_received(self, event: QuicEvent) -> None:
         logger.debug(f"QUIC: Received event: {event}")
+
+        if isinstance(event, ProtocolNegotiated):
+            logger.debug(f"QUIC: Protocol negotiated: {event.alpn_protocol}")
+            if event.alpn_protocol == 'h3':
+                self.h3_connection = H3Connection(self._quic, enable_webtransport=True)
+                logger.debug(f"QUIC: setting connection to H3Connection")
+
         if isinstance(event, StreamDataReceived):
             # Identify client type
             if not self.is_train and not self.is_web_client:
@@ -84,6 +99,39 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.debug(f"QUIC: Received datagram frame: {event.data}")
         if isinstance(event, ConnectionIdIssued):
             logger.debug(f"QUIC: Received ConnectionIDIssued: {event.connection_id}")
+
+    def _h3_event_received(self, event: H3Event) -> None:
+        logger.debug(f"QUIC: Received H3 event: {event}")
+        if isinstance(event, HeadersReceived):
+            headers = {}
+            for header, value in event.headers:
+                headers[header] = value
+            if (headers.get(b":method") == b"CONNECT" and
+                    headers.get(b":protocol") == b"webtransport"):
+                self._handshake_webtransport(event.stream_id, headers)
+            else:
+                self._send_response(event.stream_id, 400, end_stream=True)
+
+        if self._handler:
+            self._handler.h3_event_received(event)
+
+    def _handshake_webtransport(self,
+                                stream_id: int,
+                                request_headers: Dict[bytes, bytes]) -> None:
+        authority = request_headers.get(b":authority")
+        path = request_headers.get(b":path")
+        logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
+        self._send_response(stream_id, 200)
+
+    def _send_response(self,
+                       stream_id: int,
+                       status_code: int,
+                       end_stream=False) -> None:
+        headers = [(b":status", str(status_code).encode())]
+        if status_code == 200:
+            headers.append((b"sec-webtransport-http3-draft", b"draft02"))
+        self._http.send_headers(
+            stream_id=stream_id, headers=headers, end_stream=end_stream)
 
 async def run_quic_server():
     # Use a real TLS certificate in production!
