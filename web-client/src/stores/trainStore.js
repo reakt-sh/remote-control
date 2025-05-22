@@ -203,20 +203,8 @@ export const useTrainStore = defineStore('train', () => {
         console.log('Connecting to WebTransport...')
 
 0
-        webTransport.value = new WebTransport("https://127.0.0.1:6161/echo");
+        webTransport.value = new WebTransport("https://127.0.0.1:4437");
 
-        // // Convert the hex string to Uint8Array
-        // const hashHex = "9f92c16a0b20029b3ba4a1e46cbb2348e2cd916f22f3bd7fbad8ee16753f6bc6"
-        // const hashBytes = new Uint8Array(
-        //     hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16))
-        // )
-
-        // webTransport.value = new WebTransport(QUIC_URL, {
-        //     serverCertificateHashes: [{
-        //         algorithm: "sha-256",
-        //         value: hashBytes  // Now using Uint8Array instead of string
-        //     }]
-        // });
         await webTransport.value.ready
         console.log('WebTransport connected')
 

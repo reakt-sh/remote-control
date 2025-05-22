@@ -93,7 +93,7 @@ async def run_quic_server():
         alpn_protocols=["h3", "webtransport"],
         max_datagram_frame_size=65536
     )
-    configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/cert.pem", keyfile="/etc/ssl/quic_conf/key.pem")
+    configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/certificate.pem", keyfile="/etc/ssl/quic_conf/certificate.key")
 
     # for testing, verfy mode disable
     # configuration.verify_mode = ssl.CERT_NONE
