@@ -90,7 +90,8 @@ async def run_quic_server():
     logger.debug("QUIC: server starting...")
     configuration = QuicConfiguration(
         is_client=False,
-        alpn_protocols=["h3", "webtransport"]
+        alpn_protocols=["h3", "webtransport"],
+        max_datagram_frame_size=65536
     )
     configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/cert.pem", keyfile="/etc/ssl/quic_conf/key.pem")
 
@@ -101,8 +102,7 @@ async def run_quic_server():
         HOST,
         QUIC_PORT,
         configuration=configuration,
-        create_protocol=QUICRelayProtocol,
-        # webtransport=True  # Enable WebTransport support
+        create_protocol=QUICRelayProtocol
     )
     # show which port and host the server is running on
     logger.debug(f"QUIC: server running on {HOST}:{QUIC_PORT}")

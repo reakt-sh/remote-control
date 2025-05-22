@@ -4,11 +4,11 @@ import { ref } from 'vue'
 // Define server IP and port as constants
 const SERVER = 'localhost'
 const SERVER_PORT = 8000
-const QUIC_HOST = "127.0.0.1"
-const QUIC_PORT = 4437
+// const QUIC_HOST = "localhost"
+// const QUIC_PORT = 6161
 const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
 const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
-const QUIC_URL = `https://${QUIC_HOST}:${QUIC_PORT}`
+// const QUIC_URL = `https://${QUIC_HOST}:${QUIC_PORT}`
 // Packet Types
 const PACKET_TYPE = {
   video: 13,
@@ -202,18 +202,21 @@ export const useTrainStore = defineStore('train', () => {
     try {
         console.log('Connecting to WebTransport...')
 
-        // Convert the hex string to Uint8Array
-        const hashHex = "9f92c16a0b20029b3ba4a1e46cbb2348e2cd916f22f3bd7fbad8ee16753f6bc6"
-        const hashBytes = new Uint8Array(
-            hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16))
-        )
+0
+        webTransport.value = new WebTransport("https://127.0.0.1:6161/echo");
 
-        webTransport.value = new WebTransport(QUIC_URL, {
-            serverCertificateHashes: [{
-                algorithm: "sha-256",
-                value: hashBytes  // Now using Uint8Array instead of string
-            }]
-        });
+        // // Convert the hex string to Uint8Array
+        // const hashHex = "9f92c16a0b20029b3ba4a1e46cbb2348e2cd916f22f3bd7fbad8ee16753f6bc6"
+        // const hashBytes = new Uint8Array(
+        //     hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16))
+        // )
+
+        // webTransport.value = new WebTransport(QUIC_URL, {
+        //     serverCertificateHashes: [{
+        //         algorithm: "sha-256",
+        //         value: hashBytes  // Now using Uint8Array instead of string
+        //     }]
+        // });
         await webTransport.value.ready
         console.log('WebTransport connected')
 
