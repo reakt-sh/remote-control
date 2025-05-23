@@ -8,9 +8,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -keyout certificate.key -out certifica
 
 ## to get the spki hash value
 ```
-openssl x509 -pubkey -noout -in certificate.pem | \
-openssl pkey -pubin -outform der | \
-openssl dgst -sha256 -binary | base64
+openssl x509 -pubkey -noout -in certificate.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
 ```
 
 
@@ -20,10 +18,19 @@ python3 WT_server.py /etc/ssl/quic_conf/certificate.pem /etc/ssl/quic_conf/certi
 ```
 
 
-
-## to run chrome client
+## to run chrome client on Windows
 ```
-google-chrome \
-  --origin-to-force-quic-on=127.0.0.1:6161 \
-  --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
+Start-Process "chrome.exe" -ArgumentList @(
+     "--origin-to-force-quic-on=127.0.0.1:4437",
+     "--ignore-certificate-errors-spki-list=NwqV5COETZa+hbwbH5QbXBv+YBUbQz0+pvvXYYTJ0AQ=",
+     "--ignore-certificate-errors",  # Bypass all cert errors (less secure)
+     "--enable-logging",  # Helps debug
+     "--v=1"  # Verbose logging
+ )
+
+```
+
+## to run chrome client on Linux
+```
+google-chrome --origin-to-force-quic-on=127.0.0.1:4437 --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
 ```
