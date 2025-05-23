@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 from aioquic.quic.events import QuicEvent, DatagramFrameReceived, StreamDataReceived, ConnectionIdIssued
-from aioquic.quic.events import  ProtocolNegotiated
+from aioquic.quic.events import  ProtocolNegotiated, StreamReset
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event, HeadersReceived
@@ -56,6 +56,17 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             if event.alpn_protocol == 'h3':
                 self.h3_connection = H3Connection(self._quic, enable_webtransport=True)
                 logger.debug(f"QUIC: setting connection to H3Connection")
+        elif isinstance(event, StreamReset) and self._handler is not None:
+            # Streams in QUIC can be closed in two ways: normal (FIN) and
+            # abnormal (resets).  FIN is handled by the handler; the code
+            # below handles the resets.
+            logger.debug(f"QUIC: Stream reset event caught: {event.stream_id}")
+        else:
+            pass
+
+        if self.h3_connection is not None:
+            for h3_event in self.h3_connection.handle_event(event):
+                self._h3_event_received(h3_event)
 
         if isinstance(event, StreamDataReceived):
             # Identify client type
@@ -107,7 +118,6 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                         self.file.write(self.current_frame)
                         self.file.flush()
                         logger.debug(f"QUIC: Received complete video frame {frame_id} of size {len(self.current_frame)}")
-
             else:
                 logger.debug(f"QUIC: Received unhandled data : {event.data}")
         if isinstance(event, DatagramFrameReceived):
@@ -127,16 +137,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
 
-        if self._handler:
-            self._handler.h3_event_received(event)
-
     def _handshake_webtransport(self,
                                 stream_id: int,
                                 request_headers: Dict[bytes, bytes]) -> None:
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
-        self._send_response(stream_id, 200)
+        self._send_response(stream_id, 200, end_stream=True)
 
     def _send_response(self,
                        stream_id: int,
@@ -145,7 +152,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         headers = [(b":status", str(status_code).encode())]
         if status_code == 200:
             headers.append((b"sec-webtransport-http3-draft", b"draft02"))
-        self._http.send_headers(
+        self.h3_connection.send_headers(
             stream_id=stream_id, headers=headers, end_stream=end_stream)
 
 async def run_quic_server():
