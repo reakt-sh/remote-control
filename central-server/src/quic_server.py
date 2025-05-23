@@ -1,5 +1,6 @@
 import asyncio
 import ssl
+import sys
 from typing import Dict, Optional
 
 from aioquic.asyncio import serve
@@ -13,6 +14,20 @@ from aioquic.h3.events import H3Event, HeadersReceived
 from utils.app_logger import logger
 from globals import *
 
+
+cert_file = ""
+key_file = ""
+
+if sys.platform.startswith("win"):
+    logger.debug("Running on Windows")
+    cert_file = "C:\\quic_conf\\certificate.pem"
+    key_file = "C:\\quic_conf\\certificate.key"
+elif sys.platform.startswith("linux"):
+    logger.debug("Running on Linux")
+    cer_tfile = "/etc/ssl/quic_conf/certificate.pem"
+    key_file = "/etc/ssl/quic_conf/certificate.key"
+else:
+    logger.debug(f"Unknown platform: {sys.platform}")
 
 class QUICRelayProtocol(QuicConnectionProtocol):
     # Store connected web clients for relaying video
@@ -141,7 +156,7 @@ async def run_quic_server():
         alpn_protocols=["h3", "webtransport"],
         max_datagram_frame_size=65536
     )
-    configuration.load_cert_chain(certfile="/etc/ssl/quic_conf/certificate.pem", keyfile="/etc/ssl/quic_conf/certificate.key")
+    configuration.load_cert_chain(certfile=cert_file, keyfile=key_file)
 
     # for testing, verfy mode disable
     # configuration.verify_mode = ssl.CERT_NONE

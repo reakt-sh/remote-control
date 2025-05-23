@@ -1,8 +1,9 @@
+## for windows
+  Download OpenSSL from https://slproweb.com/products/Win32OpenSSL.html
+
 ## to generate certificate.pem and certificate.key
 ```
-openssl req -x509 -newkey rsa:2048 -nodes -keyout certificate.key -out certificate.pem -days 365 \
-  -subj "/CN=127.0.0.1" \
-  -addext "subjectAltName=IP:127.0.0.1"
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certificate.key -out certificate.pem -days 365 -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1"
 ```
 
 ## to get the spki hash value
