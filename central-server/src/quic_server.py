@@ -19,13 +19,13 @@ cert_file = ""
 key_file = ""
 
 if sys.platform.startswith("win"):
-    logger.debug("Running on Windows")
     cert_file = "C:\\quic_conf\\certificate.pem"
     key_file = "C:\\quic_conf\\certificate.key"
+    logger.debug(f"Running on Windows, cert_file: {cert_file}, key_file: {key_file}")
 elif sys.platform.startswith("linux"):
-    logger.debug("Running on Linux")
-    cer_tfile = "/etc/ssl/quic_conf/certificate.pem"
+    cert_file = "/etc/ssl/quic_conf/certificate.pem"
     key_file = "/etc/ssl/quic_conf/certificate.key"
+    logger.debug(f"Running on Linux, cert_file: {cert_file}, key_file: {key_file}")
 else:
     logger.debug(f"Unknown platform: {sys.platform}")
 
