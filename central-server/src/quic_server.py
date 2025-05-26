@@ -182,23 +182,17 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
 
-    def _handshake_webtransport(self,
-                                stream_id: int,
-                                request_headers: Dict[bytes, bytes]) -> None:
+    def _handshake_webtransport(self, stream_id: int, request_headers: Dict[bytes, bytes]) -> None:
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
         self._send_response(stream_id, 200, end_stream=True)
 
-    def _send_response(self,
-                       stream_id: int,
-                       status_code: int,
-                       end_stream=False) -> None:
+    def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
         headers = [(b":status", str(status_code).encode())]
         if status_code == 200:
             headers.append((b"sec-webtransport-http3-draft", b"draft02"))
-        self.h3_connection.send_headers(
-            stream_id=stream_id, headers=headers, end_stream=end_stream)
+        self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
 async def run_quic_server():
     """Run the QUIC relay server"""
