@@ -1,41 +1,91 @@
 import asyncio
 import ssl
 import sys
-from typing import Dict, Optional
+from dataclasses import dataclass
+from typing import Dict, Optional, Set, Tuple, List
+from collections import defaultdict
+from contextlib import suppress
 
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
-from aioquic.quic.events import QuicEvent, DatagramFrameReceived, StreamDataReceived, ConnectionIdIssued
-from aioquic.quic.events import  ProtocolNegotiated, StreamReset
+from aioquic.quic.events import (
+    QuicEvent,
+    DatagramFrameReceived,
+    StreamDataReceived,
+    ConnectionIdIssued,
+    ProtocolNegotiated,
+    StreamReset,
+)
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event, HeadersReceived
 
 from utils.app_logger import logger
-from globals import *
+from globals import HOST, QUIC_PORT, PACKET_TYPE
 
 
-cert_file = ""
-key_file = ""
+@dataclass
+class ServerConfig:
+    cert_file: str = ""
+    key_file: str = ""
 
-if sys.platform.startswith("win"):
-    cert_file = "C:\\quic_conf\\certificate.pem"
-    key_file = "C:\\quic_conf\\certificate.key"
-    logger.debug(f"Running on Windows, cert_file: {cert_file}, key_file: {key_file}")
-elif sys.platform.startswith("linux"):
-    cert_file = "/etc/ssl/quic_conf/certificate.pem"
-    key_file = "/etc/ssl/quic_conf/certificate.key"
-    logger.debug(f"Running on Linux, cert_file: {cert_file}, key_file: {key_file}")
-else:
-    logger.debug(f"Unknown platform: {sys.platform}")
+initialize_counter: int = 0
+
+def get_client_config() -> ServerConfig:
+    """Get platform-specific client configuration"""
+    if sys.platform.startswith("win"):
+        return ServerConfig(
+            cert_file="C:\\quic_conf\\certificate.pem",
+            key_file="C:\\quic_conf\\certificate.key"
+        )
+    elif sys.platform.startswith("linux"):
+        return ServerConfig(
+            cert_file="/etc/ssl/quic_conf/certificate.pem",
+            key_file="/etc/ssl/quic_conf/certificate.key"
+        )
+    else:
+        raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
+class ClientManager:
+    def __init__(self):
+        self.train_clients: Dict[str, QuicConnectionProtocol] = {}
+        self.web_clients: Dict[str, Set[QuicConnectionProtocol]] = defaultdict(set)
+        self.lock = asyncio.Lock()
+
+    async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
+        async with self.lock:
+            self.train_clients[train_id] = protocol
+            logger.info(f"QUIC: Train client connected: {train_id}")
+
+    async def remove_train_client(self, train_id: str):
+        async with self.lock:
+            if train_id in self.train_clients:
+                del self.train_clients[train_id]
+                logger.info(f"QUIC: Train client disconnected: {train_id}")
+
+    async def add_web_client(self, train_id: str, protocol: QuicConnectionProtocol):
+        async with self.lock:
+            self.web_clients[train_id].add(protocol)
+            logger.info(f"QUIC: Web client connected for train {train_id}")
+
+    async def remove_web_client(self, train_id: str, protocol: QuicConnectionProtocol):
+        async with self.lock:
+            if train_id in self.web_clients and protocol in self.web_clients[train_id]:
+                self.web_clients[train_id].remove(protocol)
+                logger.info(f"QUIC: Web client disconnected for train {train_id}")
+
+    async def get_web_clients(self, train_id: str) -> List[QuicConnectionProtocol]:
+        async with self.lock:
+            return list(self.web_clients.get(train_id, []))
+
+    async def get_train_client(self, train_id: str) -> Optional[QuicConnectionProtocol]:
+        async with self.lock:
+            return self.train_clients.get(train_id)
 
 class QUICRelayProtocol(QuicConnectionProtocol):
-    # Store connected web clients for relaying video
-    web_clients = set()
-    train_clients = {}
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, client_manager: ClientManager, **kwargs):
         super().__init__(*args, **kwargs)
+        self.client_manager = client_manager
         self.train_id = None
         self.is_train = False
         self.is_web_client = False
@@ -46,7 +96,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
         self.h3_connection: Optional[H3Connection] = None
 
-        logger.debug("QUIC Relay Protocol initialized")
+        global initialize_counter
+        initialize_counter += 1
+        logger.debug(f"QUIC: Relay Protocol initialized, {initialize_counter} instances created")
 
     def quic_event_received(self, event: QuicEvent) -> None:
         logger.debug(f"QUIC: Received event: {event}")
@@ -76,13 +128,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     if message.startswith("TRAIN:"):
                         self.is_train = True
                         self.train_id = message[6:]  # Extract train ID
-                        QUICRelayProtocol.train_clients[self.train_id] = self
                         logger.debug(f"Train {self.train_id} connected via QUIC")
                         return
                     elif message.startswith("CLIENT:"):
                         self.is_web_client = True
                         self.train_id = message[7:]  # Extract train ID
-                        QUICRelayProtocol.web_clients.add(self)
                         logger.debug(f"Web client for train {self.train_id} connected via QUIC")
                         return
                     else:
@@ -109,11 +159,6 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 else:
                     self.current_frame.extend(payload)
                     if packet_id == number_of_packets:
-                        # Send the complete frame to all web clients
-                        for client in list(QUICRelayProtocol.web_clients):
-                            if client != self and client.train_id == self.train_id:
-                                client._quic.send_stream_data(event.stream_id, self.current_frame)
-                                asyncio.create_task(client.transmit())
                         # now write to a file to test
                         self.file.write(self.current_frame)
                         self.file.flush()
@@ -156,26 +201,34 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             stream_id=stream_id, headers=headers, end_stream=end_stream)
 
 async def run_quic_server():
-    # Use a real TLS certificate in production!
-    logger.debug("QUIC: server starting...")
-    configuration = QuicConfiguration(
-        is_client=False,
-        alpn_protocols=["h3", "webtransport"],
-        max_datagram_frame_size=65536
-    )
-    configuration.load_cert_chain(certfile=cert_file, keyfile=key_file)
+    """Run the QUIC relay server"""
+    try:
+        config = get_client_config()
+        logger.info("Starting QUIC server...")
 
-    # for testing, verfy mode disable
-    # configuration.verify_mode = ssl.CERT_NONE
+        quic_config = QuicConfiguration(
+            is_client=False,
+            alpn_protocols=["h3", "webtransport"],
+            max_datagram_frame_size=65536,
+            idle_timeout=30.0,  # 30 seconds idle timeout
+        )
+        quic_config.load_cert_chain(certfile=config.cert_file, keyfile=config.key_file)
 
-    await serve(
-        HOST,
-        QUIC_PORT,
-        configuration=configuration,
-        create_protocol=QUICRelayProtocol
-    )
-    # show which port and host the server is running on
-    logger.debug(f"QUIC: server running on {HOST}:{QUIC_PORT}")
+        # Create a shared client manager
+        client_manager = ClientManager()
 
-    # Keep server running forever
-    await asyncio.Future()
+        server = await serve(
+            HOST,
+            QUIC_PORT,
+            configuration=quic_config,
+            create_protocol=lambda *args, **kwargs: QUICRelayProtocol(
+                *args, client_manager=client_manager, **kwargs
+            )
+        )
+
+        logger.info(f"QUIC server running on {HOST}:{QUIC_PORT}")
+        await asyncio.Future()  # Run forever
+
+    except Exception as e:
+        logger.critical(f"QUIC server failed to start: {e}", exc_info=True)
+        raise
