@@ -29,7 +29,6 @@ class ServerConfig:
     cert_file: str = ""
     key_file: str = ""
 
-initialize_counter: int = 0
 
 def get_client_config() -> ServerConfig:
     """Get platform-specific client configuration"""
@@ -82,26 +81,63 @@ class ClientManager:
         async with self.lock:
             return self.train_clients.get(train_id)
 
+class VideoStreamHandler:
+    def __init__(self, train_id: str):
+        self.train_id = train_id
+        self.current_frame = bytearray()
+        self.current_frame_id = -1
+        self.expected_packets = 0
+        self.received_packets = 0
+
+    def process_packet(self, data: bytes) -> Optional[bytes]:
+        try:
+            # Ignoring first byte as packet_type = data[0]
+            frame_id = int.from_bytes(data[1:5], byteorder='big')
+            number_of_packets = int.from_bytes(data[5:7], byteorder='big')
+            packet_id = int.from_bytes(data[7:9], byteorder='big')
+            train_id = data[9:45].decode('utf-8').strip()
+            payload = data[45:]
+
+            if train_id != self.train_id:
+                logger.warning(f"Packet train ID mismatch: expected {self.train_id}, got {train_id}")
+                return None
+
+            if frame_id != self.current_frame_id:
+                # New frame
+                self.current_frame = bytearray()
+                self.current_frame_id = frame_id
+                self.expected_packets = number_of_packets
+                self.received_packets = 0
+
+            self.current_frame.extend(payload)
+            self.received_packets += 1
+
+            if packet_id == number_of_packets and self.received_packets == self.expected_packets:
+                # Complete frame received
+                complete_frame = bytes(self.current_frame)
+                self.current_frame = bytearray()
+                return complete_frame
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Error processing video packet: {e}")
+            return None
+
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, **kwargs):
         super().__init__(*args, **kwargs)
         self.client_manager = client_manager
-        self.train_id = None
-        self.is_train = False
-        self.is_web_client = False
-
-        self.file = open("video_dump.h264", "wb")
-        self.current_frame = bytearray()
-        self.current_frame_id = -1
-
+        self.client_type: Optional[str] = None
+        self.train_id: Optional[str] = None
+        self.remote_control_id: Optional[str] = None
         self.h3_connection: Optional[H3Connection] = None
-
-        global initialize_counter
-        initialize_counter += 1
-        logger.debug(f"QUIC: Relay Protocol initialized, {initialize_counter} instances created")
+        self.video_stream_handler: Optional[VideoStreamHandler] = None
+        self.is_closed = False
+        self.file = open("video_dump.h264", "wb")
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        logger.debug(f"QUIC: Received event: {event}")
+        logger.debug(f"QUIC: Received QuicEvent")
 
         if isinstance(event, ProtocolNegotiated):
             logger.debug(f"QUIC: Protocol negotiated: {event.alpn_protocol}")
@@ -122,18 +158,19 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
         if isinstance(event, StreamDataReceived):
             # Identify client type
-            if not self.is_train and not self.is_web_client:
+            if self.client_type is None:
                 try:
                     message = event.data.decode()
                     if message.startswith("TRAIN:"):
-                        self.is_train = True
+                        self.client_type = "TRAIN"
                         self.train_id = message[6:]  # Extract train ID
-                        logger.debug(f"Train {self.train_id} connected via QUIC")
+                        self.video_stream_handler = VideoStreamHandler(self.train_id)
+                        logger.info(f"Train {self.train_id} connected via QUIC")
                         return
-                    elif message.startswith("CLIENT:"):
-                        self.is_web_client = True
-                        self.train_id = message[7:]  # Extract train ID
-                        logger.debug(f"Web client for train {self.train_id} connected via QUIC")
+                    elif message.startswith("REMOTE_CONTROL:"):
+                        self.client_type = "REMOTE_CONTROL"
+                        self.remote_control_id = message[7:]  # Extract train ID
+                        logger.info(f"Remote Control {self.remote_control_id} connected via QUIC")
                         return
                     else:
                         logger.warning(f"Unknown client identification message: {message}")
@@ -142,27 +179,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     logger.warning("Could not decode client identification message")
                     return
 
-            if self.is_train and event.data[0] == PACKET_TYPE["video"]:
-                # Header = 1 byte for packet type, 4 byte for frame_id, 2 byte for number of packets, 2 byte for packet_id, 36 byte for train_id
-                packet_type = event.data[0]
-                frame_id = int.from_bytes(event.data[1:5], byteorder='big')
-                number_of_packets = int.from_bytes(event.data[5:7], byteorder='big')
-                packet_id = int.from_bytes(event.data[7:9], byteorder='big')
-                train_id = event.data[9:45].decode('utf-8')
-                payload = event.data[45:]
-                logger.debug(f"QUIC: {train_id} - Video Packet ==> frame_id: {frame_id}, number_of_packets: {number_of_packets}, packet_id: {packet_id}, payload size: {len(payload)}")
-
-                if self.current_frame_id != frame_id:
-                    self.current_frame = bytearray()
-                    self.current_frame_id = frame_id
-                    self.current_frame.extend(payload)
-                else:
-                    self.current_frame.extend(payload)
-                    if packet_id == number_of_packets:
-                        # now write to a file to test
-                        self.file.write(self.current_frame)
-                        self.file.flush()
-                        logger.debug(f"QUIC: Received complete video frame {frame_id} of size {len(self.current_frame)}")
+            if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
+                frame = self.video_stream_handler.process_packet(event.data)
+                if frame:
+                    self.file.write(frame)
+                    self.file.flush()
             else:
                 logger.debug(f"QUIC: Received unhandled data : {event.data}")
         if isinstance(event, DatagramFrameReceived):
@@ -195,10 +216,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
 async def run_quic_server():
-    """Run the QUIC relay server"""
     try:
         config = get_client_config()
-        logger.info("Starting QUIC server...")
 
         quic_config = QuicConfiguration(
             is_client=False,
@@ -220,9 +239,9 @@ async def run_quic_server():
             )
         )
 
-        logger.info(f"QUIC server running on {HOST}:{QUIC_PORT}")
+        logger.info(f"QUIC: server running on {HOST}:{QUIC_PORT}")
         await asyncio.Future()  # Run forever
 
     except Exception as e:
-        logger.critical(f"QUIC server failed to start: {e}", exc_info=True)
+        logger.critical(f"QUIC: server failed to start: {e}", exc_info=True)
         raise
