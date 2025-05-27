@@ -1,8 +1,9 @@
 import threading
 from typing import Any
-from managers.train_manager import TrainManager
-from managers.remote_control_manager import RemoteControlManager
-from utils.app_logger import logger
+
+from src.managers.train_manager import TrainManager
+from src.managers.remote_control_manager import RemoteControlManager
+from src.utils.app_logger import logger
 class ServerController:
     """
     Thread-safe singleton implementation for managing server state and operations.

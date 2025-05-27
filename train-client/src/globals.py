@@ -7,7 +7,8 @@ WINDOW_HEIGHT = 500
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 FRAME_RATE = 60
-H264_DUMP = "../dump_collection/dump"
+H264_DUMP = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/dump_collection/dump"
+ASSET_DIR = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/asset"
 PIXEL_FORMAT = "yuv420p"
 
 # Packet Types

@@ -1,6 +1,7 @@
 import av
 from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
+
 from globals import *
 class Encoder(QObject):
     encode_ready = pyqtSignal(int, object)  # Emits the encoded bytes

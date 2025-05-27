@@ -20,8 +20,8 @@ from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event, HeadersReceived
 
-from utils.app_logger import logger
-from globals import HOST, QUIC_PORT, PACKET_TYPE
+from src.utils.app_logger import logger
+from src.globals import HOST, QUIC_PORT, PACKET_TYPE
 
 
 @dataclass

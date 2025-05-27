@@ -1,7 +1,8 @@
 import asyncio
 from typing import Dict
 from fastapi import WebSocket
-from utils.app_logger import logger
+
+from src.utils.app_logger import logger
 
 class RemoteControlManager:
     def __init__(self):
