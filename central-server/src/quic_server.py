@@ -18,7 +18,7 @@ from aioquic.quic.events import (
 )
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3Connection
-from aioquic.h3.events import H3Event, HeadersReceived
+from aioquic.h3.events import H3Event, HeadersReceived, DataReceived
 
 from src.utils.app_logger import logger
 from src.globals import HOST, QUIC_PORT, PACKET_TYPE
@@ -137,59 +137,74 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.file = open("video_dump.h264", "wb")
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        logger.debug(f"QUIC: Received QuicEvent")
-
-        if isinstance(event, ProtocolNegotiated):
-            logger.debug(f"QUIC: Protocol negotiated: {event.alpn_protocol}")
-            if event.alpn_protocol == 'h3':
-                self.h3_connection = H3Connection(self._quic, enable_webtransport=True)
-                logger.debug(f"QUIC: setting connection to H3Connection")
-        elif isinstance(event, StreamReset) and self._handler is not None:
-            # Streams in QUIC can be closed in two ways: normal (FIN) and
-            # abnormal (resets).  FIN is handled by the handler; the code
-            # below handles the resets.
-            logger.debug(f"QUIC: Stream reset event caught: {event.stream_id}")
-        else:
-            pass
-
-        if self.h3_connection is not None:
-            for h3_event in self.h3_connection.handle_event(event):
-                self._h3_event_received(h3_event)
-
-        if isinstance(event, StreamDataReceived):
-            # Identify client type
-            if self.client_type is None:
-                try:
-                    message = event.data.decode()
-                    if message.startswith("TRAIN:"):
-                        self.client_type = "TRAIN"
-                        self.train_id = message[6:]  # Extract train ID
-                        self.video_stream_handler = VideoStreamHandler(self.train_id)
-                        logger.info(f"Train {self.train_id} connected via QUIC")
-                        return
-                    elif message.startswith("REMOTE_CONTROL:"):
-                        self.client_type = "REMOTE_CONTROL"
-                        self.remote_control_id = message[7:]  # Extract train ID
-                        logger.info(f"Remote Control {self.remote_control_id} connected via QUIC")
-                        return
-                    else:
-                        logger.warning(f"Unknown client identification message: {message}")
-                        return
-                except UnicodeDecodeError:
-                    logger.warning("Could not decode client identification message")
-                    return
-
-            if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
-                frame = self.video_stream_handler.process_packet(event.data)
-                if frame:
-                    self.file.write(frame)
-                    self.file.flush()
+        try:
+            if self.is_closed:
+                logger.debug("QUIC: Connection is closed, ignoring event")
+                return
+            if isinstance(event, ProtocolNegotiated):
+                self._handle_protocol_negotiated(event)
+            elif isinstance(event, StreamReset) and self._handler is not None:
+                self._handle_stream_reset(event)
+            elif isinstance(event, StreamDataReceived):
+                self._handle_stream_data(event)
+            elif isinstance(event, DatagramFrameReceived):
+                logger.debug(f"QUIC: Received datagram frame: {event.data}")
+            elif isinstance(event, ConnectionIdIssued):
+                logger.debug(f"QUIC: Received ConnectionIDIssued: {event.connection_id}")
             else:
-                logger.debug(f"QUIC: Received unhandled data : {event.data}")
-        if isinstance(event, DatagramFrameReceived):
-            logger.debug(f"QUIC: Received datagram frame: {event.data}")
-        if isinstance(event, ConnectionIdIssued):
-            logger.debug(f"QUIC: Received ConnectionIDIssued: {event.connection_id}")
+                pass
+
+            if self.h3_connection is not None:
+                for h3_event in self.h3_connection.handle_event(event):
+                    self._h3_event_received(h3_event)
+
+        except Exception as e:
+            logger.error(f"QUIC: Error processing event: {e}", exc_info=True)
+            self._close_connection()
+
+    def _handle_protocol_negotiated(self, event: ProtocolNegotiated) -> None:
+        logger.debug(f"QUIC: Protocol negotiated: {event.alpn_protocol}")
+        if event.alpn_protocol == 'h3':
+            self.h3_connection = H3Connection(self._quic, enable_webtransport=True)
+            logger.debug("QUIC: H3 connection established")
+
+    def _handle_stream_reset(self, event: StreamReset) -> None:
+        logger.debug(f"Stream reset: {event.stream_id}")
+
+    def _handle_stream_data(self, event: StreamDataReceived) -> None:
+        # Identify client type
+        logger.debug(f"QUIC: Received stream data on stream {event.data}")
+        if self.client_type is None:
+            try:
+                message = event.data.decode()
+                if message.startswith("TRAIN:"):
+                    self.client_type = "TRAIN"
+                    self.train_id = message[6:]  # Extract train ID
+                    self.video_stream_handler = VideoStreamHandler(self.train_id)
+                    logger.info(f"Train-Client: {self.train_id} connected via QUIC")
+                    return
+                elif message.startswith("REMOTE_CONTROL:"):
+                    self.client_type = "REMOTE_CONTROL"
+                    self.remote_control_id = message[15:]  # Extract train ID
+                    logger.info(f"Web-Client: {self.remote_control_id} connected via QUIC")
+                    return
+                else:
+                    logger.warning(f"Unknown client identification message: {message}")
+                    return
+            except UnicodeDecodeError:
+                logger.warning("Could not decode client identification message")
+                return
+
+        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
+            frame = self.video_stream_handler.process_packet(event.data)
+
+            # If a complete frame is received, write it to the file temporarily
+            if frame:
+                logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
+                self.file.write(frame)
+                self.file.flush()
+        else:
+            logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
     def _h3_event_received(self, event: H3Event) -> None:
         logger.debug(f"QUIC: Received H3 event: {event}")
@@ -202,18 +217,43 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 self._handshake_webtransport(event.stream_id, headers)
             else:
                 self._send_response(event.stream_id, 400, end_stream=True)
+        elif isinstance(event, DataReceived):
+            message = event.data.decode(errors='ignore')
+            logger.debug(f"QUIC: Received data on stream {event.stream_id}: {message}")
 
     def _handshake_webtransport(self, stream_id: int, request_headers: Dict[bytes, bytes]) -> None:
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
-        self._send_response(stream_id, 200, end_stream=True)
+        self._send_response(stream_id, 200, end_stream=False)
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
         headers = [(b":status", str(status_code).encode())]
         if status_code == 200:
             headers.append((b"sec-webtransport-http3-draft", b"draft02"))
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
+
+    def connection_lost(self, exc: Optional[Exception]) -> None:
+        self._cleanup()
+        super().connection_lost(exc)
+
+    def _close_connection(self) -> None:
+        if not self.is_closed:
+            self._cleanup()
+            self._quic.close()
+            self.is_closed = True
+
+    def _cleanup(self) -> None:
+        asyncio.create_task(self._remove_client_from_manager())
+
+    async def _remove_client_from_manager(self) -> None:
+        try:
+            if self.client_type == 'TRAIN':
+                await self.client_manager.remove_train_client(self.train_id)
+            elif self.client_type == 'REMOTE_CONTROL':
+                await self.client_manager.remove_web_client(self.train_id, self)
+        except Exception as e:
+            logger.error(f"Error cleaning up client: {e}")
 
 async def run_quic_server():
     try:

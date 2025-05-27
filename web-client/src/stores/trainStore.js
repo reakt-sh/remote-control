@@ -208,21 +208,38 @@ export const useTrainStore = defineStore('train', () => {
         await webTransport.value.ready
         console.log('WebTransport connected')
 
-      // Create a stream reader for video
-      // Use createUnidirectionalStream for receiving data
-      const stream = await webTransport.value.incomingUnidirectionalStreams.getReader().read();
-      if (stream.done) {
-        console.log("No more streams available.");
-        return;
-      }
-      videoStreamReader.value = stream.value.getReader();
-
-      // Start reading from the stream
-      readVideoStream()
+        sendWebTransportMessage(`REMOTE_CONTROL:${remoteControlId.value}`);
+        readVideoStream()
     } catch (error) {
       console.error('WebTransport connection error:', error)
     }
   }
+
+  async function sendWebTransportMessage(message) {
+    if (!webTransport.value) {
+      console.error('WebTransport is not connected');
+      return;
+    }
+    try {
+      // Create a bidirectional stream
+      console.log('WebTransport creating stream...');
+      const stream = await webTransport.value.createBidirectionalStream();
+      console.log('WebTransport stream created:', stream);
+
+      const writer = stream.writable.getWriter();
+      const data = new TextEncoder().encode(message);
+      console.log('WebTransport Sending message:', message);
+      await writer.write(data);
+      console.log('WebTransport Message sent:', message);
+      await writer.close();
+      console.log('WebTransport Stream closed after sending message');
+
+      // Optionally, you can read a response from stream.readable.getReader()
+    } catch (error) {
+      console.error('Error sending WebTransport message:', error);
+    }
+}
+
   async function readVideoStream() {
     if (!videoStreamReader.value) return
 
