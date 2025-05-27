@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidg
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor, QIcon
 from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtCore import QDateTime
+from loguru import logger
 
 from globals import *
 from network_worker_ws import NetworkWorkerWS
@@ -183,7 +184,19 @@ class TrainClient(QMainWindow):
         self.network_worker_ws.start()
 
         self.network_worker_quic = NetworkWorkerQUIC(self.train_client_id)
+        self.network_worker_quic.connection_established.connect(self.on_quic_connected)
+        self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
+        self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
         self.network_worker_quic.start()
+
+    def on_quic_connected(self):
+        logger.info("QUIC connection established")
+
+    def on_quic_failed(self, error):
+        logger.info(f"QUIC connection failed: {error}")
+
+    def on_quic_closed(self):
+        logger.info("QUIC connection closed")
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
