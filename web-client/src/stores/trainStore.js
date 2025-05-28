@@ -32,12 +32,6 @@ export const useTrainStore = defineStore('train', () => {
   const currentVideoFrame = ref(null)
   const remoteControlId = ref(null)
   const webTransport = ref(null)
-  const videoStreamReader = ref(null)
-
-  // Add these variables for FPS calculation
-  let frame_count = 0
-  let lst_time = Date.now() / 1000 // seconds
-  let fps = 0
 
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
@@ -208,15 +202,12 @@ export const useTrainStore = defineStore('train', () => {
 
     try {
         console.log('Connecting to WebTransport...')
-
-0
         webTransport.value = new WebTransport("https://127.0.0.1:4437");
-
         await webTransport.value.ready
         console.log('WebTransport connected')
 
         sendWebTransportMessage(`REMOTE_CONTROL:${remoteControlId.value}`);
-        readVideoStream()
+        receiveWebTransportDatagrams()
     } catch (error) {
       console.error('WebTransport connection error:', error)
     }
@@ -239,35 +230,34 @@ export const useTrainStore = defineStore('train', () => {
     } catch (error) {
       console.error('Error sending WebTransport message:', error);
     }
-}
+  }
 
-  async function readVideoStream() {
-    if (!videoStreamReader.value) return
-
+  async function receiveWebTransportDatagrams() {
+    if (!webTransport.value) {
+      console.error('WebTransport is not connected');
+      return;
+    }
     try {
-      const { done, value } = await videoStreamReader.value.read()
-      if (done) {
-        console.log('Video stream closed')
-        return
-      }
+      const reader = webTransport.value.datagrams.readable.getReader();
 
-      // Process the video frame
-      currentVideoFrame.value = new Uint8Array(value)
-      // calculate FPS here
-      frame_count++
-      // difference between current frame_counter and frame_counter received 1 second ago
-      if (Date.now() / 1000 - lst_time > 1)
-      {
-        fps = frame_count
-        frame_count = 0
-        lst_time = Date.now() / 1000
-        console.log('FPS:', fps)
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          console.log('WebTransport datagram stream closed');
+          break;
+        }
+        if (value) {
+          // value is a Uint8Array
+          // Handle the datagram here (decode, parse, etc.)
+          const message = new TextDecoder().decode(value);
+          console.log('Received WebTransport datagram:', message);
+          // You can dispatch, commit, or update state here as needed
+        }
       }
-
-      // Continue reading from the stream
-      readVideoStream()
+      reader.releaseLock();
     } catch (error) {
-      console.error('Error reading video stream:', error)
+      console.error('Error receiving WebTransport datagrams:', error);
     }
   }
   return {
