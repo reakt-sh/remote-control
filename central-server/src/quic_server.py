@@ -48,7 +48,11 @@ def get_client_config() -> ServerConfig:
 class ClientManager:
     def __init__(self):
         self.train_clients: Dict[str, QuicConnectionProtocol] = {}
-        self.web_clients: Dict[str, Set[QuicConnectionProtocol]] = defaultdict(set)
+        self.remote_control_clients: Dict[str, QuicConnectionProtocol] = {}
+
+        self.train_to_remote_controls_map: Dict[str, Set[str]] = {}
+        self.remote_control_to_train_map: Dict[str, str] = {}
+
         self.lock = asyncio.Lock()
 
     async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
@@ -58,28 +62,45 @@ class ClientManager:
 
     async def remove_train_client(self, train_id: str):
         async with self.lock:
+            # first remove mapping from remote controls connected to this train
+            if train_id in self.train_to_remote_controls_map:
+                remote_control_ids = self.train_to_remote_controls_map[train_id]
+                for remote_control_id in remote_control_ids:
+                    self.remote_control_to_train_map.pop(remote_control_id, None)
+                del self.train_to_remote_controls_map[train_id]
+
+            # then remove the train client
             if train_id in self.train_clients:
                 del self.train_clients[train_id]
                 logger.info(f"QUIC: Train client disconnected: {train_id}")
 
-    async def add_web_client(self, train_id: str, protocol: QuicConnectionProtocol):
+    async def add_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
-            self.web_clients[train_id].add(protocol)
-            logger.info(f"QUIC: Web client connected for train {train_id}")
+            self.remote_control_clients[remote_control_id] = protocol
+            logger.info(f"QUIC: Remote Control client connected {remote_control_id}")
 
-    async def remove_web_client(self, train_id: str, protocol: QuicConnectionProtocol):
+    async def remove_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
-            if train_id in self.web_clients and protocol in self.web_clients[train_id]:
-                self.web_clients[train_id].remove(protocol)
-                logger.info(f"QUIC: Web client disconnected for train {train_id}")
+            # Remove mapping if it exists
+            if remote_control_id in self.remote_control_to_train_map:
+                train_id = self.remote_control_to_train_map.pop(remote_control_id)
+                if train_id in self.train_to_remote_controls_map:
+                    self.train_to_remote_controls_map[train_id].discard(remote_control_id)
+                    if not self.train_to_remote_controls_map[train_id]:
+                        del self.train_to_remote_controls_map[train_id]
+                        logger.debug(f"Removed empty entry for train {train_id} from train_to_remote_controls_map")
 
-    async def get_web_clients(self, train_id: str) -> List[QuicConnectionProtocol]:
-        async with self.lock:
-            return list(self.web_clients.get(train_id, []))
+            if remote_control_id in self.remote_control_clients:
+                del self.remote_control_clients[remote_control_id]
+                logger.info(f"QUIC: Remote Control client disconnected: {remote_control_id}")
 
-    async def get_train_client(self, train_id: str) -> Optional[QuicConnectionProtocol]:
+    async def connect_remote_control_to_train(self, remote_control_id: str, train_id: str):
         async with self.lock:
-            return self.train_clients.get(train_id)
+            if train_id not in self.train_to_remote_controls_map:
+                self.train_to_remote_controls_map[train_id] = set()
+            self.train_to_remote_controls_map[train_id].add(remote_control_id)
+            self.remote_control_to_train_map[remote_control_id] = train_id
+            logger.info(f"QUIC: Mapped {remote_control_id} to {train_id}")
 
 class VideoStreamHandler:
     def __init__(self, train_id: str):
@@ -181,12 +202,12 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self.client_type = "TRAIN"
                     self.train_id = message[6:]  # Extract train ID
                     self.video_stream_handler = VideoStreamHandler(self.train_id)
-                    logger.info(f"Train-Client: {self.train_id} connected via QUIC")
+                    asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
                     return
                 elif message.startswith("REMOTE_CONTROL:"):
                     self.client_type = "REMOTE_CONTROL"
                     self.remote_control_id = message[15:]  # Extract train ID
-                    logger.info(f"Web-Client: {self.remote_control_id} connected via QUIC")
+                    asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
                     return
                 else:
                     logger.warning(f"Unknown client identification message: {message}")
