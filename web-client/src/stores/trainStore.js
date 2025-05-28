@@ -170,6 +170,13 @@ export const useTrainStore = defineStore('train', () => {
     } else {
       console.error('Remote control ID is not initialized')
     }
+
+    // Send a message through WebTransport to notify the server
+    if (webTransport.value) {
+      await sendWebTransportMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+    } else {
+      console.error('WebTransport is not connected');
+    }
   }
 
   async function sendCommand(command) {
@@ -216,25 +223,19 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function sendWebTransportMessage(message) {
+    console.log('Sending WebTransport message:', message);
     if (!webTransport.value) {
       console.error('WebTransport is not connected');
       return;
     }
     try {
       // Create a bidirectional stream
-      console.log('WebTransport creating stream...');
       const stream = await webTransport.value.createBidirectionalStream();
-      console.log('WebTransport stream created:', stream);
-
       const writer = stream.writable.getWriter();
       const data = new TextEncoder().encode(message);
-      console.log('WebTransport Sending message:', message);
       await writer.write(data);
-      console.log('WebTransport Message sent:', message);
       await writer.close();
-      console.log('WebTransport Stream closed after sending message');
-
-      // Optionally, you can read a response from stream.readable.getReader()
+      console.log('WebTransport message sent:', message);
     } catch (error) {
       console.error('Error sending WebTransport message:', error);
     }

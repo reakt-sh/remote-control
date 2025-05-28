@@ -241,6 +241,18 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
+        if self.client_type == "REMOTE_CONTROL":
+            message = event.data.decode()
+            if message.startswith("MAP_CONNECTION:"):
+                parts = message[15:].split(":")
+                if len(parts) == 2:
+                    remote_control_id, train_id = parts
+                    asyncio.create_task(
+                        self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
+                    )
+                else:
+                    logger.warning("Invalid MAP_CONNECTION message format")
+
     def _h3_event_received(self, event: H3Event) -> None:
         if isinstance(event, HeadersReceived):
             headers = {}
