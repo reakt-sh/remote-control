@@ -247,6 +247,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self.train_id = message[6:]  # Extract train ID
                     self.video_stream_handler = VideoStreamHandler(self.train_id)
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
+
+                    # try send Stream hello world message to the train
+                    hello_message = f"HELLO: {self.train_id}".encode()
+                    self._quic.send_stream_data(self._quic.get_next_available_stream_id(), hello_message, end_stream=False)
+                    transmit_coro = self.transmit()
+                    if transmit_coro is not None:
+                        asyncio.create_task(transmit_coro)
+                    logger.info(f"QUIC: hello_message sent to Train {self.train_id}")
                     return
                 elif message.startswith("REMOTE_CONTROL:"):
                     self.client_type = "REMOTE_CONTROL"
