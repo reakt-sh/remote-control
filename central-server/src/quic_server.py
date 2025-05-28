@@ -96,11 +96,25 @@ class ClientManager:
 
     async def connect_remote_control_to_train(self, remote_control_id: str, train_id: str):
         async with self.lock:
+            # Check if the remote control is already mapped to a train
+            if remote_control_id in self.remote_control_to_train_map:
+                existing_train_id = self.remote_control_to_train_map[remote_control_id]
+                if existing_train_id != train_id:
+                    # Unmap from the existing train
+                    if existing_train_id in self.train_to_remote_controls_map:
+                        self.train_to_remote_controls_map[existing_train_id].discard(remote_control_id)
+                        if not self.train_to_remote_controls_map[existing_train_id]:
+                            del self.train_to_remote_controls_map[existing_train_id]
+                            logger.debug(f"QUIC: Removed empty entry for train {existing_train_id} from train_to_remote_controls_map")
+            else:
+                logger.debug(f"QUIC: Mapping remote control {remote_control_id} to train {train_id}")
+
+            # Map the remote control to the new train
+            self.remote_control_to_train_map[remote_control_id] = train_id
             if train_id not in self.train_to_remote_controls_map:
                 self.train_to_remote_controls_map[train_id] = set()
             self.train_to_remote_controls_map[train_id].add(remote_control_id)
-            self.remote_control_to_train_map[remote_control_id] = train_id
-            logger.info(f"QUIC: Mapped {remote_control_id} to {train_id}")
+            logger.info(f"QUIC: Updated train_to_remote_controls_map: {self.train_to_remote_controls_map}")
 
 class VideoStreamHandler:
     def __init__(self, train_id: str):
