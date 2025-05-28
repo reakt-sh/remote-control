@@ -183,11 +183,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             elif isinstance(event, StreamDataReceived):
                 self._handle_stream_data(event)
             elif isinstance(event, DatagramFrameReceived):
-                logger.debug(f"QUIC: Received datagram frame: {event.data}")
+                self._handle_datagram_frame(event)
             elif isinstance(event, ConnectionIdIssued):
                 logger.debug(f"QUIC: Received ConnectionIDIssued: {event.connection_id}")
             else:
-                pass
+                pass  # Handle other QUIC events as needed
 
             if self.h3_connection is not None:
                 for h3_event in self.h3_connection.handle_event(event):
@@ -205,6 +205,17 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
     def _handle_stream_reset(self, event: StreamReset) -> None:
         logger.debug(f"Stream reset: {event.stream_id}")
+
+    def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
+        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
+            frame = self.video_stream_handler.process_packet(event.data)
+            # If a complete frame is received, write it to the file temporarily
+            if frame:
+                logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
+                self.file.write(frame)
+                self.file.flush()
+        else:
+            logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
         # Identify client type
@@ -230,19 +241,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
-        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
-            frame = self.video_stream_handler.process_packet(event.data)
-
-            # If a complete frame is received, write it to the file temporarily
-            if frame:
-                logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
-                self.file.write(frame)
-                self.file.flush()
-        else:
-            logger.debug(f"QUIC: Received unhandled data : {event.data}")
-
     def _h3_event_received(self, event: H3Event) -> None:
-        logger.debug(f"QUIC: Received H3 event: {event}")
         if isinstance(event, HeadersReceived):
             headers = {}
             for header, value in event.headers:

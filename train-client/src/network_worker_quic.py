@@ -111,7 +111,7 @@ class NetworkWorkerQUIC(QThread):
                     if self._client is None:
                         raise ConnectionError("Client not connected")
 
-                    self._client._quic.send_stream_data(self._stream_id, packet)
+                    self._client._quic.send_datagram_frame(packet)
                     result = self._client.transmit()
                     if result is not None:
                         await result
