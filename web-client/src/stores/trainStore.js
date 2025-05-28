@@ -4,11 +4,8 @@ import { ref } from 'vue'
 // Define server IP and port as constants
 const SERVER = 'localhost'
 const SERVER_PORT = 8000
-// const QUIC_HOST = "localhost"
-// const QUIC_PORT = 6161
 const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
 const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
-// const QUIC_URL = `https://${QUIC_HOST}:${QUIC_PORT}`
 // Packet Types
 const PACKET_TYPE = {
   video: 13,
@@ -203,6 +200,12 @@ export const useTrainStore = defineStore('train', () => {
     try {
         console.log('Connecting to WebTransport...')
         webTransport.value = new WebTransport("https://127.0.0.1:4437");
+        webTransport.value.ondatagram = (event) => {
+            const message = new TextDecoder().decode(event.data);
+            console.log('Received WebTransport datagram:', message);
+            // Handle the received message here
+        }
+
         await webTransport.value.ready
         console.log('WebTransport connected')
 
@@ -227,6 +230,17 @@ export const useTrainStore = defineStore('train', () => {
       await writer.write(data);
       await writer.close();
       console.log('WebTransport message sent:', message);
+
+      console.log('WebTransport: get reader from stream');
+      const reader = stream.readable.getReader();
+      console.log('WebTransport: Waiting for response from stream...');
+      const { value, done } = await reader.read();
+      console.log('WebTransport: received response from stream:', value, 'done:', done);
+      if (done) {
+        console.log('WebTransport stream closed');
+      } else {
+        console.log('Received response from WebTransport:', new TextDecoder().decode(value));
+      }
     } catch (error) {
       console.error('Error sending WebTransport message:', error);
     }
@@ -238,11 +252,14 @@ export const useTrainStore = defineStore('train', () => {
       return;
     }
     try {
+      console.log('Receiving WebTransport datagrams...');
       const reader = webTransport.value.datagrams.readable.getReader();
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
+        console.log('Waiting for WebTransport datagram...');
         const { value, done } = await reader.read();
+        console.log('Received WebTransport datagram:', value, 'done:', done);
         if (done) {
           console.log('WebTransport datagram stream closed');
           break;

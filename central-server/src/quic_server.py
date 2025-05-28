@@ -116,6 +116,21 @@ class ClientManager:
             self.train_to_remote_controls_map[train_id].add(remote_control_id)
             logger.info(f"QUIC: Updated train_to_remote_controls_map: {self.train_to_remote_controls_map}")
 
+    async def relay_video_to_remote_controls(self, train_id: str, data: bytes):
+        remote_controls = self.train_to_remote_controls_map.get(train_id, set())
+        for remote_control_id in remote_controls:
+            protocol = self.remote_control_clients.get(remote_control_id)
+            if protocol:
+                try:
+                    logger.debug(f"Relaying video data to remote_control {remote_control_id} for train {train_id}")
+                    protocol._quic.send_datagram_frame(data)
+                    transmit_coro = protocol.transmit()
+                    if transmit_coro is not None:
+                        await transmit_coro
+                    logger.debug(f"Video data relayed to remote_control {remote_control_id} for train {train_id}")
+                except Exception as e:
+                    logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
+
 class VideoStreamHandler:
     def __init__(self, train_id: str):
         self.train_id = train_id
@@ -208,6 +223,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
         if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
+            # Relay the video frame to all mapped remote controls
+            asyncio.create_task(
+                self.client_manager.relay_video_to_remote_controls(self.train_id, event.data)
+            )
             frame = self.video_stream_handler.process_packet(event.data)
             # If a complete frame is received, write it to the file temporarily
             if frame:
@@ -233,6 +252,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self.client_type = "REMOTE_CONTROL"
                     self.remote_control_id = message[15:]  # Extract train ID
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
+
+                    # try send Stream hello world message to the remote control
+                    hello_message = f"HELLO: {self.remote_control_id}".encode()
+                    self._quic.send_stream_data(self._quic.get_next_available_stream_id(), hello_message, end_stream=False)
+                    transmit_coro = self.transmit()
+                    if transmit_coro is not None:
+                        asyncio.create_task(transmit_coro)
+                    logger.info(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
                     return
                 else:
                     logger.warning(f"Unknown client identification message: {message}")
@@ -258,6 +285,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             headers = {}
             for header, value in event.headers:
                 headers[header] = value
+            logger.debug(f"QUIC: Received headers on stream {event.stream_id}: {headers}")
             if (headers.get(b":method") == b"CONNECT" and
                     headers.get(b":protocol") == b"webtransport"):
                 self._handshake_webtransport(event.stream_id, headers)
@@ -273,10 +301,20 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
         self._send_response(stream_id, 200, end_stream=False)
 
+        # TEST: Send a datagram to the browser right after handshake
+        try:
+            self._quic.send_datagram_frame(b"hello from server after handshake")
+            transmit_coro = self.transmit()
+            if transmit_coro is not None:
+                asyncio.create_task(transmit_coro)
+            logger.debug("Sent test datagram after handshake")
+        except Exception as e:
+            logger.error(f"Failed to send test datagram: {e}")
+
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
         headers = [(b":status", str(status_code).encode())]
         if status_code == 200:
-            headers.append((b"sec-webtransport-http3-draft", b"draft02"))
+            headers.append((b"sec-webtransport-http3-draft", b"02"))
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
