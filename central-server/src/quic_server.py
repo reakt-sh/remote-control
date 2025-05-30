@@ -124,6 +124,7 @@ class ClientManager:
                 try:
                     logger.debug(f"Relaying video data to remote_control {remote_control_id} for train {train_id}")
                     protocol.h3_connection.send_datagram(protocol.session_id, data)
+                    await asyncio.sleep(0.005)  # 5ms delay between datagrams
                     #protocol._quic.send_datagram_frame(data)
                     # transmit_coro = protocol.transmit()
                     # if transmit_coro is not None:

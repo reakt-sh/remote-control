@@ -34,6 +34,7 @@ export const useTrainStore = defineStore('train', () => {
   const remoteControlId = ref(null)
   const webTransport = ref(null)
   const bidistream = ref(null)
+  const videoStreamHandler = ref(null);
 
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
@@ -252,30 +253,87 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  function createVideoStreamHandler(trainId) {
+    let currentFrame = [];
+    let currentFrameId = -1;
+    let expectedPackets = 0;
+    let receivedPackets = 0;
+
+    return {
+      processPacket(data) {
+        try {
+          // data[0] is packet_type
+          const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
+          const numberOfPackets = (data[5] << 8) | data[6];
+          const packetId = (data[7] << 8) | data[8];
+          const trainIdStr = new TextDecoder().decode(data.slice(9, 45)).trim();
+          const payload = data.slice(45);
+
+          if (trainIdStr !== trainId) {
+            console.warn(`Packet train ID mismatch: expected ${trainId}, got ${trainIdStr}`);
+            return null;
+          }
+
+          if (frameId !== currentFrameId) {
+            // New frame
+            currentFrame = [];
+            currentFrameId = frameId;
+            expectedPackets = numberOfPackets;
+            receivedPackets = 0;
+          }
+
+          currentFrame.push(...payload);
+          receivedPackets += 1;
+
+          if (packetId === numberOfPackets && receivedPackets === expectedPackets) {
+            // Complete frame received
+            const completeFrame = new Uint8Array(currentFrame);
+            currentFrame = [];
+            return completeFrame;
+          }
+
+          return null;
+        } catch (e) {
+          console.error('Error processing video packet:', e);
+          return null;
+        }
+      }
+    };
+  }
+
   async function receiveWebTransportDatagrams() {
     if (!webTransport.value) {
       console.error('WebTransport is not connected');
       return;
     }
     try {
+      // Initialize handler with selectedTrainId when first video packet arrives
+      if (!videoStreamHandler.value && selectedTrainId.value) {
+        videoStreamHandler.value = createVideoStreamHandler(selectedTrainId.value);
+      }
+
       const datagram_reader = await webTransport.value.datagrams.readable.getReader();
       console.log('Receiving WebTransport datagrams...');
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        console.log('Waiting for WebTransport datagram...');
         const { value, done } = await datagram_reader.read();
-        console.log('Received WebTransport datagram:', value, 'done:', done);
         if (done) {
           console.log('WebTransport datagram stream closed');
           break;
         }
-        if (value) {
-          // value is a Uint8Array
-          // Handle the datagram here (decode, parse, etc.)
-          const message = new TextDecoder().decode(value);
-          console.log('Received WebTransport datagram:', message);
-          // You can dispatch, commit, or update state here as needed
+        if (value && value[0] === PACKET_TYPE.video) {
+          // Process video packet
+          if (!videoStreamHandler.value && selectedTrainId.value) {
+            videoStreamHandler.value = createVideoStreamHandler(selectedTrainId.value);
+          }
+          const frame = videoStreamHandler.value.processPacket(value);
+          if (frame) {
+            console.log('Received complete video frame over WebTransport Datagram');
+            currentVideoFrame.value = frame; // You can use this in your UI
+          }
+        } else {
+          console.log('Received WebTransport datagram UNKNOWN PACKET');
         }
       }
       datagram_reader.releaseLock();
