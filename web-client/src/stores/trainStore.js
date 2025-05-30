@@ -3,9 +3,13 @@ import { ref } from 'vue'
 
 // Define server IP and port as constants
 const SERVER = 'localhost'
+const SERVER_IP = '127.0.0.1'
 const SERVER_PORT = 8000
+const QUIC_PORT = 4437
 const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
 const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
+const QUIC_URL = `https://${SERVER_IP}:${QUIC_PORT}`
+
 // Packet Types
 const PACKET_TYPE = {
   video: 13,
@@ -51,6 +55,68 @@ export const useTrainStore = defineStore('train', () => {
 
   async function connectToServer() {
     connectToWebTransport()
+    connectToWebSocket()
+  }
+
+  async function mappingToTrain(trainId) {
+    if (!trainId) return
+    telemetryData.value = {}
+    selectedTrainId.value = trainId
+
+    // Send a POST request to assign the train to the remote control
+    if (remoteControlId.value) {
+      const url = `${SERVER_URL}/api/remote_control/${remoteControlId.value}/train/${trainId}`
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to assign train. Status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('Train assigned successfully:', data)
+      } catch (error) {
+        console.error('Error assigning train to remote control:', error)
+      }
+    } else {
+      console.error('Remote control ID is not initialized')
+    }
+
+    // Send a message through WebTransport to notify the server
+    if (webTransport.value) {
+      sendWebTransportStream(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+    } else {
+      console.error('WebTransport is not connected');
+    }
+  }
+
+  async function sendCommand(command) {
+    if (!isConnected.value || !webSocket.value) {
+      console.log("No Train Connected or No websocket Connection established")
+      return
+    }
+    try {
+      // Convert command object to JSON and then to Uint8Array
+      const jsonString = JSON.stringify(command)
+      const jsonBytes = new TextEncoder().encode(jsonString)
+
+      // Create a new Uint8Array with the first byte as PACKET_TYPE.command
+      const packet = new Uint8Array(1 + jsonBytes.length)
+      packet[0] = PACKET_TYPE.command
+      packet.set(jsonBytes, 1)
+
+      webSocket.value.send(packet)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  async function connectToWebSocket() {
     // Disconnect previous connection if exists
     if (webSocket.value) {
       webSocket.value.close()
@@ -133,65 +199,6 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  async function mappingToTrain(trainId) {
-    if (!trainId) return
-    telemetryData.value = {}
-    selectedTrainId.value = trainId
-
-    // Send a POST request to assign the train to the remote control
-    if (remoteControlId.value) {
-      const url = `${SERVER_URL}/api/remote_control/${remoteControlId.value}/train/${trainId}`
-
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to assign train. Status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        console.log('Train assigned successfully:', data)
-      } catch (error) {
-        console.error('Error assigning train to remote control:', error)
-      }
-    } else {
-      console.error('Remote control ID is not initialized')
-    }
-
-    // Send a message through WebTransport to notify the server
-    if (webTransport.value) {
-      sendWebTransportStream(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
-    } else {
-      console.error('WebTransport is not connected');
-    }
-  }
-
-  async function sendCommand(command) {
-    if (!isConnected.value || !webSocket.value) {
-      console.log("No Train Connected or No websocket Connection established")
-      return
-    }
-    try {
-      // Convert command object to JSON and then to Uint8Array
-      const jsonString = JSON.stringify(command)
-      const jsonBytes = new TextEncoder().encode(jsonString)
-
-      // Create a new Uint8Array with the first byte as PACKET_TYPE.command
-      const packet = new Uint8Array(1 + jsonBytes.length)
-      packet[0] = PACKET_TYPE.command
-      packet.set(jsonBytes, 1)
-
-      webSocket.value.send(packet)
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
   async function connectToWebTransport() {
     if (webTransport.value) {
         webTransport.value.close()
@@ -200,7 +207,7 @@ export const useTrainStore = defineStore('train', () => {
 
     try {
         console.log('Connecting to WebTransport...')
-        webTransport.value = new WebTransport("https://127.0.0.1:4437");
+        webTransport.value = new WebTransport(QUIC_URL);
         webTransport.value.ondatagram = (event) => {
             const message = new TextDecoder().decode(event.data);
             console.log('Received WebTransport datagram:', message);
@@ -244,7 +251,7 @@ export const useTrainStore = defineStore('train', () => {
       const writer = bidistream.value.writable.getWriter();
       const data = new TextEncoder().encode(message);
       await writer.write(data);
-      await writer.close();
+      writer.releaseLock(); // Release the lock for future writes
       console.log('WebTransport message sent:', message);
     } catch (error) {
       console.error('Error sending WebTransport message:', error);
