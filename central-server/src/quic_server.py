@@ -263,7 +263,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
                     # try send Stream hello world message to the remote control
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
-                    self._quic.send_stream_data(self._quic.get_next_available_stream_id(), hello_message, end_stream=False)
+                    self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     transmit_coro = self.transmit()
                     if transmit_coro is not None:
                         asyncio.create_task(transmit_coro)

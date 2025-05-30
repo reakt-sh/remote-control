@@ -29,6 +29,7 @@ export const useTrainStore = defineStore('train', () => {
   const currentVideoFrame = ref(null)
   const remoteControlId = ref(null)
   const webTransport = ref(null)
+  const bidistream = ref(null)
 
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
@@ -164,7 +165,7 @@ export const useTrainStore = defineStore('train', () => {
 
     // Send a message through WebTransport to notify the server
     if (webTransport.value) {
-      await sendWebTransportMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+      sendWebTransportStream(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
     } else {
       console.error('WebTransport is not connected');
     }
@@ -207,40 +208,44 @@ export const useTrainStore = defineStore('train', () => {
         }
 
         await webTransport.value.ready
+        console.log('WebTransport is ready and open:', webTransport.value.ready)
         console.log('WebTransport connected')
-
-        sendWebTransportMessage(`REMOTE_CONTROL:${remoteControlId.value}`);
-        receiveWebTransportDatagrams()
+        bidistream.value = await webTransport.value.createBidirectionalStream();
+        receiveWebTransportStream();
+        sendWebTransportStream(`REMOTE_CONTROL:${remoteControlId.value}`);
+        receiveWebTransportDatagrams();
     } catch (error) {
       console.error('WebTransport connection error:', error)
     }
   }
 
-  async function sendWebTransportMessage(message) {
+  async function receiveWebTransportStream()
+  {
+    const reader = bidistream.value.readable.getReader();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        console.log('Stream closed');
+        break;
+      }
+      console.log('Received from stream:', new TextDecoder().decode(value));
+      // Process the received data here
+    }
+  }
+
+  async function sendWebTransportStream(message) {
     console.log('Sending WebTransport message:', message);
     if (!webTransport.value) {
       console.error('WebTransport is not connected');
       return;
     }
     try {
-      // Create a bidirectional stream
-      const stream = await webTransport.value.createBidirectionalStream();
-      const writer = stream.writable.getWriter();
+      const writer = bidistream.value.writable.getWriter();
       const data = new TextEncoder().encode(message);
       await writer.write(data);
       await writer.close();
       console.log('WebTransport message sent:', message);
-
-      console.log('WebTransport: get reader from stream');
-      const reader = stream.readable.getReader();
-      console.log('WebTransport: Waiting for response from stream...');
-      const { value, done } = await reader.read();
-      console.log('WebTransport: received response from stream:', value, 'done:', done);
-      if (done) {
-        console.log('WebTransport stream closed');
-      } else {
-        console.log('Received response from WebTransport:', new TextDecoder().decode(value));
-      }
     } catch (error) {
       console.error('Error sending WebTransport message:', error);
     }

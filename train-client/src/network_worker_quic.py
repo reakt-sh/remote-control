@@ -115,6 +115,7 @@ class NetworkWorkerQUIC(QThread):
                     if self._client is None:
                         raise ConnectionError("Client not connected")
 
+                    logger.debug(f"Sending packet for frame {frame_id}, size: {len(packet)} bytes")
                     self._client._quic.send_datagram_frame(packet)
                     result = self._client.transmit()
                     if result is not None:
@@ -132,7 +133,7 @@ class NetworkWorkerQUIC(QThread):
             try:
                 event = client._quic.next_event()
                 if event is None:
-                    await asyncio.sleep(0.01)
+                    await asyncio.sleep(1)
                     continue
 
                 logger.info(f"Processing QUIC event: {event}")

@@ -1,3 +1,4 @@
+import sys
 # some configuration for components
 
 START_X = 100
@@ -9,6 +10,12 @@ FRAME_HEIGHT = 480
 FRAME_RATE = 60
 H264_DUMP = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/dump_collection/dump"
 ASSET_DIR = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/asset"
+
+if sys.platform.startswith("win"):
+    H264_DUMP="D:\\Workspace\\remote-control\\train-client\\dump_collection\\dump"
+    ASSET_DIR="D:\\Workspace\\remote-control\\train-client\\src\\asset"
+
+
 PIXEL_FORMAT = "yuv420p"
 
 # Packet Types
