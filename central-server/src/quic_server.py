@@ -123,10 +123,11 @@ class ClientManager:
             if protocol:
                 try:
                     logger.debug(f"Relaying video data to remote_control {remote_control_id} for train {train_id}")
-                    protocol._quic.send_datagram_frame(data)
-                    transmit_coro = protocol.transmit()
-                    if transmit_coro is not None:
-                        await transmit_coro
+                    protocol.h3_connection.send_datagram(protocol.session_id, data)
+                    #protocol._quic.send_datagram_frame(data)
+                    # transmit_coro = protocol.transmit()
+                    # if transmit_coro is not None:
+                    #     await transmit_coro
                     logger.debug(f"Video data relayed to remote_control {remote_control_id} for train {train_id}")
                 except Exception as e:
                     logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
@@ -182,6 +183,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.train_id: Optional[str] = None
         self.remote_control_id: Optional[str] = None
         self.h3_connection: Optional[H3Connection] = None
+        self.session_id: int = -1  # Default session ID
         self.video_stream_handler: Optional[VideoStreamHandler] = None
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
@@ -262,6 +264,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
                     # try send Stream hello world message to the remote control
+                    logger.info(f"QUIC: Remote control stream received from stream_id: {event.stream_id}, remote_control_id: {self.remote_control_id}")
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     transmit_coro = self.transmit()
@@ -304,17 +307,16 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.debug(f"QUIC: Received data on stream {event.stream_id}: {message}")
 
     def _handshake_webtransport(self, stream_id: int, request_headers: Dict[bytes, bytes]) -> None:
+        logger.info(f"QUIC: Handshake webtransport on stream {stream_id}")
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
+        self.session_id = stream_id
         self._send_response(stream_id, 200, end_stream=False)
 
         # TEST: Send a datagram to the browser right after handshake
         try:
-            self._quic.send_datagram_frame(b"hello from server after handshake")
-            transmit_coro = self.transmit()
-            if transmit_coro is not None:
-                asyncio.create_task(transmit_coro)
+            self.h3_connection.send_datagram(stream_id, b"Datagram from server after handshake")
             logger.debug("Sent test datagram after handshake")
         except Exception as e:
             logger.error(f"Failed to send test datagram: {e}")

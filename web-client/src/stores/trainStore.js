@@ -208,19 +208,13 @@ export const useTrainStore = defineStore('train', () => {
     try {
         console.log('Connecting to WebTransport...')
         webTransport.value = new WebTransport(QUIC_URL);
-        webTransport.value.ondatagram = (event) => {
-            const message = new TextDecoder().decode(event.data);
-            console.log('Received WebTransport datagram:', message);
-            // Handle the received message here
-        }
-
         await webTransport.value.ready
-        console.log('WebTransport is ready and open:', webTransport.value.ready)
         console.log('WebTransport connected')
+        receiveWebTransportDatagrams();
+
         bidistream.value = await webTransport.value.createBidirectionalStream();
         receiveWebTransportStream();
         sendWebTransportStream(`REMOTE_CONTROL:${remoteControlId.value}`);
-        receiveWebTransportDatagrams();
     } catch (error) {
       console.error('WebTransport connection error:', error)
     }
@@ -264,13 +258,13 @@ export const useTrainStore = defineStore('train', () => {
       return;
     }
     try {
+      const datagram_reader = await webTransport.value.datagrams.readable.getReader();
       console.log('Receiving WebTransport datagrams...');
-      const reader = webTransport.value.datagrams.readable.getReader();
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
         console.log('Waiting for WebTransport datagram...');
-        const { value, done } = await reader.read();
+        const { value, done } = await datagram_reader.read();
         console.log('Received WebTransport datagram:', value, 'done:', done);
         if (done) {
           console.log('WebTransport datagram stream closed');
@@ -284,7 +278,7 @@ export const useTrainStore = defineStore('train', () => {
           // You can dispatch, commit, or update state here as needed
         }
       }
-      reader.releaseLock();
+      datagram_reader.releaseLock();
     } catch (error) {
       console.error('Error receiving WebTransport datagrams:', error);
     }
