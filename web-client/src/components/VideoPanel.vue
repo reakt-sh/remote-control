@@ -18,8 +18,6 @@ let videoDecoder = null
 let recordedFrames = []
 let writeToFile = false
 let numberofFramesToWrite = 900
-let key_frame_found = null
-let sps_pps = null
 let videoWidth = 640
 let videoHeight = 480
 let displayWidth = 0
@@ -30,10 +28,6 @@ let isRendering = false
 onMounted(() => {
   updateCanvasSize()
   window.addEventListener('resize', updateCanvasSize)
-
-  key_frame_found = false
-  sps_pps = null
-
   // Initialize the WebCodecs VideoDecoder with codec configuration
   videoDecoder = new VideoDecoder({
     output: (frame) => renderFrame(frame),
@@ -100,37 +94,10 @@ watch(currentVideoFrame, (newFrame) => {
   if (videoDecoder) {
     try {
       // Enqueue the frame for decoding
-      let nal_type = newFrame[4] & 0x1F;
-      let frame_type = 'delta';
-
-      if (nal_type === 5) {
-        frame_type = 'key'
-        if (sps_pps === null) {
-          console.log('SPS PPS not found, skipping frame')
-          return
-        }
-        const combinedFrame = new Uint8Array(sps_pps.length + newFrame.length)
-        combinedFrame.set(sps_pps, 0)
-        combinedFrame.set(newFrame, sps_pps.length)
-        newFrame = combinedFrame
-      }
-
-      if (nal_type === 7) {
-        sps_pps = newFrame
-        console.log('SPS PPS found')
-        return
-      }
-
-      if (frame_type === 'key') {
-        key_frame_found = true
-      }
-
-      if (key_frame_found === true) {
-        frameQueue.push(newFrame)
-        if (!isRendering) {
-          isRendering = true
-          requestAnimationFrame(renderNextFrame)
-        }
+      frameQueue.push(newFrame)
+      if (!isRendering) {
+        isRendering = true
+        requestAnimationFrame(renderNextFrame)
       }
     } catch (error) {
       console.error('Error decoding frame:', error)
