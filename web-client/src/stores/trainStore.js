@@ -63,6 +63,14 @@ export const useTrainStore = defineStore('train', () => {
     if (!trainId) return
     telemetryData.value = {}
     selectedTrainId.value = trainId
+    // initialize video stream handler if not already initialized
+    if (videoStreamHandler.value && videoStreamHandler.value.trainId !== trainId) {
+      videoStreamHandler.value = null; // Reset if trainId changes
+    }
+
+    if (!videoStreamHandler.value && selectedTrainId.value) {
+      videoStreamHandler.value = createVideoStreamHandler(selectedTrainId.value);
+    }
 
     // Send a POST request to assign the train to the remote control
     if (remoteControlId.value) {
@@ -260,7 +268,7 @@ export const useTrainStore = defineStore('train', () => {
     let receivedPackets = 0;
 
     return {
-      processPacket(data) {
+      async processPacket(data) {
         try {
           // data[0] is packet_type
           const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
@@ -287,15 +295,13 @@ export const useTrainStore = defineStore('train', () => {
 
           if (packetId === numberOfPackets && receivedPackets === expectedPackets) {
             // Complete frame received
-            const completeFrame = new Uint8Array(currentFrame);
+            currentVideoFrame.value = new Uint8Array(currentFrame);
+            console.log('Received complete video frame over WebTransport Datagram');
             currentFrame = [];
-            return completeFrame;
           }
 
-          return null;
         } catch (e) {
           console.error('Error processing video packet:', e);
-          return null;
         }
       }
     };
@@ -307,31 +313,19 @@ export const useTrainStore = defineStore('train', () => {
       return;
     }
     try {
-      // Initialize handler with selectedTrainId when first video packet arrives
-      if (!videoStreamHandler.value && selectedTrainId.value) {
-        videoStreamHandler.value = createVideoStreamHandler(selectedTrainId.value);
-      }
-
-      const datagram_reader = await webTransport.value.datagrams.readable.getReader();
+      const datagram_reader = webTransport.value.datagrams.readable.getReader();
       console.log('Receiving WebTransport datagrams...');
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
+        console.log('Waiting for datagram...');
         const { value, done } = await datagram_reader.read();
         if (done) {
           console.log('WebTransport datagram stream closed');
           break;
         }
         if (value && value[0] === PACKET_TYPE.video) {
-          // Process video packet
-          if (!videoStreamHandler.value && selectedTrainId.value) {
-            videoStreamHandler.value = createVideoStreamHandler(selectedTrainId.value);
-          }
-          const frame = videoStreamHandler.value.processPacket(value);
-          if (frame) {
-            console.log('Received complete video frame over WebTransport Datagram');
-            currentVideoFrame.value = frame; // You can use this in your UI
-          }
+          videoStreamHandler.value.processPacket(value);
         } else {
           console.log('Received WebTransport datagram UNKNOWN PACKET');
         }
