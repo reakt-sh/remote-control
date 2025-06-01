@@ -52,8 +52,12 @@ class ClientManager:
 
         self.train_to_remote_controls_map: Dict[str, Set[str]] = {}
         self.remote_control_to_train_map: Dict[str, str] = {}
-
+        self.packet_queue: asyncio.Queue = asyncio.Queue()
+        asyncio.create_task(self.relay_video_to_remote_controls())
         self.lock = asyncio.Lock()
+
+    def enqueue_video_packet(self, train_id: str, data: bytes):
+        self.packet_queue.put_nowait((train_id, data))
 
     async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
@@ -116,15 +120,22 @@ class ClientManager:
             self.train_to_remote_controls_map[train_id].add(remote_control_id)
             logger.info(f"QUIC: Updated train_to_remote_controls_map: {self.train_to_remote_controls_map}")
 
-    async def relay_video_to_remote_controls(self, train_id: str, data: bytes):
-        remote_controls = self.train_to_remote_controls_map.get(train_id, set())
-        for remote_control_id in remote_controls:
-            protocol = self.remote_control_clients.get(remote_control_id)
-            if protocol:
-                try:
-                    protocol.h3_connection.send_datagram(protocol.session_id, data)
-                except Exception as e:
-                    logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
+    async def relay_video_to_remote_controls(self):
+        while True:
+            try:
+                train_id, data = await self.packet_queue.get()
+                remote_controls = self.train_to_remote_controls_map.get(train_id, set())
+                for remote_control_id in remote_controls:
+                    protocol = self.remote_control_clients.get(remote_control_id)
+                    if protocol:
+                        try:
+                            protocol.h3_connection.send_datagram(protocol.session_id, data)
+                            protocol.transmit()
+                            logger.debug(f"Relayed video to remote_control {remote_control_id} for train {train_id}")
+                        except Exception as e:
+                            logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
+            except self.packet_queue.Empty:
+                await asyncio.sleep(0.1)
 
 class VideoStreamHandler:
     def __init__(self, train_id: str):
@@ -220,15 +231,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
         if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
             # Relay the video frame to all mapped remote controls
-            asyncio.create_task(
-                self.client_manager.relay_video_to_remote_controls(self.train_id, event.data)
-            )
-            frame = self.video_stream_handler.process_packet(event.data)
+            self.client_manager.enqueue_video_packet(self.train_id, event.data)
+            # frame = self.video_stream_handler.process_packet(event.data)
             # If a complete frame is received, write it to the file temporarily
-            if frame:
-                logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
-                self.file.write(frame)
-                self.file.flush()
+            # if frame:
+            #    logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
+            #    self.file.write(frame)
+            #    self.file.flush()
         else:
             logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
@@ -309,11 +318,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self._send_response(stream_id, 200, end_stream=False)
 
         # TEST: Send a datagram to the browser right after handshake
-        try:
-            self.h3_connection.send_datagram(stream_id, b"Datagram from server after handshake")
-            logger.debug("Sent test datagram after handshake")
-        except Exception as e:
-            logger.error(f"Failed to send test datagram: {e}")
+        # try:
+        #     self.h3_connection.send_datagram(stream_id, b"Datagram from server after handshake")
+        #     logger.debug("Sent test datagram after handshake")
+        # except Exception as e:
+        #     logger.error(f"Failed to send test datagram: {e}")
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
         headers = [(b":status", str(status_code).encode())]
@@ -350,7 +359,7 @@ async def run_quic_server():
         quic_config = QuicConfiguration(
             is_client=False,
             alpn_protocols=["h3", "webtransport"],
-            max_datagram_frame_size=65536,
+            max_datagram_frame_size=2000,
             idle_timeout=30.0,  # 30 seconds idle timeout
         )
         quic_config.load_cert_chain(certfile=config.cert_file, keyfile=config.key_file)

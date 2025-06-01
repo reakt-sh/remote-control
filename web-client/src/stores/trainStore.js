@@ -318,7 +318,6 @@ export const useTrainStore = defineStore('train', () => {
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        console.log('Waiting for datagram...');
         const { value, done } = await datagram_reader.read();
         if (done) {
           console.log('WebTransport datagram stream closed');
@@ -326,6 +325,7 @@ export const useTrainStore = defineStore('train', () => {
         }
         if (value && value[0] === PACKET_TYPE.video) {
           videoStreamHandler.value.processPacket(value);
+          console.log('Received WebTransport datagram VIDEO PACKET');
         } else {
           console.log('Received WebTransport datagram UNKNOWN PACKET');
         }

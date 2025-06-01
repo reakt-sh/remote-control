@@ -28,7 +28,8 @@ class FileProcessor(QObject):
         self.width = 0
         self.height = 0
         self.original_fps = 60
-        self.current_fps = 60
+        self.current_fps = 30
+        self.set_speed(self.current_fps)
 
     def init_capture(self, speed_kmh=60):
         self.cap = cv2.VideoCapture(self.video_path)
