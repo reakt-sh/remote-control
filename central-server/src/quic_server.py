@@ -144,6 +144,7 @@ class VideoStreamHandler:
         self.expected_packets = 0
         self.received_packets = 0
         self.frame_counter = 0
+        self.start_time = None
 
     def process_packet(self, data: bytes) -> Optional[bytes]:
         try:
@@ -247,12 +248,12 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
             )
 
-            # calculate how many complete video frames we have received in each second
-            frame = self.video_stream_handler.process_packet(event.data)
-            #if frame:
-            #    logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
-            #    self.file.write(frame)
-            #    self.file.flush()
+            # if a complete video frame is received, then write to a file to check
+            # frame = self.video_stream_handler.process_packet(event.data)
+            # if frame:
+            #     logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
+            #     self.file.write(frame)
+            #     self.file.flush()
         else:
             logger.debug(f"QUIC: Received unhandled data : {event.data}")
 

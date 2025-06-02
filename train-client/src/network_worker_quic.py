@@ -119,7 +119,6 @@ class NetworkWorkerQUIC(QThread):
                     result = self._client.transmit()
                     if result is not None:
                         await result
-                    await asyncio.sleep(0.01)
 
             except ConnectionError as e:
                 logger.error(f"Connection lost: {e}")
