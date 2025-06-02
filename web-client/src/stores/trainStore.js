@@ -325,7 +325,6 @@ export const useTrainStore = defineStore('train', () => {
         }
         if (value && value[0] === PACKET_TYPE.video) {
           videoStreamHandler.value.processPacket(value);
-          console.log('Received WebTransport datagram VIDEO PACKET');
         } else {
           console.log('Received WebTransport datagram UNKNOWN PACKET');
         }

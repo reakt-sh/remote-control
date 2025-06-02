@@ -56,8 +56,8 @@ class ClientManager:
         asyncio.create_task(self.relay_video_to_remote_controls())
         self.lock = asyncio.Lock()
 
-    def enqueue_video_packet(self, train_id: str, data: bytes):
-        self.packet_queue.put_nowait((train_id, data))
+    async def enqueue_video_packet(self, train_id: str, data: bytes):
+        await self.packet_queue.put((train_id, data))
 
     async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
@@ -131,7 +131,6 @@ class ClientManager:
                         try:
                             protocol.h3_connection.send_datagram(protocol.session_id, data)
                             protocol.transmit()
-                            logger.debug(f"Relayed video to remote_control {remote_control_id} for train {train_id}")
                         except Exception as e:
                             logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
             except self.packet_queue.Empty:
@@ -144,6 +143,7 @@ class VideoStreamHandler:
         self.current_frame_id = -1
         self.expected_packets = 0
         self.received_packets = 0
+        self.frame_counter = 0
 
     def process_packet(self, data: bytes) -> Optional[bytes]:
         try:
@@ -172,6 +172,18 @@ class VideoStreamHandler:
                 # Complete frame received
                 complete_frame = bytes(self.current_frame)
                 self.current_frame = bytearray()
+
+                if self.frame_counter == 0:
+                    self.frame_counter += 1
+                    self.start_time = asyncio.get_event_loop().time()
+                else:
+                    self.frame_counter += 1
+
+                current_time = asyncio.get_event_loop().time()
+                if current_time - self.start_time >= 1.0:
+                    logger.info(f"Received {self.frame_counter} complete video frames in the last second for train {self.train_id}")
+                    self.frame_counter = 0
+
                 return complete_frame
 
             return None
@@ -231,10 +243,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
         if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
             # Relay the video frame to all mapped remote controls
-            self.client_manager.enqueue_video_packet(self.train_id, event.data)
-            # frame = self.video_stream_handler.process_packet(event.data)
-            # If a complete frame is received, write it to the file temporarily
-            # if frame:
+            asyncio.create_task(
+                self.client_manager.enqueue_video_packet(self.train_id, event.data)
+            )
+
+            # calculate how many complete video frames we have received in each second
+            frame = self.video_stream_handler.process_packet(event.data)
+            #if frame:
             #    logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
             #    self.file.write(frame)
             #    self.file.flush()
