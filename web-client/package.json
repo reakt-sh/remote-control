@@ -45,7 +45,8 @@
       "defineExpose": "readonly",
       "withDefaults": "readonly",
       "VideoDecoder": "readonly",
-      "EncodedVideoChunk": "readonly"
+      "EncodedVideoChunk": "readonly",
+      "WebTransport": "readonly"
     }
   },
   "browserslist": [

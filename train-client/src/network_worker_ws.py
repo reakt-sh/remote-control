@@ -7,7 +7,7 @@ import websockets
 
 from globals import *
 
-class NetworkWorker(QThread):
+class NetworkWorkerWS(QThread):
     process_command = pyqtSignal(object)
 
     def __init__(self, train_client_id, parent=None):
@@ -16,7 +16,7 @@ class NetworkWorker(QThread):
         self.train_client_id = train_client_id
         self.running = False
         self.loop = None
-        self.server_url = f"{SERVER_URL}/train/{train_client_id}"
+        self.server_url = f"{WEBSOCKET_URL}/train/{train_client_id}"
 
     def run(self):
         self.running = True
@@ -30,7 +30,7 @@ class NetworkWorker(QThread):
     async def websocket_handler(self):
         try:
             async with websockets.connect(self.server_url) as websocket:
-                print(f"Connected to server at {self.server_url}")
+                print(f"WebSocket: Connected to server at {self.server_url}")
                 # Create tasks
                 tasks = [
                     asyncio.create_task(self.websocket_sender(websocket)),
@@ -50,10 +50,10 @@ class NetworkWorker(QThread):
                     except asyncio.CancelledError:
                         pass
         except Exception as e:
-            print(f"WebSocket connection error: {e}")
+            print(f"WebSocket: connection error: {e}")
 
     async def websocket_sender(self, websocket):
-        print("### Sender task started ###")
+        print("WebSocket: Sender task started")
         while self.running:
             try:
                 packet = self.packet_queue.get_nowait()
@@ -62,33 +62,33 @@ class NetworkWorker(QThread):
             except queue.Empty:
                 await asyncio.sleep(0.1)  # Increased sleep to yield to other tasks
             except Exception as e:
-                print(f"Sender error: {e}")
+                print(f"WebSocket: Sender error: {e}")
                 break
 
     async def websocket_receiver(self, websocket):
-        print("### Receiver task started ###")
+        print("WebSocket: Receiver task started")
         while self.running:
             try:
                 packet = await asyncio.wait_for(websocket.recv(), timeout=1.0)
                 if packet:
-                    print(f"Received packet of size {len(packet)}")
+                    print(f"WebSocket: Received packet of size {len(packet)}")
                     packet_type = packet[0]
                     payload = packet[1:]
                     if packet_type == PACKET_TYPE["keepalive"]:
                         message = json.loads(payload.decode('utf-8'))
-                        print(f"Keepalive message: {message}")
+                        print(f"WebSocket: Keepalive message: {message}")
                     elif packet_type == PACKET_TYPE["command"]:
                         self.process_command.emit(payload)
                     else:
-                        print(f"Received packet type {packet_type}, not handled")
+                        print(f"WebSocket: Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:
                 continue
             except Exception as e:
-                print(f"Receiver error: {e}")
+                print(f"WebSocket: Receiver error: {e}")
                 break
 
     async def keepalive(self, websocket):
-        print("### Keepalive task started ###")
+        print("WebSocket: Keepalive task started")
         self.keepalive_sequence = 0
         while self.running:
             try:
@@ -103,7 +103,7 @@ class NetworkWorker(QThread):
                 await websocket.send(packet)
                 await asyncio.sleep(25)
             except Exception as e:
-                print(f"Keepalive error: {e}")
+                print(f"WebSocket: Keepalive error: {e}")
                 break
 
     def stop(self):

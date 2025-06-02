@@ -1,7 +1,7 @@
 
 import json
 import struct
-from globals import PACKET_TYPE
+from src.globals import PACKET_TYPE
 
 class PacketBuilder:
     def __init__(self):

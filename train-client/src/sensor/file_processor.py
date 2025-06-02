@@ -3,6 +3,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
 import random
 import os
+from globals import ASSET_DIR
 
 class FileProcessor(QObject):
     frame_ready = pyqtSignal(object, object)  # Emits (frame_count, frame)
@@ -10,7 +11,7 @@ class FileProcessor(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        asset_dir = os.path.join(os.getcwd(), "asset")
+        asset_dir = ASSET_DIR
         # List all video files in the asset directory (you can filter by extension if needed)
         video_files = [f for f in os.listdir(asset_dir) if f.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
         if not video_files:
@@ -27,7 +28,8 @@ class FileProcessor(QObject):
         self.width = 0
         self.height = 0
         self.original_fps = 60
-        self.current_fps = 60
+        self.current_fps = 30
+        self.set_speed(self.current_fps)
 
     def init_capture(self, speed_kmh=60):
         self.cap = cv2.VideoCapture(self.video_path)
