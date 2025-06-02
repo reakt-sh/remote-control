@@ -1,3 +1,4 @@
+import sys
 # some configuration for components
 
 START_X = 100
@@ -7,7 +8,14 @@ WINDOW_HEIGHT = 500
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 FRAME_RATE = 60
-H264_DUMP = "../dump_collection/dump"
+H264_DUMP = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/dump_collection/dump"
+ASSET_DIR = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/asset"
+
+if sys.platform.startswith("win"):
+    H264_DUMP="D:\\Workspace\\remote-control\\train-client\\dump_collection\\dump"
+    ASSET_DIR="D:\\Workspace\\remote-control\\train-client\\src\\asset"
+
+
 PIXEL_FORMAT = "yuv420p"
 
 # Packet Types
@@ -23,8 +31,13 @@ PACKET_TYPE = {
     "notification": 21
 }
 
-SERVER_WEBSOCKET_PORT = 8000
-SERVER_URL = f"ws://localhost:{SERVER_WEBSOCKET_PORT}/ws"
+
+SERVER_HOST = "localhost"
+SERVER_PORT = 8000
+QUIC_HOST = "127.0.0.1"
+QUIC_PORT = 4437
+WEBSOCKET_URL = f"ws://{SERVER_HOST}:{SERVER_PORT}/ws"
+MAX_PACKET_SIZE = 1000
 
 STATION_LIST = [
     {"name": "Malente",                     "latitude": 54.1722,        "longitude": 10.5597},

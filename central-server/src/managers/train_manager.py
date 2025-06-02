@@ -2,7 +2,8 @@ import asyncio
 from random import randint
 from typing import Dict
 from fastapi import WebSocket
-from utils.app_logger import logger
+
+from src.utils.app_logger import logger
 class TrainManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
@@ -19,7 +20,6 @@ class TrainManager:
         for connection in self.active_connections.values():
             await connection.close()
         self.active_connections.clear()
-        logger.debug("All train connections closed.")
 
 
     async def update_telemetry(self, train_id: str, data: dict):

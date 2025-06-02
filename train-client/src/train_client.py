@@ -12,14 +12,17 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidg
 from PyQt5.QtGui import QImage, QPixmap, QTextCursor, QIcon
 from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtCore import QDateTime
+from loguru import logger
 
 from globals import *
-from NetworkWorker import NetworkWorker
-from sensor.Camera import Camera
-from sensor.Telemetry import Telemetry
-from sensor.IMU import IMU
-from Encoder import Encoder
-from sensor.FileProcessor import FileProcessor
+from network_worker_ws import NetworkWorkerWS
+from network_worker_quic import NetworkWorkerQUIC
+from sensor.camera import Camera
+from sensor.telemetry import Telemetry
+from sensor.imu import IMU
+from encoder import Encoder
+from sensor.file_processor import FileProcessor
+
 class TrainClient(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -176,9 +179,24 @@ class TrainClient(QMainWindow):
         self.central_widget.setLayout(layout)
 
     def init_network(self):
-        self.network_worker = NetworkWorker(self.train_client_id)
-        self.network_worker.process_command.connect(self.on_new_command)
-        self.network_worker.start()
+        self.network_worker_ws = NetworkWorkerWS(self.train_client_id)
+        self.network_worker_ws.process_command.connect(self.on_new_command)
+        self.network_worker_ws.start()
+
+        self.network_worker_quic = NetworkWorkerQUIC(self.train_client_id)
+        self.network_worker_quic.connection_established.connect(self.on_quic_connected)
+        self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
+        self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
+        self.network_worker_quic.start()
+
+    def on_quic_connected(self):
+        logger.info("QUIC connection established")
+
+    def on_quic_failed(self, error):
+        logger.info(f"QUIC connection failed: {error}")
+
+    def on_quic_closed(self):
+        logger.info("QUIC connection closed")
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
@@ -204,7 +222,7 @@ class TrainClient(QMainWindow):
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
-            self.network_worker.enqueue_packet(packet)
+            self.network_worker_ws.enqueue_packet(packet)
 
             current_speed = self.telemetry.get_speed()
             delta = 0
@@ -223,15 +241,15 @@ class TrainClient(QMainWindow):
         imu_message = f"IMU Data: {data}"
         self.log_message(imu_message)
 
-    def on_encoded_frame(self, encoded_bytes):
+    def on_encoded_frame(self, frame_id, encoded_bytes):
         if self.write_to_file:
             self.output_file.write(encoded_bytes)
             self.output_file.flush()
         # Only send if sending is enabled
         if self.is_sending:
-            encoded_bytes = struct.pack('B', PACKET_TYPE["video"]) + encoded_bytes
-            self.network_worker.enqueue_packet(encoded_bytes)
+            self.network_worker_quic.enqueue_frame(frame_id, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
+            # print("Encoded frame to network worker quic enqueue, length:", len(encoded_bytes))
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
@@ -290,7 +308,8 @@ class TrainClient(QMainWindow):
     def closeEvent(self, event):
         self.video_source.stop()
         self.encoder.close()
-        self.network_worker.stop()
+        self.network_worker_ws.stop()
+        self.network_worker_quic.stop()
         self.output_file.close()
         event.accept()
         print("CameraClient closed.")
