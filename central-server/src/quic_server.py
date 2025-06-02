@@ -146,6 +146,10 @@ class VideoStreamHandler:
         self.frame_counter = 0
         self.start_time = None
 
+        # For bandwidth calculation
+        self.bandwidth_bytes = 0
+        self.bandwidth_start_time = None
+
     def process_packet(self, data: bytes) -> Optional[bytes]:
         try:
             # Ignoring first byte as packet_type = data[0]
@@ -192,6 +196,19 @@ class VideoStreamHandler:
         except Exception as e:
             logger.error(f"Error processing video packet: {e}")
             return None
+
+    def calculate_bandwidth(self, bytes_received: int):
+        now = asyncio.get_event_loop().time()
+        if self.bandwidth_start_time is None:
+            self.bandwidth_start_time = now
+            self.bandwidth_bytes = 0
+
+        self.bandwidth_bytes += bytes_received
+
+        if now - self.bandwidth_start_time >= 1.0:
+            logger.info(f"Bandwidth for train {self.train_id}: {self.bandwidth_bytes / 1024:.2f} KB/s")
+            self.bandwidth_start_time = now
+            self.bandwidth_bytes = 0
 
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, **kwargs):
@@ -247,6 +264,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
             )
+            self.video_stream_handler.calculate_bandwidth(len(event.data))
 
             # if a complete video frame is received, then write to a file to check
             # frame = self.video_stream_handler.process_packet(event.data)
