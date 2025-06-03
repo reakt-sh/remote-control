@@ -97,13 +97,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self.video_datagram_assembler = VideoDatagramAssembler(self.train_id)
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
 
-                    # try send Stream hello world message to the train
+                    # try send Stream hello world message to the remote control
+                    logger.info(f"QUIC: stream received from stream_id: {event.stream_id}, train-id: {self.train_id}")
                     hello_message = f"HELLO: {self.train_id}".encode()
-                    self._quic.send_stream_data(self._quic.get_next_available_stream_id(), hello_message, end_stream=False)
+                    self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     transmit_coro = self.transmit()
                     if transmit_coro is not None:
                         asyncio.create_task(transmit_coro)
-                    logger.info(f"QUIC: hello_message sent to Train {self.train_id}")
+                    logger.info(f"QUIC: hello_message sent to train {self.train_id}")
                     return
                 elif message.startswith("REMOTE_CONTROL:"):
                     self.client_type = "REMOTE_CONTROL"
@@ -202,7 +203,7 @@ async def run_quic_server():
 
         quic_config = QuicConfiguration(
             is_client=False,
-            alpn_protocols=["h3", "webtransport"],
+            alpn_protocols=["quic", "h3", "webtransport"],
             max_datagram_frame_size=2000,
             idle_timeout=30.0,  # 30 seconds idle timeout
         )

@@ -10,7 +10,7 @@ from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import QuicConnection
 from aioquic.quic.events import QuicEvent, StreamDataReceived, DatagramFrameReceived, ConnectionTerminated, StreamReset
 from aioquic.asyncio.protocol import QuicStreamAdapter
-
+from aioquic.asyncio.protocol import QuicConnectionProtocol
 
 from globals import *
 
@@ -27,7 +27,14 @@ def patched_stream_close(self):
 
 QuicStreamAdapter.close = patched_stream_close
 
+class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnectionProtocol
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+    def quic_event_received(self, event: QuicEvent):
+        logger.debug(f"Processing QUIC event: {event}")
+        if isinstance(event, StreamDataReceived):
+            logger.debug(f"Client: Received data: {event.data.decode()} on stream {event.stream_id}")
 
 class NetworkWorkerQUIC(QThread):
     # Signals for Qt integration
@@ -44,7 +51,7 @@ class NetworkWorkerQUIC(QThread):
         # QUIC Configuration
         self.configuration = QuicConfiguration(
             is_client=True,
-            alpn_protocols=["h3", "webtransport"],
+            alpn_protocols=["quic"],
             max_datagram_frame_size=65536,
             idle_timeout=30.0,
         )
@@ -85,17 +92,15 @@ class NetworkWorkerQUIC(QThread):
                 self.server_host,
                 self.server_port,
                 configuration=self.configuration,
+                create_protocol=QuicClientProtocol
             ) as client:
                 self._client = client
-                logger.info("QUIC connection established")
                 self.connection_established.emit()
 
                 # Get a new stream ID for communication
                 self._stream_id = client._quic.get_next_available_stream_id(is_unidirectional=False)
 
-                # Start receiving events
-                self.event_receiver_thread = asyncio.create_task(self.receive_events(client))
-
+                logger.debug(f"Sending QUIC handshake on stream {self._stream_id}")
                 # Send train identification
                 handshake = f"TRAIN:{self.train_client_id}".encode()
                 client._quic.send_stream_data(self._stream_id, handshake, end_stream=False)
@@ -141,45 +146,6 @@ class NetworkWorkerQUIC(QThread):
                 logger.error(f"Error in send loop: {e}")
                 continue
 
-    async def receive_events(self, client: QuicConnection):
-        while self._running:
-            try:
-                event = client._quic.next_event()
-                if event is None:
-                    await asyncio.sleep(1)
-                    continue
-
-                logger.info(f"Processing QUIC event: {event}")
-
-                if isinstance(event, StreamDataReceived):
-                    if event.stream_id == self._stream_id:
-                        logger.info(f"Received stream data on stream {event.stream_id}: {event.data!r}")
-                        self.data_received.emit(event.data)
-                        if event.end_stream:
-                            logger.info(f"Stream {event.stream_id} closed by server")
-                            break
-                    else:
-                        logger.warning(f"Received data on unexpected stream {event.stream_id}")
-
-                elif isinstance(event, DatagramFrameReceived):
-                    logger.info(f"Received datagram: {event.data!r}")
-                    self.data_received.emit(event.data)
-
-                elif isinstance(event, StreamReset):
-                    logger.error(f"Stream {event.stream_id} reset: error code {event.error_code}")
-                    self.connection_failed.emit(f"Stream reset: {event.error_code}")
-                    break
-
-                elif isinstance(event, ConnectionTerminated):
-                    logger.error(f"Connection terminated: {event.reason_phrase} (error code: {event.error_code})")
-                    self.connection_failed.emit("Connection terminated by server")
-                    break
-
-            except Exception as e:
-                logger.error(f"Error processing QUIC events: {e}")
-                self.connection_failed.emit(str(e))
-                break
-
     def create_packets(self, frame_id: int, frame: bytes) -> list[bytes]:
         packet_list = []
         frame_size = len(frame)
@@ -201,7 +167,6 @@ class NetworkWorkerQUIC(QThread):
         return packet_list
 
     def enqueue_frame(self, frame_id: int, frame: bytes):
-        """Add a frame to the sending queue"""
         if not self._running or not self._loop:
             logger.warning("Cannot enqueue frame - client not running")
             return
@@ -211,7 +176,6 @@ class NetworkWorkerQUIC(QThread):
             logger.error(f"Error enqueuing frame: {e}")
 
     def stop(self):
-        self.event_receiver_thread.cancel()
         self._running = False
         self.quit()
         self.wait(4000)
