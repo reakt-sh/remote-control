@@ -67,7 +67,7 @@ class NetworkWorkerQUIC(QThread):
             # Create a new event loop for this thread
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
-            self._loop.run_until_complete(self._run_client())
+            self._loop.run_until_complete(self.run_client())
         except Exception as e:
             logger.error(f"QUIC client error: {e}")
             self.connection_failed.emit(str(e))
@@ -79,7 +79,7 @@ class NetworkWorkerQUIC(QThread):
             self._running = False
             self.connection_closed.emit()
 
-    async def _run_client(self):
+    async def run_client(self):
         try:
             async with connect(
                 self.server_host,
@@ -94,7 +94,7 @@ class NetworkWorkerQUIC(QThread):
                 self._stream_id = client._quic.get_next_available_stream_id(is_unidirectional=False)
 
                 # Start receiving events
-                asyncio.create_task(self._receive_events(client))
+                self.event_receiver_thread = asyncio.create_task(self.receive_events(client))
 
                 # Send train identification
                 handshake = f"TRAIN:{self.train_client_id}".encode()
@@ -105,16 +105,13 @@ class NetworkWorkerQUIC(QThread):
                 logger.info(f"QUIC handshake sent on stream {self._stream_id}")
 
                 # Main sending loop
-                await self._send_loop()
+                await self.send_datagram()
 
         except Exception as e:
             logger.error(f"QUIC connection error: {e}")
             self.connection_failed.emit(str(e))
-        finally:
-            self._client = None
-            self._stream_id = None
 
-    async def _send_loop(self):
+    async def send_datagram(self):
         while self._running:
             try:
                 # Get frame from queue with timeout
@@ -125,7 +122,7 @@ class NetworkWorkerQUIC(QThread):
                     continue
 
                 # Split frame into packets and send
-                packet_list = self._create_packets(frame_id, frame)
+                packet_list = self.create_packets(frame_id, frame)
                 for packet in packet_list:
                     if not self._running:
                         break
@@ -144,7 +141,7 @@ class NetworkWorkerQUIC(QThread):
                 logger.error(f"Error in send loop: {e}")
                 continue
 
-    async def _receive_events(self, client: QuicConnection):
+    async def receive_events(self, client: QuicConnection):
         while self._running:
             try:
                 event = client._quic.next_event()
@@ -183,7 +180,7 @@ class NetworkWorkerQUIC(QThread):
                 self.connection_failed.emit(str(e))
                 break
 
-    def _create_packets(self, frame_id: int, frame: bytes) -> list[bytes]:
+    def create_packets(self, frame_id: int, frame: bytes) -> list[bytes]:
         packet_list = []
         frame_size = len(frame)
         number_of_packets = (frame_size // MAX_PACKET_SIZE) + 1
@@ -214,18 +211,7 @@ class NetworkWorkerQUIC(QThread):
             logger.error(f"Error enqueuing frame: {e}")
 
     def stop(self):
-        """Gracefully stop the client"""
+        self.event_receiver_thread.cancel()
         self._running = False
-        if self._client and self._loop and self._stream_id is not None:
-            try:
-                self._client._quic.send_stream_data(self._stream_id, b"", end_stream=True)
-                future = asyncio.run_coroutine_threadsafe(self._client.transmit(), self._loop)
-                future.result(timeout=1.0)  # Wait briefly for transmit
-                self._client.close()
-                future = asyncio.run_coroutine_threadsafe(self._client.transmit(), self._loop)
-                future.result(timeout=1.0)
-            except Exception as e:
-                logger.error(f"Error during graceful shutdown: {e}")
-
         self.quit()
-        self.wait(2000)
+        self.wait(4000)
