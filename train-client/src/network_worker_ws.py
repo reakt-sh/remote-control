@@ -4,6 +4,7 @@ import json
 import struct
 from PyQt5.QtCore import QThread, pyqtSignal
 import websockets
+from loguru import logger
 
 from globals import *
 
@@ -108,6 +109,7 @@ class NetworkWorkerWS(QThread):
 
     def stop(self):
         self.running = False
+        logger.info("WebSocket connection closed")
 
     def enqueue_packet(self, packet):
         self.packet_queue.put(packet)

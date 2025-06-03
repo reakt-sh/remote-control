@@ -12,7 +12,7 @@ class ClientManager:
         self.train_to_remote_controls_map: Dict[str, Set[str]] = {}
         self.remote_control_to_train_map: Dict[str, str] = {}
         self.packet_queue: asyncio.Queue = asyncio.Queue()
-        asyncio.create_task(self.relay_video_to_remote_controls())
+        asyncio.create_task(self.relay_datagram_to_remote_controls())
         self.lock = asyncio.Lock()
 
     async def enqueue_video_packet(self, train_id: str, data: bytes):
@@ -79,7 +79,7 @@ class ClientManager:
             self.train_to_remote_controls_map[train_id].add(remote_control_id)
             logger.info(f"QUIC: Updated train_to_remote_controls_map: {self.train_to_remote_controls_map}")
 
-    async def relay_video_to_remote_controls(self):
+    async def relay_datagram_to_remote_controls(self):
         while True:
             try:
                 train_id, data = await self.packet_queue.get()
@@ -94,3 +94,28 @@ class ClientManager:
                             logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
             except self.packet_queue.Empty:
                 await asyncio.sleep(0.1)
+
+    async def relay_stream_to_remote_controls(self, train_id: str, data: bytes):
+        remote_controls = self.train_to_remote_controls_map.get(train_id, set())
+        for remote_control_id in remote_controls:
+            protocol = self.remote_control_clients.get(remote_control_id)
+            if protocol:
+                try:
+                    protocol._quic.send_stream_data(protocol.stream_id, data, end_stream=False)
+                    protocol.transmit()
+                except Exception as e:
+                    logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
+
+    async def relay_stream_to_train(self, remote_control_id: str, data: bytes):
+        train_id = self.remote_control_to_train_map.get(remote_control_id)
+        if train_id:
+            protocol = self.train_clients.get(train_id)
+            if protocol:
+                try:
+                    protocol._quic.send_stream_data(protocol.stream_id, data, end_stream=False)
+                    protocol.transmit()
+                    logger.info(f"Relayed telemetry data to train {train_id} from remote_control {remote_control_id}")
+                except Exception as e:
+                    logger.error(f"Failed to relay stream to train {train_id}: {e}")
+        else:
+            logger.warning(f"No train found for remote control {remote_control_id}")
