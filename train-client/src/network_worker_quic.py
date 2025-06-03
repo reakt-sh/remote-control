@@ -26,16 +26,6 @@ def patched_stream_close(self):
             raise
 
 QuicStreamAdapter.close = patched_stream_close
-
-class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnectionProtocol
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def quic_event_received(self, event: QuicEvent):
-        logger.debug(f"Processing QUIC event: {event}")
-        if isinstance(event, StreamDataReceived):
-            logger.debug(f"Client: Received data: {event.data.decode()} on stream {event.stream_id}")
-
 class NetworkWorkerQUIC(QThread):
     # Signals for Qt integration
     connection_established = pyqtSignal()
@@ -92,7 +82,9 @@ class NetworkWorkerQUIC(QThread):
                 self.server_host,
                 self.server_port,
                 configuration=self.configuration,
-                create_protocol=QuicClientProtocol
+                create_protocol=lambda *args, **kwargs: QuicClientProtocol(
+                *args, network_worker=self, **kwargs
+            )
             ) as client:
                 self._client = client
                 self.connection_established.emit()
@@ -179,3 +171,14 @@ class NetworkWorkerQUIC(QThread):
         self._running = False
         self.quit()
         self.wait(4000)
+
+class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnectionProtocol
+    def __init__(self, *args, network_worker: NetworkWorkerQUIC, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.network_worker = network_worker
+
+    def quic_event_received(self, event: QuicEvent):
+        logger.debug(f"Processing QUIC event: {event}")
+        if isinstance(event, StreamDataReceived):
+            logger.debug(f"Client: Received data: {event.data.decode()} on stream {event.stream_id}")
+            self.network_worker.data_received.emit(event.data)

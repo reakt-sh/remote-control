@@ -187,6 +187,7 @@ class TrainClient(QMainWindow):
         self.network_worker_quic.connection_established.connect(self.on_quic_connected)
         self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
         self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
+        self.network_worker_quic.data_received.connect(self.on_data_received_quic)
         self.network_worker_quic.start()
 
     def on_quic_connected(self):
@@ -202,6 +203,9 @@ class TrainClient(QMainWindow):
         message = json.loads(payload.decode('utf-8'))
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
+
+    def on_data_received_quic(self, data):
+        logger.info(f"QUIC data received: {data}")
 
     def on_new_frame(self, frame_id, frame):
         # Convert to RGB for PyQt display
