@@ -1,8 +1,5 @@
 import asyncio
-import ssl
-from typing import Dict, Optional, Set, Tuple, List
-from collections import defaultdict
-from contextlib import suppress
+from typing import Dict, Optional
 
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol

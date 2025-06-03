@@ -22,12 +22,12 @@ This system ensures reliability, scalability, and security for modern railway ma
    - Monitor logs for telemetry data and command execution status.
 
 2. **Central Server**:
-   - Access the server dashboard (e.g., `http://localhost:3000/admin`) for system status.
-   - Use API endpoints to integrate with external tools.
+   - Server prepared with WebSocket, QUIC and WebTransport Connection
+   - Use API endpoints to connect with clients.
 
 3. **Web Client**:
    - Open the web interface in a browser (e.g., `http://localhost:8080`).
-   - Log in with operator credentials to monitor and control trains.
+   - Watch video and telemetry data to monitor and control trains.
 
 ## Contributing
 We welcome contributions to improve the Remote Control System! To contribute:
