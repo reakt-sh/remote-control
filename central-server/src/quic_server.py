@@ -1,7 +1,5 @@
 import asyncio
 import ssl
-import sys
-from dataclasses import dataclass
 from typing import Dict, Optional, Set, Tuple, List
 from collections import defaultdict
 from contextlib import suppress
@@ -23,31 +21,7 @@ from aioquic.h3.events import H3Event, HeadersReceived, DataReceived
 from src.utils.app_logger import logger
 from src.utils.video_datagram_assembler import VideoDatagramAssembler
 from src.managers.client_manager import ClientManager
-from src.globals import HOST, QUIC_PORT, PACKET_TYPE
-
-
-@dataclass
-class ServerConfig:
-    cert_file: str = ""
-    key_file: str = ""
-
-
-def get_client_config() -> ServerConfig:
-    """Get platform-specific client configuration"""
-    if sys.platform.startswith("win"):
-        return ServerConfig(
-            cert_file="C:\\quic_conf\\certificate.pem",
-            key_file="C:\\quic_conf\\certificate.key"
-        )
-    elif sys.platform.startswith("linux"):
-        return ServerConfig(
-            cert_file="/etc/ssl/quic_conf/certificate.pem",
-            key_file="/etc/ssl/quic_conf/certificate.key"
-        )
-    else:
-        raise RuntimeError(f"Unsupported platform: {sys.platform}")
-
-
+from src.globals import *
 
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, **kwargs):

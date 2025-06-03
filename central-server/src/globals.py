@@ -1,3 +1,6 @@
+import sys
+from dataclasses import dataclass
+
 # Packet Types
 PACKET_TYPE = {
     "video": 13,
@@ -13,3 +16,23 @@ PACKET_TYPE = {
 
 HOST = "0.0.0.0"
 QUIC_PORT = 4437
+
+@dataclass
+class ServerConfig:
+    cert_file: str = ""
+    key_file: str = ""
+
+def get_client_config() -> ServerConfig:
+    """Get platform-specific client configuration"""
+    if sys.platform.startswith("win"):
+        return ServerConfig(
+            cert_file="C:\\quic_conf\\certificate.pem",
+            key_file="C:\\quic_conf\\certificate.key"
+        )
+    elif sys.platform.startswith("linux"):
+        return ServerConfig(
+            cert_file="/etc/ssl/quic_conf/certificate.pem",
+            key_file="/etc/ssl/quic_conf/certificate.key"
+        )
+    else:
+        raise RuntimeError(f"Unsupported platform: {sys.platform}")
