@@ -23,6 +23,7 @@ let videoHeight = 480
 let displayWidth = 0
 let displayHeight = 0
 const frameQueue = []
+const MAX_QUEUE_SIZE = 60 // Maximum frames to keep in the queue
 let isRendering = false
 
 onMounted(() => {
@@ -95,6 +96,7 @@ watch(currentVideoFrame, (newFrame) => {
     try {
       // Enqueue the frame for decoding
       frameQueue.push(newFrame)
+      console.log('Frame enqueued, current queue size:', frameQueue.length)
       if (!isRendering) {
         isRendering = true
         requestAnimationFrame(renderNextFrame)
@@ -110,19 +112,26 @@ function renderNextFrame() {
     isRendering = false
     return
   }
+   // Drop frames if queue is too large to maintain real-time playback
+  if (frameQueue.length > MAX_QUEUE_SIZE) {
+    frameQueue.splice(0, frameQueue.length - 1)
+    console.warn('Dropped frames to maintain real-time playback')
+  }
+
   const frameData = frameQueue.shift()
   if (videoDecoder) {
     try {
       videoDecoder.decode(new EncodedVideoChunk({
         type: 'key', // or 'delta', as appropriate
         timestamp: performance.now(),
-        data: new Uint8Array(frameData),
+        data: frameData,
       }))
     } catch (error) {
       console.error('Error decoding frame:', error)
     }
   }
   requestAnimationFrame(renderNextFrame)
+
 }
 
 function renderFrame(frame) {
