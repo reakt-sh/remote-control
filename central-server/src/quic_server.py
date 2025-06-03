@@ -22,6 +22,7 @@ from aioquic.h3.events import H3Event, HeadersReceived, DataReceived
 
 from src.utils.app_logger import logger
 from src.utils.video_datagram_assembler import VideoDatagramAssembler
+from src.managers.client_manager import ClientManager
 from src.globals import HOST, QUIC_PORT, PACKET_TYPE
 
 
@@ -46,96 +47,7 @@ def get_client_config() -> ServerConfig:
     else:
         raise RuntimeError(f"Unsupported platform: {sys.platform}")
 
-class ClientManager:
-    def __init__(self):
-        self.train_clients: Dict[str, QuicConnectionProtocol] = {}
-        self.remote_control_clients: Dict[str, QuicConnectionProtocol] = {}
 
-        self.train_to_remote_controls_map: Dict[str, Set[str]] = {}
-        self.remote_control_to_train_map: Dict[str, str] = {}
-        self.packet_queue: asyncio.Queue = asyncio.Queue()
-        asyncio.create_task(self.relay_video_to_remote_controls())
-        self.lock = asyncio.Lock()
-
-    async def enqueue_video_packet(self, train_id: str, data: bytes):
-        await self.packet_queue.put((train_id, data))
-
-    async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
-        async with self.lock:
-            self.train_clients[train_id] = protocol
-            logger.info(f"QUIC: Train client connected: {train_id}")
-
-    async def remove_train_client(self, train_id: str):
-        async with self.lock:
-            # first remove mapping from remote controls connected to this train
-            if train_id in self.train_to_remote_controls_map:
-                remote_control_ids = self.train_to_remote_controls_map[train_id]
-                for remote_control_id in remote_control_ids:
-                    self.remote_control_to_train_map.pop(remote_control_id, None)
-                del self.train_to_remote_controls_map[train_id]
-
-            # then remove the train client
-            if train_id in self.train_clients:
-                del self.train_clients[train_id]
-                logger.info(f"QUIC: Train client disconnected: {train_id}")
-
-    async def add_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
-        async with self.lock:
-            self.remote_control_clients[remote_control_id] = protocol
-            logger.info(f"QUIC: Remote Control client connected {remote_control_id}")
-
-    async def remove_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
-        async with self.lock:
-            # Remove mapping if it exists
-            if remote_control_id in self.remote_control_to_train_map:
-                train_id = self.remote_control_to_train_map.pop(remote_control_id)
-                if train_id in self.train_to_remote_controls_map:
-                    self.train_to_remote_controls_map[train_id].discard(remote_control_id)
-                    if not self.train_to_remote_controls_map[train_id]:
-                        del self.train_to_remote_controls_map[train_id]
-                        logger.debug(f"Removed empty entry for train {train_id} from train_to_remote_controls_map")
-
-            if remote_control_id in self.remote_control_clients:
-                del self.remote_control_clients[remote_control_id]
-                logger.info(f"QUIC: Remote Control client disconnected: {remote_control_id}")
-
-    async def connect_remote_control_to_train(self, remote_control_id: str, train_id: str):
-        async with self.lock:
-            # Check if the remote control is already mapped to a train
-            if remote_control_id in self.remote_control_to_train_map:
-                existing_train_id = self.remote_control_to_train_map[remote_control_id]
-                if existing_train_id != train_id:
-                    # Unmap from the existing train
-                    if existing_train_id in self.train_to_remote_controls_map:
-                        self.train_to_remote_controls_map[existing_train_id].discard(remote_control_id)
-                        if not self.train_to_remote_controls_map[existing_train_id]:
-                            del self.train_to_remote_controls_map[existing_train_id]
-                            logger.debug(f"QUIC: Removed empty entry for train {existing_train_id} from train_to_remote_controls_map")
-            else:
-                logger.debug(f"QUIC: Mapping remote control {remote_control_id} to train {train_id}")
-
-            # Map the remote control to the new train
-            self.remote_control_to_train_map[remote_control_id] = train_id
-            if train_id not in self.train_to_remote_controls_map:
-                self.train_to_remote_controls_map[train_id] = set()
-            self.train_to_remote_controls_map[train_id].add(remote_control_id)
-            logger.info(f"QUIC: Updated train_to_remote_controls_map: {self.train_to_remote_controls_map}")
-
-    async def relay_video_to_remote_controls(self):
-        while True:
-            try:
-                train_id, data = await self.packet_queue.get()
-                remote_controls = self.train_to_remote_controls_map.get(train_id, set())
-                for remote_control_id in remote_controls:
-                    protocol = self.remote_control_clients.get(remote_control_id)
-                    if protocol:
-                        try:
-                            protocol.h3_connection.send_datagram(protocol.session_id, data)
-                            protocol.transmit()
-                        except Exception as e:
-                            logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
-            except self.packet_queue.Empty:
-                await asyncio.sleep(0.1)
 
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, **kwargs):
@@ -146,7 +58,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.remote_control_id: Optional[str] = None
         self.h3_connection: Optional[H3Connection] = None
         self.session_id: int = -1  # Default session ID
-        self.video_stream_handler: Optional[VideoDatagramAssembler] = None
+        self.video_datagram_assembler: Optional[VideoDatagramAssembler] = None
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
 
@@ -191,14 +103,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
             )
-            self.video_stream_handler.calculate_bandwidth(len(event.data))
+            self.video_datagram_assembler.calculate_bandwidth(len(event.data))
 
             # if a complete video frame is received, then write to a file to check
-            frame = self.video_stream_handler.process_packet(event.data)
-            if frame:
-                logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
-                self.file.write(frame)
-                self.file.flush()
+            # frame = self.video_datagram_assembler.process_packet(event.data)
+            # if frame:
+            #     logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
+            #     self.file.write(frame)
+            #     self.file.flush()
         else:
             logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
@@ -211,7 +123,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 if message.startswith("TRAIN:"):
                     self.client_type = "TRAIN"
                     self.train_id = message[6:]  # Extract train ID
-                    self.video_stream_handler = VideoDatagramAssembler(self.train_id)
+                    self.video_datagram_assembler = VideoDatagramAssembler(self.train_id)
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
 
                     # try send Stream hello world message to the train
