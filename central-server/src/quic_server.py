@@ -21,6 +21,7 @@ from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event, HeadersReceived, DataReceived
 
 from src.utils.app_logger import logger
+from src.utils.video_datagram_assembler import VideoDatagramAssembler
 from src.globals import HOST, QUIC_PORT, PACKET_TYPE
 
 
@@ -136,80 +137,6 @@ class ClientManager:
             except self.packet_queue.Empty:
                 await asyncio.sleep(0.1)
 
-class VideoStreamHandler:
-    def __init__(self, train_id: str):
-        self.train_id = train_id
-        self.current_frame = bytearray()
-        self.current_frame_id = -1
-        self.expected_packets = 0
-        self.received_packets = 0
-        self.frame_counter = 0
-        self.start_time = None
-
-        # For bandwidth calculation
-        self.bandwidth_bytes = 0
-        self.bandwidth_start_time = None
-
-    def process_packet(self, data: bytes) -> Optional[bytes]:
-        try:
-            # Ignoring first byte as packet_type = data[0]
-            frame_id = int.from_bytes(data[1:5], byteorder='big')
-            number_of_packets = int.from_bytes(data[5:7], byteorder='big')
-            packet_id = int.from_bytes(data[7:9], byteorder='big')
-            train_id = data[9:45].decode('utf-8').strip()
-            payload = data[45:]
-
-            if train_id != self.train_id:
-                logger.warning(f"Packet train ID mismatch: expected {self.train_id}, got {train_id}")
-                return None
-
-            if frame_id != self.current_frame_id:
-                # New frame
-                self.current_frame = bytearray()
-                self.current_frame_id = frame_id
-                self.expected_packets = number_of_packets
-                self.received_packets = 0
-
-            self.current_frame.extend(payload)
-            self.received_packets += 1
-
-            if packet_id == number_of_packets and self.received_packets == self.expected_packets:
-                # Complete frame received
-                complete_frame = bytes(self.current_frame)
-                self.current_frame = bytearray()
-
-                if self.frame_counter == 0:
-                    self.frame_counter += 1
-                    self.start_time = asyncio.get_event_loop().time()
-                else:
-                    self.frame_counter += 1
-
-                current_time = asyncio.get_event_loop().time()
-                if current_time - self.start_time >= 1.0:
-                    logger.info(f"Received {self.frame_counter} complete video frames in the last second for train {self.train_id}")
-                    self.frame_counter = 0
-
-                return complete_frame
-
-            return None
-
-        except Exception as e:
-            logger.error(f"Error processing video packet: {e}")
-            return None
-
-    def calculate_bandwidth(self, bytes_received: int):
-        now = asyncio.get_event_loop().time()
-        if self.bandwidth_start_time is None:
-            self.bandwidth_start_time = now
-            self.bandwidth_bytes = 0
-
-        self.bandwidth_bytes += bytes_received
-
-        if now - self.bandwidth_start_time >= 1.0:
-            logger.info(f"Bandwidth for train {self.train_id}: {self.bandwidth_bytes / 1024:.2f} KB/s")
-            self.bandwidth_start_time = now
-            self.bandwidth_bytes = 0
-
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, **kwargs):
         super().__init__(*args, **kwargs)
@@ -219,7 +146,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.remote_control_id: Optional[str] = None
         self.h3_connection: Optional[H3Connection] = None
         self.session_id: int = -1  # Default session ID
-        self.video_stream_handler: Optional[VideoStreamHandler] = None
+        self.video_stream_handler: Optional[VideoDatagramAssembler] = None
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
 
@@ -267,11 +194,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             self.video_stream_handler.calculate_bandwidth(len(event.data))
 
             # if a complete video frame is received, then write to a file to check
-            # frame = self.video_stream_handler.process_packet(event.data)
-            # if frame:
-            #     logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
-            #     self.file.write(frame)
-            #     self.file.flush()
+            frame = self.video_stream_handler.process_packet(event.data)
+            if frame:
+                logger.debug(f"QUIC: Received video frame for train {self.train_id}, size: {len(frame)} bytes")
+                self.file.write(frame)
+                self.file.flush()
         else:
             logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
@@ -284,7 +211,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 if message.startswith("TRAIN:"):
                     self.client_type = "TRAIN"
                     self.train_id = message[6:]  # Extract train ID
-                    self.video_stream_handler = VideoStreamHandler(self.train_id)
+                    self.video_stream_handler = VideoDatagramAssembler(self.train_id)
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
 
                     # try send Stream hello world message to the train
