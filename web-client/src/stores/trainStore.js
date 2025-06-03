@@ -239,7 +239,19 @@ export const useTrainStore = defineStore('train', () => {
         console.log('Stream closed');
         break;
       }
-      console.log('Received from stream:', new TextDecoder().decode(value));
+      const byteArray = new Uint8Array(value)
+      const packetType = byteArray[0]
+      const payload = byteArray.slice(1)
+      let jsonString = ""
+      let jsonData = {}
+      switch (packetType) {
+        case PACKET_TYPE.telemetry:
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+          console.log('WebTransport: Received telemetry data:', jsonData)
+          telemetryData.value = jsonData
+          break;
+      }
       // Process the received data here
     }
   }

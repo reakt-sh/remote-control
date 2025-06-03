@@ -29,6 +29,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.remote_control_id: Optional[str] = None
         self.h3_connection: Optional[H3Connection] = None
         self.session_id: int = -1  # Default session ID
+        self.stream_id: Optional[int] = None
         self.video_datagram_assembler: Optional[VideoDatagramAssembler] = None
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
@@ -93,6 +94,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 message = event.data.decode()
                 if message.startswith("TRAIN:"):
                     self.client_type = "TRAIN"
+                    self.stream_id = event.stream_id
                     self.train_id = message[6:]  # Extract train ID
                     self.video_datagram_assembler = VideoDatagramAssembler(self.train_id)
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
@@ -102,12 +104,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     hello_message = f"HELLO: {self.train_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     transmit_coro = self.transmit()
-                    if transmit_coro is not None:
-                        asyncio.create_task(transmit_coro)
                     logger.info(f"QUIC: hello_message sent to train {self.train_id}")
                     return
                 elif message.startswith("REMOTE_CONTROL:"):
                     self.client_type = "REMOTE_CONTROL"
+                    self.stream_id = event.stream_id
                     self.remote_control_id = message[15:]  # Extract train ID
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
@@ -115,9 +116,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     logger.info(f"QUIC: Remote control stream received from stream_id: {event.stream_id}, remote_control_id: {self.remote_control_id}")
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
-                    transmit_coro = self.transmit()
-                    if transmit_coro is not None:
-                        asyncio.create_task(transmit_coro)
+                    self.transmit()
                     logger.info(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
                     return
                 else:
@@ -127,6 +126,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
+        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["telemetry"]:
+            asyncio.create_task(
+                self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
+            )
+            logger.debug(f"QUIC: Received telemetry data for train {self.train_id}, size: {len(event.data)} bytes")
         if self.client_type == "REMOTE_CONTROL":
             message = event.data.decode()
             if message.startswith("MAP_CONNECTION:"):

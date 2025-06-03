@@ -50,6 +50,7 @@ class NetworkWorkerQUIC(QThread):
         self.server_host = QUIC_HOST
         self.server_port = QUIC_PORT
         self.frame_queue = queue.Queue()  # Use asyncio.Queue
+        self.stream_packet_queue = queue.Queue()  # Use asyncio.Queue
         self._running = False
         self._client: Optional[QuicConnection] = None
         self._stream_id: Optional[int] = None
@@ -101,14 +102,28 @@ class NetworkWorkerQUIC(QThread):
                     await result
                 logger.info(f"QUIC handshake sent on stream {self._stream_id}")
 
+                asyncio.create_task(self.send_stream_reliable())  # Start sending stream packets
+
                 # Main sending loop
-                await self.send_datagram()
+                await self.send_datagram_unreliable()
 
         except Exception as e:
             logger.error(f"QUIC connection error: {e}")
             self.connection_failed.emit(str(e))
 
-    async def send_datagram(self):
+    async def send_stream_reliable(self):
+        while self._running:
+            try:
+                packet = self.stream_packet_queue.get_nowait()
+                self._client._quic.send_stream_data(self._stream_id, packet, end_stream=False)
+                result = self._client.transmit()
+                if result is not None:
+                    await result
+            except queue.Empty:
+                await asyncio.sleep(0.1)
+                continue
+
+    async def send_datagram_unreliable(self):
         while self._running:
             try:
                 # Get frame from queue with timeout
@@ -166,6 +181,12 @@ class NetworkWorkerQUIC(QThread):
             self.frame_queue.put((frame_id, frame))
         except Exception as e:
             logger.error(f"Error enqueuing frame: {e}")
+
+    def enqueue_stream_packet(self, data: bytes):
+        if not self._running or not self._loop:
+            logger.warning("Cannot enqueue stream packet - client not running")
+            return
+        self.stream_packet_queue.put(data)
 
     def stop(self):
         self._running = False
