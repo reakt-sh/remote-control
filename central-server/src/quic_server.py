@@ -87,8 +87,6 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.debug(f"QUIC: Received unhandled data : {event.data}")
 
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
-        # Identify client type
-        logger.debug(f"QUIC: Received stream data on stream {event.data}")
         if self.client_type is None:
             try:
                 message = event.data.decode()
@@ -126,12 +124,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
-        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["telemetry"]:
+        elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["telemetry"]:
             asyncio.create_task(
                 self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
             )
-            logger.debug(f"QUIC: Received telemetry data for train {self.train_id}, size: {len(event.data)} bytes")
-        if self.client_type == "REMOTE_CONTROL":
+        elif self.client_type == "REMOTE_CONTROL":
             message = event.data.decode()
             if message.startswith("MAP_CONNECTION:"):
                 parts = message[15:].split(":")
@@ -142,7 +139,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
-
+            elif int(message[:2]) == PACKET_TYPE["command"]:
+                asyncio.create_task(
+                    self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
+                )
+            else:
+                logger.debug(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
+        else:
+            logger.debug(f"QUIC: Unhandled stream data on stream_id {event.stream_id}, data length: {len(event.data)}, data: {event.data[:50]}...")
     def _h3_event_received(self, event: H3Event) -> None:
         if isinstance(event, HeadersReceived):
             headers = {}

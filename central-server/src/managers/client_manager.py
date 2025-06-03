@@ -103,6 +103,19 @@ class ClientManager:
                 try:
                     protocol._quic.send_stream_data(protocol.stream_id, data, end_stream=False)
                     protocol.transmit()
-                    logger.info(f"Relayed telemetry data to remote_control {remote_control_id} for train {train_id}")
                 except Exception as e:
                     logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
+
+    async def relay_stream_to_train(self, remote_control_id: str, data: bytes):
+        train_id = self.remote_control_to_train_map.get(remote_control_id)
+        if train_id:
+            protocol = self.train_clients.get(train_id)
+            if protocol:
+                try:
+                    protocol._quic.send_stream_data(protocol.stream_id, data, end_stream=False)
+                    protocol.transmit()
+                    logger.info(f"Relayed telemetry data to train {train_id} from remote_control {remote_control_id}")
+                except Exception as e:
+                    logger.error(f"Failed to relay stream to train {train_id}: {e}")
+        else:
+            logger.warning(f"No train found for remote control {remote_control_id}")

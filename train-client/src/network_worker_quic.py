@@ -31,6 +31,7 @@ class NetworkWorkerQUIC(QThread):
     connection_established = pyqtSignal()
     connection_failed = pyqtSignal(str)
     connection_closed = pyqtSignal()
+    process_command = pyqtSignal(object)
     data_received = pyqtSignal(bytes)  # Signal for received data
 
     def __init__(self, train_client_id: str, parent=None):
@@ -201,5 +202,11 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
     def quic_event_received(self, event: QuicEvent):
         logger.debug(f"Processing QUIC event: {event}")
         if isinstance(event, StreamDataReceived):
-            logger.debug(f"Client: Received data: {event.data.decode()} on stream {event.stream_id}")
-            self.network_worker.data_received.emit(event.data)
+            decimal_values = event.data.decode('utf-8').split(',')
+            packet_type = int(decimal_values[0])
+            # Convert each decimal to its ASCII character and join into a string
+            json_str = ''.join([chr(int(d)) for d in decimal_values[1:]])
+            payload = json_str.encode('utf-8')
+
+            if packet_type == PACKET_TYPE["command"]:
+                self.network_worker.process_command.emit(payload)

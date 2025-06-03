@@ -120,7 +120,8 @@ export const useTrainStore = defineStore('train', () => {
       packet[0] = PACKET_TYPE.command
       packet.set(jsonBytes, 1)
 
-      webSocket.value.send(packet)
+      //webSocket.value.send(packet)
+      sendWebTransportStream(packet);
     } catch (error) {
       console.log(error)
     }
@@ -239,6 +240,7 @@ export const useTrainStore = defineStore('train', () => {
         console.log('Stream closed');
         break;
       }
+      console.log('Received from stream:', new TextDecoder().decode(value));
       const byteArray = new Uint8Array(value)
       const packetType = byteArray[0]
       const payload = byteArray.slice(1)

@@ -189,6 +189,7 @@ class TrainClient(QMainWindow):
         self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
         self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
         self.network_worker_quic.data_received.connect(self.on_data_received_quic)
+        self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
     def on_quic_connected(self):
