@@ -9,8 +9,25 @@ from aioquic.asyncio import connect
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import QuicConnection
 from aioquic.quic.events import QuicEvent, StreamDataReceived, DatagramFrameReceived, ConnectionTerminated, StreamReset
+from aioquic.asyncio.protocol import QuicStreamAdapter
+
 
 from globals import *
+
+original_stream_close = QuicStreamAdapter.close
+
+def patched_stream_close(self):
+    try:
+        original_stream_close(self)
+    except ValueError as e:
+        if "Cannot send data on peer-initiated unidirectional stream" in str(e):
+            pass  # Ignore harmless cleanup errors
+        else:
+            raise
+
+QuicStreamAdapter.close = patched_stream_close
+
+
 
 class NetworkWorkerQUIC(QThread):
     # Signals for Qt integration
