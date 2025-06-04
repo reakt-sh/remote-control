@@ -68,12 +68,10 @@ const tempClass = computed(() => {
 });
 
 const batteryFillColor = computed(() => {
-  // batteryLevel: 0 (red) to 100 (green)
   const percent = Math.max(0, Math.min(100, props.batteryLevel)) / 100;
-  // Interpolate between red (low) and green (full)
   const r = Math.round(255 * (1 - percent));
-  const g = Math.round(204 * percent); // 204 is green in #2ecc71
-  const b = Math.round(71 * percent);  // 71 is blue in #2ecc71
+  const g = Math.round(204 * percent);
+  const b = Math.round(71 * percent);
   return `rgb(${r},${g},${b})`;
 });
 
@@ -90,18 +88,10 @@ const fuelFillColor = computed(() => {
 .system-status {
   margin-top: 200px;
   min-width: 300px;
-  background: #1a1a1a;
+  background: #f5f5f5;
   border-radius: 15px;
   padding: 15px;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-}
-
-.panel-title {
-  color: #777;
-  font-size: 0.9rem;
-  margin: 0 0 15px 0;
-  text-align: center;
-  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .status-grid {
@@ -116,51 +106,53 @@ const fuelFillColor = computed(() => {
 }
 
 .status-label {
-  color: #777;
+  color: #555;
   font-size: 0.8rem;
   margin-bottom: 5px;
 }
 
 .status-value,
 .status-meter {
-  height: 20px;           /* Set the same height */
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;             /* Remove extra padding */
-  font-size: 0.85rem;     /* Make font size consistent */
+  padding: 0;
+  font-size: 0.85rem;
   border-radius: 5px;
   box-sizing: border-box;
 }
 
 .status-value {
-  background: #333;
+  background: #e0e0e0;
   font-weight: bold;
   text-align: center;
 }
 
 .status-online {
-  color: #2ecc71;
+  color: #27ae60;
 }
 
 .status-warning {
-  color: #f1c40f;
+  color: #e67e22;
 }
 
 .status-danger {
-  color: #e74c3c;
+  color: #cქ
+  c8000
+  #c0392b;
 }
 
 .status-offline {
-  color: #777;
+  color: #7f8c8d;
 }
 
 .status-normal {
-  color: #fff;
+  color: #34495e;
 }
 
 .status-meter {
-  background: #333;
+  background: #e0e0e0;
   position: relative;
   overflow: hidden;
 }
@@ -172,7 +164,6 @@ const fuelFillColor = computed(() => {
   top: 0;
   bottom: 0;
   height: 100%;
-  /* background will be set dynamically */
   transition: width 0.5s, background 0.5s;
 }
 
@@ -187,7 +178,7 @@ const fuelFillColor = computed(() => {
   justify-content: center;
   font-size: 0.85rem;
   font-weight: bold;
-  color: #000;
+  color: #333;
   pointer-events: none;
 }
 </style>

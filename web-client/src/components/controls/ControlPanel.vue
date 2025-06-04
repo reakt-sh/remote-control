@@ -44,59 +44,20 @@ import { ref, computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useTrainStore } from '@/stores/trainStore';
 
-// Components
 import Speedometer from './Speedometer.vue';
 import SystemStatus from './SystemStatus.vue';
-// import MasterController from './MasterController.vue';
-// import EmergencyControls from './EmergencyControls.vue';
-// import LightingControls from './LightingControls.vue';
-// import DoorControls from './DoorControls.vue';
-// import CommunicationPanel from './CommunicationPanel.vue';
-// import HornControl from './HornControl.vue';
-// import AlertPanel from './AlertPanel.vue';
 
 const trainStore = useTrainStore();
 const { telemetryData } = storeToRefs(trainStore);
 
-// State
-const maxSpeed = ref(60); // km/h
+const maxSpeed = ref(60);
 const targetSpeed = ref(0);
-// const powerLevel = ref(0);
-// const emergencyBrakeActive = ref(false);
-// const headlightsOn = ref(true);
-// const taillightsOn = ref(true);
-// const doorsOpen = ref(false);
-// const radioActive = ref(false);
-// const activeAlerts = ref([]);
 
-// Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0);
 const systemStatus = computed(() => telemetryData.value?.status || "offline");
 const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
 const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
 const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
-// const hasDoors = computed(() => telemetryData.value?.has_doors || false);
-
-// Methods
-// const handleThrottleChange = (level) => {
-//   powerLevel.value = level;
-//   // Send command to backend
-// };
-
-// const handleBrakeChange = (level) => {
-//   // Handle brake application
-//   console.log(level)
-// };
-
-// const activateEmergencyBrake = () => {
-//   emergencyBrakeActive.value = true;
-//   // Send emergency command
-// };
-
-// const resetEmergency = () => {
-//   emergencyBrakeActive.value = false;
-//   // Reset emergency state
-// };
 
 function onTargetSpeedChange(val) {
   targetSpeed.value = val;
@@ -113,16 +74,13 @@ function onTargetSpeedCommit(val) {
 }
 
 watch(
-  () => telemetryData.value?.train_id, // or selectedTrainId if you have it in this component
+  () => telemetryData.value?.train_id,
   (newTrainId, oldTrainId) => {
     if (newTrainId && newTrainId !== oldTrainId) {
-      // Set targetSpeed to the current speed of the new train
       targetSpeed.value = telemetryData.value?.speed || 0;
     }
   }
 );
-
-// Other methods...
 </script>
 
 <style scoped>
@@ -130,11 +88,11 @@ watch(
   display: flex;
   flex-direction: column;
   height: auto;
-  background: #2c3e50;
-  color: #ecf0f1;
-  padding: 10px;           /* Reduced padding */
-  border-radius: 8px;      /* Slightly smaller radius */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18); /* Lighter shadow */
+  background: #ffffff;
+  color: #34495e;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
@@ -143,12 +101,11 @@ watch(
 .control-panel {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
-  gap: 10px;               /* Reduced gap */
-  margin-bottom: 10px;     /* Reduced margin */
+  gap: 10px;
+  margin-bottom: 10px;
   width: 100%;
   box-sizing: border-box;
-  align-items: center;     /* Vertically center items */
-  min-height: unset;       /* Remove any min-height if set */
+  align-items: center;
 }
 
 .indicators-panel {
@@ -156,8 +113,8 @@ watch(
   margin-left: 340px;
   flex-direction: row;
   justify-content: center;
-  align-items: stretch;      /* Make children take full height */
-  gap: 4px;                  /* Reduce gap between them */
+  align-items: stretch;
+  gap: 4px;
   min-height: 360px;
   max-height: 360px;
 }
@@ -165,22 +122,22 @@ watch(
 .secondary-controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;                /* Reduced gap */
+  gap: 8px;
 }
 
 .utility-controls {
   display: flex;
   flex-direction: column;
-  gap: 8px;                /* Reduced gap */
+  gap: 8px;
 }
 
 .emergency-panel {
   display: flex;
   flex-direction: column;
-  align-items: flex-end; /* Align to the right */
-  justify-content: flex-start; /* Or center, if you prefer */
+  align-items: flex-end;
+  justify-content: flex-start;
   padding-top: 20px;
-  height: 350px;             /* Set a fixed height for both */
+  height: 350px;
   min-height: 80px;
   max-height: 350px;
 }
@@ -188,7 +145,7 @@ watch(
 .indicators-panel :deep(.system-status),
 .indicators-panel :deep(.speedometer) {
   flex: 1 1 0;
-  height: 100%;              /* Force same height */
+  height: 100%;
   transform: scale(0.9);
   max-width: 400px;
   margin: 0;
