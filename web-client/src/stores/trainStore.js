@@ -248,11 +248,17 @@ export const useTrainStore = defineStore('train', () => {
       let jsonData = {}
       switch (packetType) {
         case PACKET_TYPE.telemetry:
-          jsonString = new TextDecoder().decode(payload)
-          jsonData = JSON.parse(jsonString)
-          console.log('WebTransport: Received telemetry data:', jsonData)
-          telemetryData.value = jsonData
-          break;
+          try {
+            jsonString = new TextDecoder().decode(payload)
+            jsonData = JSON.parse(jsonString)
+            console.log('WebTransport: Received telemetry data:', jsonData)
+            telemetryData.value = jsonData
+            break;
+          } catch (error) {
+            console.error('Error parsing telemetry data:', error)
+            break;
+          }
+
       }
       // Process the received data here
     }
