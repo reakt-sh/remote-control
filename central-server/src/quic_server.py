@@ -68,7 +68,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self._h3_event_received(h3_event)
 
         except Exception as e:
-            logger.error(f"QUIC: Error processing event: {e}", exc_info=True)
+            logger.error(f"QUIC: Error processing event: {e}, {event.data}", exc_info=True)
             self._close_connection()
 
     def _handle_protocol_negotiated(self, event: ProtocolNegotiated) -> None:
@@ -139,6 +139,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(
                 self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
             )
+        elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["keepalive"]:
+            self.decode_keepalive_packet(event.data)
         elif self.client_type == "REMOTE_CONTROL":
             message = event.data.decode()
             if message.startswith("MAP_CONNECTION:"):
@@ -220,13 +222,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.error(f"Error cleaning up client: {e}")
 
     def decode_keepalive_packet(self, packet_data: str) -> None:
-        # Split the string into individual numbers
-        byte_values = [int(num) for num in packet_data.split(",")]
+        byte_values = packet_data
+        if self.client_type == "REMOTE_CONTROL":
+            byte_values = [int(num) for num in packet_data.split(",")]
 
-        # Remaining bytes are JSON as ASCII
         json_bytes = bytes(byte_values[1:])
         try:
-            json_str = json_bytes.decode('ascii')
+            json_str = json_bytes.decode('utf-8')
             payload = json.loads(json_str)
             logger.debug(f"Decoded keepalive packet: {payload}")
 

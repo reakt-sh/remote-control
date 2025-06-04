@@ -15,6 +15,6 @@ class Calculator:
         self.bandwidth_bytes += bytes_received
 
         if now - self.bandwidth_start_time >= 1.0:
-            logger.info(f"Current Bandwidth for Video Transmission:  {self.bandwidth_bytes / 1024:.2f} KB/s")
+            logger.debug(f"Current Bandwidth for Video Transmission:  {self.bandwidth_bytes / 1024:.2f} KB/s")
             self.bandwidth_start_time = now
             self.bandwidth_bytes = 0
