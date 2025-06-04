@@ -17,11 +17,11 @@ from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event, HeadersReceived, DataReceived
 
-from src.utils.app_logger import logger
-from src.utils.video_datagram_assembler import VideoDatagramAssembler
-from src.utils.calculator import Calculator
-from src.managers.client_manager import ClientManager
-from src.globals import *
+from utils.app_logger import logger
+from utils.video_datagram_assembler import VideoDatagramAssembler
+from utils.calculator import Calculator
+from managers.client_manager import ClientManager
+from globals import *
 
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, calculator: Calculator, **kwargs):
@@ -58,10 +58,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             elif isinstance(event, ConnectionIdIssued):
                 logger.debug(f"QUIC: Received ConnectionIDIssued: {event.connection_id}")
             elif isinstance(event, ConnectionTerminated):
-                logger.info(f"QUIC: Connection terminated: {event.reason_phrase}, error code: {event.error_code}")
                 self._close_connection()
             else:
-                logger.info(f"QUIC: Received unhandled event: {event}")
+                logger.warning(f"QUIC: Received unhandled event: {event}")
 
             if self.h3_connection is not None:
                 for h3_event in self.h3_connection.handle_event(event):
@@ -95,7 +94,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             #     self.file.write(frame)
             #     self.file.flush()
         else:
-            logger.debug(f"QUIC: Received unhandled data : {event.data}")
+            logger.warning(f"QUIC: Received unhandled data : {event.data}")
 
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
         if self.client_type is None:
@@ -109,11 +108,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
 
                     # try send Stream hello world message to the remote control
-                    logger.info(f"QUIC: stream received from stream_id: {event.stream_id}, train-id: {self.train_id}")
+                    logger.debug(f"QUIC: stream received from stream_id: {event.stream_id}, train-id: {self.train_id}")
                     hello_message = f"HELLO: {self.train_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     transmit_coro = self.transmit()
-                    logger.info(f"QUIC: hello_message sent to train {self.train_id}")
+                    logger.debug(f"QUIC: hello_message sent to train {self.train_id}")
                     return
                 elif message.startswith("REMOTE_CONTROL:"):
                     self.client_type = "REMOTE_CONTROL"
@@ -122,11 +121,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
                     # try send Stream hello world message to the remote control
-                    logger.info(f"QUIC: Remote control stream received from stream_id: {event.stream_id}, remote_control_id: {self.remote_control_id}")
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     self.transmit()
-                    logger.info(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
+                    logger.debug(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
                     return
                 else:
                     logger.warning(f"Unknown client identification message: {message}")
@@ -159,7 +157,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             elif int(message[:2]) == PACKET_TYPE["keepalive"]:
                 self.decode_keepalive_packet(message)
             else:
-                logger.debug(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
+                logger.warning(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
         else:
             logger.debug(f"QUIC: Unhandled stream data on stream_id {event.stream_id}, data length: {len(event.data)}, data: {event.data[:50]}...")
     def _h3_event_received(self, event: H3Event) -> None:
@@ -178,19 +176,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.debug(f"QUIC: Received data on stream {event.stream_id}: {message}")
 
     def _handshake_webtransport(self, stream_id: int, request_headers: Dict[bytes, bytes]) -> None:
-        logger.info(f"QUIC: Handshake webtransport on stream {stream_id}")
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
-        logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
         self.session_id = stream_id
         self._send_response(stream_id, 200, end_stream=False)
-
-        # TEST: Send a datagram to the browser right after handshake
-        # try:
-        #     self.h3_connection.send_datagram(stream_id, b"Datagram from server after handshake")
-        #     logger.debug("Sent test datagram after handshake")
-        # except Exception as e:
-        #     logger.error(f"Failed to send test datagram: {e}")
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
         headers = [(b":status", str(status_code).encode())]
@@ -199,7 +188,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
-        logger.info(f"QUIC: Connection lost for train_id: {self.train_id}, remote_control_id: {self.remote_control_id}, exc: {exc}")
+        if self.client_type == "TRAIN":
+            logger.info(f"QUIC: Connection lost for train_id: {self.train_id}")
+        elif self.client_type == "REMOTE_CONTROL":
+            logger.info(f"QUIC: Connection lost for remote_control_id: {self.remote_control_id}")
+        else:
+            logger.warning("QUIC: Connection lost for unknown client type")
+
         self._cleanup()
         super().connection_lost(exc)
 

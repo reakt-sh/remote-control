@@ -4,10 +4,10 @@ import struct
 import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from src.server_controller import ServerController
-from src.utils.app_logger import logger
-from src.utils.packet_builder import PacketBuilder
-from src.globals import PACKET_TYPE
+from server_controller import ServerController
+from utils.app_logger import logger
+from utils.packet_builder import PacketBuilder
+from globals import PACKET_TYPE
 
 s_controller = ServerController()
 packet_builder = PacketBuilder()

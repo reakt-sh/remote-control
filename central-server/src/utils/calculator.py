@@ -1,5 +1,5 @@
 import asyncio
-from src.utils.app_logger import logger
+from utils.app_logger import logger
 
 class Calculator:
     def __init__(self):

@@ -1,6 +1,6 @@
 import asyncio
 from typing import Optional
-from src.utils.app_logger import logger
+from utils.app_logger import logger
 
 class VideoDatagramAssembler:
     def __init__(self, train_id: str):

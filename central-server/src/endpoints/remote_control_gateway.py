@@ -1,9 +1,9 @@
 import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from src.server_controller import ServerController
-from src.utils.app_logger import logger
-from src.globals import PACKET_TYPE
+from server_controller import ServerController
+from utils.app_logger import logger
+from globals import PACKET_TYPE
 
 
 s_controller = ServerController()

@@ -15,6 +15,7 @@ PACKET_TYPE = {
 }
 
 HOST = "0.0.0.0"
+FAST_API_PORT = 8000
 QUIC_PORT = 4437
 
 @dataclass

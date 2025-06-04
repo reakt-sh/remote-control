@@ -6,7 +6,7 @@
 # from aioquic.quic.events import DatagramFrameReceived, StreamDataReceived
 
 # from utils.app_logger import logger
-# from src.globals import *
+# from globals import *
 
 # class WebTransportHandler(QuicConnectionProtocol):
 #     def __init__(self, *args, **kwargs):
