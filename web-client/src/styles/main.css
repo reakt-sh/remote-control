@@ -31,4 +31,13 @@ body {
 
 #app {
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
 }
