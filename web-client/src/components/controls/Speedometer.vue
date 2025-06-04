@@ -111,7 +111,7 @@ const minorTicks = computed(() => {
 
 <style scoped>
 .speedometer {
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #debcbc, #88b48f);
   border-radius: 15px;
   padding: 20px;
   display: flex;
@@ -128,7 +128,7 @@ const minorTicks = computed(() => {
   border-radius: 220px 220px 0 0;
   overflow: hidden;
   margin-bottom: 20px;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff, #f0f0f0);
 }
 
 .gauge::before {
@@ -204,7 +204,7 @@ const minorTicks = computed(() => {
   position: absolute;
   width: 20px;
   height: 20px;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff, #f0f0f0);
   border: 3px solid #e67e22;
   border-radius: 50%;
   bottom: -10px;

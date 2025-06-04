@@ -88,7 +88,7 @@ watch(
   display: flex;
   flex-direction: column;
   height: auto;
-  background: #ffffff;
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   color: #34495e;
   padding: 10px;
   border-radius: 8px;

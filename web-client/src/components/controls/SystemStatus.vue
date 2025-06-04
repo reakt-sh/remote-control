@@ -88,7 +88,7 @@ const fuelFillColor = computed(() => {
 .system-status {
   margin-top: 200px;
   min-width: 300px;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #debcbc, #88b48f);
   border-radius: 15px;
   padding: 15px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -138,9 +138,7 @@ const fuelFillColor = computed(() => {
 }
 
 .status-danger {
-  color: #cქ
-  c8000
-  #c0392b;
+  color: #c0392b;
 }
 
 .status-offline {
