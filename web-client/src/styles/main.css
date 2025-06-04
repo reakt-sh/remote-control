@@ -31,4 +31,20 @@ body {
 
 #app {
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
+}
+
+body, #app {
+  min-height: 100vh;
+  height: 100vh;
+  margin: 0;
+  background: linear-gradient(120deg, #eed2ee 0%, #99d4e9 50%, #cdf5e4 100%);
 }

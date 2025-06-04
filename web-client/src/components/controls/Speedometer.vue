@@ -52,11 +52,9 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
-// Visual range is 0-80, but functional max is 60
 const visualMaxSpeed = 80;
 
 const needleRotation = computed(() => {
-  // Calculate ratio based on visual range (0-80)
   const ratio = Math.min(props.currentSpeed, props.maxSpeed) / visualMaxSpeed;
   return ratio * 180 - 90;
 });
@@ -66,14 +64,13 @@ const formattedSpeed = computed(() => {
 });
 
 const majorTicks = computed(() => {
-  const tickCount = 4; // 0, 10, 20, ..., 80
+  const tickCount = 4;
   const ticks = [];
   for (let i = 0; i <= tickCount; i++) {
-    const value = i * 10; // 0, 10, 20, ..., 80
+    const value = i * 10;
     const angle = (value / visualMaxSpeed) * 180 - 90;
-    const radius = 90; // Distance from center to numbers
+    const radius = 90;
     
-    // Calculate position for numbers
     const radian = (angle * Math.PI) / 180;
     const x = Math.cos(radian) * radius;
     const y = Math.sin(radian) * radius;
@@ -85,7 +82,7 @@ const majorTicks = computed(() => {
       },
       numberStyle: {
         transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${-angle}deg)`,
-        color: value <= 40 ? '#2ecc71' : value <= 60 ? '#f1c40f' : '#e74c3c'
+        color: value <= 40 ? '#27ae60' : value <= 60 ? '#e67e22' : '#c0392b'
       }
     });
   }
@@ -93,11 +90,10 @@ const majorTicks = computed(() => {
 });
 
 const minorTicks = computed(() => {
-  const majorTickCount = 4; // For 0-80 in steps of 10
-  const minorTicksPerMajor = 5; // Results in ticks every 2 km/h (80/8/5 = 2)
+  const majorTickCount = 4;
+  const minorTicksPerMajor = 5;
   const ticks = [];
   for (let i = 0; i <= majorTickCount * minorTicksPerMajor; i++) {
-    // Skip major ticks (they're already handled)
     if (i % minorTicksPerMajor === 0) continue;
 
     const value = (i / (majorTickCount * minorTicksPerMajor)) * visualMaxSpeed;
@@ -114,26 +110,25 @@ const minorTicks = computed(() => {
 </script>
 
 <style scoped>
-/* All the existing styles remain exactly the same */
 .speedometer {
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #debcbc, #88b48f);
   border-radius: 15px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .gauge {
   width: 220px;
   height: 110px;
   position: relative;
-  border: 4px solid #333;
+  border: 4px solid #ccc;
   border-radius: 220px 220px 0 0;
   overflow: hidden;
   margin-bottom: 20px;
-  background: #111;
+  background: linear-gradient(135deg, #ffffff, #f0f0f0);
 }
 
 .gauge::before {
@@ -142,12 +137,12 @@ const minorTicks = computed(() => {
   width: 100%;
   height: 100%;
   background: conic-gradient(
-    #2ecc71 0deg, 
-    #2ecc71 90deg,  /* 40/80*180 = 90deg for green range */
-    #f1c40f 90deg,
-    #f1c40f 135deg, /* 60/80*180 = 135deg for yellow range */
-    #e74c3c 135deg,
-    #e74c3c 180deg
+    #27ae60 0deg, 
+    #27ae60 90deg,
+    #e67e22 90deg,
+    #e67e22 135deg,
+    #c0392b 135deg,
+    #c0392b 180deg
   );
   clip-path: ellipse(100% 50% at 50% 100%);
   opacity: 0.3;
@@ -170,13 +165,13 @@ const minorTicks = computed(() => {
 .major-tick {
   width: 2px;
   height: 15px;
-  background: #fff;
+  background: #333;
 }
 
 .minor-tick {
   width: 1px;
   height: 10px;
-  background: #aaa;
+  background: #666;
 }
 
 .tick-number {
@@ -196,12 +191,12 @@ const minorTicks = computed(() => {
   position: absolute;
   width: 3px;
   height: 80px;
-  background: #f1c40f;
+  background: #e67e22;
   bottom: 0;
   left: 50%;
   transform-origin: bottom center;
   z-index: 3;
-  box-shadow: 0 0 5px rgba(241, 196, 15, 0.7);
+  box-shadow: 0 0 5px rgba(230, 126, 34, 0.7);
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -209,8 +204,8 @@ const minorTicks = computed(() => {
   position: absolute;
   width: 20px;
   height: 20px;
-  background: #111;
-  border: 3px solid #f1c40f;
+  background: linear-gradient(135deg, #ffffff, #f0f0f0);
+  border: 3px solid #e67e22;
   border-radius: 50%;
   bottom: -10px;
   left: 50%;
@@ -220,7 +215,7 @@ const minorTicks = computed(() => {
 
 .speed-display {
   text-align: center;
-  color: #fff;
+  color: #333;
 }
 
 .speed-row {
@@ -234,7 +229,7 @@ const minorTicks = computed(() => {
   font-size: 3rem;
   font-weight: bold;
   font-family: 'Segment7', monospace;
-  color: #f1c40f;
+  color: #e67e22;
   margin-bottom: 0;
 }
 
@@ -247,21 +242,21 @@ const minorTicks = computed(() => {
 .target-speed {
   font-size: 1rem;
   min-width: 300px;
-  color: #fff;
-  background: #222;
+  color: #333;
+  background: #e0e0e0;
   padding: 10px 10px 10px 10px;
   border-radius: 18px;
   margin-top: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   position: relative;
 }
 
 .target-slider {
-  width: 280px;         /* Similar to lever-container width */
-  height: 55px;         /* Thumb height */
-  background: #333;
+  width: 280px;
+  height: 55px;
+  background: #e0e0e0;
   border-radius: 20px;
-  box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
   margin: 0 auto;
   margin-top: 5px;
   display: block;
@@ -273,77 +268,73 @@ const minorTicks = computed(() => {
   cursor: pointer;
 }
 
-/* Track styles */
 .target-slider::-webkit-slider-runnable-track {
   width: 100%;
   height: 40px;
-  background: #333;
+  background: #e0e0e0;
   border-radius: 20px;
 }
 .target-slider::-moz-range-track {
   width: 100%;
   height: 40px;
-  background: #333;
+  background: #e0e0e0;
   border-radius: 20px;
 }
 .target-slider::-ms-fill-lower,
 .target-slider::-ms-fill-upper {
-  background: #333;
+  background: #e0e0e0;
   border-radius: 20px;
 }
 
-/* Thumb styles */
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 80px;
   height: 40px;
-  background: linear-gradient(to right, #555, #333);
+  background: linear-gradient(to right, #ccc, #aaa);
   border-radius: 5px;
-  border: 2px solid #222;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  border: 2px solid #999;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: ew-resize;
   transition: background 0.2s;
-  margin-top: 0; /* Center thumb on track */
+  margin-top: 0;
 }
 .target-slider:focus::-webkit-slider-thumb {
-  background: #666;
+  background: #999;
 }
 
 .target-slider::-moz-range-thumb {
   width: 80px;
   height: 40px;
-  background: linear-gradient(to right, #555, #333);
+  background: linear-gradient(to right, #ccc, #aaa);
   border-radius: 5px;
-  border: 2px solid #222;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  border: 2px solid #999;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: ew-resize;
   transition: background 0.2s;
 }
 .target-slider:focus::-moz-range-thumb {
-  background: #666;
+  background: #999;
 }
 
 .target-slider::-ms-thumb {
   width: 80px;
   height: 40px;
-  background: linear-gradient(to right, #555, #333);
+  background: linear-gradient(to right, #ccc, #aaa);
   border-radius: 5px;
-  border: 2px solid #222;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  border: 2px solid #999;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: ew-resize;
   transition: background 0.2s;
 }
 .target-slider:focus::-ms-thumb {
-  background: #666;
+  background: #999;
 }
 
-/* Remove outline on Firefox */
 .target-slider::-moz-focus-outer {
   border: 0;
 }
 
-/* Value label above the slider thumb */
 .target-speed {
   position: relative;
 }
@@ -351,13 +342,13 @@ const minorTicks = computed(() => {
   top: 0;
   max-width: 155px;
   margin-left: 58px;
-  background: #596f72;
-  color: #222;
+  background: #d0d6d6;
+  color: #333;
   font-weight: bold;
   padding: 2px 10px;
   border-radius: 10px;
   font-size: 1.1em;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   pointer-events: none;
   z-index: 2;
 }

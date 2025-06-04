@@ -39,7 +39,7 @@ onMounted(() => {
 
 <style scoped>
 .train-selector {
-  background: white;
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   padding: 1rem;
   border-radius: 5px;
   margin-bottom: 1rem;

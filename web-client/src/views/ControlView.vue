@@ -34,6 +34,8 @@ const { selectedTrainId, availableTrains } = storeToRefs(useTrainStore())
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* No scroll on the root */
 }
 
 .app-header {
@@ -56,6 +58,9 @@ const { selectedTrainId, availableTrains } = storeToRefs(useTrainStore())
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  height: 0; /* Required for flex children to allow overflow */
+  min-height: 0;
+  overflow-y: auto; /* SPA scroll here */
 }
 
 .train-control-panel {
@@ -68,6 +73,13 @@ const { selectedTrainId, availableTrains } = storeToRefs(useTrainStore())
 
 .full-width-panel {
   grid-column: 1 / -1;
+}
+
+.train-control-panel,
+.video-panel,
+.telemetry-panel,
+.control-panel {
+  overflow: hidden;
 }
 
 @media (max-width: 1024px) {
