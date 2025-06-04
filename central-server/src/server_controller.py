@@ -1,14 +1,10 @@
 import threading
 from typing import Any
 
-from src.managers.train_manager import TrainManager
-from src.managers.remote_control_manager import RemoteControlManager
-from src.utils.app_logger import logger
+from managers.train_manager import TrainManager
+from managers.remote_control_manager import RemoteControlManager
+from utils.app_logger import logger
 class ServerController:
-    """
-    Thread-safe singleton implementation for managing server state and operations.
-    Uses double-checked locking pattern for optimal performance.
-    """
     _instance = None
     _lock = threading.Lock()
 
@@ -22,7 +18,6 @@ class ServerController:
         return cls._instance
 
     def _initialize(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize instance variables (called only once)"""
         self._running = False
         self._clients = {}
         self._lock = threading.RLock()  # For instance-level thread safety
@@ -35,13 +30,11 @@ class ServerController:
         self.client_to_train_map = {}
 
     def start_server(self) -> None:
-        """Example method with thread-safe operations"""
         with self._lock:
             if not self._running:
                 self._running = True
 
     async def stop_server(self) -> None:
-        """Example method to stop the server"""
         with self._lock:
             if self._running:
                 # Clean up resources

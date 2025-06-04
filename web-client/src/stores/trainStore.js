@@ -34,7 +34,8 @@ export const useTrainStore = defineStore('train', () => {
   const remoteControlId = ref(null)
   const webTransport = ref(null)
   const bidistream = ref(null)
-  const videoStreamHandler = ref(null);
+  const videoDatagramAssembler = ref(null);
+  const keepaliveSequence = ref(0);
 
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
@@ -64,12 +65,12 @@ export const useTrainStore = defineStore('train', () => {
     telemetryData.value = {}
     selectedTrainId.value = trainId
     // initialize video stream handler if not already initialized
-    if (videoStreamHandler.value && videoStreamHandler.value.trainId !== trainId) {
-      videoStreamHandler.value = null; // Reset if trainId changes
+    if (videoDatagramAssembler.value && videoDatagramAssembler.value.trainId !== trainId) {
+      videoDatagramAssembler.value = null; // Reset if trainId changes
     }
 
-    if (!videoStreamHandler.value && selectedTrainId.value) {
-      videoStreamHandler.value = createVideoStreamHandler(selectedTrainId.value);
+    if (!videoDatagramAssembler.value && selectedTrainId.value) {
+      videoDatagramAssembler.value = assembleVideoDatagram();
     }
 
     // Send a POST request to assign the train to the remote control
@@ -225,6 +226,7 @@ export const useTrainStore = defineStore('train', () => {
         bidistream.value = await webTransport.value.createBidirectionalStream();
         receiveWebTransportStream();
         sendWebTransportStream(`REMOTE_CONTROL:${remoteControlId.value}`);
+        setInterval(sendKeepAliveWebTransport, 10000);
     } catch (error) {
       console.error('WebTransport connection error:', error)
     }
@@ -248,11 +250,17 @@ export const useTrainStore = defineStore('train', () => {
       let jsonData = {}
       switch (packetType) {
         case PACKET_TYPE.telemetry:
-          jsonString = new TextDecoder().decode(payload)
-          jsonData = JSON.parse(jsonString)
-          console.log('WebTransport: Received telemetry data:', jsonData)
-          telemetryData.value = jsonData
-          break;
+          try {
+            jsonString = new TextDecoder().decode(payload)
+            jsonData = JSON.parse(jsonString)
+            console.log('WebTransport: Received telemetry data:', jsonData)
+            telemetryData.value = jsonData
+            break;
+          } catch (error) {
+            console.error('Error parsing telemetry data:', error)
+            break;
+          }
+
       }
       // Process the received data here
     }
@@ -275,7 +283,7 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function createVideoStreamHandler(trainId) {
+  function assembleVideoDatagram() {
     let currentFrame = [];
     let currentFrameId = -1;
     let expectedPackets = 0;
@@ -288,13 +296,7 @@ export const useTrainStore = defineStore('train', () => {
           const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
           const numberOfPackets = (data[5] << 8) | data[6];
           const packetId = (data[7] << 8) | data[8];
-          const trainIdStr = new TextDecoder().decode(data.slice(9, 45)).trim();
           const payload = data.slice(45);
-
-          if (trainIdStr !== trainId) {
-            console.warn(`Packet train ID mismatch: expected ${trainId}, got ${trainIdStr}`);
-            return null;
-          }
 
           if (frameId !== currentFrameId) {
             // New frame
@@ -338,7 +340,7 @@ export const useTrainStore = defineStore('train', () => {
           break;
         }
         if (value && value[0] === PACKET_TYPE.video) {
-          videoStreamHandler.value.processPacket(value);
+          videoDatagramAssembler.value.processPacket(value);
         } else {
           console.log('Received WebTransport datagram UNKNOWN PACKET');
         }
@@ -347,6 +349,22 @@ export const useTrainStore = defineStore('train', () => {
     } catch (error) {
       console.error('Error receiving WebTransport datagrams:', error);
     }
+  }
+
+  async function sendKeepAliveWebTransport() {
+    const keepalivePacket = {
+      type: "keepalive",
+      protocol: "webtransport",
+      remoteControlId: remoteControlId.value,
+      timestamp: Date.now() / 1000, // seconds since epoch, similar to Python's time()
+      sequence: keepaliveSequence.value++  // increment your sequence variable
+    };
+    const packetData = new TextEncoder().encode(JSON.stringify(keepalivePacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.keepalive; // Set the first byte as PACKET_TYPE.keepalive
+    packet.set(packetData, 1);
+
+    sendWebTransportStream(packet); // your function to send over WebTransport
   }
   return {
     availableTrains,

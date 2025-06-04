@@ -1,5 +1,6 @@
 import asyncio
 from typing import Dict, Optional
+import json
 
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
@@ -10,20 +11,23 @@ from aioquic.quic.events import (
     ConnectionIdIssued,
     ProtocolNegotiated,
     StreamReset,
+    ConnectionTerminated,
 )
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event, HeadersReceived, DataReceived
 
-from src.utils.app_logger import logger
-from src.utils.video_datagram_assembler import VideoDatagramAssembler
-from src.managers.client_manager import ClientManager
-from src.globals import *
+from utils.app_logger import logger
+from utils.video_datagram_assembler import VideoDatagramAssembler
+from utils.calculator import Calculator
+from managers.client_manager import ClientManager
+from globals import *
 
 class QUICRelayProtocol(QuicConnectionProtocol):
-    def __init__(self, *args, client_manager: ClientManager, **kwargs):
+    def __init__(self, *args, client_manager: ClientManager, calculator: Calculator, **kwargs):
         super().__init__(*args, **kwargs)
         self.client_manager = client_manager
+        self.calculator = calculator
         self.client_type: Optional[str] = None
         self.train_id: Optional[str] = None
         self.remote_control_id: Optional[str] = None
@@ -33,6 +37,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.video_datagram_assembler: Optional[VideoDatagramAssembler] = None
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
+
+    def connection_idle_timeout(self) -> None:
+        logger.warning(f"QUIC: Connection idle timeout for train_id: {self.train_id}, remote_control_id: {self.remote_control_id}")
+        self._close_connection()
 
     def quic_event_received(self, event: QuicEvent) -> None:
         try:
@@ -49,15 +57,17 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 self._handle_datagram_frame(event)
             elif isinstance(event, ConnectionIdIssued):
                 logger.debug(f"QUIC: Received ConnectionIDIssued: {event.connection_id}")
+            elif isinstance(event, ConnectionTerminated):
+                self._close_connection()
             else:
-                pass  # Handle other QUIC events as needed
+                logger.warning(f"QUIC: Received unhandled event: {event}")
 
             if self.h3_connection is not None:
                 for h3_event in self.h3_connection.handle_event(event):
                     self._h3_event_received(h3_event)
 
         except Exception as e:
-            logger.error(f"QUIC: Error processing event: {e}", exc_info=True)
+            logger.error(f"QUIC: Error processing event: {e}, {event.data}", exc_info=True)
             self._close_connection()
 
     def _handle_protocol_negotiated(self, event: ProtocolNegotiated) -> None:
@@ -75,7 +85,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
             )
-            self.video_datagram_assembler.calculate_bandwidth(len(event.data))
+            self.calculator.calculate_bandwidth(len(event.data))
 
             # if a complete video frame is received, then write to a file to check
             # frame = self.video_datagram_assembler.process_packet(event.data)
@@ -84,7 +94,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             #     self.file.write(frame)
             #     self.file.flush()
         else:
-            logger.debug(f"QUIC: Received unhandled data : {event.data}")
+            logger.warning(f"QUIC: Received unhandled data : {event.data}")
 
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
         if self.client_type is None:
@@ -98,11 +108,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
 
                     # try send Stream hello world message to the remote control
-                    logger.info(f"QUIC: stream received from stream_id: {event.stream_id}, train-id: {self.train_id}")
+                    logger.debug(f"QUIC: stream received from stream_id: {event.stream_id}, train-id: {self.train_id}")
                     hello_message = f"HELLO: {self.train_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     transmit_coro = self.transmit()
-                    logger.info(f"QUIC: hello_message sent to train {self.train_id}")
+                    logger.debug(f"QUIC: hello_message sent to train {self.train_id}")
                     return
                 elif message.startswith("REMOTE_CONTROL:"):
                     self.client_type = "REMOTE_CONTROL"
@@ -111,11 +121,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
                     # try send Stream hello world message to the remote control
-                    logger.info(f"QUIC: Remote control stream received from stream_id: {event.stream_id}, remote_control_id: {self.remote_control_id}")
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     self.transmit()
-                    logger.info(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
+                    logger.debug(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
                     return
                 else:
                     logger.warning(f"Unknown client identification message: {message}")
@@ -128,6 +137,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(
                 self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
             )
+        elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["keepalive"]:
+            self.decode_keepalive_packet(event.data)
         elif self.client_type == "REMOTE_CONTROL":
             message = event.data.decode()
             if message.startswith("MAP_CONNECTION:"):
@@ -143,8 +154,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
                 )
+            elif int(message[:2]) == PACKET_TYPE["keepalive"]:
+                self.decode_keepalive_packet(message)
             else:
-                logger.debug(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
+                logger.warning(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
         else:
             logger.debug(f"QUIC: Unhandled stream data on stream_id {event.stream_id}, data length: {len(event.data)}, data: {event.data[:50]}...")
     def _h3_event_received(self, event: H3Event) -> None:
@@ -163,19 +176,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.debug(f"QUIC: Received data on stream {event.stream_id}: {message}")
 
     def _handshake_webtransport(self, stream_id: int, request_headers: Dict[bytes, bytes]) -> None:
-        logger.info(f"QUIC: Handshake webtransport on stream {stream_id}")
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
-        logger.debug(f"QUIC: Handshake webtransport: {authority}, {path}")
         self.session_id = stream_id
         self._send_response(stream_id, 200, end_stream=False)
-
-        # TEST: Send a datagram to the browser right after handshake
-        # try:
-        #     self.h3_connection.send_datagram(stream_id, b"Datagram from server after handshake")
-        #     logger.debug("Sent test datagram after handshake")
-        # except Exception as e:
-        #     logger.error(f"Failed to send test datagram: {e}")
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
         headers = [(b":status", str(status_code).encode())]
@@ -184,6 +188,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
+        if self.client_type == "TRAIN":
+            logger.info(f"QUIC: Connection lost for train_id: {self.train_id}")
+        elif self.client_type == "REMOTE_CONTROL":
+            logger.info(f"QUIC: Connection lost for remote_control_id: {self.remote_control_id}")
+        else:
+            logger.warning("QUIC: Connection lost for unknown client type")
+
         self._cleanup()
         super().connection_lost(exc)
 
@@ -201,9 +212,24 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             if self.client_type == 'TRAIN':
                 await self.client_manager.remove_train_client(self.train_id)
             elif self.client_type == 'REMOTE_CONTROL':
-                await self.client_manager.remove_web_client(self.train_id, self)
+                await self.client_manager.remove_remote_control_client(self.remote_control_id)
         except Exception as e:
             logger.error(f"Error cleaning up client: {e}")
+
+    def decode_keepalive_packet(self, packet_data: str) -> None:
+        byte_values = packet_data
+        if self.client_type == "REMOTE_CONTROL":
+            byte_values = [int(num) for num in packet_data.split(",")]
+
+        json_bytes = bytes(byte_values[1:])
+        try:
+            json_str = json_bytes.decode('utf-8')
+            payload = json.loads(json_str)
+            logger.debug(f"Decoded keepalive packet: {payload}")
+
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            print(f"Error decoding packet: {e}")
+            print(f"Raw JSON bytes: {json_bytes}")
 
 async def run_quic_server():
     try:
@@ -220,12 +246,15 @@ async def run_quic_server():
         # Create a shared client manager
         client_manager = ClientManager()
 
+        # create a shared Calculator instance
+        calculator = Calculator()
+
         server = await serve(
             HOST,
             QUIC_PORT,
             configuration=quic_config,
             create_protocol=lambda *args, **kwargs: QUICRelayProtocol(
-                *args, client_manager=client_manager, **kwargs
+                *args, client_manager=client_manager, calculator=calculator, **kwargs
             )
         )
 

@@ -49,7 +49,7 @@ logger.add(
     diagnose=True
 )
 
-# Info log file
+# Info log file (only INFO)
 logger.add(
     "logs/info.log",
     level="INFO",
@@ -57,10 +57,23 @@ logger.add(
     rotation="10 MB",
     retention="10 days",
     compression="zip",
-    enqueue=True
+    enqueue=True,
+    filter=lambda record: record["level"].name == "INFO"
 )
 
-# Error log file (only errors and above)
+# Warning log file (WARNING and above, but not ERROR/CRITICAL)
+logger.add(
+    "logs/warning.log",
+    level="WARNING",
+    format=FILE_FORMAT,
+    rotation="5 MB",
+    retention="15 days",
+    compression="zip",
+    enqueue=True,
+    filter=lambda record: record["level"].name == "WARNING"
+)
+
+# Error log file (ERROR and above)
 logger.add(
     "logs/error.log",
     level="ERROR",

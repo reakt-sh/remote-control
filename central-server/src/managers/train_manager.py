@@ -3,7 +3,7 @@ from random import randint
 from typing import Dict
 from fastapi import WebSocket
 
-from src.utils.app_logger import logger
+from utils.app_logger import logger
 class TrainManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}

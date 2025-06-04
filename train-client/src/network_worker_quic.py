@@ -1,7 +1,10 @@
 import asyncio
 import queue
 import ssl
+import json
+import struct
 from typing import Optional
+
 
 from loguru import logger
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -104,6 +107,7 @@ class NetworkWorkerQUIC(QThread):
                 logger.info(f"QUIC handshake sent on stream {self._stream_id}")
 
                 asyncio.create_task(self.send_stream_reliable())  # Start sending stream packets
+                asyncio.create_task(self.send_keepalive())  # Start sending keepalive packets
 
                 # Main sending loop
                 await self.send_datagram_unreliable()
@@ -154,6 +158,33 @@ class NetworkWorkerQUIC(QThread):
                 logger.error(f"Error in send loop: {e}")
                 continue
 
+    async def send_keepalive(self):
+        while self._running:
+            try:
+                keepalive_packet = {
+                    "type": "keepalive",
+                    "protocol": "quic",
+                    "trainClientId": self.train_client_id,
+                    "timestamp": asyncio.get_event_loop().time(),
+                    "sequence": getattr(self, "keepalive_sequence", 1)
+                }
+                # Increment the sequence for next time
+                self.keepalive_sequence = keepalive_packet["sequence"] + 1
+
+                packet_data = json.dumps(keepalive_packet).encode('utf-8')
+
+                packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
+
+                # Enqueue the keepalive packet to be sent reliably over the stream
+                self.enqueue_stream_packet(packet)
+
+                logger.debug(f"Sent keepalive packet: {keepalive_packet}")
+
+                await asyncio.sleep(10)  # Send every 10 seconds
+            except Exception as e:
+                logger.error(f"Error sending keepalive: {e}")
+                await asyncio.sleep(10)
+
     def create_packets(self, frame_id: int, frame: bytes) -> list[bytes]:
         packet_list = []
         frame_size = len(frame)
@@ -202,11 +233,13 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
     def quic_event_received(self, event: QuicEvent):
         logger.debug(f"Processing QUIC event: {event}")
         if isinstance(event, StreamDataReceived):
-            decimal_values = event.data.decode('utf-8').split(',')
-            packet_type = int(decimal_values[0])
-            # Convert each decimal to its ASCII character and join into a string
-            json_str = ''.join([chr(int(d)) for d in decimal_values[1:]])
-            payload = json_str.encode('utf-8')
-
-            if packet_type == PACKET_TYPE["command"]:
-                self.network_worker.process_command.emit(payload)
+            try:
+                decimal_values = event.data.decode('utf-8').split(',')
+                packet_type = int(decimal_values[0])
+                if packet_type == PACKET_TYPE["command"]:
+                    # Convert each decimal value to character and join into a string
+                    json_str = ''.join([chr(int(d)) for d in decimal_values[1:]])
+                    payload = json_str.encode('utf-8')
+                    self.network_worker.process_command.emit(payload)
+            except Exception as e:
+                logger.warning("There is no packet type in the received data")
