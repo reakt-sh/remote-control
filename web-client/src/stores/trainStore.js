@@ -35,6 +35,7 @@ export const useTrainStore = defineStore('train', () => {
   const webTransport = ref(null)
   const bidistream = ref(null)
   const videoDatagramAssembler = ref(null);
+  const keepaliveSequence = ref(0);
 
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
@@ -225,6 +226,7 @@ export const useTrainStore = defineStore('train', () => {
         bidistream.value = await webTransport.value.createBidirectionalStream();
         receiveWebTransportStream();
         sendWebTransportStream(`REMOTE_CONTROL:${remoteControlId.value}`);
+        setInterval(sendKeepAliveWebTransport, 10000);
     } catch (error) {
       console.error('WebTransport connection error:', error)
     }
@@ -347,6 +349,22 @@ export const useTrainStore = defineStore('train', () => {
     } catch (error) {
       console.error('Error receiving WebTransport datagrams:', error);
     }
+  }
+
+  async function sendKeepAliveWebTransport() {
+    const keepalivePacket = {
+      type: "keepalive",
+      protocol: "webtransport",
+      remoteControlId: remoteControlId.value,
+      timestamp: Date.now() / 1000, // seconds since epoch, similar to Python's time()
+      sequence: keepaliveSequence.value++  // increment your sequence variable
+    };
+    const packetData = new TextEncoder().encode(JSON.stringify(keepalivePacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.keepalive; // Set the first byte as PACKET_TYPE.keepalive
+    packet.set(packetData, 1);
+
+    sendWebTransportStream(packet); // your function to send over WebTransport
   }
   return {
     availableTrains,

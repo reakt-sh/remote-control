@@ -1,5 +1,6 @@
 import asyncio
 from typing import Dict, Optional
+import json
 
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
@@ -153,6 +154,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
                 )
+            elif int(message[:2]) == PACKET_TYPE["keepalive"]:
+                self.decode_keepalive_packet(message)
             else:
                 logger.debug(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
         else:
@@ -215,6 +218,21 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 await self.client_manager.remove_remote_control_client(self.remote_control_id)
         except Exception as e:
             logger.error(f"Error cleaning up client: {e}")
+
+    def decode_keepalive_packet(self, packet_data: str) -> None:
+        # Split the string into individual numbers
+        byte_values = [int(num) for num in packet_data.split(",")]
+
+        # Remaining bytes are JSON as ASCII
+        json_bytes = bytes(byte_values[1:])
+        try:
+            json_str = json_bytes.decode('ascii')
+            payload = json.loads(json_str)
+            logger.debug(f"Decoded keepalive packet: {payload}")
+
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            print(f"Error decoding packet: {e}")
+            print(f"Raw JSON bytes: {json_bytes}")
 
 async def run_quic_server():
     try:
