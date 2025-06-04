@@ -110,7 +110,7 @@ function formatCoord(val) {
 
 <style scoped>
 .telemetry-panel {
-  background: white;
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   border-radius: 5px;
   padding: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
