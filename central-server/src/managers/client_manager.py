@@ -21,7 +21,7 @@ class ClientManager:
     async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
             self.train_clients[train_id] = protocol
-            logger.info(f"QUIC: Train client connected: {train_id}")
+            logger.info(f"QUIC: Train client connected: {train_id}, Trains: {self.train_clients.keys()}")
 
     async def remove_train_client(self, train_id: str):
         async with self.lock:
@@ -40,9 +40,9 @@ class ClientManager:
     async def add_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
             self.remote_control_clients[remote_control_id] = protocol
-            logger.info(f"QUIC: Remote Control client connected {remote_control_id}")
+            logger.info(f"QUIC: Remote Control client connected {remote_control_id}, Remote Controls: {self.remote_control_clients.keys()}")
 
-    async def remove_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
+    async def remove_remote_control_client(self, remote_control_id: str):
         async with self.lock:
             # Remove mapping if it exists
             if remote_control_id in self.remote_control_to_train_map:
