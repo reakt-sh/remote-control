@@ -1,7 +1,6 @@
-<!-- filepath: /home/rcd/Desktop/Workspace/TrainRemoteControl/web-client/src/components/telemetry/PassengerCount.vue -->
 <template>
   <div class="passenger-count">
-    <span v-if="passengerCount !== undefined && passengerCount !== null">
+    <span v-if="passengerCount !== undefined && passengerCount !== null" class="count">
       {{ passengerCount }}
     </span>
     <span v-else class="no-data">No data</span>
@@ -19,13 +18,21 @@ defineProps({
 
 <style scoped>
 .passenger-count {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #2c3e50;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
 }
+
+.count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
 .no-data {
-  font-size: 1rem;
-  color: #bbb;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-style: italic;
 }
 </style>
