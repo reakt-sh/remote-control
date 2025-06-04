@@ -202,11 +202,13 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
     def quic_event_received(self, event: QuicEvent):
         logger.debug(f"Processing QUIC event: {event}")
         if isinstance(event, StreamDataReceived):
-            decimal_values = event.data.decode('utf-8').split(',')
-            packet_type = int(decimal_values[0])
-            # Convert each decimal to its ASCII character and join into a string
-            json_str = ''.join([chr(int(d)) for d in decimal_values[1:]])
-            payload = json_str.encode('utf-8')
-
-            if packet_type == PACKET_TYPE["command"]:
-                self.network_worker.process_command.emit(payload)
+            try:
+                decimal_values = event.data.decode('utf-8').split(',')
+                packet_type = int(decimal_values[0])
+                if packet_type == PACKET_TYPE["command"]:
+                    # Convert each decimal value to character and join into a string
+                    json_str = ''.join([chr(int(d)) for d in decimal_values[1:]])
+                    payload = json_str.encode('utf-8')
+                    self.network_worker.process_command.emit(payload)
+            except Exception as e:
+                logger.warning("There is no packet type in the received data")
