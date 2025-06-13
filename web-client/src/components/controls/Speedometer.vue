@@ -20,11 +20,7 @@
       <div class="target-speed">
         <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
         <button class="toggle-input-btn" @click="toggleInputMode" title="Toggle input mode">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="1"></circle>
-            <circle cx="12" cy="5" r="1"></circle>
-            <circle cx="12" cy="19" r="1"></circle>
-          </svg>
+          <i class="fa-solid fa-repeat"></i>
         </button>
         <div v-if="showSlider" class="slider-container">
           <input
