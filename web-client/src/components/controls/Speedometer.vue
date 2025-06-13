@@ -18,23 +18,41 @@
         <div class="speed-unit">km/h</div>
       </div>
       <div class="target-speed">
-        <div class="target-speed-value">Target: {{ props.targetSpeed }} km/h</div>
-        <input
-          type="range"
-          min="0"
-          :max="props.maxSpeed"
-          :value="props.targetSpeed"
-          @input="e => emit('update:targetSpeed', Number(e.target.value))"
-          @change="e => emit('change:targetSpeed', Number(e.target.value))"
-          class="target-slider"
-        />
+        <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
+        <button class="toggle-input-btn" @click="toggleInputMode" title="Toggle input mode">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="12" cy="5" r="1"></circle>
+            <circle cx="12" cy="19" r="1"></circle>
+          </svg>
+        </button>
+        <div v-if="showSlider" class="slider-container">
+          <input
+            type="range"
+            min="0"
+            :max="props.maxSpeed"
+            :value="tempTargetSpeed"
+            @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value))}"
+            @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value))}"
+            class="target-slider"
+          />
+        </div>
+        <div v-else class="target-speed-buttons">
+          <div class="button-row">
+            <button @click="changeTargetSpeed(-10)">-10</button>
+            <button @click="changeTargetSpeed(-1)">-1</button>
+            <button @click="changeTargetSpeed(1)">+1</button>
+            <button @click="changeTargetSpeed(10)">+10</button>
+          </div>
+          <button class="done-btn" @click="doneTargetSpeed">Apply</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   currentSpeed: {
@@ -53,6 +71,7 @@ const props = defineProps({
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
 const visualMaxSpeed = 80;
+const tempTargetSpeed = ref(props.targetSpeed);
 
 const needleRotation = computed(() => {
   const ratio = Math.min(props.currentSpeed, props.maxSpeed) / visualMaxSpeed;
@@ -107,28 +126,48 @@ const minorTicks = computed(() => {
   }
   return ticks;
 });
+
+const showSlider = ref(true); // true = slider, false = buttons
+
+function toggleInputMode() {
+  showSlider.value = !showSlider.value;
+}
+
+function changeTargetSpeed(delta) {
+  let newSpeed = tempTargetSpeed.value + delta;
+  newSpeed = Math.max(0, Math.min(props.maxSpeed, newSpeed));
+  tempTargetSpeed.value = newSpeed;
+}
+
+function doneTargetSpeed() {
+  emit('update:targetSpeed', tempTargetSpeed.value);
+  emit('change:targetSpeed', tempTargetSpeed.value);
+}
 </script>
 
 <style scoped>
 .speedometer {
-  background: linear-gradient(135deg, #debcbc, #88b48f);
-  border-radius: 15px;
+  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 1px solid #e0e4e7;
+  max-width: 320px;
+  margin: 0 auto;
 }
 
 .gauge {
   width: 220px;
   height: 110px;
   position: relative;
-  border: 4px solid #ccc;
+  border: 4px solid #e0e4e7;
   border-radius: 220px 220px 0 0;
   overflow: hidden;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #ffffff, #f0f0f0);
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
 }
 
 .gauge::before {
@@ -204,7 +243,7 @@ const minorTicks = computed(() => {
   position: absolute;
   width: 20px;
   height: 20px;
-  background: linear-gradient(135deg, #ffffff, #f0f0f0);
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
   border: 3px solid #e67e22;
   border-radius: 50%;
   bottom: -10px;
@@ -216,6 +255,7 @@ const minorTicks = computed(() => {
 .speed-display {
   text-align: center;
   color: #333;
+  width: 100%;
 }
 
 .speed-row {
@@ -223,133 +263,149 @@ const minorTicks = computed(() => {
   align-items: baseline;
   justify-content: center;
   gap: 10px;
+  margin-bottom: 8px;
 }
 
 .current-speed {
-  font-size: 3rem;
+  font-size: 2.8rem;
   font-weight: bold;
   font-family: 'Segment7', monospace;
-  color: #e67e22;
+  color: #2c3e50;
   margin-bottom: 0;
 }
 
 .speed-unit {
   font-size: 1.2rem;
-  opacity: 0.7;
+  color: #7f8c8d;
   margin-bottom: 0;
 }
 
 .target-speed {
-  font-size: 1rem;
-  min-width: 300px;
-  color: #333;
-  background: #e0e0e0;
-  padding: 10px 10px 10px 10px;
-  border-radius: 18px;
-  margin-top: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   position: relative;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e0e4e7;
+}
+
+.target-speed-value {
+  display: inline-block;
+  background: #2c3e50;
+  color: white;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.95em;
+  margin-bottom: 10px;
+}
+
+.toggle-input-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #7f8c8d;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.toggle-input-btn:hover {
+  background: #e0e4e7;
+  color: #2c3e50;
+}
+
+.slider-container {
+  width: 100%;
+  padding: 5px 0;
 }
 
 .target-slider {
-  width: 280px;
-  height: 55px;
-  background: #e0e0e0;
-  border-radius: 20px;
-  box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
-  margin: 0 auto;
-  margin-top: 5px;
-  display: block;
-  padding: 0;
-  outline: none;
+  width: 100%;
+  height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  position: relative;
-  cursor: pointer;
-}
-
-.target-slider::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 40px;
-  background: #e0e0e0;
-  border-radius: 20px;
-}
-.target-slider::-moz-range-track {
-  width: 100%;
-  height: 40px;
-  background: #e0e0e0;
-  border-radius: 20px;
-}
-.target-slider::-ms-fill-lower,
-.target-slider::-ms-fill-upper {
-  background: #e0e0e0;
-  border-radius: 20px;
+  background: #e0e4e7;
+  border-radius: 3px;
+  outline: none;
+  margin: 8px 0;
 }
 
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 80px;
-  height: 40px;
-  background: linear-gradient(to right, #ccc, #aaa);
-  border-radius: 5px;
-  border: 2px solid #999;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  cursor: ew-resize;
-  transition: background 0.2s;
-  margin-top: 0;
-}
-.target-slider:focus::-webkit-slider-thumb {
-  background: #999;
+  width: 18px;
+  height: 18px;
+  background: #2c3e50;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.target-slider::-moz-range-thumb {
-  width: 80px;
-  height: 40px;
-  background: linear-gradient(to right, #ccc, #aaa);
-  border-radius: 5px;
-  border: 2px solid #999;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  cursor: ew-resize;
-  transition: background 0.2s;
-}
-.target-slider:focus::-moz-range-thumb {
-  background: #999;
+.target-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #e67e22;
 }
 
-.target-slider::-ms-thumb {
-  width: 80px;
-  height: 40px;
-  background: linear-gradient(to right, #ccc, #aaa);
-  border-radius: 5px;
-  border: 2px solid #999;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  cursor: ew-resize;
-  transition: background 0.2s;
-}
-.target-slider:focus::-ms-thumb {
-  background: #999;
+.target-speed-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.target-slider::-moz-focus-outer {
-  border: 0;
+.button-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-.target-speed {
-  position: relative;
+.button-speed-value {
+  font-weight: 500;
+  color: #2c3e50;
+  min-width: 70px;
+  text-align: center;
+  font-size: 0.95em;
 }
-.target-speed-value {
-  top: 0;
-  max-width: 155px;
-  margin-left: 58px;
-  background: #d0d6d6;
-  color: #333;
-  font-weight: bold;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-size: 1.1em;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  pointer-events: none;
-  z-index: 2;
+
+button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #d6dbdf;
+  background: #f8f9fa;
+  color: #2c3e50;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: #e0e4e7;
+  border-color: #c8d1d9;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.done-btn {
+  background: #27ae60;
+  color: white;
+  border-color: #219955;
+  margin-top: 4px;
+}
+
+.done-btn:hover {
+  background: #219955;
 }
 </style>
