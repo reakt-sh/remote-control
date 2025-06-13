@@ -1,9 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-// Define server IP and port as constants
-const SERVER = 'localhost'
-const SERVER_IP = '127.0.0.1'
+// Define server IP and host for local development
+// const SERVER = 'localhost'
+// const SERVER_IP = '127.0.0.1'
+
+// Define server IP and host for production
+const SERVER = '209.38.218.207'
+const SERVER_IP = '209.38.218.207'
+
+// Define server ports, same for both local and production
 const SERVER_PORT = 8000
 const QUIC_PORT = 4437
 const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`

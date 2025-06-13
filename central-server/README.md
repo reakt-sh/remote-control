@@ -26,6 +26,7 @@ Start-Process "chrome.exe" -ArgumentList @(
 ### Run chrome client on Linux
 ```
 google-chrome --origin-to-force-quic-on=127.0.0.1:4437 --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
+google-chrome --ignore-certificate-errors-spki-list=BtT1P13MdCBq1l8jIiImPaN4V+tLxae/7N/bFnsypmY=
 ```
 
 
