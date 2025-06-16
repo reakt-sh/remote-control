@@ -2,7 +2,9 @@ from utils.app_logger import logger
 import asyncio
 from typing import Dict, Set
 from aioquic.asyncio.protocol import QuicConnectionProtocol
-
+import json
+import struct
+from globals import PACKET_TYPE
 
 class ClientManager:
     def __init__(self):
@@ -69,8 +71,24 @@ class ClientManager:
                         if not self.train_to_remote_controls_map[existing_train_id]:
                             del self.train_to_remote_controls_map[existing_train_id]
                             logger.debug(f"QUIC: Removed empty entry for train {existing_train_id} from train_to_remote_controls_map")
-            else:
-                logger.debug(f"QUIC: Mapping remote control {remote_control_id} to train {train_id}")
+
+                            # send instruction to train, stop sending any more data
+                            protocol = self.train_clients.get(existing_train_id)
+                            if protocol:
+                                try:
+                                    instruction_packet = {
+                                        "type": "command",
+                                        "instruction": "STOP_SENDING_DATA",
+                                    }
+                                    packet_data = json.dumps(instruction_packet).encode('utf-8')
+                                    packet = struct.pack("B", PACKET_TYPE["command"]) + packet_data
+                                    protocol._quic.send_stream_data(protocol.stream_id, packet, end_stream=False)
+                                    protocol.transmit()
+                                    logger.info(f"Sent STOP_STREAM to train {existing_train_id} for remote control {remote_control_id}")
+                                except Exception as e:
+                                    logger.error(f"Failed to send STOP_STREAM to train {existing_train_id}: {e}")
+
+            logger.debug(f"QUIC: Mapping remote control {remote_control_id} to train {train_id}")
 
             # Map the remote control to the new train
             self.remote_control_to_train_map[remote_control_id] = train_id
@@ -78,6 +96,22 @@ class ClientManager:
                 self.train_to_remote_controls_map[train_id] = set()
             self.train_to_remote_controls_map[train_id].add(remote_control_id)
             logger.info(f"QUIC: Updated train_to_remote_controls_map: {self.train_to_remote_controls_map}")
+
+            # Send instruction to the remote control to start sending data
+            protocol = self.train_clients.get(train_id)
+            if protocol:
+                try:
+                    instruction_packet = {
+                        "type": "command",
+                        "instruction": "START_SENDING_DATA",
+                    }
+                    packet_data = json.dumps(instruction_packet).encode('utf-8')
+                    packet = struct.pack("B", PACKET_TYPE["command"]) + packet_data
+                    protocol._quic.send_stream_data(protocol.stream_id, packet, end_stream=False)
+                    protocol.transmit()
+                    logger.info(f"QUIC: Sending instruction START_SENDING_DATA to train {train_id}")
+                except Exception as e:
+                    logger.error(f"Failed to send START_STREAM to train {train_id}: {e}")
 
     async def relay_datagram_to_remote_controls(self):
         while True:
