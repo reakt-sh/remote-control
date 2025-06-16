@@ -150,12 +150,12 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
-            elif int(message[:2]) == PACKET_TYPE["command"]:
+            elif event.data[0] == PACKET_TYPE["command"]:
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
                 )
-            elif int(message[:2]) == PACKET_TYPE["keepalive"]:
-                self.decode_keepalive_packet(message)
+            elif event.data[0] == PACKET_TYPE["keepalive"]:
+                self.decode_keepalive_packet(event.data)
             else:
                 logger.warning(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
         else:
@@ -216,12 +216,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         except Exception as e:
             logger.error(f"Error cleaning up client: {e}")
 
-    def decode_keepalive_packet(self, packet_data: str) -> None:
-        byte_values = packet_data
-        if self.client_type == "REMOTE_CONTROL":
-            byte_values = [int(num) for num in packet_data.split(",")]
+    def decode_keepalive_packet(self, data) -> None:
 
-        json_bytes = bytes(byte_values[1:])
+        json_bytes = data[1:]
         try:
             json_str = json_bytes.decode('utf-8')
             payload = json.loads(json_str)

@@ -288,9 +288,16 @@ export const useTrainStore = defineStore('train', () => {
     }
     try {
       const writer = bidistream.value.writable.getWriter();
-      const data = new TextEncoder().encode(message);
+      let data;
+      if (typeof message === 'string') {
+        data = new TextEncoder().encode(message);
+      } else if (message instanceof Uint8Array) {
+        data = message;
+      } else {
+        throw new Error('Unsupported message type');
+      }
       await writer.write(data);
-      writer.releaseLock(); // Release the lock for future writes
+      writer.releaseLock();
       console.log('WebTransport message sent:', message);
     } catch (error) {
       console.error('Error sending WebTransport message:', error);

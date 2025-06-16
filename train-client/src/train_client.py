@@ -203,8 +203,18 @@ class TrainClient(QMainWindow):
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
+        logger.info(f"{message}")
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
+        elif message['instruction'] == 'STOP_SENDING_DATA':
+            if self.is_sending:
+                self.toggle_sending()
+        elif message['instruction'] == 'START_SENDING_DATA':
+            logger.info("Found instruction START_SENDING_DATA")
+            if not self.is_sending:
+                self.toggle_sending()
+        else:
+            logger.warning(f"Unknown Instruction from command:  {message['instruction']}")
 
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")

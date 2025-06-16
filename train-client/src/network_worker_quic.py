@@ -234,12 +234,12 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
         logger.debug(f"Processing QUIC event: {event}")
         if isinstance(event, StreamDataReceived):
             try:
-                decimal_values = event.data.decode('utf-8').split(',')
-                packet_type = int(decimal_values[0])
+                packet_type = event.data[0]
+                logger.debug(f"packet_type = {packet_type}")
+                payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
-                    # Convert each decimal value to character and join into a string
-                    json_str = ''.join([chr(int(d)) for d in decimal_values[1:]])
-                    payload = json_str.encode('utf-8')
                     self.network_worker.process_command.emit(payload)
+                else:
+                    logger.warning(f"Invalid process command with packet type = {packet_type}")
             except Exception as e:
                 logger.warning("There is no packet type in the received data")
