@@ -12,8 +12,8 @@ const SERVER_IP = '209.38.218.207'
 // Define server ports, same for both local and production
 const SERVER_PORT = 8000
 const QUIC_PORT = 4437
-const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
-const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
+const SERVER_URL = `https://${SERVER}:${SERVER_PORT}`
+const WS_URL = `wss://${SERVER}:${SERVER_PORT}`
 const QUIC_URL = `https://${SERVER_IP}:${QUIC_PORT}`
 
 // Packet Types

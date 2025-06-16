@@ -41,10 +41,14 @@ app.add_middleware(
 app.include_router(train_gateway.router)
 app.include_router(remote_control_gateway.router)
 
+config = get_client_config()
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=HOST,
         port=FAST_API_PORT,
-        reload=True
+        reload=True,
+        ssl_keyfile=config.key_file,
+        ssl_certfile=config.cert_file,
     )
