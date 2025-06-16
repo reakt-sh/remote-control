@@ -32,8 +32,8 @@ PACKET_TYPE = {
 }
 
 
-SERVER_HOST = "localhost"
-QUIC_HOST = "127.0.0.1"
+# SERVER_HOST = "localhost"
+# QUIC_HOST = "127.0.0.1"
 
 # overwrite for remote server
 SERVER_HOST = "209.38.218.207"
