@@ -34,7 +34,7 @@ Start-Process "chrome.exe" -ArgumentList @(
 ### Run chrome client on Linux
 ```
 # When Server is on Local machine
-google-chrome --origin-to-force-quic-on=127.0.0.1:4437 --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
+google-chrome --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
 
 # When Server is on Remote Droplet
 google-chrome --ignore-certificate-errors-spki-list=5Q5Qbo1MT9UH92OkjjOkb89GlAiREgWWU+fvxcQTqxk=
