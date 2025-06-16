@@ -43,9 +43,17 @@ export const useTrainStore = defineStore('train', () => {
   const videoDatagramAssembler = ref(null);
   const keepaliveSequence = ref(0);
 
+  function generateUUID() {
+    // RFC4122 version 4 compliant UUID
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
-      remoteControlId.value = crypto.randomUUID()
+      remoteControlId.value = generateUUID()
       console.log('Remote control ID initialized:', remoteControlId.value)
     }
   }
