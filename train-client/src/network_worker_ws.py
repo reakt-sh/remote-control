@@ -2,6 +2,7 @@ import asyncio
 import queue
 import json
 import struct
+import ssl
 from PyQt5.QtCore import QThread, pyqtSignal
 import websockets
 from loguru import logger
@@ -29,8 +30,9 @@ class NetworkWorkerWS(QThread):
             self.loop.close()
 
     async def websocket_handler(self):
+        ssl_context = ssl._create_unverified_context()
         try:
-            async with websockets.connect(self.server_url) as websocket:
+            async with websockets.connect(self.server_url, ssl=ssl_context) as websocket:
                 print(f"WebSocket: Connected to server at {self.server_url}")
                 # Create tasks
                 tasks = [

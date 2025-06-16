@@ -1,13 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-// Define server IP and port as constants
-const SERVER = 'localhost'
-const SERVER_IP = '127.0.0.1'
+// Define server IP and host for local development
+// const SERVER = 'localhost'
+// const SERVER_IP = '127.0.0.1'
+
+// Define server IP and host for production
+const SERVER = '209.38.218.207'
+const SERVER_IP = '209.38.218.207'
+
+// Define server ports, same for both local and production
 const SERVER_PORT = 8000
 const QUIC_PORT = 4437
-const SERVER_URL = `http://${SERVER}:${SERVER_PORT}`
-const WS_URL = `ws://${SERVER}:${SERVER_PORT}`
+const SERVER_URL = `https://${SERVER}:${SERVER_PORT}`
+const WS_URL = `wss://${SERVER}:${SERVER_PORT}`
 const QUIC_URL = `https://${SERVER_IP}:${QUIC_PORT}`
 
 // Packet Types
@@ -37,9 +43,17 @@ export const useTrainStore = defineStore('train', () => {
   const videoDatagramAssembler = ref(null);
   const keepaliveSequence = ref(0);
 
+  function generateUUID() {
+    // RFC4122 version 4 compliant UUID
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
-      remoteControlId.value = crypto.randomUUID()
+      remoteControlId.value = generateUUID()
       console.log('Remote control ID initialized:', remoteControlId.value)
     }
   }

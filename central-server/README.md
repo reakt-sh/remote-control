@@ -3,7 +3,15 @@
 ## Setup the environment
 ### Generate certificate.pem and certificate.key
 ```
+# for Local setup
 openssl req -x509 -newkey rsa:2048 -nodes -keyout certificate.key -out certificate.pem -days 365 -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1"
+
+# for Remote Droplet
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout certificate.key \
+    -out certificate.pem \
+    -subj "/CN=209.38.218.207" \
+    -addext "subjectAltName=IP:209.38.218.207"
 ```
 
 ### Get the spki hash value
@@ -25,10 +33,68 @@ Start-Process "chrome.exe" -ArgumentList @(
 
 ### Run chrome client on Linux
 ```
+# When Server is on Local machine
 google-chrome --origin-to-force-quic-on=127.0.0.1:4437 --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
+
+# When Server is on Remote Droplet
+google-chrome --ignore-certificate-errors-spki-list=5Q5Qbo1MT9UH92OkjjOkb89GlAiREgWWU+fvxcQTqxk=
 ```
 
+## to Configure Secured Connection on remote droplet
+```
+sudo apt update
+sudo apt install nginx -y
 
+sudo nano /etc/nginx/sites-available/vue-app
+# add following code to that file
+--------------------------------------------------------------------
+server {
+    listen 80;
+    server_name 209.38.218.207;
+    return 301 https://$server_name$request_uri;  # Redirect HTTP → HTTPS
+}
+
+server {
+    listen 443 ssl;
+    server_name 209.38.218.207;
+
+    # SSL Configuration
+    ssl_certificate /etc/ssl/quic_conf/certificate.pem;      # Your certificate
+    ssl_certificate_key /etc/ssl/quic_conf/certificate.key; # Your private key
+
+    # Security settings (recommended)
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Proxy to your Vue.js dev server (running on port 8080)
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # FastAPI WebSocket Backend (port 8000)
+    location /ws/ {
+        proxy_pass http://localhost:8000;  # FastAPI running on port 8000
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+
+        # Timeout settings for persistent connections
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}
+
+----------------------------------------------------------------------
+sudo ln -s /etc/nginx/sites-available/vue-app /etc/nginx/sites-enabled
+sudo nginx -t  # Test the config
+sudo systemctl restart nginx
+```
 ### Run Central Server
 ```
 python src/main.py
