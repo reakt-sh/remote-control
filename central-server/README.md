@@ -3,7 +3,15 @@
 ## Setup the environment
 ### Generate certificate.pem and certificate.key
 ```
+# for Local setup
 openssl req -x509 -newkey rsa:2048 -nodes -keyout certificate.key -out certificate.pem -days 365 -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1"
+
+# for Remote Droplet
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout certificate.key \
+    -out certificate.pem \
+    -subj "/CN=209.38.218.207" \
+    -addext "subjectAltName=IP:209.38.218.207"
 ```
 
 ### Get the spki hash value
@@ -25,8 +33,11 @@ Start-Process "chrome.exe" -ArgumentList @(
 
 ### Run chrome client on Linux
 ```
+# When Server is on Local machine
 google-chrome --origin-to-force-quic-on=127.0.0.1:4437 --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIyjv5+q1nolUD/+Sc=
-google-chrome --ignore-certificate-errors-spki-list=BtT1P13MdCBq1l8jIiImPaN4V+tLxae/7N/bFnsypmY=
+
+# When Server is on Remote Droplet
+google-chrome --ignore-certificate-errors-spki-list=5Q5Qbo1MT9UH92OkjjOkb89GlAiREgWWU+fvxcQTqxk=
 ```
 
 
