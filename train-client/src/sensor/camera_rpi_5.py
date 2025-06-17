@@ -84,17 +84,25 @@ class CameraRPi5(QObject):
 
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 font_scale = 0.5
+                vertical_space = 30
+                start_y = 30
+                if self.width >= 1280 and self.height >= 720:
+                    font_scale = 1.0
+                    vertical_space = 50
+                    start_y = 50
+
+
                 color = (229, 230, 216)
                 thickness = 1
                 bg_color = (50, 50, 50)
                 opacity = 0.6
 
                 positions = [
-                    (10, 30, text_res),
-                    (10, 60, text_fps),
-                    (10, 90, text_frame_id),
-                    (10, 120, text_date),
-                    (10, 150, text_time),
+                    (10, start_y + vertical_space * 0, text_res),
+                    (10, start_y + vertical_space * 1, text_fps),
+                    (10, start_y + vertical_space * 2, text_frame_id),
+                    (10, start_y + vertical_space * 3, text_date),
+                    (10, start_y + vertical_space * 4, text_time),
                 ]
 
                 for pos in positions:
