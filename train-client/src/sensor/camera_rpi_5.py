@@ -24,17 +24,17 @@ class CameraRPi5(QObject):
             self.picam2 = Picamera2()
 
             # Configure camera (adjust these settings based on your needs)
-            config = self.picam2.create_preview_configuration(
-                main={"size": (1280, 720)},  # Adjust resolution as needed
-                transform=libcamera.Transform(hflip=1, vflip=1)  # Flip if needed
-            )
-            self.picam2.configure(config)
-
+            camera_config = self.picam2.create_still_configuration(main={"size": (1280, 720)})
+            self.picam2.configure(camera_config)
             self.picam2.start()
 
             # Get camera properties
-            self.width = self.picam2.camera_properties['PixelArraySize'][0]
-            self.height = self.picam2.camera_properties['PixelArraySize'][1]
+            # After picam2.configure(...) and picam2.start()
+            main_stream = self.picam2.stream_configuration("main")
+            width, height = main_stream["size"]
+            
+            self.width = width
+            self.height = height
             self.fps = 30  # Default, can be adjusted in config
 
             print(f"Camera Resolution: {self.width}x{self.height}")
