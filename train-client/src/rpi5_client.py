@@ -280,26 +280,3 @@ class PiCameraWrapper(QObject):
     def set_speed(self, speed):
         # This can be used to adjust camera settings based on speed if needed
         pass
-
-if __name__ == "__main__":
-    from PyQt5.QtCore import QCoreApplication
-    import sys
-    
-    # Initialize QCoreApplication for event loop
-    app = QCoreApplication(sys.argv)
-    
-    # Create and start the client
-    client = RPi5HeadlessClient()
-    
-    # Set up clean exit
-    def shutdown():
-        client.close()
-        app.quit()
-    
-    # Handle SIGTERM and SIGINT for proper shutdown
-    import signal
-    signal.signal(signal.SIGTERM, lambda *args: shutdown())
-    signal.signal(signal.SIGINT, lambda *args: shutdown())
-    
-    # Start the application
-    sys.exit(app.exec_())
