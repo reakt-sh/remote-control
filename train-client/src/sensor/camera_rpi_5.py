@@ -24,7 +24,10 @@ class CameraRPi5(QObject):
             self.picam2 = Picamera2()
 
             # Configure camera (adjust these settings based on your needs)
-            camera_config = self.picam2.create_still_configuration(main={"size": (1280, 720)})
+            camera_config = self.picam2.create_video_configuration(
+                                main={"size": (1280, 720)},
+                                controls={"FrameDurationLimits": (33333, 33333)}  # 30 FPS = 33,333 us per frame
+                            )
             self.picam2.configure(camera_config)
             self.picam2.start()
 
