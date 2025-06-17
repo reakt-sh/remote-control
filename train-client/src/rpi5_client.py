@@ -21,7 +21,7 @@ from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
 
-class RPi5HeadlessClient:
+class RPi5Client:
     def __init__(self):
         self.train_client_id = self.initialize_train_client_id()
         self.init_logging()
