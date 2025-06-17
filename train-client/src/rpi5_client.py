@@ -21,6 +21,7 @@ from sensor.camera_rpi_5 import CameraRPi5
 
 class RPi5Client(QThread):
     def __init__(self):
+        super().__init__()
         self.train_client_id = self.initialize_train_client_id()
         self.init_logging()
         self.init_network()
@@ -193,3 +194,6 @@ class RPi5Client(QThread):
         self.network_worker_quic.stop()
         self.output_file.close()
         logger.info("RPi5 Headless Client closed.")
+
+    def set_speed(self, speed: int):
+        logger.info("Set_speed is called now")

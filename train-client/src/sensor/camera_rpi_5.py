@@ -5,6 +5,7 @@ from libcamera import controls
 import libcamera
 import cv2
 import numpy as np
+from loguru import logger
 
 class CameraRPi5(QObject):
     frame_ready = pyqtSignal(object, object)  # Emits the frame (numpy array) and frame count
@@ -122,3 +123,6 @@ class CameraRPi5(QObject):
 
             except Exception as e:
                 print(f"Error capturing frame: {str(e)}")
+
+    def set_speed(self, speed: int):
+        logger.info("Set_speed is called now")
