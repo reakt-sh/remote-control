@@ -20,35 +20,35 @@ class CameraRPi5(QObject):
         try:
             # Initialize Pi Camera
             self.picam2 = Picamera2()
-            
+
             # Configure camera (adjust these settings based on your needs)
             config = self.picam2.create_preview_configuration(
                 main={"size": (1920, 1080)},  # Adjust resolution as needed
                 transform=libcamera.Transform(hflip=1, vflip=1)  # Flip if needed
             )
             self.picam2.configure(config)
-            
+
             # Optional camera controls
             self.picam2.set_controls({
                 "AfMode": controls.AfModeEnum.Continuous,  # Continuous autofocus
                 "AwbMode": controls.AwbModeEnum.Auto,      # Auto white balance
                 "ExposureTime": 10000,                    # Exposure time in microseconds
             })
-            
+
             self.picam2.start()
-            
+
             # Get camera properties
             self.width = self.picam2.camera_properties['PixelArraySize'][0]
             self.height = self.picam2.camera_properties['PixelArraySize'][1]
             self.fps = 30  # Default, can be adjusted in config
-            
+
             print(f"Camera Resolution: {self.width}x{self.height}")
             print(f"Camera FPS: {self.fps}")
-            
+
             self.frame_count = 0
             self.start_time = datetime.now().timestamp()
             self.timer.start(int(1000 / self.fps))  # Convert FPS to milliseconds
-            
+
         except Exception as e:
             raise RuntimeError(f"Could not initialize Raspberry Pi camera: {str(e)}")
 
@@ -64,7 +64,7 @@ class CameraRPi5(QObject):
             try:
                 # Capture array from Pi camera
                 frame = self.picam2.capture_array("main")
-                
+
                 # Convert to BGR format (OpenCV default) if needed
                 if frame.dtype == np.float32:
                     frame = (frame * 255).astype(np.uint8)
@@ -74,7 +74,7 @@ class CameraRPi5(QObject):
                     frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
                 elif frame.shape[2] == 3:  # If RGB
                     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                
+
                 self.frame_count += 1
                 elapsed_time = datetime.now().timestamp() - self.start_time
                 current_fps = self.frame_count / elapsed_time

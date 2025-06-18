@@ -8,18 +8,16 @@ import uuid
 import json
 import asyncio
 import logging
-from fractions import Fraction
 
 from loguru import logger
-from picamera2 import Picamera2
-from libcamera import controls
-
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
+
+from sensor.camera_rpi_5 import CameraRPi5
 
 class RPi5Client:
     def __init__(self):
@@ -33,7 +31,7 @@ class RPi5Client:
         self.is_sending = False    # Start with sending disabled
 
         # Camera setup
-        self.video_source = self.init_pi_camera()
+        self.video_source = CameraRPi5()
         self.video_source.frame_ready.connect(self.on_new_frame)
         self.video_source.init_capture()
 
@@ -68,10 +66,6 @@ class RPi5Client:
                 logging.StreamHandler()
             ]
         )
-
-    def init_pi_camera(self):
-        # Initialize the Pi-specific camera class
-        return PiCameraWrapper()
 
     def create_dump_file(self):
         # Add timestamp to H264_DUMP filename
@@ -199,84 +193,3 @@ class RPi5Client:
         self.network_worker_quic.stop()
         self.output_file.close()
         logger.info("RPi5 Headless Client closed.")
-
-class PiCameraWrapper(QObject):
-    frame_ready = pyqtSignal(object, object)  # Emits the frame (numpy array) and frame count
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.picam2 = None
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.capture_frame)
-        self.frame_count = 0
-        self.start_time = None
-
-    def init_capture(self):
-        try:
-            # Initialize Pi Camera
-            self.picam2 = Picamera2()
-            
-            # Configure camera (adjust these settings based on your needs)
-            config = self.picam2.create_preview_configuration(
-                main={"size": (1920, 1080)},  # Adjust resolution as needed
-                transform=libcamera.Transform(hflip=1, vflip=1)  # Flip if needed
-            )
-            self.picam2.configure(config)
-            
-            # Optional camera controls
-            self.picam2.set_controls({
-                "AfMode": controls.AfModeEnum.Continuous,  # Continuous autofocus
-                "AwbMode": controls.AwbModeEnum.Auto,      # Auto white balance
-                "ExposureTime": 10000,                    # Exposure time in microseconds
-            })
-            
-            self.picam2.start()
-            
-            # Get camera properties
-            self.width = self.picam2.camera_properties['PixelArraySize'][0]
-            self.height = self.picam2.camera_properties['PixelArraySize'][1]
-            self.fps = 30  # Default, can be adjusted in config
-            
-            logger.info(f"Camera Resolution: {self.width}x{self.height}")
-            logger.info(f"Camera FPS: {self.fps}")
-            
-            self.frame_count = 0
-            self.start_time = datetime.now().timestamp()
-            self.timer.start(int(1000 / self.fps))  # Convert FPS to milliseconds
-            
-        except Exception as e:
-            logger.error(f"Could not initialize Raspberry Pi camera: {str(e)}")
-            raise RuntimeError(f"Camera initialization failed: {str(e)}")
-
-    def stop(self):
-        self.timer.stop()
-        if self.picam2:
-            self.picam2.stop()
-            self.picam2.close()
-            self.picam2 = None
-
-    def capture_frame(self):
-        if self.picam2:
-            try:
-                # Capture array from Pi camera
-                frame = self.picam2.capture_array("main")
-                
-                # Convert to BGR format (OpenCV default) if needed
-                if frame.dtype == np.float32:
-                    frame = (frame * 255).astype(np.uint8)
-                if len(frame.shape) == 2:  # If grayscale
-                    frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-                elif frame.shape[2] == 4:  # If RGBA
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
-                elif frame.shape[2] == 3:  # If RGB
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                
-                self.frame_count += 1
-                self.frame_ready.emit(self.frame_count, frame)
-
-            except Exception as e:
-                logger.error(f"Error capturing frame: {str(e)}")
-
-    def set_speed(self, speed):
-        # This can be used to adjust camera settings based on speed if needed
-        pass
