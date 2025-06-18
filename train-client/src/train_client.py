@@ -213,6 +213,17 @@ class TrainClient(QMainWindow):
             logger.info("Found instruction START_SENDING_DATA")
             if not self.is_sending:
                 self.toggle_sending()
+        elif message['instruction'] == 'POWER_ON':
+            logger.info("Found instruction POWER_ON")
+        elif message['instruction'] == 'POWER_OFF':
+            logger.info("Found instruction POWER_OFF")
+        elif message['instruction'] == 'CHANGE_DIRECTION':
+            if message['direction'] == 'FORWARD':
+                logger.info("Found instruction CHANGE_DIRECTION: FORWARD")
+            elif message['direction'] == 'BACKWARD':
+                logger.info("Found instruction CHANGE_DIRECTION: BACKWARD")
+            else:
+                logger.warning(f"Unknown direction in CHANGE_DIRECTION: {message['direction']}")
         else:
             logger.warning(f"Unknown Instruction from command:  {message['instruction']}")
 

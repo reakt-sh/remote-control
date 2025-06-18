@@ -104,19 +104,29 @@ class RPi5Client(QThread):
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
-        logger.info(f"Received command: {message}")
+        logger.info(f"{message}")
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
-            logger.info(f"Target speed changed to: {self.target_speed}")
         elif message['instruction'] == 'STOP_SENDING_DATA':
             if self.is_sending:
                 self.toggle_sending()
         elif message['instruction'] == 'START_SENDING_DATA':
-            logger.info("Received START_SENDING_DATA instruction")
+            logger.info("Found instruction START_SENDING_DATA")
             if not self.is_sending:
                 self.toggle_sending()
+        elif message['instruction'] == 'POWER_ON':
+            logger.info("Found instruction POWER_ON")
+        elif message['instruction'] == 'POWER_OFF':
+            logger.info("Found instruction POWER_OFF")
+        elif message['instruction'] == 'CHANGE_DIRECTION':
+            if message['direction'] == 'FORWARD':
+                logger.info("Found instruction CHANGE_DIRECTION: FORWARD")
+            elif message['direction'] == 'BACKWARD':
+                logger.info("Found instruction CHANGE_DIRECTION: BACKWARD")
+            else:
+                logger.warning(f"Unknown direction in CHANGE_DIRECTION: {message['direction']}")
         else:
-            logger.warning(f"Unknown Instruction: {message['instruction']}")
+            logger.warning(f"Unknown Instruction from command:  {message['instruction']}")
 
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
