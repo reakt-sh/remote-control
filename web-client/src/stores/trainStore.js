@@ -127,6 +127,17 @@ export const useTrainStore = defineStore('train', () => {
       console.log("No Train Connected or No websocket Connection established")
       return
     }
+    switch (command["instruction"]) {
+      case "POWER_ON":
+        isPoweredOn.value = true
+        break
+      case "POWER_OFF":
+        isPoweredOn.value = false
+        break
+      case "CHANGE_DIRECTION":
+        direction.value = command["direction"]
+        break
+    }
     try {
       // Convert command object to JSON and then to Uint8Array
       const jsonString = JSON.stringify(command)
