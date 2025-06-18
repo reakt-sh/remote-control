@@ -2,6 +2,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
 from picamera2 import Picamera2
 from libcamera import controls
+imprt libcamera
 import cv2
 import numpy as np
 
@@ -23,17 +24,10 @@ class CameraRPi5(QObject):
 
             # Configure camera (adjust these settings based on your needs)
             config = self.picam2.create_preview_configuration(
-                main={"size": (1920, 1080)},  # Adjust resolution as needed
+                main={"size": (1280, 720)},  # Adjust resolution as needed
                 transform=libcamera.Transform(hflip=1, vflip=1)  # Flip if needed
             )
             self.picam2.configure(config)
-
-            # Optional camera controls
-            self.picam2.set_controls({
-                "AfMode": controls.AfModeEnum.Continuous,  # Continuous autofocus
-                "AwbMode": controls.AwbModeEnum.Auto,      # Auto white balance
-                "ExposureTime": 10000,                    # Exposure time in microseconds
-            })
 
             self.picam2.start()
 
