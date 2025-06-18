@@ -8,7 +8,7 @@ import uuid
 import json
 import asyncio
 import logging
-
+from PyQt5.QtCore import QThread
 from loguru import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
@@ -19,7 +19,7 @@ from encoder import Encoder
 
 from sensor.camera_rpi_5 import CameraRPi5
 
-class RPi5Client:
+class RPi5Client(QThread):
     def __init__(self):
         self.train_client_id = self.initialize_train_client_id()
         self.init_logging()

@@ -2,7 +2,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
 from picamera2 import Picamera2
 from libcamera import controls
-imprt libcamera
+import libcamera
 import cv2
 import numpy as np
 
