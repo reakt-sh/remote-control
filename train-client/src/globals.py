@@ -1,4 +1,5 @@
 import sys
+import platform
 # some configuration for components
 
 START_X = 100
@@ -15,7 +16,9 @@ if sys.platform.startswith("win"):
     H264_DUMP="D:\\Workspace\\remote-control\\train-client\\dump_collection\\dump"
     ASSET_DIR="D:\\Workspace\\remote-control\\train-client\\src\\asset"
 
-
+if "rpi" in platform.uname().release.lower():
+    H264_DUMP = "/home/reaktor/remote-control/train-client/dump_collection/dump"
+    ASSET_DIR = "/home/reaktor/remote-control/train-client/src/asset"
 PIXEL_FORMAT = "yuv420p"
 
 # Packet Types

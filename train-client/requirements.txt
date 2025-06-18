@@ -6,3 +6,4 @@ zmq
 numpy
 aioquic
 loguru
+websockets
