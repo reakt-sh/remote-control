@@ -5,3 +5,5 @@ pyqt5
 zmq
 numpy
 aioquic
+loguru
+websockets

@@ -19,6 +19,11 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 openssl x509 -pubkey -noout -in certificate.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
 ```
 
+### Run chrome client on Mac
+```
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --ignore-certificate-errors-spki-list=5Q5Qbo1MT9UH92OkjjOkb89GlAiREgWWU+fvxcQTqxk=
+```
+
 ### Run chrome client on Windows
 ```
 Start-Process "chrome.exe" -ArgumentList @(
