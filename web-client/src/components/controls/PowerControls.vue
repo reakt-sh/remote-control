@@ -9,7 +9,7 @@
       <span class="icon">▶</span>
       <span class="label">START</span>
     </button>
-    
+
     <button
       class="control-button stop-button"
       :class="{ active: !isRunning }"
@@ -47,8 +47,10 @@ function handleStop() {
 <style scoped>
 .power-controls {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row; /* Side by side */
+  gap: 16px;           /* Adjust gap as needed */
+  justify-content: center;
+  align-items: center;
 }
 
 .control-button {
@@ -78,7 +80,7 @@ function handleStop() {
 }
 
 .control-button:disabled {
-  opacity: 0.6;
+  opacity: 0.1;
   cursor: not-allowed;
   transform: none !important;
 }

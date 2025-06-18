@@ -147,14 +147,20 @@ watch(
   align-items: center;
 }
 
+.primary-controls,
+.indicators-panel {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 .primary-controls {
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-width: 220px;
+  width: 260px;
 }
 
 .indicators-panel {
@@ -164,6 +170,8 @@ watch(
   align-items: center;
   gap: 20px;
   height: 360px;
+  margin-left: 40px;
+  padding: 15px; /* Add padding for consistency */
 }
 
 @media (max-width: 1200px) {
@@ -171,7 +179,6 @@ watch(
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
   }
-  
   .indicators-panel {
     order: -1;
     height: auto;
