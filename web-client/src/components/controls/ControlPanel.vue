@@ -1,14 +1,18 @@
 <template>
   <div class="driver-console">
     <div class="control-panel">
-      <!-- Left: Master controller -->
-      <!-- <MasterController
-        :speed="currentSpeed"
-        :max-speed="maxSpeed"
-        :power-level="powerLevel"
-        @throttle-change="handleThrottleChange"
-        @brake-change="handleBrakeChange"
-      /> -->
+      <!-- Left: Power and Direction Controls -->
+      <div class="primary-controls">
+        <PowerControls
+          :is-running="isRunning"
+          @start="handleStart"
+          @stop="handleStop"
+        />
+        <DirectionControl
+          :direction="currentDirection"
+          @change="handleDirectionChange"
+        />
+      </div>
 
       <!-- Center: Indicators -->
       <div class="indicators-panel">
@@ -26,142 +30,152 @@
           :fuel-level="fuelLevel"
         />
       </div>
-
-      <!-- Right: Emergency controls -->
-      <!-- <div class="emergency-panel">
-        <EmergencyControls
-          :emergency-brake-active="emergencyBrakeActive"
-          @emergency-brake="activateEmergencyBrake"
-          @reset-emergency="resetEmergency"
-        />
-      </div> -->
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useTrainStore } from '@/stores/trainStore';
+import { ref, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useTrainStore } from '@/stores/trainStore'
 
-import Speedometer from './Speedometer.vue';
-import SystemStatus from './SystemStatus.vue';
+import Speedometer from './Speedometer.vue'
+import SystemStatus from './SystemStatus.vue'
+import DirectionControl from './DirectionControl.vue'
+import PowerControls from './PowerControls.vue'
 
-const trainStore = useTrainStore();
-const { telemetryData } = storeToRefs(trainStore);
+const trainStore = useTrainStore()
+const { telemetryData } = storeToRefs(trainStore)
 
-const maxSpeed = ref(60);
-const targetSpeed = ref(0);
+// State
+const maxSpeed = ref(60)
+const targetSpeed = ref(0)
+const isRunning = ref(false)
+const currentDirection = ref('forward')
+const powerLevel = ref(0)
+const emergencyBrakeActive = ref(false)
 
-const currentSpeed = computed(() => telemetryData.value?.speed || 0);
-const systemStatus = computed(() => telemetryData.value?.status || "offline");
-const batteryLevel = computed(() => telemetryData.value?.battery_level || 0);
-const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0);
-const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0);
+// Computed
+const currentSpeed = computed(() => telemetryData.value?.speed || 0)
+const systemStatus = computed(() => isRunning.value ? 'online' : 'offline')
+const batteryLevel = computed(() => telemetryData.value?.battery_level || 0)
+const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0)
+const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0)
+
+// Handlers
+function handleStart() {
+  isRunning.value = true
+  trainStore.sendCommand({
+    "instruction": 'POWER_ON',
+    "train_id": telemetryData.value.train_id
+  })
+}
+
+function handleStop() {
+  isRunning.value = false
+  targetSpeed.value = 0
+  powerLevel.value = 0
+  trainStore.sendCommand({
+    "instruction": 'POWER_OFF',
+    "train_id": telemetryData.value.train_id
+  })
+}
+
+function handleDirectionChange(direction) {
+  currentDirection.value = direction
+  trainStore.sendCommand({
+    "instruction": 'CHANGE_DIRECTION',
+    "train_id": telemetryData.value.train_id,
+    "direction": currentDirection.value == 'forward' ? 'FORWARD' : 'BACKWARD'
+  })
+}
+
+function handleThrottleChange(level) {
+  powerLevel.value = level
+  // Additional logic can be added here
+}
+
+function handleBrakeChange(level) {
+  // Brake logic implementation
+}
 
 function onTargetSpeedChange(val) {
-  targetSpeed.value = val;
-  console.log('onTargetSpeedChange: ', targetSpeed.value)
+  targetSpeed.value = val
 }
 
 function onTargetSpeedCommit(val) {
-  let data = {
+  trainStore.sendCommand({
     "instruction": "CHANGE_TARGET_SPEED",
     "train_id": telemetryData.value.train_id,
     "target_speed": val
-  }
-  trainStore.sendCommand(data);
+  })
 }
 
+// Watchers
 watch(
   () => telemetryData.value?.train_id,
   (newTrainId, oldTrainId) => {
     if (newTrainId && newTrainId !== oldTrainId) {
-      targetSpeed.value = telemetryData.value?.speed || 0;
+      targetSpeed.value = telemetryData.value?.speed || 0
     }
   }
-);
+)
 </script>
 
 <style scoped>
 .driver-console {
   display: flex;
   flex-direction: column;
-  height: auto;
+  height: 100%;
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   color: #34495e;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
+  gap: 20px;
 }
 
 .control-panel {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 20px;
   width: 100%;
   box-sizing: border-box;
   align-items: center;
 }
 
+.primary-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 .indicators-panel {
   display: flex;
-  margin-left: 340px;
   flex-direction: row;
   justify-content: center;
-  align-items: stretch;
-  gap: 4px;
-  min-height: 360px;
-  max-height: 360px;
-}
-
-.secondary-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.utility-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.emergency-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-start;
-  padding-top: 20px;
-  height: 350px;
-  min-height: 80px;
-  max-height: 350px;
-}
-
-.indicators-panel :deep(.system-status),
-.indicators-panel :deep(.speedometer) {
-  flex: 1 1 0;
-  height: 100%;
-  transform: scale(0.9);
-  max-width: 400px;
-  margin: 0;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.indicators-panel :deep(.system-status) {
-  margin-top: 120px
+  align-items: center;
+  gap: 20px;
+  height: 360px;
 }
 
 @media (max-width: 1200px) {
   .control-panel {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  
+  .indicators-panel {
+    order: -1;
+    height: auto;
+    flex-direction: column;
   }
 }
 </style>

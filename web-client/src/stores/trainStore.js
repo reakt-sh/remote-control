@@ -42,6 +42,8 @@ export const useTrainStore = defineStore('train', () => {
   const bidistream = ref(null)
   const videoDatagramAssembler = ref(null);
   const keepaliveSequence = ref(0);
+  const direction = ref('forward')
+  const isPoweredOn = ref(false)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
