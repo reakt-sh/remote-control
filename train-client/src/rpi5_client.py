@@ -18,6 +18,7 @@ from sensor.imu import IMU
 from encoder import Encoder
 
 from sensor.camera_rpi_5 import CameraRPi5
+from motor_actuator import MotorActuator
 
 class RPi5Client(QThread):
     def __init__(self):
@@ -51,6 +52,7 @@ class RPi5Client(QThread):
         self.encoder.encode_ready.connect(self.on_encoded_frame)
 
         self.target_speed = 60
+        # self.motor = MotorActuator()
 
     def initialize_train_client_id(self):
         client_id = str(uuid.uuid4())
