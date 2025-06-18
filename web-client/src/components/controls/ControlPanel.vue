@@ -53,7 +53,6 @@ const targetSpeed = ref(0)
 const isRunning = ref(false)
 const currentDirection = ref('forward')
 const powerLevel = ref(0)
-const emergencyBrakeActive = ref(false)
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
@@ -88,15 +87,6 @@ function handleDirectionChange(direction) {
     "train_id": telemetryData.value.train_id,
     "direction": currentDirection.value == 'forward' ? 'FORWARD' : 'BACKWARD'
   })
-}
-
-function handleThrottleChange(level) {
-  powerLevel.value = level
-  // Additional logic can be added here
-}
-
-function handleBrakeChange(level) {
-  // Brake logic implementation
 }
 
 function onTargetSpeedChange(val) {
