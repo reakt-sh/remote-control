@@ -51,7 +51,8 @@ class RPi5Client(QThread):
         self.encoder = Encoder()
         self.encoder.encode_ready.connect(self.on_encoded_frame)
 
-        self.target_speed = 60
+        self.target_speed = 20
+        self.telemetry.set_speed(self.target_speed)
         self.motor_actuator = MotorActuator()
 
     def initialize_train_client_id(self):
