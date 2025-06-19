@@ -52,7 +52,7 @@ class RPi5Client(QThread):
         self.encoder.encode_ready.connect(self.on_encoded_frame)
 
         self.target_speed = 60
-        # self.motor = MotorActuator()
+        self.motor_actuator = MotorActuator()
 
     def initialize_train_client_id(self):
         client_id = str(uuid.uuid4())
@@ -107,6 +107,7 @@ class RPi5Client(QThread):
         logger.info(f"{message}")
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
+            self.motor_actuator.set_speed(self.target_speed)
         elif message['instruction'] == 'STOP_SENDING_DATA':
             if self.is_sending:
                 self.toggle_sending()
@@ -116,13 +117,17 @@ class RPi5Client(QThread):
                 self.toggle_sending()
         elif message['instruction'] == 'POWER_ON':
             logger.info("Found instruction POWER_ON")
+            self.motor_actuator.start_motor()
         elif message['instruction'] == 'POWER_OFF':
             logger.info("Found instruction POWER_OFF")
+            self.motor_actuator.stop_motor()
         elif message['instruction'] == 'CHANGE_DIRECTION':
             if message['direction'] == 'FORWARD':
                 logger.info("Found instruction CHANGE_DIRECTION: FORWARD")
+                self.motor_actuator.move_forward()
             elif message['direction'] == 'BACKWARD':
                 logger.info("Found instruction CHANGE_DIRECTION: BACKWARD")
+                self.motor_actuator.move_backward()
             else:
                 logger.warning(f"Unknown direction in CHANGE_DIRECTION: {message['direction']}")
         else:

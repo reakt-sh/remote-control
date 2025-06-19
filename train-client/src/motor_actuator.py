@@ -38,6 +38,8 @@ class MotorActuator:
         self.direction = 0
 
     def set_speed(self, speed):
+        speed = int(speed * 1.25) # Scale speed to match PWM range
+        speed = max(0, min(75, speed))
         self.pwm.ChangeDutyCycle(speed)
 
     def cleanup(self):
