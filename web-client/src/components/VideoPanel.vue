@@ -3,6 +3,9 @@
     <h2 v-if="telemetryData && telemetryData.name">Live Camera: {{ telemetryData.name }}</h2>
     <div class="video-container">
       <canvas ref="videoCanvas" class="video-feed"></canvas>
+      <button class="fullscreen-btn" @click="toggleFullScreen" :title="isFullScreen ? 'Exit Full Screen' : 'Full Screen'">
+        <i :class="isFullScreen ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
+      </button>
     </div>
   </div>
 </template>
@@ -25,6 +28,7 @@ let displayHeight = 0
 const frameQueue = []
 const MAX_QUEUE_SIZE = 60 // Maximum frames to keep in the queue
 let isRendering = false
+const isFullScreen = ref(false)
 
 onMounted(() => {
   updateCanvasSize()
@@ -41,6 +45,9 @@ onMounted(() => {
     codedWidth: videoWidth,
     codedHeight: videoHeight,
   })
+
+  // Listen for fullscreen change to update state
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 async function updateCanvasSize() {
@@ -167,12 +174,29 @@ function renderFrame(frame) {
   frame.close()
 }
 
+function toggleFullScreen() {
+  const container = videoCanvas.value.parentElement
+  if (!document.fullscreenElement) {
+    container.requestFullscreen()
+    isFullScreen.value = true
+  } else {
+    document.exitFullscreen()
+    isFullScreen.value = false
+  }
+}
+
+// Listen for fullscreen change to update state
+function handleFullscreenChange() {
+  isFullScreen.value = !!document.fullscreenElement
+}
+
 onUnmounted(() => {
   if (videoDecoder) {
     videoDecoder.close()
     videoDecoder = null
   }
   window.removeEventListener('resize', updateCanvasSize)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
 })
 </script>
 
@@ -200,5 +224,32 @@ onUnmounted(() => {
   transform: translate(-50%, -50%);
   max-width: 100%;
   max-height: 100%;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  background: rgba(30, 30, 30, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 1.3em;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(60, 60, 60, 0.85);
+}
+
+.fullscreen-btn i {
+  pointer-events: none;
 }
 </style>
