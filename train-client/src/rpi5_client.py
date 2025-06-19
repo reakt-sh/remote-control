@@ -151,16 +151,9 @@ class RPi5Client(QThread):
             self.network_worker_quic.enqueue_stream_packet(packet)
 
             current_speed = self.telemetry.get_speed()
-            delta = 0
-            if current_speed > self.target_speed:
-                delta = 0 - min(5, current_speed - self.target_speed)
-            elif current_speed < self.target_speed:
-                delta = min(5, self.target_speed - current_speed)
-            else:
-                delta = 0
-
-            self.video_source.set_speed(current_speed + delta)
-            self.telemetry.set_speed(current_speed + delta)
+            if current_speed != self.target_speed:
+                self.telemetry.set_speed(self.target_speed)
+                current_speed = self.target_speed
 
     def on_imu_data(self, data):
         # Process IMU data
