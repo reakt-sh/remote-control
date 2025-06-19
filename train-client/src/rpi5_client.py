@@ -18,6 +18,7 @@ from sensor.imu import IMU
 from encoder import Encoder
 
 from sensor.camera_rpi_5 import CameraRPi5
+from motor_actuator import MotorActuator
 
 class RPi5Client(QThread):
     def __init__(self):
@@ -51,6 +52,7 @@ class RPi5Client(QThread):
         self.encoder.encode_ready.connect(self.on_encoded_frame)
 
         self.target_speed = 60
+        self.motor_actuator = MotorActuator()
 
     def initialize_train_client_id(self):
         client_id = str(uuid.uuid4())
@@ -102,19 +104,34 @@ class RPi5Client(QThread):
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
-        logger.info(f"Received command: {message}")
+        logger.info(f"{message}")
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
-            logger.info(f"Target speed changed to: {self.target_speed}")
+            self.motor_actuator.set_speed(self.target_speed)
         elif message['instruction'] == 'STOP_SENDING_DATA':
             if self.is_sending:
                 self.toggle_sending()
         elif message['instruction'] == 'START_SENDING_DATA':
-            logger.info("Received START_SENDING_DATA instruction")
+            logger.info("Found instruction START_SENDING_DATA")
             if not self.is_sending:
                 self.toggle_sending()
+        elif message['instruction'] == 'POWER_ON':
+            logger.info("Found instruction POWER_ON")
+            self.motor_actuator.start_motor()
+        elif message['instruction'] == 'POWER_OFF':
+            logger.info("Found instruction POWER_OFF")
+            self.motor_actuator.stop_motor()
+        elif message['instruction'] == 'CHANGE_DIRECTION':
+            if message['direction'] == 'FORWARD':
+                logger.info("Found instruction CHANGE_DIRECTION: FORWARD")
+                self.motor_actuator.move_forward()
+            elif message['direction'] == 'BACKWARD':
+                logger.info("Found instruction CHANGE_DIRECTION: BACKWARD")
+                self.motor_actuator.move_backward()
+            else:
+                logger.warning(f"Unknown direction in CHANGE_DIRECTION: {message['direction']}")
         else:
-            logger.warning(f"Unknown Instruction: {message['instruction']}")
+            logger.warning(f"Unknown Instruction from command:  {message['instruction']}")
 
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
@@ -134,16 +151,9 @@ class RPi5Client(QThread):
             self.network_worker_quic.enqueue_stream_packet(packet)
 
             current_speed = self.telemetry.get_speed()
-            delta = 0
-            if current_speed > self.target_speed:
-                delta = 0 - min(5, current_speed - self.target_speed)
-            elif current_speed < self.target_speed:
-                delta = min(5, self.target_speed - current_speed)
-            else:
-                delta = 0
-
-            self.video_source.set_speed(current_speed + delta)
-            self.telemetry.set_speed(current_speed + delta)
+            if current_speed != self.target_speed:
+                self.telemetry.set_speed(self.target_speed)
+                current_speed = self.target_speed
 
     def on_imu_data(self, data):
         # Process IMU data

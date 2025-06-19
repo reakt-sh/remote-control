@@ -42,6 +42,8 @@ export const useTrainStore = defineStore('train', () => {
   const bidistream = ref(null)
   const videoDatagramAssembler = ref(null);
   const keepaliveSequence = ref(0);
+  const direction = ref('forward')
+  const isPoweredOn = ref(false)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -124,6 +126,17 @@ export const useTrainStore = defineStore('train', () => {
     if (!isConnected.value || !webSocket.value) {
       console.log("No Train Connected or No websocket Connection established")
       return
+    }
+    switch (command["instruction"]) {
+      case "POWER_ON":
+        isPoweredOn.value = true
+        break
+      case "POWER_OFF":
+        isPoweredOn.value = false
+        break
+      case "CHANGE_DIRECTION":
+        direction.value = command["direction"]
+        break
     }
     try {
       // Convert command object to JSON and then to Uint8Array
