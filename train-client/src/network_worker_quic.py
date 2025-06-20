@@ -51,7 +51,7 @@ class NetworkWorkerQUIC(QThread):
         )
         self.configuration.verify_mode = ssl.CERT_NONE  # For testing only
 
-        self.server_host = QUIC_HOST
+        self.server_host = SERVER
         self.server_port = QUIC_PORT
         self.frame_queue = queue.Queue()  # Use asyncio.Queue
         self.stream_packet_queue = queue.Queue()  # Use asyncio.Queue
