@@ -32,8 +32,8 @@ def get_client_config() -> ServerConfig:
         )
     elif sys.platform.startswith("linux"):
         return ServerConfig(
-            cert_file="/etc/ssl/quic_conf/certificate.pem",
-            key_file="/etc/ssl/quic_conf/certificate.key"
+            cert_file="/etc/letsencrypt/live/wt.rtsys-lab.de/fullchain.pem",
+            key_file="/etc/letsencrypt/live/wt.rtsys-lab.de/privkey.pem"
         )
     else:
         raise RuntimeError(f"Unsupported platform: {sys.platform}")

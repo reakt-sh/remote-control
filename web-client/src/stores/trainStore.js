@@ -6,15 +6,13 @@ import { ref } from 'vue'
 // const SERVER_IP = '127.0.0.1'
 
 // Define server IP and host for production
-const SERVER = '209.38.218.207'
-const SERVER_IP = '209.38.218.207'
+const SERVER = 'wt.rtsys-lab.de'
 
 // Define server ports, same for both local and production
 const SERVER_PORT = 8000
-const QUIC_PORT = 4437
 const SERVER_URL = `https://${SERVER}:${SERVER_PORT}`
 const WS_URL = `wss://${SERVER}:${SERVER_PORT}`
-const QUIC_URL = `https://${SERVER_IP}:${QUIC_PORT}`
+const QUIC_URL = `https://${SERVER}:4437`
 
 // Packet Types
 const PACKET_TYPE = {
