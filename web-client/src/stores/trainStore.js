@@ -1,20 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-// Define server IP and host for local development
-// const SERVER = 'localhost'
-// const SERVER_IP = '127.0.0.1'
-
-// Define server IP and host for production
-const SERVER = '209.38.218.207'
-const SERVER_IP = '209.38.218.207'
-
-// Define server ports, same for both local and production
-const SERVER_PORT = 8000
+// Define server IP and host
+const SERVER = 'wt.rtsys-lab.de'
+const WS_PORT = 8000
 const QUIC_PORT = 4437
-const SERVER_URL = `https://${SERVER}:${SERVER_PORT}`
-const WS_URL = `wss://${SERVER}:${SERVER_PORT}`
-const QUIC_URL = `https://${SERVER_IP}:${QUIC_PORT}`
+const SERVER_URL = `https://${SERVER}:${WS_PORT}`
+const WS_URL = `wss://${SERVER}:${WS_PORT}`
+const QUIC_URL = `https://${SERVER}:${QUIC_PORT}`
 
 // Packet Types
 const PACKET_TYPE = {

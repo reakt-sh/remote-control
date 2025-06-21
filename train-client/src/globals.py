@@ -34,17 +34,12 @@ PACKET_TYPE = {
     "notification": 21
 }
 
-
-# SERVER_HOST = "localhost"
-# QUIC_HOST = "127.0.0.1"
-
 # overwrite for remote server
-SERVER_HOST = "209.38.218.207"
-QUIC_HOST = "209.38.218.207"
+SERVER = 'wt.rtsys-lab.de'
 
-SERVER_PORT = 8000
+WS_PORT = 8000
 QUIC_PORT = 4437
-WEBSOCKET_URL = f"wss://{SERVER_HOST}:{SERVER_PORT}/ws"
+WEBSOCKET_URL = f"wss://{SERVER}:{WS_PORT}/ws"
 MAX_PACKET_SIZE = 1000
 
 STATION_LIST = [

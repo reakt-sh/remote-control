@@ -1,7 +1,7 @@
 # CentralServer
 
 ## Setup the environment
-### Generate certificate.pem and certificate.key
+### Generate Certificates
 ```
 # for Local setup
 openssl req -x509 -newkey rsa:2048 -nodes -keyout certificate.key -out certificate.pem -days 365 -subj "/CN=127.0.0.1" -addext "subjectAltName=IP:127.0.0.1"
@@ -13,6 +13,9 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -subj "/CN=209.38.218.207" \
     -addext "subjectAltName=IP:209.38.218.207"
 ```
+
+# generate trusted TLS certificate
+sudo certbot certonly --standalone -d wt.rtsys-lab.de
 
 ### Get the spki hash value
 ```

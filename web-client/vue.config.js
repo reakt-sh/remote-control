@@ -6,12 +6,9 @@ module.exports = defineConfig({
   publicPath: process.env.BASE_URL || '/',
   devServer: {
     port: 8080,
+    allowedHosts: ["rtsys-lab.de"],
     server: {
-      type: 'https',
-      options: {
-        key: fs.readFileSync('/etc/ssl/quic_conf/certificate.key'),
-        cert: fs.readFileSync('/etc/ssl/quic_conf/certificate.pem'),
-      }
+      type: 'https'
     }
   }
 });
