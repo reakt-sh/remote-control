@@ -1,5 +1,5 @@
 <template>
-  <div class="control-view">
+  <div class="main-view">
     <header class="app-header">
       <h1>Remote Control System</h1>
       <ConnectionStatus />
@@ -18,27 +18,6 @@ import TrainSelector from '@/components/TrainSelector.vue'
 </script>
 
 <style scoped>
-.control-view {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  height: 100vh;
-  overflow: hidden; /* No scroll on the root */
-}
-
-.app-header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.app-header h1 {
-  font-size: 1.5rem;
-}
 
 .app-main {
   flex: 1;

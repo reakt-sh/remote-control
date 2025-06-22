@@ -48,3 +48,25 @@ body, #app {
   margin: 0;
   background: linear-gradient(120deg, #eed2ee 0%, #99d4e9 50%, #cdf5e4 100%);
 }
+
+.app-header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+}
+
+.main-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* No scroll on the root */
+}

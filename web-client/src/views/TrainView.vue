@@ -1,11 +1,18 @@
 <template>
-  <div class="app-main">
-    <div class="train-control-panel">
-      <VideoPanel />
-      <TelemetryPanel />
-      <ControlPanel class="full-width-panel" />
+    <div class="main-view">
+        <header class="app-header">
+            <h1>Remote Control System</h1>
+            <ConnectionStatus />
+        </header>
+
+        <main class="app-main">
+            <div class="train-control-panel">
+                <VideoPanel />
+                <TelemetryPanel />
+                <ControlPanel class="full-width-panel" />
+            </div>
+        </main>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -14,6 +21,7 @@ import { useRoute } from 'vue-router'
 import VideoPanel from '@/components/VideoPanel.vue'
 import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
+import ConnectionStatus from '@/components/ConnectionStatus.vue'
 // Import your mapping function from the store or utility
 import { useTrainStore } from '@/stores/trainStore'
 
