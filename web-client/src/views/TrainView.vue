@@ -1,28 +1,35 @@
 <template>
-    <div class="main-view">
-        <header class="app-header">
-            <h1>Remote Control System</h1>
-            <ConnectionStatus />
-        </header>
+  <div class="main-view">
+    <header class="app-header">
+      <h1>Remote Control System</h1>
+      <ConnectionStatus />
+    </header>
 
-        <main class="app-main">
-            <div class="train-control-panel">
-                <VideoPanel />
-                <TelemetryPanel />
-                <ControlPanel class="full-width-panel" />
-            </div>
-        </main>
-    </div>
+    <main class="app-main">
+      <Tabs :tabs="tabs">
+        <template #control>
+          <div class="control-tab">
+            <VideoPanel />
+            <ControlPanel />
+          </div>
+        </template>
+        <template #telemetry>
+          <TelemetryPanel />
+        </template>
+      </Tabs>
+    </main>
+  </div>
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue'
+import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { onMounted, watch } from 'vue'
+import Tabs from '@/components/Tabs.vue'
 import VideoPanel from '@/components/VideoPanel.vue'
 import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
-// Import your mapping function from the store or utility
 import { useTrainStore } from '@/stores/trainStore'
 
 const route = useRoute()
@@ -31,6 +38,10 @@ const trainId = route.params.trainId
 const { mappingToTrain } = useTrainStore()
 const { fetchAvailableTrains, connectToServer, initializeRemoteControlId } = useTrainStore()
 
+const tabs = ref([
+  { id: 'control', label: 'Control Center', icon: 'fas fa-gamepad' },
+  { id: 'telemetry', label: 'Telemetry Data', icon: 'fas fa-chart-line' }
+])
 
 onMounted(() => {
   initializeRemoteControlId()
@@ -41,7 +52,6 @@ onMounted(() => {
   }
 })
 
-// Optional: If you want to react to route changes while this view is active
 watch(() => route.params.trainId, (newId) => {
   if (newId) {
     mappingToTrain(newId)
@@ -50,36 +60,16 @@ watch(() => route.params.trainId, (newId) => {
 </script>
 
 <style scoped>
-.app-main {
-  flex: 1;
-  padding: 1rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-  min-height: 80vh;
-  height: 100vh;           /* Set a fixed height for scrolling */
-  overflow-y: auto;       /* Enable vertical scroll */
-  box-sizing: border-box; /* Prevent overflow from padding */
-}
 
-.train-control-panel {
+.control-tab {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  grid-gap: 1rem;
-  margin-top: 1rem;
-  width: 100%;
-}
-
-.full-width-panel {
-  grid-column: 1 / -1;
+  gap: 20px;
 }
 
 @media (max-width: 1024px) {
-  .train-control-panel {
+  .control-tab {
     grid-template-columns: 1fr;
-  }
-  .full-width-panel {
-    grid-column: 1;
   }
 }
 </style>

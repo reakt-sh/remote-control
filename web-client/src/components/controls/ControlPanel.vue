@@ -23,12 +23,6 @@
           @update:targetSpeed="onTargetSpeedChange"
           @change:targetSpeed="onTargetSpeedCommit"
         />
-        <SystemStatus
-          :system-status="systemStatus"
-          :battery-level="batteryLevel"
-          :engine-temp="engineTemp"
-          :fuel-level="fuelLevel"
-        />
       </div>
     </div>
   </div>
@@ -40,7 +34,6 @@ import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
 import Speedometer from './Speedometer.vue'
-import SystemStatus from './SystemStatus.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
 
@@ -56,10 +49,6 @@ const powerLevel = ref(0)
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
-const systemStatus = computed(() => isRunning.value ? 'online' : 'offline')
-const batteryLevel = computed(() => telemetryData.value?.battery_level || 0)
-const engineTemp = computed(() => telemetryData.value?.engine_temperature || 0)
-const fuelLevel = computed(() => telemetryData.value?.fuel_level || 0)
 
 // Handlers
 function handleStart() {
