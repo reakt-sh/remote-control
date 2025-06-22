@@ -57,21 +57,13 @@
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import { useRouter } from 'vue-router'
-import { onMounted } from 'vue'
 
 const { availableTrains } = storeToRefs(useTrainStore())
-const { fetchAvailableTrains, connectToServer, initializeRemoteControlId } = useTrainStore()
 const router = useRouter()
 
 const selectTrain = (id) => {
   router.push(`/${id}`)
 }
-
-onMounted(() => {
-  initializeRemoteControlId()
-  connectToServer()
-  fetchAvailableTrains()
-})
 </script>
 
 <style scoped>

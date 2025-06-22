@@ -14,6 +14,16 @@
 <script setup>
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
 import TrainSelector from '@/components/TrainSelector.vue'
+import { useTrainStore } from '@/stores/trainStore'
+import { onMounted } from 'vue'
+
+const { fetchAvailableTrains, connectToServer, initializeRemoteControlId } = useTrainStore()
+
+onMounted(() => {
+  initializeRemoteControlId()
+  connectToServer()
+  fetchAvailableTrains()
+})
 
 </script>
 

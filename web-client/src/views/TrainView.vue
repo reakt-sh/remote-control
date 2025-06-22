@@ -29,8 +29,13 @@ const route = useRoute()
 const trainId = route.params.trainId
 
 const { mappingToTrain } = useTrainStore()
+const { fetchAvailableTrains, connectToServer, initializeRemoteControlId } = useTrainStore()
+
 
 onMounted(() => {
+  initializeRemoteControlId()
+  connectToServer()
+  fetchAvailableTrains()
   if (trainId) {
     mappingToTrain(trainId)
   }
