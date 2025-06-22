@@ -7,26 +7,14 @@
 
     <main class="app-main">
       <TrainSelector />
-
-      <div v-if="selectedTrainId && availableTrains.length !== 0" class="train-control-panel">
-        <VideoPanel />
-        <TelemetryPanel />
-        <ControlPanel class="full-width-panel" />
-      </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { storeToRefs } from 'pinia'
-import { useTrainStore } from '@/stores/trainStore'
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
 import TrainSelector from '@/components/TrainSelector.vue'
-import VideoPanel from '@/components/VideoPanel.vue'
-import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
-import ControlPanel from '@/components/controls/ControlPanel.vue'
 
-const { selectedTrainId, availableTrains } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>

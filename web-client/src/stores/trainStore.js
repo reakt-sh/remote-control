@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // Define server IP and host
 const SERVER = 'wt.rtsys-lab.de'
@@ -37,6 +38,7 @@ export const useTrainStore = defineStore('train', () => {
   const keepaliveSequence = ref(0);
   const direction = ref('forward')
   const isPoweredOn = ref(false)
+  const router = useRouter()
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -148,6 +150,10 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
   async function connectToWebSocket() {
+    if (isConnected.value) {
+      console.log('Already connected to WebSocket')
+      return
+    }
     // Disconnect previous connection if exists
     if (webSocket.value) {
       webSocket.value.close()
@@ -206,6 +212,9 @@ export const useTrainStore = defineStore('train', () => {
               jsonString = new TextDecoder().decode(payload)
               jsonData = JSON.parse(jsonString)
               console.log('Notification packet received', jsonData)
+              if (jsonData.train_id == selectedTrainId.value && jsonData.event === 'disconnected') {
+                router.push('/')
+              }
               fetchAvailableTrains()
               break
             default:
@@ -231,6 +240,10 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function connectToWebTransport() {
+    if (isConnected.value) {
+      console.log('Already connected to WebTransport')
+      return
+    }
     if (webTransport.value) {
         webTransport.value.close()
         webTransport.value = null
