@@ -118,4 +118,29 @@ function setDirection(newDirection) {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
+@media (min-width: 700px) {
+  .direction-control {
+    max-width: 260px;
+    padding: 24px;
+  }
+  .direction-label {
+    font-size: 1.3rem;
+  }
+  .direction-buttons {
+    gap: 16px;
+  }
+  .direction-button {
+    width: 120px;
+    height: 64px;
+    font-size: 1.1rem;
+  }
+  .icon {
+    font-size: 1.8rem;
+    margin-bottom: 4px;
+  }
+  .text {
+    font-size: 1rem;
+  }
+}
 </style>

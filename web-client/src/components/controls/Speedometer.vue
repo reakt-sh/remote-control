@@ -123,7 +123,7 @@ const minorTicks = computed(() => {
   return ticks;
 });
 
-const showSlider = ref(true); // true = slider, false = buttons
+const showSlider = ref(true);
 
 function toggleInputMode() {
   showSlider.value = !showSlider.value;
@@ -142,89 +142,28 @@ function doneTargetSpeed() {
 </script>
 
 <style scoped>
-/* Default: Large for iPad/Desktop */
-.speedometer {
-  max-width: 180px;
-  padding: 14px;
-}
-
-.gauge {
-  width: 120px;
-  height: 60px;
-}
-
-.current-speed {
-  font-size: 1.3rem;
-}
-
-.button-row {
-  gap: 8px;
-}
-
-.change-speed-button {
-  max-width: 30px;
-}
-
-/* Small screens: iPhone 12 Pro/SE */
-@media (max-width: 430px) {
-  .speedometer {
-    max-width: 120px;
-    padding: 6px;
-  }
-  .gauge {
-    width: 70px;
-    height: 35px;
-  }
-  .current-speed {
-    font-size: 0.8rem;
-  }
-  .button-row {
-    gap: 2px;
-    flex-wrap: wrap;
-  }
-  .change-speed-button {
-    max-width: 22px;
-    font-size: 0.7em;
-    padding: 2px 4px;
-  }
-  .done-btn {
-    font-size: 0.5em;
-    padding: 2px 6px;
-  }
-  .target-speed-value {
-    font-size: 0.5em;
-    padding: 2px 5px;
-  }
-  .toggle-input-btn {
-    width: 12px;
-    height: 12px;
-    font-size: 0.6em;
-    top: 2px;
-    right: 2px;
-  }
-}
-
+/* Base styles (mobile first) */
 .speedometer {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 14px; /* increased */
+  padding: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.06);
   border: 1px solid #e0e4e7;
-  max-width: 180px; /* increased from 105px */
+  max-width: 120px;
   margin: 0 auto;
 }
 
 .gauge {
-  width: 120px;   /* increased from 70px */
-  height: 60px;   /* increased from 35px */
+  width: 70px;
+  height: 35px;
   position: relative;
   border: 2px solid #e0e4e7;
   border-radius: 120px 120px 0 0;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
 }
 
@@ -261,24 +200,24 @@ function doneTargetSpeed() {
 
 .major-tick {
   width: 2px;
-  height: 10px;
+  height: 8px;
   background: #333;
 }
 
 .minor-tick {
   width: 1px;
-  height: 6px;
+  height: 4px;
   background: #666;
 }
 
 .tick-number {
   position: absolute;
-  font-size: 8px;
+  font-size: 6px;
   font-weight: bold;
   text-align: center;
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
   left: 50%;
   top: 50%;
   transform-origin: center center;
@@ -287,7 +226,7 @@ function doneTargetSpeed() {
 .needle {
   position: absolute;
   width: 2px;
-  height: 48px;
+  height: 30px;
   background: #e67e22;
   bottom: 0;
   left: 50%;
@@ -299,12 +238,12 @@ function doneTargetSpeed() {
 
 .center {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
   border: 1px solid #e67e22;
   border-radius: 50%;
-  bottom: -5px;
+  bottom: -4px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -320,12 +259,12 @@ function doneTargetSpeed() {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 4px;
 }
 
 .current-speed {
-  font-size: 1.3rem;
+  font-size: 0.8rem;
   font-weight: bold;
   font-family: 'Segment7', monospace;
   color: #2c3e50;
@@ -333,7 +272,7 @@ function doneTargetSpeed() {
 }
 
 .speed-unit {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   color: #7f8c8d;
   margin-bottom: 0;
 }
@@ -341,7 +280,7 @@ function doneTargetSpeed() {
 .target-speed {
   position: relative;
   background: #f8f9fa;
-  padding: 8px;
+  padding: 6px;
   border-radius: 6px;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid #e0e4e7;
@@ -352,18 +291,19 @@ function doneTargetSpeed() {
   background: #2c3e50;
   color: white;
   font-weight: 500;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 12px;
   font-size: 0.6em;
   margin-bottom: 6px;
+  margin-right: 16px; /* Add spacing between label and toggle button */
 }
 
 .toggle-input-btn {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 18px;
-  height: 18px;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -374,7 +314,7 @@ function doneTargetSpeed() {
   justify-content: center;
   padding: 0;
   transition: all 0.2s;
-  font-size: 1em;
+  font-size: 0.6em;
 }
 
 .toggle-input-btn:hover {
@@ -401,8 +341,8 @@ function doneTargetSpeed() {
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   background: #2c3e50;
   border-radius: 50%;
   cursor: pointer;
@@ -423,27 +363,29 @@ function doneTargetSpeed() {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  flex-wrap: wrap;
 }
 
-.button-speed-value {
-  font-weight: 500;
-  color: #2c3e50;
-  min-width: 32px;
-  text-align: center;
+.change-speed-button {
+  max-width: 22px;
   font-size: 0.6em;
-}
-
-button {
-  padding: 4px 10px;
+  padding: 2px 4px;
   border-radius: 4px;
   border: 1px solid #d6dbdf;
   background: #f8f9fa;
   color: #2c3e50;
   cursor: pointer;
-  font-size: 0.6em;
-  font-weight: 500;
   transition: all 0.2s;
+}
+
+.done-btn {
+  font-size: 0.6em;
+  padding: 3px 8px;
+  background: #27ae60;
+  color: white;
+  border-color: #219955;
+  margin-top: 4px;
 }
 
 button:hover {
@@ -455,16 +397,187 @@ button:active {
   transform: scale(0.98);
 }
 
-.done-btn {
-  background: #27ae60;
-  color: white;
-  border-color: #219955;
-  margin-top: 2px;
-  font-size: 0.6em;
-  padding: 4px 10px;
+/* Medium screens: iPad Portrait and similar */
+@media (min-width: 430px) {
+  .speedometer {
+    max-width: 180px;
+    padding: 14px;
+  }
+  
+  .gauge {
+    width: 120px;
+    height: 60px;
+    margin-bottom: 12px;
+  }
+  
+  .major-tick {
+    height: 10px;
+  }
+  
+  .minor-tick {
+    height: 6px;
+  }
+  
+  .tick-number {
+    font-size: 8px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+  }
+  
+  .needle {
+    height: 48px;
+  }
+  
+  .center {
+    width: 12px;
+    height: 12px;
+    bottom: -5px;
+  }
+  
+  .current-speed {
+    font-size: 1.3rem;
+  }
+  
+  .speed-unit {
+    font-size: 0.7rem;
+  }
+  
+  .target-speed {
+    padding: 8px;
+  }
+  
+  .target-speed-value {
+    padding: 4px 10px;
+  }
+  
+  .toggle-input-btn {
+    width: 18px;
+    height: 18px;
+    top: 6px;
+    right: 6px;
+    font-size: 0.8em;
+  }
+  
+  .button-row {
+    gap: 4px;
+  }
+  
+  .change-speed-button {
+    max-width: 30px;
+    font-size: 0.7em;
+    padding: 4px 6px;
+  }
+  
+  .done-btn {
+    font-size: 0.7em;
+    padding: 4px 10px;
+  }
 }
 
-.done-btn:hover {
-  background: #219955;
+/* Large screens: iPad Landscape and up */
+@media (min-width: 768px) {
+  .speedometer {
+    max-width: 280px;
+    width: 280px;      /* Add this line */
+    padding: 24px;
+  }
+
+  .gauge {
+    width: 180px;
+    height: 90px;
+    margin-bottom: 16px;
+    border-radius: 180px 180px 0 0;
+  }
+
+  .major-tick {
+    height: 12px;
+    width: 2px;
+  }
+
+  .minor-tick {
+    height: 7px;
+    width: 1.5px;
+  }
+
+  .tick-number {
+    font-size: 10px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+  }
+
+  .needle {
+    height: 70px;
+    width: 2.5px;
+  }
+
+  .center {
+    width: 14px;
+    height: 14px;
+    bottom: -6px;
+  }
+
+  .current-speed {
+    font-size: 1.8rem;
+  }
+
+  .speed-unit {
+    font-size: 1rem;
+  }
+
+  .speed-row {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .target-speed {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .target-speed-value {
+    font-size: 1em;
+    padding: 8px 16px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+  }
+
+  .toggle-input-btn {
+    width: 28px;
+    height: 28px;
+    top: 8px;
+    right: 8px;
+    font-size: 1em;
+  }
+
+  .target-slider {
+    height: 5px;
+    border-radius: 2px;
+    margin: 6px 0;
+  }
+
+  .target-slider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+  }
+
+  .button-row {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .change-speed-button {
+    max-width: 40px;
+    font-size: 1em;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+
+  .done-btn {
+    font-size: 1em;
+    padding: 6px 14px;
+    border-radius: 6px;
+  }
 }
 </style>

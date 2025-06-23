@@ -123,5 +123,14 @@ watch(
   flex: 1 1 0;
 }
 
+@media (min-width: 700px) {
+  .primary-controls {
+    min-width: 320px;
+    width: 100%;
+    max-width: 480px;
+    flex: 1 1 0;
+  }
+}
+
 /* Remove any @media queries that change flex-direction */
 </style>

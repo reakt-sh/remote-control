@@ -113,4 +113,23 @@ function handleStop() {
 .active {
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.18);
 }
+
+@media (min-width: 700px) {
+  .power-controls {
+    max-width: 350px;
+    gap: 32px;
+    padding: 24px;
+  }
+  .control-button {
+    width: 96px;
+    height: 96px;
+  }
+  .icon {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+  }
+  .label {
+    font-size: 1.1rem;
+  }
+}
 </style>
