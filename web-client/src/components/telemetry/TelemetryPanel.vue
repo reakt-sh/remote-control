@@ -71,19 +71,17 @@
       <TelemetryCard title="System Health" icon="fas fa-heartbeat">
         <div class="health-metrics">
           <CircularProgress 
-            v-if="telemetryData?.battery_level" 
-            :value="telemetryData.battery_level" 
+            :value="telemetryData?.battery_level ?? 0" 
             label="Battery" 
             color="#4CAF50"
           />
           <CircularProgress 
-            v-if="telemetryData?.fuel_level" 
-            :value="telemetryData.fuel_level" 
+            :value="telemetryData?.fuel_level ?? 0" 
             label="Fuel" 
             color="#2196F3"
           />
           <CircularProgress 
-            v-if="telemetryData?.engine_temperature" 
+            v-if="telemetryData?.engine_temperature !== undefined" 
             :value="telemetryData.engine_temperature" 
             :max="120"
             label="Engine Temp" 
