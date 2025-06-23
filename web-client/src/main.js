@@ -5,8 +5,12 @@ import router from './router'
 import '@fortawesome/fontawesome-free/css/all.css'
 import './styles/main.css'
 
-// disable console.log for production
-// console.log = () => {};
+// Disable all console logs in production
+console.log = function () {};
+console.info = function () {};
+console.warn = function () {};
+console.error = function () {};
+console.debug = function () {};
 
 const app = createApp(App)
 
