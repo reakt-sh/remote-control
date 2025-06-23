@@ -92,7 +92,7 @@ const activeTab = ref(props.initialTab)
 }
 
 .tabs-content {
-  padding: 20px;
+  padding: 1px;
   background: #1a1e24;
   min-height: 300px;
 }

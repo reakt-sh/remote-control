@@ -77,7 +77,7 @@ body, #app {
 
 .app-main {
   flex: 1;
-  padding: 1rem;
+  padding: 2px;
   margin: 0 auto;
   width: 95%;
   height: 0; /* Required for flex children to allow overflow */

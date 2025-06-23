@@ -76,7 +76,7 @@ function setDirection(newDirection) {
 
 .direction-button {
   width: 70px;   /* increased from 40px */
-  height: 32px;  /* increased from 20px */
+  height: 48px;  /* increased from 20px */
   border: none;
   border-radius: 6px;
   display: flex;

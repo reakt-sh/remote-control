@@ -1,6 +1,5 @@
 <template>
   <div class="video-panel">
-    <h2 v-if="telemetryData && telemetryData.name">Live Camera: {{ telemetryData.name }}</h2>
     <div class="video-container">
       <canvas ref="videoCanvas" class="video-feed"></canvas>
       <button class="fullscreen-btn" @click="toggleFullScreen" :title="isFullScreen ? 'Exit Full Screen' : 'Full Screen'">
@@ -15,7 +14,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { telemetryData, currentVideoFrame } = storeToRefs(useTrainStore())
+const { currentVideoFrame } = storeToRefs(useTrainStore())
 const videoCanvas = ref(null)
 let videoDecoder = null
 let recordedFrames = []
@@ -204,7 +203,6 @@ onUnmounted(() => {
 .video-panel {
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   border-radius: 5px;
-  padding: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
