@@ -475,6 +475,21 @@ button:active {
   }
 }
 
+/* Tablet and up: iPad mini, iPad Air, etc. */
+@media (min-width: 700px) {
+  .speedometer {
+    max-width: 220px;
+    width: 220px;
+    padding: 20px;
+  }
+  .gauge {
+    width: 140px;
+    height: 70px;
+    margin-bottom: 12px;
+    border-radius: 140px 140px 0 0;
+  }
+}
+
 /* Large screens: iPad Landscape and up */
 @media (min-width: 768px) {
   .speedometer {
@@ -578,6 +593,21 @@ button:active {
     font-size: 1em;
     padding: 6px 14px;
     border-radius: 6px;
+  }
+}
+
+/* Large desktop screens */
+@media (min-width: 1300px) {
+  .speedometer {
+    max-width: 280px;
+    width: 280px;
+    padding: 24px;
+  }
+  .gauge {
+    width: 180px;
+    height: 90px;
+    margin-bottom: 16px;
+    border-radius: 180px 180px 0 0;
   }
 }
 </style>
