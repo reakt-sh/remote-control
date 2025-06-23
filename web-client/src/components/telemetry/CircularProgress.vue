@@ -92,12 +92,12 @@ const strokeDashoffset = computed(() => circumference.value - (progressValue.val
 .progress-value {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: #222;
 }
 
 .progress-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #7b8794;
   text-transform: uppercase;
   margin-top: 2px;
 }

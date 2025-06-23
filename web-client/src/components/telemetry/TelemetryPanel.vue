@@ -154,10 +154,10 @@ async function refreshTelemetry() {
 
 <style scoped>
 .telemetry-panel {
-  background: #1a1e24;
+  background: #f8fafc;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
 }
 
 .panel-header {
@@ -165,15 +165,15 @@ async function refreshTelemetry() {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  background: linear-gradient(135deg, #2c3e50, #1a1e24);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, #e3f0fa, #f8fafc);
+  border-bottom: 1px solid #e0e7ef;
 }
 
 .panel-header h2 {
   margin: 0;
   font-size: 1rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: #222;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -185,7 +185,7 @@ async function refreshTelemetry() {
 }
 
 .panel-btn {
-  background: rgba(0, 150, 255, 0.2);
+  background: #e3f0fa;
   border: none;
   border-radius: 4px;
   width: 32px;
@@ -199,8 +199,8 @@ async function refreshTelemetry() {
 }
 
 .panel-btn:hover {
-  background: rgba(0, 150, 255, 0.3);
-  color: #00d4ff;
+  background: #d0e7fa;
+  color: #007acc;
 }
 
 .telemetry-grid {
@@ -223,7 +223,7 @@ async function refreshTelemetry() {
 
 .status-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #7b8794;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 5px;
@@ -232,7 +232,7 @@ async function refreshTelemetry() {
 .status-value {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #fff;
+  color: #222;
 }
 
 .signal-strength {
@@ -250,7 +250,7 @@ async function refreshTelemetry() {
 
 .signal-bar {
   width: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #e0e7ef;
   border-radius: 2px;
 }
 
@@ -260,7 +260,7 @@ async function refreshTelemetry() {
 
 .signal-value {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #7b8794;
 }
 
 .location-info {
@@ -278,11 +278,11 @@ async function refreshTelemetry() {
 
 .location-value {
   font-weight: 500;
-  color: #fff;
+  color: #222;
 }
 
 .location-next {
-  color: rgba(255, 255, 255, 0.8);
+  color: #4b5563;
   font-size: 0.8rem;
 }
 
@@ -295,7 +295,7 @@ async function refreshTelemetry() {
 
 .gps-coord {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #7b8794;
 }
 
 .environment-data {
@@ -309,7 +309,7 @@ async function refreshTelemetry() {
   align-items: center;
   gap: 10px;
   font-size: 0.9rem;
-  color: #fff;
+  color: #222;
 }
 
 .health-metrics {
@@ -329,20 +329,20 @@ async function refreshTelemetry() {
 .speed-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #fff;
-  background: linear-gradient(90deg, #0096ff, #00d4ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #0096ff;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
 }
 
 .unit {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #7b8794;
 }
 
 .acceleration {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: #4b5563;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -350,7 +350,7 @@ async function refreshTelemetry() {
 
 .no-data {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: #b0b7c3;
   display: flex;
   align-items: center;
   gap: 5px;
