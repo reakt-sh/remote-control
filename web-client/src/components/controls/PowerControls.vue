@@ -132,4 +132,23 @@ function handleStop() {
     font-size: 1.1rem;
   }
 }
+
+@media (max-height: 700px) {
+  .power-controls {
+    max-width: 180px;
+    padding: 8px;
+    gap: 8px;
+  }
+  .control-button {
+    width: 40px;
+    height: 40px;
+  }
+  .icon {
+    font-size: 1rem;
+    margin-bottom: 2px;
+  }
+  .label {
+    font-size: 0.5rem;
+  }
+}
 </style>

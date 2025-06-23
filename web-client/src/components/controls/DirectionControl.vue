@@ -143,4 +143,30 @@ function setDirection(newDirection) {
     font-size: 1rem;
   }
 }
+
+@media (max-height: 700px) {
+  /* For DirectionControl */
+  .direction-control {
+    max-width: 110px;
+    padding: 8px;
+  }
+  .direction-label {
+    font-size: 0.5rem;
+  }
+  .direction-buttons {
+    gap: 4px;
+  }
+  .direction-button {
+    width: 40px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+  .direction-button .icon {
+    font-size: 0.7rem;
+    margin-bottom: 1px;
+  }
+  .direction-button .text {
+    font-size: 0.35rem;
+  }
+}
 </style>

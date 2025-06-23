@@ -83,4 +83,5 @@ body, #app {
   height: 0; /* Required for flex children to allow overflow */
   min-height: 0;
   overflow-y: auto; /* SPA scroll here */
+  padding-bottom: 80px;
 }
