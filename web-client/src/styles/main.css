@@ -85,3 +85,10 @@ body, #app {
   overflow-y: auto; /* SPA scroll here */
   padding-bottom: 80px;
 }
+
+/* Ultra-wide screens: use 70% width */
+@media (min-width: 1800px) {
+  .app-main {
+    width: 70%;
+  }
+}

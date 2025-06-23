@@ -21,6 +21,7 @@
         :stroke-dasharray="circumference"
         :stroke-dashoffset="strokeDashoffset"
         stroke-linecap="round"
+        :opacity="progressValue === 0 ? 0 : 1"
       />
     </svg>
     <div class="progress-content">
@@ -34,30 +35,12 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  value: {
-    type: Number,
-    default: 0
-  },
-  max: {
-    type: Number,
-    default: 100
-  },
-  label: {
-    type: String,
-    default: ''
-  },
-  color: {
-    type: String,
-    default: '#0096ff'
-  },
-  backgroundColor: {
-    type: String,
-    default: 'rgba(255, 255, 255, 0.1)'
-  },
-  size: {
-    type: Number,
-    default: 80
-  }
+  value: { type: Number, default: 0 },
+  max: { type: Number, default: 100 },
+  label: { type: String, default: '' },
+  color: { type: String, default: '#0096ff' },
+  backgroundColor: { type: String, default: '#e0e0e0' }, // <-- more visible grey
+  size: { type: Number, default: 80 }
 })
 
 const radius = computed(() => props.size / 2 - 8)
@@ -100,5 +83,9 @@ const strokeDashoffset = computed(() => circumference.value - (progressValue.val
   color: #7b8794;
   text-transform: uppercase;
   margin-top: 2px;
+}
+
+.progress-ring-circle[value="0"] {
+  opacity: 0;
 }
 </style>
