@@ -35,10 +35,10 @@
         </div>
         <div v-else class="target-speed-buttons">
           <div class="button-row">
-            <button @click="changeTargetSpeed(-10)">-10</button>
-            <button @click="changeTargetSpeed(-1)">-1</button>
-            <button @click="changeTargetSpeed(1)">+1</button>
-            <button @click="changeTargetSpeed(10)">+10</button>
+            <button class="change-speed-button" @click="changeTargetSpeed(-10)">-10</button>
+            <button class="change-speed-button" @click="changeTargetSpeed(-1)">-1</button>
+            <button class="change-speed-button" @click="changeTargetSpeed(1)">+1</button>
+            <button class="change-speed-button" @click="changeTargetSpeed(10)">+10</button>
           </div>
           <button class="done-btn" @click="doneTargetSpeed">Apply</button>
         </div>
@@ -142,6 +142,68 @@ function doneTargetSpeed() {
 </script>
 
 <style scoped>
+/* Default: Large for iPad/Desktop */
+.speedometer {
+  max-width: 180px;
+  padding: 14px;
+}
+
+.gauge {
+  width: 120px;
+  height: 60px;
+}
+
+.current-speed {
+  font-size: 1.3rem;
+}
+
+.button-row {
+  gap: 8px;
+}
+
+.change-speed-button {
+  max-width: 30px;
+}
+
+/* Small screens: iPhone 12 Pro/SE */
+@media (max-width: 430px) {
+  .speedometer {
+    max-width: 120px;
+    padding: 6px;
+  }
+  .gauge {
+    width: 70px;
+    height: 35px;
+  }
+  .current-speed {
+    font-size: 0.8rem;
+  }
+  .button-row {
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+  .change-speed-button {
+    max-width: 22px;
+    font-size: 0.7em;
+    padding: 2px 4px;
+  }
+  .done-btn {
+    font-size: 0.5em;
+    padding: 2px 6px;
+  }
+  .target-speed-value {
+    font-size: 0.5em;
+    padding: 2px 5px;
+  }
+  .toggle-input-btn {
+    width: 12px;
+    height: 12px;
+    font-size: 0.6em;
+    top: 2px;
+    right: 2px;
+  }
+}
+
 .speedometer {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
@@ -353,7 +415,6 @@ function doneTargetSpeed() {
 }
 
 .target-speed-buttons {
-  display: flex;
   flex-direction: column;
   gap: 4px;
 }
@@ -363,7 +424,6 @@ function doneTargetSpeed() {
   justify-content: center;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
 }
 
 .button-speed-value {
