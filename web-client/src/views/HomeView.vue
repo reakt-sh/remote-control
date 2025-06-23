@@ -29,17 +29,6 @@ onMounted(() => {
 
 <style scoped>
 
-.app-main {
-  flex: 1;
-  padding: 1rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-  height: 0; /* Required for flex children to allow overflow */
-  min-height: 0;
-  overflow-y: auto; /* SPA scroll here */
-}
-
 .train-control-panel {
   display: grid;
   grid-template-columns: 2fr 1fr;

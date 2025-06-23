@@ -30,9 +30,13 @@ body {
 }
 
 #app {
-  min-height: 100vh;
   height: 100vh;
-  overflow: hidden;
+  width: 100vw;
+  overflow: auto; /* Enable app-level scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  background: #f8fafc; /* Optional: match your panel background */
+  display: flex;
+  flex-direction: column;
 }
 
 html, body {
@@ -68,5 +72,15 @@ body, #app {
   flex-direction: column;
   min-height: 100vh;
   height: 100vh;
-  overflow: hidden; /* No scroll on the root */
+  overflow-y: hidden; /* No scroll on the root */
+}
+
+.app-main {
+  flex: 1;
+  padding: 1rem;
+  margin: 0 auto;
+  width: 95%;
+  height: 0; /* Required for flex children to allow overflow */
+  min-height: 0;
+  overflow-y: auto; /* SPA scroll here */
 }
