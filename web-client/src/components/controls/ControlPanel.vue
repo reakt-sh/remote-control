@@ -1,29 +1,25 @@
 <template>
   <div class="driver-console">
-    <div class="control-panel">
-      <!-- Left: Power and Direction Controls -->
-      <div class="primary-controls">
-        <PowerControls
-          :is-running="isRunning"
-          @start="handleStart"
-          @stop="handleStop"
-        />
-        <DirectionControl
-          :direction="currentDirection"
-          @change="handleDirectionChange"
-        />
-      </div>
+    <div class="primary-controls">
+      <PowerControls
+        :is-running="isRunning"
+        @start="handleStart"
+        @stop="handleStop"
+      />
+      <DirectionControl
+        :direction="currentDirection"
+        @change="handleDirectionChange"
+      />
+    </div>
 
-      <!-- Center: Indicators -->
-      <div class="indicators-panel">
-        <Speedometer
-          :current-speed="currentSpeed"
-          :max-speed="maxSpeed"
-          :target-speed="targetSpeed"
-          @update:targetSpeed="onTargetSpeedChange"
-          @change:targetSpeed="onTargetSpeedCommit"
-        />
-      </div>
+    <div class="primary-controls">
+      <Speedometer
+        :current-speed="currentSpeed"
+        :max-speed="maxSpeed"
+        :target-speed="targetSpeed"
+        @update:targetSpeed="onTargetSpeedChange"
+        @change:targetSpeed="onTargetSpeedCommit"
+      />
     </div>
   </div>
 </template>
@@ -104,64 +100,28 @@ watch(
 <style scoped>
 .driver-console {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Always side by side */
   height: 100%;
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   color: #34495e;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
-  gap: 20px;
-}
-
-.control-panel {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 20px;
-  width: 100%;
-  box-sizing: border-box;
-  align-items: center;
-}
-
-.primary-controls,
-.indicators-panel {
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 16px;
 }
 
 .primary-controls {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 15px;
-  min-width: 220px;
-  width: 260px;
+  gap: 8px;
+  padding: 5px;
+  min-width: 150px;
+  width: 150px;
+  flex: 1 1 0;
 }
 
-.indicators-panel {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  height: 360px;
-  margin-left: 40px;
-  padding: 15px; /* Add padding for consistency */
-}
-
-@media (max-width: 1200px) {
-  .control-panel {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-  }
-  .indicators-panel {
-    order: -1;
-    height: auto;
-    flex-direction: column;
-  }
-}
+/* Remove any @media queries that change flex-direction */
 </style>

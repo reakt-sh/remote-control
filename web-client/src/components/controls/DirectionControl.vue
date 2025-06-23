@@ -53,15 +53,15 @@ function setDirection(newDirection) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
+  gap: 8px; /* increased */
+  padding: 10px; /* increased */
   background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .direction-label {
-  font-size: 1rem;
+  font-size: 0.8rem; /* increased from 0.45rem */
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -71,14 +71,14 @@ function setDirection(newDirection) {
 .direction-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px; /* increased */
 }
 
 .direction-button {
-  width: 120px;
-  height: 60px;
+  width: 70px;   /* increased from 40px */
+  height: 32px;  /* increased from 20px */
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -88,31 +88,31 @@ function setDirection(newDirection) {
   font-weight: bold;
   background: #ECEFF1;
   color: #546E7A;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .direction-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.10);
 }
 
 .direction-button:active {
-  transform: translateY(1px);
+  transform: translateY(0.5px);
 }
 
 .direction-button.active {
   background: #2196F3;
   color: white;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.18);
 }
 
 .icon {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
+  font-size: 1.1rem; /* increased from 0.7rem */
+  margin-bottom: 2px;
 }
 
 .text {
-  font-size: 0.8rem;
+  font-size: 0.6rem; /* increased from 0.35rem */
   text-transform: uppercase;
   letter-spacing: 1px;
 }

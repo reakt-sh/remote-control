@@ -47,16 +47,15 @@ function handleStop() {
 <style scoped>
 .power-controls {
   display: flex;
-  flex-direction: row; /* Side by side */
-  gap: 16px;           /* Adjust gap as needed */
+  flex-direction: row;
+  gap: 16px; /* increased */
   justify-content: center;
   align-items: center;
 }
 
 .control-button {
-  position: relative;
-  width: 120px;
-  height: 120px;
+  width: 64px;   /* increased from 40px */
+  height: 64px;  /* increased from 40px */
   border-radius: 50%;
   border: none;
   display: flex;
@@ -66,7 +65,7 @@ function handleStop() {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .start-button {
@@ -86,26 +85,26 @@ function handleStop() {
 }
 
 .control-button:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
 }
 
 .control-button:not(:disabled):active {
-  transform: translateY(1px);
+  transform: translateY(0.5px);
 }
 
 .icon {
-  font-size: 2.5rem;
-  margin-bottom: 8px;
+  font-size: 1.6rem; /* increased from 1rem */
+  margin-bottom: 4px;
 }
 
 .label {
-  font-size: 1rem;
+  font-size: 0.7rem; /* increased from 0.45rem */
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .active {
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.18);
 }
 </style>

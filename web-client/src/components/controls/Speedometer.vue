@@ -144,25 +144,25 @@ function doneTargetSpeed() {
 <style scoped>
 .speedometer {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 14px; /* increased */
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
   border: 1px solid #e0e4e7;
-  max-width: 320px;
+  max-width: 180px; /* increased from 105px */
   margin: 0 auto;
 }
 
 .gauge {
-  width: 220px;
-  height: 110px;
+  width: 120px;   /* increased from 70px */
+  height: 60px;   /* increased from 35px */
   position: relative;
-  border: 4px solid #e0e4e7;
-  border-radius: 220px 220px 0 0;
+  border: 2px solid #e0e4e7;
+  border-radius: 120px 120px 0 0;
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
 }
 
@@ -199,24 +199,24 @@ function doneTargetSpeed() {
 
 .major-tick {
   width: 2px;
-  height: 15px;
+  height: 10px;
   background: #333;
 }
 
 .minor-tick {
   width: 1px;
-  height: 10px;
+  height: 6px;
   background: #666;
 }
 
 .tick-number {
   position: absolute;
-  font-size: 12px;
+  font-size: 8px;
   font-weight: bold;
   text-align: center;
-  width: 20px;
-  height: 20px;
-  line-height: 20px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
   left: 50%;
   top: 50%;
   transform-origin: center center;
@@ -224,25 +224,25 @@ function doneTargetSpeed() {
 
 .needle {
   position: absolute;
-  width: 3px;
-  height: 80px;
+  width: 2px;
+  height: 48px;
   background: #e67e22;
   bottom: 0;
   left: 50%;
   transform-origin: bottom center;
   z-index: 3;
-  box-shadow: 0 0 5px rgba(230, 126, 34, 0.7);
+  box-shadow: 0 0 2px rgba(230, 126, 34, 0.7);
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .center {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 12px;
+  height: 12px;
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
-  border: 3px solid #e67e22;
+  border: 1px solid #e67e22;
   border-radius: 50%;
-  bottom: -10px;
+  bottom: -5px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
@@ -258,12 +258,12 @@ function doneTargetSpeed() {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .current-speed {
-  font-size: 2.8rem;
+  font-size: 1.3rem;
   font-weight: bold;
   font-family: 'Segment7', monospace;
   color: #2c3e50;
@@ -271,7 +271,7 @@ function doneTargetSpeed() {
 }
 
 .speed-unit {
-  font-size: 1.2rem;
+  font-size: 0.7rem;
   color: #7f8c8d;
   margin-bottom: 0;
 }
@@ -279,9 +279,9 @@ function doneTargetSpeed() {
 .target-speed {
   position: relative;
   background: #f8f9fa;
-  padding: 12px;
-  border-radius: 10px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid #e0e4e7;
 }
 
@@ -290,18 +290,18 @@ function doneTargetSpeed() {
   background: #2c3e50;
   color: white;
   font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 0.95em;
-  margin-bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.6em;
+  margin-bottom: 6px;
 }
 
 .toggle-input-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 24px;
-  height: 24px;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -312,6 +312,7 @@ function doneTargetSpeed() {
   justify-content: center;
   padding: 0;
   transition: all 0.2s;
+  font-size: 1em;
 }
 
 .toggle-input-btn:hover {
@@ -321,25 +322,25 @@ function doneTargetSpeed() {
 
 .slider-container {
   width: 100%;
-  padding: 5px 0;
+  padding: 4px 0;
 }
 
 .target-slider {
   width: 100%;
-  height: 6px;
+  height: 4px;
   -webkit-appearance: none;
   appearance: none;
   background: #e0e4e7;
-  border-radius: 3px;
+  border-radius: 2px;
   outline: none;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
   background: #2c3e50;
   border-radius: 50%;
   cursor: pointer;
@@ -354,33 +355,33 @@ function doneTargetSpeed() {
 .target-speed-buttons {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .button-row {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
 .button-speed-value {
   font-weight: 500;
   color: #2c3e50;
-  min-width: 70px;
+  min-width: 32px;
   text-align: center;
-  font-size: 0.95em;
+  font-size: 0.6em;
 }
 
 button {
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 4px;
   border: 1px solid #d6dbdf;
   background: #f8f9fa;
   color: #2c3e50;
   cursor: pointer;
-  font-size: 0.85em;
+  font-size: 0.6em;
   font-weight: 500;
   transition: all 0.2s;
 }
@@ -398,7 +399,9 @@ button:active {
   background: #27ae60;
   color: white;
   border-color: #219955;
-  margin-top: 4px;
+  margin-top: 2px;
+  font-size: 0.6em;
+  padding: 4px 10px;
 }
 
 .done-btn:hover {
