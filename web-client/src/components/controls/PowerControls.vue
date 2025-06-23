@@ -46,11 +46,17 @@ function handleStop() {
 
 <style scoped>
 .power-controls {
+  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
+  border-radius: 10px;
+  padding: 14px; /* increased */
   display: flex;
   flex-direction: row;
-  gap: 16px; /* increased */
-  justify-content: center;
   align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  border: 1px solid #e0e4e7;
+  max-width: 250px; /* increased from 105px */
+  margin: 0 auto;
+  gap: 16px; /* Add this line for more spacing */
 }
 
 .control-button {

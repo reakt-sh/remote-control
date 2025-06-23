@@ -50,14 +50,16 @@ function setDirection(newDirection) {
 
 <style scoped>
 .direction-control {
+  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
+  border-radius: 10px;
+  padding: 14px; /* increased */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px; /* increased */
-  padding: 10px; /* increased */
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  border: 1px solid #e0e4e7;
+  max-width: 180px; /* increased from 105px */
+  margin: 0 auto;
 }
 
 .direction-label {

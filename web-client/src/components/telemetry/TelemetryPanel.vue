@@ -1,14 +1,5 @@
 <template>
   <div class="telemetry-panel">
-    <div class="panel-header">
-      <h2><i class="fas fa-chart-line"></i> Telemetry Dashboard</h2>
-      <div class="refresh-controls">
-        <button class="panel-btn" @click="refreshTelemetry" title="Refresh Data">
-          <i class="fas fa-sync-alt" :class="{ 'fa-spin': isRefreshing }"></i>
-        </button>
-      </div>
-    </div>
-    
     <div class="telemetry-grid">
       <TelemetryCard title="Passenger Count" icon="fas fa-users">
         <div v-if="telemetryData?.passenger_count !== undefined && telemetryData.passenger_count !== null">
@@ -119,7 +110,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from './TelemetryCard.vue'
@@ -127,7 +118,6 @@ import PassengerCount from './PassengerCount.vue'
 import CircularProgress from './CircularProgress.vue'
 
 const { telemetryData } = storeToRefs(useTrainStore())
-const isRefreshing = ref(false)
 
 const formattedTime = computed(() => {
   if (!telemetryData.value?.timestamp) return 'N/A'
@@ -142,14 +132,6 @@ function formatCoord(val) {
   return Number(val).toFixed(4)
 }
 
-async function refreshTelemetry() {
-  isRefreshing.value = true
-  try {
-    await useTrainStore().fetchTelemetryData()
-  } finally {
-    isRefreshing.value = false
-  }
-}
 </script>
 
 <style scoped>
