@@ -1,7 +1,7 @@
 import datetime
 import random
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QDateTime
-from globals import STATION_LIST
+from globals import *
 
 class Telemetry(QObject):
     telemetry_ready = pyqtSignal(dict)  # Emits a dictionary with telemetry data
@@ -14,7 +14,8 @@ class Telemetry(QObject):
 
         self.name = "Train"
         self.train_id = train_id
-        self.status = "running"
+        self.status = TRAIN_STATUS["POWER_ON"]
+        self.direction = DIRECTION["FORWARD"]
         self.speed = 60
         self.max_speed = 60
         self.brake_status = "released"
@@ -54,6 +55,12 @@ class Telemetry(QObject):
         else:
             raise ValueError(f"Speed must be between 0 and {self.max_speed}")
 
+    def set_status(self, status: str):
+        self.status = status
+
+    def set_direction(self, direction: int):
+        self.direction = direction
+
     def start(self):
         self.timer.start(self.poll_interval_ms)
 
@@ -89,6 +96,7 @@ class Telemetry(QObject):
             "name": self.name,
             "train_id": self.train_id,
             "status": self.status,
+            "direction": self.direction,
             "speed": self.speed,
             "max_speed": self.max_speed,
             "brake_status": self.brake_status,
