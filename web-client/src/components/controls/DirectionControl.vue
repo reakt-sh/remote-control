@@ -50,18 +50,20 @@ function setDirection(newDirection) {
 
 <style scoped>
 .direction-control {
+  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
+  border-radius: 10px;
+  padding: 14px; /* increased */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  border: 1px solid #e0e4e7;
+  max-width: 180px; /* increased from 105px */
+  margin: 0 auto;
 }
 
 .direction-label {
-  font-size: 1rem;
+  font-size: 0.8rem; /* increased from 0.45rem */
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -71,14 +73,14 @@ function setDirection(newDirection) {
 .direction-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px; /* increased */
 }
 
 .direction-button {
-  width: 120px;
-  height: 60px;
+  width: 70px;   /* increased from 40px */
+  height: 48px;  /* increased from 20px */
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -88,32 +90,83 @@ function setDirection(newDirection) {
   font-weight: bold;
   background: #ECEFF1;
   color: #546E7A;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .direction-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.10);
 }
 
 .direction-button:active {
-  transform: translateY(1px);
+  transform: translateY(0.5px);
 }
 
 .direction-button.active {
   background: #2196F3;
   color: white;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.18);
 }
 
 .icon {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
+  font-size: 1.1rem; /* increased from 0.7rem */
+  margin-bottom: 2px;
 }
 
 .text {
-  font-size: 0.8rem;
+  font-size: 0.6rem; /* increased from 0.35rem */
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+@media (min-width: 700px) {
+  .direction-control {
+    max-width: 260px;
+    padding: 24px;
+  }
+  .direction-label {
+    font-size: 1.3rem;
+  }
+  .direction-buttons {
+    gap: 16px;
+  }
+  .direction-button {
+    width: 120px;
+    height: 64px;
+    font-size: 1.1rem;
+  }
+  .icon {
+    font-size: 1.8rem;
+    margin-bottom: 4px;
+  }
+  .text {
+    font-size: 1rem;
+  }
+}
+
+@media (max-height: 700px) {
+  /* For DirectionControl */
+  .direction-control {
+    max-width: 110px;
+    padding: 8px;
+  }
+  .direction-label {
+    font-size: 0.5rem;
+  }
+  .direction-buttons {
+    gap: 4px;
+  }
+  .direction-button {
+    width: 40px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+  .direction-button .icon {
+    font-size: 0.7rem;
+    margin-bottom: 1px;
+  }
+  .direction-button .text {
+    font-size: 0.35rem;
+  }
 }
 </style>

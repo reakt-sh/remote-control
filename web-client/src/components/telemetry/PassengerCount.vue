@@ -27,12 +27,12 @@ defineProps({
 .count {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #222;
 }
 
 .no-data {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: #b0b7c3;
   font-style: italic;
 }
 </style>

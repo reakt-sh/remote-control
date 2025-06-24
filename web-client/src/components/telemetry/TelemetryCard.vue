@@ -1,6 +1,9 @@
 <template>
   <div class="telemetry-card">
-    <h3>{{ title }}</h3>
+    <div class="card-header">
+      <i :class="icon" v-if="icon"></i>
+      <h3>{{ title }}</h3>
+    </div>
     <div class="card-content">
       <slot></slot>
     </div>
@@ -12,29 +15,51 @@ defineProps({
   title: {
     type: String,
     required: true
+  },
+  icon: {
+    type: String,
+    default: ''
   }
 })
 </script>
 
 <style scoped>
 .telemetry-card {
-  background: #ffffff;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border-left: 3px solid #3b82f6;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-radius: 8px;
   overflow: hidden;
+  border: 1px solid #e0e7ef;
+  transition: all 0.3s ease;
 }
 
-.telemetry-card h3 {
-  font-size: 0.875rem;
-  color: #4b5563;
-  margin-bottom: 0.5rem;
+.telemetry-card:hover {
+  border-color: #0096ff;
+  box-shadow: 0 5px 15px rgba(0, 150, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  background: #f3f7fa;
+  border-bottom: 1px solid #e0e7ef;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
   font-weight: 500;
+  color: #222;
+}
+
+.card-header i {
+  color: v-bind('iconColor || "#0096ff"');
+  font-size: 0.9rem;
 }
 
 .card-content {
-  max-width: 100%;
-  overflow: hidden;
+  padding: 15px;
 }
 </style>
