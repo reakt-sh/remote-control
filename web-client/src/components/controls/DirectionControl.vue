@@ -4,19 +4,19 @@
     <div class="direction-buttons">
       <button
         class="direction-button forward"
-        :class="{ active: direction === 'forward' }"
-        @click="setDirection('forward')"
+        :class="{ active: direction === 'FORWARD' }"
+        @click="setDirection('FORWARD')"
       >
         <span class="icon">↑</span>
         <span class="text">FORWARD</span>
       </button>
       <button
         class="direction-button reverse"
-        :class="{ active: direction === 'reverse' }"
-        @click="setDirection('reverse')"
+        :class="{ active: direction === 'BACKWARD' }"
+        @click="setDirection('BACKWARD')"
       >
         <span class="icon">↓</span>
-        <span class="text">REVERSE</span>
+        <span class="text">BACKWARD</span>
       </button>
     </div>
   </div>
@@ -29,8 +29,8 @@ const emit = defineEmits(['change'])
 const props = defineProps({
   direction: {
     type: String,
-    default: 'forward',
-    validator: (value) => ['forward', 'reverse'].includes(value)
+    default: 'FORWARD',
+    validator: (value) => ['FORWARD', 'BACKWARD'].includes(value)
   }
 })
 

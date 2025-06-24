@@ -2,9 +2,9 @@
   <div class="power-controls">
     <button
       class="control-button start-button"
-      :class="{ active: isRunning }"
+      :class="{ active: !isPoweredOn }"
       @click="handleStart"
-      :disabled="isRunning"
+      :disabled="isPoweredOn"
     >
       <span class="icon">▶</span>
       <span class="label">START</span>
@@ -12,9 +12,9 @@
 
     <button
       class="control-button stop-button"
-      :class="{ active: !isRunning }"
+      :class="{ active: isPoweredOn }"
       @click="handleStop"
-      :disabled="!isRunning"
+      :disabled="!isPoweredOn"
     >
       <span class="icon">■</span>
       <span class="label">STOP</span>
@@ -23,24 +23,20 @@
 </template>
 
 <script setup>
+import { storeToRefs } from 'pinia'
+import { useTrainStore } from '@/stores/trainStore'
+
+const trainStore = useTrainStore()
+const { isPoweredOn } = storeToRefs(trainStore)
 const emit = defineEmits(['start', 'stop'])
-const props = defineProps({
-  isRunning: {
-    type: Boolean,
-    default: false
-  }
-})
+
 
 function handleStart() {
-  if (!props.isRunning) {
     emit('start')
-  }
 }
 
 function handleStop() {
-  if (props.isRunning) {
     emit('stop')
-  }
 }
 </script>
 

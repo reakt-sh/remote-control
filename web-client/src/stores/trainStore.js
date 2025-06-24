@@ -34,10 +34,10 @@ export const useTrainStore = defineStore('train', () => {
   const remoteControlId = ref(null)
   const webTransport = ref(null)
   const bidistream = ref(null)
-  const videoDatagramAssembler = ref(null);
-  const keepaliveSequence = ref(0);
-  const direction = ref('forward')
-  const isPoweredOn = ref(false)
+  const videoDatagramAssembler = ref(null)
+  const keepaliveSequence = ref(0)
+  const direction = ref('FORWARD')
+  const isPoweredOn = ref(true)
   const router = useRouter()
 
   function generateUUID() {
@@ -133,6 +133,7 @@ export const useTrainStore = defineStore('train', () => {
         direction.value = command["direction"]
         break
     }
+    console.log("sendCommand: isPoweredOn:", isPoweredOn.value)
     try {
       // Convert command object to JSON and then to Uint8Array
       const jsonString = JSON.stringify(command)
@@ -288,6 +289,23 @@ export const useTrainStore = defineStore('train', () => {
             jsonData = JSON.parse(jsonString)
             console.log('WebTransport: Received telemetry data:', jsonData)
             telemetryData.value = jsonData
+
+            // also update isPoweredOn and direction
+
+            if (jsonData.status === 'running'){
+              isPoweredOn.value = true
+            } else {
+              isPoweredOn.value = false
+            }
+
+            if (jsonData.direction === 1) {
+              direction.value = 'FORWARD'
+            } else {
+              direction.value = 'BACKWARD'
+            }
+
+            console.log("receiveWebTransportStream: isPoweredOn:", isPoweredOn.value)
+
             break;
           } catch (error) {
             console.error('Error parsing telemetry data:', error)
@@ -413,6 +431,8 @@ export const useTrainStore = defineStore('train', () => {
     telemetryData,
     currentVideoFrame,
     remoteControlId,
+    isPoweredOn,
+    direction,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
