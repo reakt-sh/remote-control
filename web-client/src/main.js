@@ -6,7 +6,7 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import './styles/main.css'
 
 // Disable all console logs in production
-// console.log = function () {};
+console.log = function () {};
 console.info = function () {};
 console.warn = function () {};
 console.error = function () {};

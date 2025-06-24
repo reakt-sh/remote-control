@@ -596,18 +596,93 @@ button:active {
   }
 }
 
-/* Large desktop screens */
-@media (min-width: 1300px) {
+@media (min-width: 820px) {
   .speedometer {
-    max-width: 280px;
-    width: 280px;
-    padding: 24px;
+    max-width: 365px;
+    width: 365px;
+    padding: 20px;
   }
   .gauge {
-    width: 180px;
-    height: 90px;
-    margin-bottom: 16px;
-    border-radius: 180px 180px 0 0;
+    width: 260px;
+    height: 130px;
+    margin-bottom: 24px;
+    border-radius: 260px 260px 0 0;
+  }
+  .major-tick {
+    height: 20px;
+    width: 3px;
+  }
+  .minor-tick {
+    height: 12px;
+    width: 2px;
+  }
+  .tick-number {
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+  }
+  .needle {
+    height: 110px;
+    width: 4px;
+  }
+  .center {
+    width: 28px;
+    height: 28px;
+    bottom: -12px;
+  }
+  .current-speed {
+    font-size: 2rem;
+  }
+  .speed-unit {
+    font-size: 1.5rem;
+  }
+  .speed-row {
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  .target-speed {
+    padding: 24px;
+    border-radius: 16px;
+  }
+  .target-speed-value {
+    font-size: 1.3em;
+    padding: 16px 32px;
+    border-radius: 24px;
+    margin-bottom: 18px;
+    margin-right: 32px;
+  }
+  .toggle-input-btn {
+    width: 48px;
+    height: 48px;
+    top: 16px;
+    right: 16px;
+    font-size: 2em;
+  }
+  .target-slider {
+    height: 10px;
+    border-radius: 4px;
+    margin: 12px 0;
+  }
+  .target-slider::-webkit-slider-thumb {
+    width: 30px;
+    height: 30px;
+  }
+  .button-row {
+    gap: 10px;
+    margin-bottom: 5px;
+  }
+  .change-speed-button {
+    max-width: 120px;
+    min-width: 50px;
+    font-size: 1.3em;
+    padding: 6px 15px;
+    border-radius: 12px;
+  }
+  .done-btn {
+    font-size: 1.4em;
+    padding: 12px 28px;
+    border-radius: 12px;
   }
 }
 </style>
