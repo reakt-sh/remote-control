@@ -31,6 +31,8 @@ class FileProcessor(QObject):
         self.current_fps = 30
         self.set_speed(self.current_fps)
 
+        self.direction = 1  # 1 for forward, -1 for backward
+
     def init_capture(self, speed_kmh=60):
         self.cap = cv2.VideoCapture(self.video_path)
         if not self.cap.isOpened():
@@ -51,6 +53,12 @@ class FileProcessor(QObject):
             self.timer.stop()
             self.timer.start(int(1000 / self.current_fps))
 
+    def set_direction(self, direction):
+        """Set direction: 1 for forward, -1 for backward."""
+        if direction not in (1, -1):
+            raise ValueError("Direction must be 1 (forward) or -1 (backward)")
+        self.direction = direction
+
     def stop(self):
         self.timer.stop()
         if self.cap:
@@ -59,14 +67,33 @@ class FileProcessor(QObject):
 
     def capture_frame(self):
         if self.cap:
-            ret, frame = self.cap.read()
-            if not ret:
-                # If video ends, restart from the beginning for infinite loop
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            frame_pos = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
+            total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+            if self.direction == 1:
                 ret, frame = self.cap.read()
                 if not ret:
-                    self.stop()
-                    return
+                    # Loop to start if at end
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    ret, frame = self.cap.read()
+                    if not ret:
+                        self.stop()
+                        return
+            else:  # Backward
+                # Move back two frames (since reading moves forward by one)
+                prev_frame = frame_pos - 2
+                if prev_frame < 0:
+                    prev_frame = total_frames - 1
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, prev_frame)
+                ret, frame = self.cap.read()
+                if not ret:
+                    # Loop to end if at start
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1)
+                    ret, frame = self.cap.read()
+                    if not ret:
+                        self.stop()
+                        return
+
             self.frame_count += 1
             elapsed_time = (cv2.getTickCount() - self.start_time) / cv2.getTickFrequency()
             current_fps = self.frame_count / elapsed_time if elapsed_time > 0 else 0
