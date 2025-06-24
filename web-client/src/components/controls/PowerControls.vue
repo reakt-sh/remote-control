@@ -67,7 +67,8 @@ function handleStop() {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  /* Enhanced shadow for better visibility */
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 1.5px 4px rgba(0,0,0,0.10);
 }
 
 .start-button {
@@ -107,7 +108,8 @@ function handleStop() {
 }
 
 .active {
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.18);
+  /* Stronger inset shadow when active */
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 1.5px 4px rgba(0,0,0,0.10), inset 0 0 12px rgba(0,0,0,0.22);
 }
 
 @media (min-width: 700px) {

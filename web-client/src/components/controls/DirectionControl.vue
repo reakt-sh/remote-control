@@ -88,9 +88,9 @@ function setDirection(newDirection) {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
-  background: #ECEFF1;
+  background: #a3a6a1;
   color: #546E7A;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18); /* Stronger shadow for better separation */
 }
 
 .direction-button:hover {
@@ -103,9 +103,9 @@ function setDirection(newDirection) {
 }
 
 .direction-button.active {
-  background: #2196F3;
-  color: white;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.18);
+  background: #15c724;
+  color: rgb(220, 229, 199);
+  box-shadow: 0 4px 16px rgba(33,150,243,0.25), 0 2px 8px rgba(0,0,0,0.18); /* Add blue glow and keep base shadow */
 }
 
 .icon {
