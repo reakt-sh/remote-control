@@ -215,13 +215,17 @@ class TrainClient(QMainWindow):
                 self.toggle_sending()
         elif message['instruction'] == 'POWER_ON':
             logger.info("Found instruction POWER_ON")
+            self.target_speed = max(self.target_speed, 15)  # Ensure minimum speed on power on
         elif message['instruction'] == 'POWER_OFF':
             logger.info("Found instruction POWER_OFF")
+            self.target_speed = 0  # Set speed to 0 on power off
         elif message['instruction'] == 'CHANGE_DIRECTION':
             if message['direction'] == 'FORWARD':
                 logger.info("Found instruction CHANGE_DIRECTION: FORWARD")
+                self.video_source.set_direction(1)
             elif message['direction'] == 'BACKWARD':
                 logger.info("Found instruction CHANGE_DIRECTION: BACKWARD")
+                self.video_source.set_direction(-1)
             else:
                 logger.warning(f"Unknown direction in CHANGE_DIRECTION: {message['direction']}")
         else:
