@@ -87,7 +87,7 @@ body, #app {
 }
 
 /* Ultra-wide screens: use 70% width */
-@media (min-width: 1800px) {
+@media (min-width: 3000px) {
   .app-main {
     width: 70%;
   }

@@ -19,8 +19,8 @@
       </div>
       <div class="target-speed">
         <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
-        <button class="toggle-input-btn" @click="toggleInputMode" title="Toggle input mode">
-          <i class="fa-solid fa-repeat"></i>
+        <button class="toggle-input-btn" @click="toggleInputMode" :title="showSlider ? 'Switch to button input' : 'Switch to slider input'">
+          <i :class="showSlider ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"></i>
         </button>
         <div v-if="showSlider" class="slider-container">
           <input
