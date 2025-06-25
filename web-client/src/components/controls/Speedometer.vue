@@ -475,22 +475,7 @@ button:active {
   }
 }
 
-/* Tablet and up: iPad mini, iPad Air, etc. */
 @media (min-width: 700px) {
-  .speedometer {
-    max-width: 220px;
-    width: 220px;
-    padding: 20px;
-  }
-  .gauge {
-    width: 140px;
-    height: 70px;
-    margin-bottom: 12px;
-    border-radius: 140px 140px 0 0;
-  }
-}
-
-@media (min-width: 768px) {
   .speedometer {
     max-width: 340px;
     width: 340px;
