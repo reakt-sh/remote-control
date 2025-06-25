@@ -2,12 +2,11 @@
   <div class="driver-console">
     <div class="primary-controls">
       <PowerControls
-        :is-running="isRunning"
         @start="handleStart"
         @stop="handleStop"
       />
       <DirectionControl
-        :direction="currentDirection"
+        :direction="direction"
         @change="handleDirectionChange"
       />
     </div>
@@ -34,13 +33,11 @@ import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
 
 const trainStore = useTrainStore()
-const { telemetryData } = storeToRefs(trainStore)
+const { telemetryData, direction } = storeToRefs(trainStore)
 
 // State
 const maxSpeed = ref(60)
 const targetSpeed = ref(0)
-const isRunning = ref(false)
-const currentDirection = ref('forward')
 const powerLevel = ref(0)
 
 // Computed
@@ -48,7 +45,6 @@ const currentSpeed = computed(() => telemetryData.value?.speed || 0)
 
 // Handlers
 function handleStart() {
-  isRunning.value = true
   trainStore.sendCommand({
     "instruction": 'POWER_ON',
     "train_id": telemetryData.value.train_id
@@ -56,7 +52,6 @@ function handleStart() {
 }
 
 function handleStop() {
-  isRunning.value = false
   targetSpeed.value = 0
   powerLevel.value = 0
   trainStore.sendCommand({
@@ -65,12 +60,11 @@ function handleStop() {
   })
 }
 
-function handleDirectionChange(direction) {
-  currentDirection.value = direction
+function handleDirectionChange(newDirection) {
   trainStore.sendCommand({
     "instruction": 'CHANGE_DIRECTION',
     "train_id": telemetryData.value.train_id,
-    "direction": currentDirection.value == 'forward' ? 'FORWARD' : 'BACKWARD'
+    "direction": newDirection
   })
 }
 
@@ -110,7 +104,6 @@ watch(
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
-  gap: 16px;
 }
 
 .primary-controls {

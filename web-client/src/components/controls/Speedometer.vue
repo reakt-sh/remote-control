@@ -475,139 +475,93 @@ button:active {
   }
 }
 
-/* Tablet and up: iPad mini, iPad Air, etc. */
 @media (min-width: 700px) {
   .speedometer {
-    max-width: 220px;
-    width: 220px;
-    padding: 20px;
+    max-width: 340px;
+    width: 340px;
+    padding: 4px;
   }
   .gauge {
-    width: 140px;
-    height: 70px;
-    margin-bottom: 12px;
-    border-radius: 140px 140px 0 0;
+    width: 260px;
+    height: 130px;
+    margin-bottom: 24px;
+    border-radius: 260px 260px 0 0;
   }
-}
-
-/* Large screens: iPad Landscape and up */
-@media (min-width: 768px) {
-  .speedometer {
-    max-width: 280px;
-    width: 280px;      /* Add this line */
-    padding: 24px;
-  }
-
-  .gauge {
-    width: 180px;
-    height: 90px;
-    margin-bottom: 16px;
-    border-radius: 180px 180px 0 0;
-  }
-
   .major-tick {
+    height: 20px;
+    width: 3px;
+  }
+  .minor-tick {
     height: 12px;
     width: 2px;
   }
-
-  .minor-tick {
-    height: 7px;
-    width: 1.5px;
-  }
-
   .tick-number {
-    font-size: 10px;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
   }
-
   .needle {
-    height: 70px;
-    width: 2.5px;
+    height: 110px;
+    width: 4px;
   }
-
   .center {
-    width: 14px;
-    height: 14px;
-    bottom: -6px;
-  }
-
-  .current-speed {
-    font-size: 1.8rem;
-  }
-
-  .speed-unit {
-    font-size: 1rem;
-  }
-
-  .speed-row {
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .target-speed {
-    padding: 12px;
-    border-radius: 8px;
-  }
-
-  .target-speed-value {
-    font-size: 1em;
-    padding: 8px 16px;
-    border-radius: 14px;
-    margin-bottom: 10px;
-  }
-
-  .toggle-input-btn {
     width: 28px;
     height: 28px;
-    top: 8px;
-    right: 8px;
-    font-size: 1em;
+    bottom: -12px;
   }
-
+  .current-speed {
+    font-size: 2rem;
+  }
+  .speed-unit {
+    font-size: 1.5rem;
+  }
+  .speed-row {
+    gap: 18px;
+    margin-bottom: 6px;
+  }
+  .target-speed {
+    padding: 8px;
+    border-radius: 16px;
+  }
+  .target-speed-value {
+    font-size: 1.3em;
+    padding: 16px 32px;
+    border-radius: 24px;
+    margin-bottom: 18px;
+    margin-right: 32px;
+  }
+  .toggle-input-btn {
+    width: 48px;
+    height: 48px;
+    top: 16px;
+    right: 16px;
+    font-size: 2em;
+  }
   .target-slider {
-    height: 5px;
-    border-radius: 2px;
-    margin: 6px 0;
+    height: 10px;
+    border-radius: 4px;
+    margin: 12px 0;
   }
-
   .target-slider::-webkit-slider-thumb {
-    width: 14px;
-    height: 14px;
+    width: 30px;
+    height: 30px;
   }
-
   .button-row {
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 5px;
   }
-
   .change-speed-button {
-    max-width: 40px;
-    font-size: 1em;
-    padding: 6px 10px;
-    border-radius: 6px;
+    max-width: 120px;
+    min-width: 50px;
+    font-size: 1.3em;
+    padding: 6px 20px;
+    border-radius: 12px;
   }
-
   .done-btn {
-    font-size: 1em;
-    padding: 6px 14px;
-    border-radius: 6px;
-  }
-}
-
-/* Large desktop screens */
-@media (min-width: 1300px) {
-  .speedometer {
-    max-width: 280px;
-    width: 280px;
-    padding: 24px;
-  }
-  .gauge {
-    width: 180px;
-    height: 90px;
-    margin-bottom: 16px;
-    border-radius: 180px 180px 0 0;
+    font-size: 1.4em;
+    padding: 12px 28px;
+    border-radius: 12px;
   }
 }
 </style>

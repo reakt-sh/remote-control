@@ -34,6 +34,18 @@ PACKET_TYPE = {
     "notification": 21
 }
 
+TRAIN_STATUS = {
+    "POWER_ON": "running",
+    "POWER_OFF": "stopped",
+    "UNKNOWN": "unknown"
+}
+
+DIRECTION = {
+    "FORWARD": 1,
+    "BACKWARD": -1,
+    "STOPPED": 0
+}
+
 # overwrite for remote server
 SERVER = 'wt.rtsys-lab.de'
 

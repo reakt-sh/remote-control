@@ -109,6 +109,7 @@ class RPi5Client(QThread):
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
             self.motor_actuator.set_speed(self.target_speed)
+            self.telemetry.set_speed(self.target_speed)
         elif message['instruction'] == 'STOP_SENDING_DATA':
             if self.is_sending:
                 self.toggle_sending()
@@ -119,16 +120,36 @@ class RPi5Client(QThread):
         elif message['instruction'] == 'POWER_ON':
             logger.info("Found instruction POWER_ON")
             self.motor_actuator.start_motor()
+            self.target_speed = self.motor_actuator.get_speed()
+
+            # update telemetry status and speed
+            self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+            self.telemetry.set_speed(self.target_speed)
         elif message['instruction'] == 'POWER_OFF':
             logger.info("Found instruction POWER_OFF")
             self.motor_actuator.stop_motor()
+            self.target_speed = 0
+
+            # update telemetry status and speed
+            self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
+            self.telemetry.set_speed(self.target_speed)
         elif message['instruction'] == 'CHANGE_DIRECTION':
             if message['direction'] == 'FORWARD':
                 logger.info("Found instruction CHANGE_DIRECTION: FORWARD")
                 self.motor_actuator.move_forward()
+                self.target_speed = self.motor_actuator.get_speed()
+
+                self.telemetry.set_direction(DIRECTION["FORWARD"])
+                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+                self.telemetry.set_speed(self.target_speed)
             elif message['direction'] == 'BACKWARD':
                 logger.info("Found instruction CHANGE_DIRECTION: BACKWARD")
                 self.motor_actuator.move_backward()
+                self.target_speed = self.motor_actuator.get_speed()
+
+                self.telemetry.set_direction(DIRECTION["BACKWARD"])
+                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+                self.telemetry.set_speed(self.target_speed)
             else:
                 logger.warning(f"Unknown direction in CHANGE_DIRECTION: {message['direction']}")
         else:
