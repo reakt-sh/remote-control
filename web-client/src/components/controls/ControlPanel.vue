@@ -104,7 +104,6 @@ watch(
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
-  gap: 16px;
 }
 
 .primary-controls {
