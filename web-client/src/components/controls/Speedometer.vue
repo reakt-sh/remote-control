@@ -479,7 +479,7 @@ button:active {
   .speedometer {
     max-width: 340px;
     width: 340px;
-    padding: 10px;
+    padding: 4px;
   }
   .gauge {
     width: 260px;
@@ -518,10 +518,10 @@ button:active {
   }
   .speed-row {
     gap: 18px;
-    margin-bottom: 18px;
+    margin-bottom: 6px;
   }
   .target-speed {
-    padding: 24px;
+    padding: 8px;
     border-radius: 16px;
   }
   .target-speed-value {
@@ -555,7 +555,7 @@ button:active {
     max-width: 120px;
     min-width: 50px;
     font-size: 1.3em;
-    padding: 6px 15px;
+    padding: 6px 20px;
     border-radius: 12px;
   }
   .done-btn {
