@@ -7,8 +7,6 @@ class Encoder(QObject):
     encode_ready = pyqtSignal(int, object)  # Emits the encoded bytes
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.width = FRAME_WIDTH
-        self.height = FRAME_HEIGHT
         self.frame_rate = FRAME_RATE
         self.pixel_format = PIXEL_FORMAT
         self.h264_dump_path = H264_DUMP
@@ -23,8 +21,6 @@ class Encoder(QObject):
 
         # Add H.264 video stream
         self.stream = self.output_container.add_stream('h264', rate=fps_fraction)
-        self.stream.width = self.width
-        self.stream.height = self.height
         self.stream.pix_fmt = self.pixel_format
 
         # Set some encoding options
@@ -45,7 +41,9 @@ class Encoder(QObject):
             ),
         }
 
-    def encode_frame(self, frame_id, frame, log_callback=None):
+    def encode_frame(self, frame_id, frame, width, height, log_callback=None):
+        self.stream.width = width
+        self.stream.height = height
         av_frame = av.VideoFrame.from_ndarray(frame, format='bgr24')
         for packet in self.stream.encode(av_frame):
             current_sps_pps = self.stream.codec_context.extradata

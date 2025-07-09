@@ -54,6 +54,7 @@ class RPi5Client(QThread):
         self.target_speed = 20
         self.telemetry.set_speed(self.target_speed)
         self.motor_actuator = MotorActuator()
+        self.motor_actuator.start_motor()
 
     def initialize_train_client_id(self):
         client_id = str(uuid.uuid4())
@@ -158,9 +159,9 @@ class RPi5Client(QThread):
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
 
-    def on_new_frame(self, frame_id, frame):
+    def on_new_frame(self, frame_id, frame, width, height):
         # Encode frame
-        self.encoder.encode_frame(frame_id, frame, logger.info)
+        self.encoder.encode_frame(frame_id, frame, width, height, logger.info)
 
     def on_telemetry_data(self, data):
         # Process telemetry data

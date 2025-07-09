@@ -29,3 +29,5 @@
 *.log
 *.zip
 *.json
+yt-dlp
+yt-dlp_linux

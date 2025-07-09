@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useWebSocket } from '@/scripts/websocket'
+import { useWebTransport } from '@/scripts/webtransport'
+import { useAssembler } from '@/scripts/assembler'
+import { SERVER_URL } from '@/scripts/config'
+
 
 // Define server IP and host
-const SERVER = 'wt.rtsys-lab.de'
-const WS_PORT = 8000
-const QUIC_PORT = 4437
-const SERVER_URL = `https://${SERVER}:${WS_PORT}`
-const WS_URL = `wss://${SERVER}:${WS_PORT}`
-const QUIC_URL = `https://${SERVER}:${QUIC_PORT}`
+
 
 // Packet Types
 const PACKET_TYPE = {
@@ -28,17 +28,22 @@ export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
   const selectedTrainId = ref('')
   const telemetryData = ref(null)
-  const isConnected = ref(false)
-  const webSocket = ref(null)
-  const currentVideoFrame = ref(null)
+  const frameRef = ref(null)
   const remoteControlId = ref(null)
-  const webTransport = ref(null)
-  const bidistream = ref(null)
   const videoDatagramAssembler = ref(null)
   const keepaliveSequence = ref(0)
   const direction = ref('FORWARD')
   const isPoweredOn = ref(true)
   const router = useRouter()
+
+  const {
+    connectWebSocket,
+  } = useWebSocket(remoteControlId, handleWsMessage)
+
+  const {
+    connectWebTransport,
+    sendWtMessage,
+  } = useWebTransport(remoteControlId, handleWtMessage)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -67,21 +72,18 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function connectToServer() {
-    connectToWebTransport()
-    connectToWebSocket()
+    await connectWebSocket()
+    await connectWebTransport()
+    setInterval(sendKeepAliveWebTransport, 10000);
   }
 
   async function mappingToTrain(trainId) {
     if (!trainId) return
     telemetryData.value = {}
     selectedTrainId.value = trainId
-    // initialize video stream handler if not already initialized
-    if (videoDatagramAssembler.value && videoDatagramAssembler.value.trainId !== trainId) {
-      videoDatagramAssembler.value = null; // Reset if trainId changes
-    }
 
-    if (!videoDatagramAssembler.value && selectedTrainId.value) {
-      videoDatagramAssembler.value = assembleVideoDatagram();
+    if (!videoDatagramAssembler.value) {
+      videoDatagramAssembler.value = useAssembler(frameRef)
     }
 
     // Send a POST request to assign the train to the remote control
@@ -110,302 +112,82 @@ export const useTrainStore = defineStore('train', () => {
     }
 
     // Send a message through WebTransport to notify the server
-    if (webTransport.value) {
-      sendWebTransportStream(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
-    } else {
-      console.error('WebTransport is not connected');
-    }
+    sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+
   }
 
   async function sendCommand(command) {
-    if (!isConnected.value || !webSocket.value) {
-      console.log("No Train Connected or No websocket Connection established")
-      return
+    switch (command.instruction) {
+      case "POWER_ON": isPoweredOn.value = true; break
+      case "POWER_OFF": isPoweredOn.value = false; break
+      case "CHANGE_DIRECTION": direction.value = command.direction; break
     }
-    switch (command["instruction"]) {
-      case "POWER_ON":
-        isPoweredOn.value = true
-        break
-      case "POWER_OFF":
-        isPoweredOn.value = false
-        break
-      case "CHANGE_DIRECTION":
-        direction.value = command["direction"]
-        break
-    }
-    console.log("sendCommand: isPoweredOn:", isPoweredOn.value)
-    try {
-      // Convert command object to JSON and then to Uint8Array
-      const jsonString = JSON.stringify(command)
-      const jsonBytes = new TextEncoder().encode(jsonString)
 
-      // Create a new Uint8Array with the first byte as PACKET_TYPE.command
+    // Convert command object to JSON and then to Uint8Array
+    const jsonString = JSON.stringify(command)
+    const jsonBytes = new TextEncoder().encode(jsonString)
+    try {
       const packet = new Uint8Array(1 + jsonBytes.length)
       packet[0] = PACKET_TYPE.command
-      packet.set(jsonBytes, 1)
-
-      //webSocket.value.send(packet)
-      sendWebTransportStream(packet);
+      packet.set(new TextEncoder().encode(JSON.stringify(command)), 1)
+      await sendWtMessage(packet)
     } catch (error) {
-      console.log(error)
+      console.error('Command send error:', error)
     }
   }
-  async function connectToWebSocket() {
-    if (isConnected.value) {
-      console.log('Already connected to WebSocket')
-      return
-    }
-    // Disconnect previous connection if exists
-    if (webSocket.value) {
-      webSocket.value.close()
-      isConnected.value = false
-    }
 
-    // Connect to WebSocket
-    webSocket.value = new WebSocket(`${WS_URL}/ws/remote_control/${remoteControlId.value}`)
-
-    webSocket.value.onopen = () => {
-      isConnected.value = true
-      console.log('WebSocket connected')
+  async function handleWsMessage(packetType, payload) {
+    switch (packetType) {
+      case PACKET_TYPE.telemetry: {
+        telemetryData.value = JSON.parse(new TextDecoder().decode(payload))
+        break
+      }
+      case PACKET_TYPE.notification: {
+        const notification = JSON.parse(new TextDecoder().decode(payload))
+        if (notification.train_id === selectedTrainId.value && notification.event === 'disconnected') {
+          router.push('/')
+        }
+        fetchAvailableTrains()
+        break
+      }
     }
+  }
 
-    webSocket.value.onmessage = async (event) => {
-      if (event.data instanceof Blob) {
+  function handleWtMessage(packetType, payload) {
+    let jsonString = ""
+    let jsonData = {}
+    switch (packetType) {
+      case PACKET_TYPE.telemetry:
         try {
-          const arrayBuffer = await event.data.arrayBuffer()
-          const byteArray = new Uint8Array(arrayBuffer)
-          const packetType = byteArray[0]
-          const payload = byteArray.slice(1)
-          let jsonData = {}
-          let jsonString = ""
-          switch (packetType) {
-            case PACKET_TYPE.video:
-              // This is now handled by WebTransport
-              break
-            case PACKET_TYPE.audio:
-              console.log('Received audio data')
-              break
-            case PACKET_TYPE.control:
-              console.log('Received control data')
-              break
-            case PACKET_TYPE.command:
-              console.log('Received command data')
-              break
-            case PACKET_TYPE.telemetry:
-              jsonString = new TextDecoder().decode(payload)
-              jsonData = JSON.parse(jsonString)
-              console.log('Received telemetry data:', jsonData)
-              telemetryData.value = jsonData
-              console.log('Train Name :', telemetryData.value.name)
-              console.log('Train Battery :', telemetryData.value.battery_level)
-              console.log('train status :', telemetryData.value.status)
-              break
-            case PACKET_TYPE.imu:
-              console.log('Received IMU data')
-              break
-            case PACKET_TYPE.lidar:
-              console.log('Received LiDAR data')
-              break
-            case PACKET_TYPE.keepalive:
-              console.log('Keepalive packet received')
-              break
-            case PACKET_TYPE.notification:
-              jsonString = new TextDecoder().decode(payload)
-              jsonData = JSON.parse(jsonString)
-              console.log('Notification packet received', jsonData)
-              if (jsonData.train_id == selectedTrainId.value && jsonData.event === 'disconnected') {
-                router.push('/')
-              }
-              fetchAvailableTrains()
-              break
-            default:
-              console.warn('Unknown packet type:', arrayBuffer[0])
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+          console.log('WebTransport: Received telemetry data:', jsonData)
+          telemetryData.value = jsonData
+
+          // also update isPoweredOn and direction
+
+          if (jsonData.status === 'running'){
+            isPoweredOn.value = true
+          } else {
+            isPoweredOn.value = false
           }
+
+          if (jsonData.direction === 1) {
+            direction.value = 'FORWARD'
+          } else {
+            direction.value = 'BACKWARD'
+          }
+
+          console.log("receiveWebTransportStream: isPoweredOn:", isPoweredOn.value)
+
+          break;
         } catch (error) {
-          console.error('Error processing Blob data:', error)
-        }
-      } else {
-        console.warn('Unexpected data type received:', typeof event.data)
-      }
-    }
-
-    webSocket.value.onclose = () => {
-      isConnected.value = false
-      console.log('WebSocket disconnected')
-    }
-
-    webSocket.value.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      isConnected.value = false
-    }
-  }
-
-  async function connectToWebTransport() {
-    if (isConnected.value) {
-      console.log('Already connected to WebTransport')
-      return
-    }
-    if (webTransport.value) {
-        webTransport.value.close()
-        webTransport.value = null
-    }
-
-    try {
-        console.log('Connecting to WebTransport...')
-        webTransport.value = new WebTransport(QUIC_URL);
-        await webTransport.value.ready
-        console.log('WebTransport connected')
-        receiveWebTransportDatagrams();
-
-        bidistream.value = await webTransport.value.createBidirectionalStream();
-        receiveWebTransportStream();
-        sendWebTransportStream(`REMOTE_CONTROL:${remoteControlId.value}`);
-        setInterval(sendKeepAliveWebTransport, 10000);
-    } catch (error) {
-      console.error('WebTransport connection error:', error)
-    }
-  }
-
-  async function receiveWebTransportStream()
-  {
-    const reader = bidistream.value.readable.getReader();
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) {
-        console.log('Stream closed');
-        break;
-      }
-      console.log('Received from stream:', new TextDecoder().decode(value));
-      const byteArray = new Uint8Array(value)
-      const packetType = byteArray[0]
-      const payload = byteArray.slice(1)
-      let jsonString = ""
-      let jsonData = {}
-      switch (packetType) {
-        case PACKET_TYPE.telemetry:
-          try {
-            jsonString = new TextDecoder().decode(payload)
-            jsonData = JSON.parse(jsonString)
-            console.log('WebTransport: Received telemetry data:', jsonData)
-            telemetryData.value = jsonData
-
-            // also update isPoweredOn and direction
-
-            if (jsonData.status === 'running'){
-              isPoweredOn.value = true
-            } else {
-              isPoweredOn.value = false
-            }
-
-            if (jsonData.direction === 1) {
-              direction.value = 'FORWARD'
-            } else {
-              direction.value = 'BACKWARD'
-            }
-
-            console.log("receiveWebTransportStream: isPoweredOn:", isPoweredOn.value)
-
-            break;
-          } catch (error) {
-            console.error('Error parsing telemetry data:', error)
-            break;
-          }
-
-      }
-      // Process the received data here
-    }
-  }
-
-  async function sendWebTransportStream(message) {
-    console.log('Sending WebTransport message:', message);
-    if (!webTransport.value) {
-      console.error('WebTransport is not connected');
-      return;
-    }
-    try {
-      const writer = bidistream.value.writable.getWriter();
-      let data;
-      if (typeof message === 'string') {
-        data = new TextEncoder().encode(message);
-      } else if (message instanceof Uint8Array) {
-        data = message;
-      } else {
-        throw new Error('Unsupported message type');
-      }
-      await writer.write(data);
-      writer.releaseLock();
-      console.log('WebTransport message sent:', message);
-    } catch (error) {
-      console.error('Error sending WebTransport message:', error);
-    }
-  }
-
-  function assembleVideoDatagram() {
-    let currentFrame = [];
-    let currentFrameId = -1;
-    let expectedPackets = 0;
-    let receivedPackets = 0;
-
-    return {
-      async processPacket(data) {
-        try {
-          // data[0] is packet_type
-          const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
-          const numberOfPackets = (data[5] << 8) | data[6];
-          const packetId = (data[7] << 8) | data[8];
-          const payload = data.slice(45);
-
-          if (frameId !== currentFrameId) {
-            // New frame
-            currentFrame = [];
-            currentFrameId = frameId;
-            expectedPackets = numberOfPackets;
-            receivedPackets = 0;
-          }
-
-          currentFrame.push(...payload);
-          receivedPackets += 1;
-
-          if (packetId === numberOfPackets && receivedPackets === expectedPackets) {
-            // Complete frame received
-            currentVideoFrame.value = new Uint8Array(currentFrame);
-            console.log('Received complete video frame over WebTransport Datagram');
-            currentFrame = [];
-          }
-
-        } catch (e) {
-          console.error('Error processing video packet:', e);
-        }
-      }
-    };
-  }
-
-  async function receiveWebTransportDatagrams() {
-    if (!webTransport.value) {
-      console.error('WebTransport is not connected');
-      return;
-    }
-    try {
-      const datagram_reader = webTransport.value.datagrams.readable.getReader();
-      console.log('Receiving WebTransport datagrams...');
-
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { value, done } = await datagram_reader.read();
-        if (done) {
-          console.log('WebTransport datagram stream closed');
+          console.error('Error parsing telemetry data:', error)
           break;
         }
-        if (value && value[0] === PACKET_TYPE.video) {
-          videoDatagramAssembler.value.processPacket(value);
-        } else {
-          console.log('Received WebTransport datagram UNKNOWN PACKET');
-        }
-      }
-      datagram_reader.releaseLock();
-    } catch (error) {
-      console.error('Error receiving WebTransport datagrams:', error);
+      case PACKET_TYPE.video:
+        videoDatagramAssembler.value.processPacket(payload)
+        break
     }
   }
 
@@ -422,14 +204,14 @@ export const useTrainStore = defineStore('train', () => {
     packet[0] = PACKET_TYPE.keepalive; // Set the first byte as PACKET_TYPE.keepalive
     packet.set(packetData, 1);
 
-    sendWebTransportStream(packet); // your function to send over WebTransport
+    sendWtMessage(packet)
+    console.log('WebTransport keepalive sent:', keepalivePacket);
   }
   return {
     availableTrains,
     selectedTrainId,
-    isConnected,
     telemetryData,
-    currentVideoFrame,
+    frameRef,
     remoteControlId,
     isPoweredOn,
     direction,

@@ -134,66 +134,36 @@ function formatCoord(val) {
 
 <style scoped>
 .telemetry-panel {
-  background: #f8fafc;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc 60%, #e3f0fa 100%);
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background: linear-gradient(135deg, #e3f0fa, #f8fafc);
-  border-bottom: 1px solid #e0e7ef;
-}
-
-.panel-header h2 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #222;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.refresh-controls {
-  display: flex;
-  gap: 10px;
-}
-
-.panel-btn {
-  background: #e3f0fa;
-  border: none;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0096ff;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.panel-btn:hover {
-  background: #d0e7fa;
-  color: #007acc;
+  box-shadow: 0 8px 32px rgba(0, 32, 128, 0.08), 0 1.5px 4px rgba(0,0,0,0.04);
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 }
 
 .telemetry-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 15px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  padding: 32px 24px;
+}
+
+.telemetry-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 24px 20px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.telemetry-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 150, 255, 0.10);
+  transform: translateY(-2px) scale(1.01);
 }
 
 .status-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 18px;
 }
 
 .status-item {
@@ -202,100 +172,96 @@ function formatCoord(val) {
 }
 
 .status-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: #7b8794;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .status-value {
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #222;
 }
 
 .signal-strength {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .signal-bars {
   display: flex;
   align-items: flex-end;
-  height: 20px;
-  gap: 2px;
+  height: 22px;
+  gap: 3px;
 }
 
 .signal-bar {
-  width: 4px;
+  width: 5px;
+  height: 100%;
   background: #e0e7ef;
   border-radius: 2px;
+  transition: background 0.2s;
 }
-
 .signal-bar.active {
   background: linear-gradient(180deg, #4CAF50, #2E7D32);
 }
 
 .signal-value {
-  font-size: 0.8rem;
-  color: #7b8794;
+  font-size: 0.9rem;
+  color: #009688;
+  font-weight: 500;
 }
 
 .location-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.location-value, .location-next, .gps-coord {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: 10px;
 }
 
 .location-value {
-  font-weight: 500;
+  font-weight: 600;
   color: #222;
+  font-size: 1rem;
 }
 
 .location-next {
   color: #4b5563;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .gps-coords {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 5px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .gps-coord {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: #7b8794;
 }
 
 .environment-data {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .environment-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
+  gap: 12px;
+  font-size: 1rem;
   color: #222;
 }
 
 .health-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 18px;
   justify-items: center;
 }
 
@@ -303,42 +269,46 @@ function formatCoord(val) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
 }
 
 .speed-value {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 2.1rem;
+  font-weight: 700;
   color: #0096ff;
-  background: none;
-  -webkit-background-clip: unset;
-  -webkit-text-fill-color: unset;
+  letter-spacing: 1px;
 }
 
 .unit {
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: #7b8794;
+  margin-left: 2px;
 }
 
 .acceleration {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: #4b5563;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .no-data {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: #b0b7c3;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .telemetry-grid {
     grid-template-columns: 1fr;
+    padding: 18px 8px;
+    gap: 18px;
+  }
+  .telemetry-card {
+    padding: 18px 10px;
   }
 }
 </style>
