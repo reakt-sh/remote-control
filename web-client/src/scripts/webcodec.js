@@ -7,6 +7,7 @@ export class VideoDecoderWrapper {
     this.frameQueue = []
     this.isRendering = false
     this.videoDecoder = null
+    this.isClosed = false; // Add this line
     this.initializeDecoder()
   }
 
@@ -18,7 +19,7 @@ export class VideoDecoderWrapper {
         this.onError(error)
       }
     })
-
+    this.isClosed = false; // Reset flag when (re)initializing
     this.videoDecoder.configure({
       codec: 'avc1.42E01E'
     })
@@ -50,6 +51,10 @@ export class VideoDecoderWrapper {
       return
     }
 
+    if (this.isClosed) {
+      this.initializeDecoder()
+    }
+
     const frameData = this.frameQueue.shift()
     try {
       this.videoDecoder.decode(new EncodedVideoChunk({
@@ -60,6 +65,9 @@ export class VideoDecoderWrapper {
     } catch (error) {
       console.error('Error decoding frame:', error)
       this.onError(error)
+
+      // re-initialize decoder while getting un-expected decode error
+      this.initializeDecoder()
     }
 
     requestAnimationFrame(() => this.renderNextFrame())
@@ -71,8 +79,9 @@ export class VideoDecoderWrapper {
   }
 
   cleanup() {
-    if (this.videoDecoder) {
+    if (this.videoDecoder && !this.isClosed) {
       this.videoDecoder.close()
+      this.isClosed = true
       this.videoDecoder = null
     }
     this.frameQueue = []
