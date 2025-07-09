@@ -3,11 +3,11 @@ import { WS_URL } from '@/scripts/config'
 
 
 export function useWebSocket(remoteControlId, messageHandler) {
-  const isConnected = ref(false)
+  const isWSConnected = ref(false)
   const webSocket = ref(null)
 
   async function connect() {
-    if (isConnected.value) return
+    if (isWSConnected.value) return
 
     if (webSocket.value) {
       webSocket.value.close()
@@ -16,7 +16,7 @@ export function useWebSocket(remoteControlId, messageHandler) {
     webSocket.value = new WebSocket(`${WS_URL}/ws/remote_control/${remoteControlId.value}`)
 
     webSocket.value.onopen = () => {
-      isConnected.value = true
+      isWSConnected.value = true
       console.log('WebSocket connected')
     }
 
@@ -33,13 +33,13 @@ export function useWebSocket(remoteControlId, messageHandler) {
     }
 
     webSocket.value.onclose = () => {
-      isConnected.value = false
+      isWSConnected.value = false
       console.log('WebSocket disconnected')
     }
 
     webSocket.value.onerror = (error) => {
       console.error('WebSocket error:', error)
-      isConnected.value = false
+      isWSConnected.value = false
     }
   }
 
@@ -50,14 +50,14 @@ export function useWebSocket(remoteControlId, messageHandler) {
   }
 
   function send(data) {
-    if (!isConnected.value || !webSocket.value) {
-      throw new Error('WebSocket not connected')
+    if (!isWSConnected.value || !webSocket.value) {
+      console.log('WebSocket not connected')
     }
     webSocket.value.send(data)
   }
 
   return {
-    isConnected,
+    isWSConnected,
     connectWebSocket: connect,
     sendWsCommand: send,
     disconnectWebSocket: disconnect
