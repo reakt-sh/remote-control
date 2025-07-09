@@ -1,7 +1,5 @@
 export class VideoDecoderWrapper {
   constructor(options) {
-    this.videoWidth = options.videoWidth || 640
-    this.videoHeight = options.videoHeight || 480
     this.maxQueueSize = options.maxQueueSize || 60
     this.onFrameDecoded = options.onFrameDecoded || (() => {})
     this.onError = options.onError || (() => {})
@@ -22,9 +20,7 @@ export class VideoDecoderWrapper {
     })
 
     this.videoDecoder.configure({
-      codec: 'avc1.42E01E',
-      codedWidth: this.videoWidth,
-      codedHeight: this.videoHeight,
+      codec: 'avc1.42E01E'
     })
   }
 

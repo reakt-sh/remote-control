@@ -5,8 +5,8 @@ import { VideoDecoderWrapper } from '@/scripts/webcodec'
 
 export function useVideoPanel(canvasRef, options = {}) {
   const {
-    videoWidth = 640,
-    videoHeight = 480,
+    videoWidth = 1280,
+    videoHeight = 720,
     maxQueueSize = 60
   } = options
 
@@ -15,8 +15,6 @@ export function useVideoPanel(canvasRef, options = {}) {
 
   function initializeDecoder() {
     videoDecoder = new VideoDecoderWrapper({
-      videoWidth,
-      videoHeight,
       maxQueueSize,
       onFrameDecoded: (frame) => renderFrameToCanvas(frame),
       onError: (error) => console.error('VideoDecoder error:', error)
