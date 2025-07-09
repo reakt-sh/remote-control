@@ -21,9 +21,21 @@ def run_train_client():
     client.show()
     sys.exit(app.exec_())
 
+def run_cli_client():
+    from PyQt5.QtCore import QCoreApplication
+    from cli_client import CLIClient
+
+    # Create and start the CLI client
+    app = QCoreApplication(sys.argv)
+    client = CLIClient()
+    client.start()
+    sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    if "rpi" in platform.uname().release.lower():
+    if len(sys.argv) > 1 and sys.argv[1] == "cli":
+        # run CLI client
+        run_cli_client()
+    elif "rpi" in platform.uname().release.lower():
         # run Raspberri Pi 5 client
         run_rpi5_client()
     else:
