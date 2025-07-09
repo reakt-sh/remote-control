@@ -6,7 +6,7 @@ import os
 from globals import ASSET_DIR
 
 class FileProcessor(QObject):
-    frame_ready = pyqtSignal(object, object)  # Emits (frame_count, frame)
+    frame_ready = pyqtSignal(object, object, int, int)  # Emits (frame_count, frame)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -141,4 +141,4 @@ class FileProcessor(QObject):
                     cv2.LINE_AA
                 )
 
-            self.frame_ready.emit(self.frame_count, frame)
+            self.frame_ready.emit(self.frame_count, frame, self.width, self.height)

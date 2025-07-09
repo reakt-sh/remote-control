@@ -8,7 +8,7 @@ import numpy as np
 from loguru import logger
 
 class CameraRPi5(QObject):
-    frame_ready = pyqtSignal(object, object)  # Emits the frame (numpy array) and frame count
+    frame_ready = pyqtSignal(object, object, int, int)  # Emits the frame (numpy array) and frame count
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -35,7 +35,7 @@ class CameraRPi5(QObject):
             # After picam2.configure(...) and picam2.start()
             main_stream = self.picam2.stream_configuration("main")
             width, height = main_stream["size"]
-            
+
             self.width = width
             self.height = height
             self.fps = 30  # Default, can be adjusted in config
@@ -130,7 +130,7 @@ class CameraRPi5(QObject):
                         cv2.LINE_AA
                     )
 
-                self.frame_ready.emit(self.frame_count, frame)
+                self.frame_ready.emit(self.frame_count, frame, self.width, self.height)
 
             except Exception as e:
                 print(f"Error capturing frame: {str(e)}")

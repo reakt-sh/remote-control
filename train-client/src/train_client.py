@@ -238,7 +238,7 @@ class TrainClient(QMainWindow):
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
 
-    def on_new_frame(self, frame_id, frame):
+    def on_new_frame(self, frame_id, frame, width, height):
         # Convert to RGB for PyQt display
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
@@ -247,7 +247,7 @@ class TrainClient(QMainWindow):
         self.image_label.setPixmap(QPixmap.fromImage(qt_image))
 
         # Encode frame
-        self.encoder.encode_frame(frame_id, frame, self.log_message)
+        self.encoder.encode_frame(frame_id, frame, width, height, self.log_message)
 
     def on_telemetry_data(self, data):
         # Process telemetry data
