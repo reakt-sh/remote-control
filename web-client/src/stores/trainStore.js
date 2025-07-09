@@ -1,14 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useWebSocket } from '@/scripts/websocket'
+import { SERVER_URL, QUIC_URL } from '@/scripts/config'
+// import { useWebTransport } from '@/scripts/webtransport'
+// import { useAssembler } from '@/scripts/assembler'
 
 // Define server IP and host
-const SERVER = 'wt.rtsys-lab.de'
-const WS_PORT = 8000
-const QUIC_PORT = 4437
-const SERVER_URL = `https://${SERVER}:${WS_PORT}`
-const WS_URL = `wss://${SERVER}:${WS_PORT}`
-const QUIC_URL = `https://${SERVER}:${QUIC_PORT}`
+
 
 // Packet Types
 const PACKET_TYPE = {
@@ -28,7 +27,6 @@ export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
   const selectedTrainId = ref('')
   const telemetryData = ref(null)
-  const isConnected = ref(false)
   const webSocket = ref(null)
   const currentVideoFrame = ref(null)
   const remoteControlId = ref(null)
@@ -39,6 +37,11 @@ export const useTrainStore = defineStore('train', () => {
   const direction = ref('FORWARD')
   const isPoweredOn = ref(true)
   const router = useRouter()
+
+  const {
+    isConnected,
+    connectWebSocket,
+  } = useWebSocket(remoteControlId, handleWsMessage)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -68,7 +71,7 @@ export const useTrainStore = defineStore('train', () => {
 
   async function connectToServer() {
     connectToWebTransport()
-    connectToWebSocket()
+    await connectWebSocket()
   }
 
   async function mappingToTrain(trainId) {
@@ -150,93 +153,21 @@ export const useTrainStore = defineStore('train', () => {
       console.log(error)
     }
   }
-  async function connectToWebSocket() {
-    if (isConnected.value) {
-      console.log('Already connected to WebSocket')
-      return
-    }
-    // Disconnect previous connection if exists
-    if (webSocket.value) {
-      webSocket.value.close()
-      isConnected.value = false
-    }
 
-    // Connect to WebSocket
-    webSocket.value = new WebSocket(`${WS_URL}/ws/remote_control/${remoteControlId.value}`)
-
-    webSocket.value.onopen = () => {
-      isConnected.value = true
-      console.log('WebSocket connected')
-    }
-
-    webSocket.value.onmessage = async (event) => {
-      if (event.data instanceof Blob) {
-        try {
-          const arrayBuffer = await event.data.arrayBuffer()
-          const byteArray = new Uint8Array(arrayBuffer)
-          const packetType = byteArray[0]
-          const payload = byteArray.slice(1)
-          let jsonData = {}
-          let jsonString = ""
-          switch (packetType) {
-            case PACKET_TYPE.video:
-              // This is now handled by WebTransport
-              break
-            case PACKET_TYPE.audio:
-              console.log('Received audio data')
-              break
-            case PACKET_TYPE.control:
-              console.log('Received control data')
-              break
-            case PACKET_TYPE.command:
-              console.log('Received command data')
-              break
-            case PACKET_TYPE.telemetry:
-              jsonString = new TextDecoder().decode(payload)
-              jsonData = JSON.parse(jsonString)
-              console.log('Received telemetry data:', jsonData)
-              telemetryData.value = jsonData
-              console.log('Train Name :', telemetryData.value.name)
-              console.log('Train Battery :', telemetryData.value.battery_level)
-              console.log('train status :', telemetryData.value.status)
-              break
-            case PACKET_TYPE.imu:
-              console.log('Received IMU data')
-              break
-            case PACKET_TYPE.lidar:
-              console.log('Received LiDAR data')
-              break
-            case PACKET_TYPE.keepalive:
-              console.log('Keepalive packet received')
-              break
-            case PACKET_TYPE.notification:
-              jsonString = new TextDecoder().decode(payload)
-              jsonData = JSON.parse(jsonString)
-              console.log('Notification packet received', jsonData)
-              if (jsonData.train_id == selectedTrainId.value && jsonData.event === 'disconnected') {
-                router.push('/')
-              }
-              fetchAvailableTrains()
-              break
-            default:
-              console.warn('Unknown packet type:', arrayBuffer[0])
-          }
-        } catch (error) {
-          console.error('Error processing Blob data:', error)
-        }
-      } else {
-        console.warn('Unexpected data type received:', typeof event.data)
+  async function handleWsMessage(packetType, payload) {
+    switch (packetType) {
+      case PACKET_TYPE.telemetry: {
+        telemetryData.value = JSON.parse(new TextDecoder().decode(payload))
+        break
       }
-    }
-
-    webSocket.value.onclose = () => {
-      isConnected.value = false
-      console.log('WebSocket disconnected')
-    }
-
-    webSocket.value.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      isConnected.value = false
+      case PACKET_TYPE.notification: {
+        const notification = JSON.parse(new TextDecoder().decode(payload))
+        if (notification.train_id === selectedTrainId.value && notification.event === 'disconnected') {
+          router.push('/')
+        }
+        fetchAvailableTrains()
+        break
+      }
     }
   }
 
