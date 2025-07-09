@@ -61,30 +61,27 @@ export function useWebTransport(remoteControlId, messageHandler) {
 
   function setupStreamReader() {
     const reader = bidistream.value.readable.getReader()
-    
     const readChunk = async () => {
       const { value, done } = await reader.read()
       if (done) return
-      
+
       const byteArray = new Uint8Array(value)
       messageHandler(byteArray[0], byteArray.slice(1))
       readChunk()
     }
-    
+
     readChunk().catch(console.error)
   }
 
   function setupDatagramReader() {
     const reader = transport.value.datagrams.readable.getReader()
-    
     const readChunk = async () => {
       const { value, done } = await reader.read()
       if (done) return
-      
+
       messageHandler(value[0], value)
       readChunk()
     }
-    
     readChunk().catch(console.error)
   }
 
