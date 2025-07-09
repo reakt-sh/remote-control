@@ -14,7 +14,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { currentVideoFrame } = storeToRefs(useTrainStore())
+const { frameRef } = storeToRefs(useTrainStore())
 const videoCanvas = ref(null)
 let videoDecoder = null
 let recordedFrames = []
@@ -74,7 +74,7 @@ async function updateCanvasSize() {
   videoCanvas.value.height = videoHeight
 }
 
-watch(currentVideoFrame, (newFrame) => {
+watch(frameRef, (newFrame) => {
   if (!newFrame || newFrame.length === 0) {
     console.warn('Invalid or empty frame data:', newFrame)
     return

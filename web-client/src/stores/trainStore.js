@@ -3,8 +3,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
+import { useAssembler } from '@/scripts/assembler'
 import { SERVER_URL } from '@/scripts/config'
-// import { useAssembler } from '@/scripts/assembler'
+
 
 // Define server IP and host
 
@@ -27,7 +28,7 @@ export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
   const selectedTrainId = ref('')
   const telemetryData = ref(null)
-  const currentVideoFrame = ref(null)
+  const frameRef = ref(null)
   const remoteControlId = ref(null)
   const videoDatagramAssembler = ref(null)
   const keepaliveSequence = ref(0)
@@ -80,13 +81,9 @@ export const useTrainStore = defineStore('train', () => {
     if (!trainId) return
     telemetryData.value = {}
     selectedTrainId.value = trainId
-    // initialize video stream handler if not already initialized
-    if (videoDatagramAssembler.value && videoDatagramAssembler.value.trainId !== trainId) {
-      videoDatagramAssembler.value = null; // Reset if trainId changes
-    }
 
-    if (!videoDatagramAssembler.value && selectedTrainId.value) {
-      videoDatagramAssembler.value = assembleVideoDatagram();
+    if (!videoDatagramAssembler.value) {
+      videoDatagramAssembler.value = useAssembler(frameRef)
     }
 
     // Send a POST request to assign the train to the remote control
@@ -194,46 +191,6 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function assembleVideoDatagram() {
-    let currentFrame = [];
-    let currentFrameId = -1;
-    let expectedPackets = 0;
-    let receivedPackets = 0;
-
-    return {
-      async processPacket(data) {
-        try {
-          // data[0] is packet_type
-          const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4];
-          const numberOfPackets = (data[5] << 8) | data[6];
-          const packetId = (data[7] << 8) | data[8];
-          const payload = data.slice(45);
-
-          if (frameId !== currentFrameId) {
-            // New frame
-            currentFrame = [];
-            currentFrameId = frameId;
-            expectedPackets = numberOfPackets;
-            receivedPackets = 0;
-          }
-
-          currentFrame.push(...payload);
-          receivedPackets += 1;
-
-          if (packetId === numberOfPackets && receivedPackets === expectedPackets) {
-            // Complete frame received
-            currentVideoFrame.value = new Uint8Array(currentFrame);
-            console.log('Received complete video frame over WebTransport Datagram');
-            currentFrame = [];
-          }
-
-        } catch (e) {
-          console.error('Error processing video packet:', e);
-        }
-      }
-    };
-  }
-
   async function sendKeepAliveWebTransport() {
     const keepalivePacket = {
       type: "keepalive",
@@ -254,7 +211,7 @@ export const useTrainStore = defineStore('train', () => {
     availableTrains,
     selectedTrainId,
     telemetryData,
-    currentVideoFrame,
+    frameRef,
     remoteControlId,
     isPoweredOn,
     direction,
