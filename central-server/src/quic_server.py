@@ -120,6 +120,19 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self.remote_control_id = message[15:]  # Extract train ID
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
+                    # If no train clients are connected, spawn a subprocess to run a simulated train client
+                    import subprocess, os, sys
+                    if not self.client_manager.train_clients:
+                        logger.info("No train clients connected. Spawning a simulated train client subprocess.")
+                        # Build the command to run the CLI train client
+                        train_client_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../train-client/src/main.py'))
+                        python_executable = sys.executable
+                        try:
+                            subprocess.Popen([python_executable, train_client_path, 'cli'])
+                            logger.info(f"Spawned train client subprocess: {python_executable} {train_client_path} cli")
+                        except Exception as e:
+                            logger.error(f"Failed to spawn train client subprocess: {e}")
+
                     # try send Stream hello world message to the remote control
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
