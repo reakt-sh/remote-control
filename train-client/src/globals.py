@@ -1,5 +1,6 @@
 import sys
 import platform
+import os
 # some configuration for components
 
 START_X = 100
@@ -9,16 +10,10 @@ WINDOW_HEIGHT = 500
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 FRAME_RATE = 60
-H264_DUMP = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/dump_collection/dump"
-ASSET_DIR = "/home/rcd/Desktop/Workspace/TrainRemoteControl/train-client/asset"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This file's directory
+H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', 'dump')
+ASSET_DIR = os.path.join(BASE_DIR, '..', 'asset')
 
-if sys.platform.startswith("win"):
-    H264_DUMP="D:\\Workspace\\remote-control\\train-client\\dump_collection\\dump"
-    ASSET_DIR="D:\\Workspace\\remote-control\\train-client\\src\\asset"
-
-if "rpi" in platform.uname().release.lower():
-    H264_DUMP = "/home/reaktor/remote-control/train-client/dump_collection/dump"
-    ASSET_DIR = "/home/reaktor/remote-control/train-client/src/asset"
 PIXEL_FORMAT = "yuv420p"
 
 # Packet Types
