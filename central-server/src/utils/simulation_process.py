@@ -11,8 +11,12 @@ class SimulationProcess:
         train_client_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../train-client/src/main.py'))
         python_executable = sys.executable
         try:
-            # Suppress all logs from the subprocess
-            self.simulation_process = subprocess.Popen([python_executable, train_client_path, 'cli'])
+            # Suppress all logs from the subprocess by redirecting stdout and stderr to DEVNULL
+            self.simulation_process = subprocess.Popen(
+                [python_executable, train_client_path, 'cli'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
             logger.info(f"Spawned train client subprocess: {python_executable} {train_client_path} cli (logs suppressed)")
         except Exception as e:
             logger.error(f"Failed to spawn train client subprocess: {e}")
