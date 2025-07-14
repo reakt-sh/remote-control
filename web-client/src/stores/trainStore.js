@@ -83,7 +83,13 @@ export const useTrainStore = defineStore('train', () => {
     selectedTrainId.value = trainId
 
     if (!videoDatagramAssembler.value) {
-      videoDatagramAssembler.value = useAssembler(frameRef)
+      videoDatagramAssembler.value = new useAssembler({
+        maxFrames: 30,
+        onFrameComplete: (completedFrame) => {
+          frameRef.value = completedFrame.data
+          console.log('Frame completed for frameID :', completedFrame.frameId)
+        }
+      })
     }
 
     // Send a POST request to assign the train to the remote control
