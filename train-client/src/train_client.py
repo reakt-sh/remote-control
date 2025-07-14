@@ -287,6 +287,12 @@ class TrainClient(QMainWindow):
             self.telemetry.notify_new_frame_processed()
             # print("Encoded frame to network worker quic enqueue, length:", len(encoded_bytes))
 
+
+    def on_network_quality_change(self, estimated_bandwidth: int):
+        # Reserve 20% headroom for congestion
+        target_bitrate = int(estimated_bandwidth * 0.8)
+        self.encoder.set_bitrate(target_bitrate)
+
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
         full_message = f"{timestamp} {message}"
