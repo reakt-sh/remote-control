@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from server_controller import ServerController
 from utils.app_logger import logger
+from utils.iperf3_process import Iperf3Process
 from endpoints import remote_control_gateway
 from endpoints import train_gateway
 from config import settings
@@ -22,10 +23,15 @@ async def lifespan(app):
     # Start QUIC server in a background thread
     quic_thread = threading.Thread(target=lambda: asyncio.run(run_quic_server()), daemon=True)
     quic_thread.start()
+
+    # Start iperf3 server process
+    iperf3_process = Iperf3Process()
+    iperf3_process.create_process()
     yield
     logger.info("Shutting down FastAPI server...")
     quic_thread.join(timeout=1)
     await serverController.stop_server()
+    iperf3_process.destroy_process()
 
 app = FastAPI(lifespan=lifespan)
 
