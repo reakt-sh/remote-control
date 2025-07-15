@@ -52,13 +52,3 @@ class NetworkSpeed:
             f"Upload: {upload_speed:.2f} Mbps"
         )
         return download_speed, upload_speed
-
-
-# Example usage
-if __name__ == "__main__":
-    
-    
-    if download is not None and upload is not None:
-        print(f"Download: {download:.2f} Mbps | Upload: {upload:.2f} Mbps")
-    else:
-        print("Speed test failed")

@@ -10,6 +10,8 @@ from globals import PACKET_TYPE
 
 s_controller = ServerController()
 router = APIRouter()
+size_mb = 10  # 10MB test file
+test_data = os.urandom(size_mb * 1024 * 1024)  # Generate random binary data
 
 @router.websocket("/ws/remote_control/{remote_control_id}")
 async def remote_control_interface(websocket: WebSocket, remote_control_id: str):
@@ -65,8 +67,6 @@ async def unmap_client_from_train(remote_control_id: str):
 
 @router.get("/api/speedtest/download")
 async def speedtest_download():
-    size_mb = 10  # 10MB test file
-    test_data = os.urandom(size_mb * 1024 * 1024)  # Generate random binary data
     return Response(content=test_data, media_type="application/octet-stream")
 
 
