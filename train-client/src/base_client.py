@@ -9,6 +9,7 @@ from loguru import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
+from networkspeed import NetworkSpeed
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
@@ -71,6 +72,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.data_received.connect(self.on_data_received_quic)
         self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
+
+        tester = NetworkSpeed(duration=5)
+        download, upload = tester.measure_speeds()
+        logger.info(
+            f"Network speed test results - Download: {download:.2f} Mbps, "
+            f"Upload: {upload:.2f} Mbps"
+        )
 
     def on_quic_connected(self):
         logger.info("QUIC connection established")
