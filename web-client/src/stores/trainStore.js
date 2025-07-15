@@ -5,6 +5,7 @@ import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { SERVER_URL } from '@/scripts/config'
+import { useNetworkSpeed } from '@/scripts/networkspeed'
 
 
 // Define server IP and host
@@ -45,6 +46,8 @@ export const useTrainStore = defineStore('train', () => {
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
 
+  const networkspeed = new useNetworkSpeed()
+
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -75,6 +78,7 @@ export const useTrainStore = defineStore('train', () => {
     await connectWebSocket()
     await connectWebTransport()
     setInterval(sendKeepAliveWebTransport, 10000);
+    networkspeed.runFullTest()
   }
 
   async function mappingToTrain(trainId) {

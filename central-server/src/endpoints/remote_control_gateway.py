@@ -1,5 +1,8 @@
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import JSONResponse
+import time
+import requests
 
 from server_controller import ServerController
 from utils.app_logger import logger
@@ -60,3 +63,17 @@ async def unmap_client_from_train(remote_control_id: str):
         "status": "success",
         "message": f"Unmapped {remote_control_id}"
     }
+
+@router.get("/api/speedtest/download")
+async def speedtest_download():
+    size_mb = 10  # Test with 10MB data
+    test_data = b"0" * (size_mb * 1024 * 1024)
+    return JSONResponse({"data": test_data.decode("latin1")})
+
+@router.post("/api/speedtest/upload")
+async def speedtest_upload(request: Request):
+    start_time = time.time()
+    body = await request.body()
+    elapsed = time.time() - start_time
+    size_mb = len(body) / (1024 * 1024)
+    return {"speed_mbps": (size_mb * 8) / elapsed}

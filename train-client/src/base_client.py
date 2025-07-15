@@ -159,6 +159,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
+        # logger.info(f"{timestamp} {message}")
 
     def close(self):
         self._running = False
