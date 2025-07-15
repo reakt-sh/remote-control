@@ -2,7 +2,7 @@ import { SERVER_URL } from '@/scripts/config'
 export class useNetworkSpeed {
   constructor() {
     this.serverUrl = SERVER_URL;
-    this.downloadSizeMB = 10; // Match your server's test size
+    this.downloadSizeMB = 5; // Match your server's test size
   }
 
   // Test download speed (server -> client)
@@ -21,7 +21,6 @@ export class useNetworkSpeed {
 
       return {
         speed: speedMbps,
-        duration: durationSeconds,
         bytesTransferred: totalBytes
       };
     } catch (error) {
@@ -35,7 +34,6 @@ export class useNetworkSpeed {
     try {
       // Create test data (match server's expected size)
       const testData = '0'.repeat(this.downloadSizeMB * 1024 * 1024);
-      const startTime = performance.now();
       const response = await fetch(`${this.serverUrl}/api/speedtest/upload`, {
         method: 'POST',
         headers: {
@@ -47,11 +45,10 @@ export class useNetworkSpeed {
       if (!response.ok) throw new Error('Network response was not ok');
 
       const result = await response.json();
-      const endTime = performance.now();
+      console.log('Upload speed result:', result);
 
       return {
         speed: result.speed_mbps,
-        duration: (endTime - startTime) / 1000,
         bytesTransferred: testData.length
       };
     } catch (error) {
