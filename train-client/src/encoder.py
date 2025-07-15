@@ -10,6 +10,9 @@ class Encoder(QObject):
         self.frame_rate = FRAME_RATE
         self.pixel_format = PIXEL_FORMAT
         self.h264_dump_path = H264_DUMP
+        self.current_bitrate = 5000000 # INITIAL_BITRATE 5Mbps
+        self.min_bitrate = 500000 # MIN_BITRATE 0.5Mbps
+        self.max_bitrate = 10000000 # MAX_BITRATE 10Mbps
         self.init_encoder()
 
     def init_encoder(self):
@@ -40,6 +43,28 @@ class Encoder(QObject):
                 'force-idr=1:repeat_headers=1'
             ),
         }
+
+        self.update_encoder_parameters()
+
+    def update_encoder_parameters(self):
+        self.stream.options = {
+            **self.stream.options, # Preserve existing options
+            'bitrate': str(self.current_bitrate),
+            'bufsize': str(self.current_bitrate * 2),  # Buffer size is typically double the bitrate
+            'maxrate': str(self.current_bitrate),
+            'minrate': str(self.current_bitrate // 2),  # Minimum rate is half the bitrate
+        }
+
+        if hasattr(self.stream, 'codec_context'):
+            self.stream.codec_context.bit_rate = self.current_bitrate
+
+    def set_bitrate(self, new_bitrate: int, immediate: bool = True):
+        # Clamp to allowed range
+        self.current_bitrate = max(self.min_bitrate, min(self.max_bitrate, new_bitrate))
+
+        # Reconfigure encoder
+        self.update_encoder_parameters()
+
 
     def encode_frame(self, frame_id, frame, width, height, log_callback=None):
         self.stream.width = width
