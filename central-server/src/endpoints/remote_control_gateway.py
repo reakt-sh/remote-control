@@ -10,7 +10,7 @@ from globals import PACKET_TYPE
 
 s_controller = ServerController()
 router = APIRouter()
-size_mb = 10  # 10MB test file
+size_mb = 20  # 20MB test file
 test_data = os.urandom(size_mb * 1024 * 1024)  # Generate random binary data
 
 @router.websocket("/ws/remote_control/{remote_control_id}")

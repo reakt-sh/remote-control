@@ -1,30 +1,7 @@
 <template>
   <div class="network-panel">
     <div class="network-grid">
-      <TelemetryCard title="Web Client Network" icon="fas fa-globe">
-        <div class="network-metrics">
-          <div class="metric-item">
-            <div class="metric-label">Download Speed</div>
-            <div class="metric-value">
-              {{ formatSpeed(download_speed) }}
-              <span class="unit">Mbps</span>
-            </div>
-          </div>
-          <div class="metric-item">
-            <div class="metric-label">Upload Speed</div>
-            <div class="metric-value">
-              {{ formatSpeed(upload_speed) }}
-              <span class="unit">Mbps</span>
-            </div>
-          </div>
-          <button class="test-button" @click="networkspeed.runFullTest(); isTestingWebClient = true" :disabled="isTestingWebClient">
-            <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingWebClient }"></i>
-            {{ isTestingWebClient ? 'Testing...' : 'Test Web Client' }}
-          </button>
-        </div>
-      </TelemetryCard>
-
-      <TelemetryCard title="Train Client Network" icon="fas fa-train">
+      <TelemetryCard title="Train to Server" icon="fas fa-train">
         <div class="network-metrics">
           <div class="metric-item">
             <div class="metric-label">Download Speed</div>
@@ -42,7 +19,30 @@
           </div>
           <button class="test-button" @click="send_network_measurement_request()" :disabled="isTestingTrainClient">
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingTrainClient }"></i>
-            {{ isTestingTrainClient ? 'Testing...' : 'Test Train Client' }}
+            {{ isTestingTrainClient ? 'Calculating...' : 'Re-Calculate' }}
+          </button>
+        </div>
+      </TelemetryCard>
+
+      <TelemetryCard title="Remote Control to Server" icon="fas fa-globe">
+        <div class="network-metrics">
+          <div class="metric-item">
+            <div class="metric-label">Download Speed</div>
+            <div class="metric-value">
+              {{ formatSpeed(download_speed) }}
+              <span class="unit">Mbps</span>
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Upload Speed</div>
+            <div class="metric-value">
+              {{ formatSpeed(upload_speed) }}
+              <span class="unit">Mbps</span>
+            </div>
+          </div>
+          <button class="test-button" @click="networkspeed.runFullTest(); isTestingWebClient = true" :disabled="isTestingWebClient">
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingWebClient }"></i>
+            {{ isTestingWebClient ? 'Calculating...' : 'Re-Calculate' }}
           </button>
         </div>
       </TelemetryCard>
