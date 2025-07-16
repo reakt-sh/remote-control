@@ -134,7 +134,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     logger.debug(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
 
                     # initiate download/upload speed test with the remote control
-                    asyncio.create_task(self.measure_download_speed())
+                    # asyncio.create_task(self.measure_download_speed())
                     return
                 else:
                     logger.warning(f"Unknown client identification message: {message}")
