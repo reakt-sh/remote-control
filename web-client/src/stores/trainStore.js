@@ -45,6 +45,8 @@ export const useTrainStore = defineStore('train', () => {
   const download_start_time = ref(0)
   const download_end_time = ref(0)
   const total_downloaded_bytes = ref(0)
+  const download_speed = ref(0)
+  const upload_speed = ref(0)
 
   const {
     isWSConnected,
@@ -57,7 +59,7 @@ export const useTrainStore = defineStore('train', () => {
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
 
-  const networkspeed = new useNetworkSpeed()
+  const networkspeed = new useNetworkSpeed(onNetworkSpeedCalculated)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -245,6 +247,11 @@ export const useTrainStore = defineStore('train', () => {
     sendWtMessage(packet)
     console.log('WebTransport keepalive sent:', keepalivePacket);
   }
+
+  async function onNetworkSpeedCalculated(downloadSpeed, uploadSpeed) {
+    download_speed.value = downloadSpeed
+    upload_speed.value = uploadSpeed
+  }
   return {
     availableTrains,
     selectedTrainId,
@@ -255,6 +262,8 @@ export const useTrainStore = defineStore('train', () => {
     direction,
     isWSConnected,
     isWTConnected,
+    download_speed,
+    upload_speed,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,

@@ -1,8 +1,9 @@
 import { SERVER_URL } from '@/scripts/config'
 export class useNetworkSpeed {
-  constructor() {
+  constructor(messageCallback) {
     this.serverUrl = SERVER_URL;
     this.testSizeMB = 10; // Use 10MB for better accuracy
+    this.callback = messageCallback
   }
 
   async testDownload() {
@@ -45,6 +46,6 @@ export class useNetworkSpeed {
     const upload = await this.testUpload();
     console.log(`Upload: ${upload.speed.toFixed(2)} Mbps`);
 
-    return { download, upload };
+    this.callback?.(download.speed, upload.speed);
   }
 }

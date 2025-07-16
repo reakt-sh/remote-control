@@ -6,14 +6,14 @@
           <div class="metric-item">
             <div class="metric-label">Download Speed</div>
             <div class="metric-value">
-              {{ formatSpeed(webClientSpeeds.download) }}
+              {{ formatSpeed(download_speed) }}
               <span class="unit">Mbps</span>
             </div>
           </div>
           <div class="metric-item">
             <div class="metric-label">Upload Speed</div>
             <div class="metric-value">
-              {{ formatSpeed(webClientSpeeds.upload) }}
+              {{ formatSpeed(upload_speed) }}
               <span class="unit">Mbps</span>
             </div>
           </div>
@@ -29,14 +29,14 @@
           <div class="metric-item">
             <div class="metric-label">Download Speed</div>
             <div class="metric-value">
-              {{ formatSpeed(trainClientSpeeds.download) }}
+              {{ formatSpeed(telemetryData?.download_speed) }}
               <span class="unit">Mbps</span>
             </div>
           </div>
           <div class="metric-item">
             <div class="metric-label">Upload Speed</div>
             <div class="metric-value">
-              {{ formatSpeed(trainClientSpeeds.upload) }}
+              {{ formatSpeed(telemetryData?.upload_speed) }}
               <span class="unit">Mbps</span>
             </div>
           </div>
@@ -51,57 +51,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
 
 const trainStore = useTrainStore()
-const { telemetryData } = storeToRefs(trainStore)
-
-const webClientSpeeds = ref({ download: 0, upload: 0 })
-const trainClientSpeeds = ref({ download: 0, upload: 0 })
-const isTestingWebClient = ref(false)
-const isTestingTrainClient = ref(false)
+const { telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
 
 function formatSpeed(speed) {
   if (speed === 0 || speed === null || speed === undefined) return 'N/A'
   return Number(speed).toFixed(2)
 }
 
-async function testWebClientSpeed() {
-  isTestingWebClient.value = true
-  try {
-    // Simulate network speed test for web client
-    // In a real implementation, this would use a WebSocket or API call
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate 2s test
-    webClientSpeeds.value = {
-      download: Math.random() * 100 + 10, // Random value for demo
-      upload: Math.random() * 50 + 5      // Random value for demo
-    }
-  } finally {
-    isTestingWebClient.value = false
-  }
-}
-
-async function testTrainClientSpeed() {
-  isTestingTrainClient.value = true
-  try {
-    // Request train client network speeds from the server
-    const response = await trainStore.sendCommand({
-      instruction: 'TEST_NETWORK_SPEED',
-      train_id: telemetryData.value.train_id
-    })
-    // Simulate response for demo purposes
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate 2s test
-    trainClientSpeeds.value = {
-      download: response?.download || Math.random() * 80 + 10, // Random value for demo
-      upload: response?.upload || Math.random() * 40 + 5      // Random value for demo
-    }
-  } finally {
-    isTestingTrainClient.value = false
-  }
-}
 </script>
 
 <style scoped>
