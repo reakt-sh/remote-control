@@ -17,7 +17,7 @@
               <span class="unit">Mbps</span>
             </div>
           </div>
-          <button class="test-button" @click="testWebClientSpeed" :disabled="isTestingWebClient">
+          <button class="test-button" @click="networkspeed.runFullTest(); isTestingWebClient = true" :disabled="isTestingWebClient">
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingWebClient }"></i>
             {{ isTestingWebClient ? 'Testing...' : 'Test Web Client' }}
           </button>
@@ -40,7 +40,7 @@
               <span class="unit">Mbps</span>
             </div>
           </div>
-          <button class="test-button" @click="testTrainClientSpeed" :disabled="isTestingTrainClient">
+          <button class="test-button" @click="send_network_measurement_request()" :disabled="isTestingTrainClient">
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingTrainClient }"></i>
             {{ isTestingTrainClient ? 'Testing...' : 'Test Train Client' }}
           </button>
@@ -51,18 +51,42 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
 
 const trainStore = useTrainStore()
-const { telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
+const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
+const isTestingWebClient = ref(false)
+const isTestingTrainClient = ref(false)
+const previousDownloadSpeed = ref(0)
 
 function formatSpeed(speed) {
-  if (speed === 0 || speed === null || speed === undefined) return 'N/A'
-  return Number(speed).toFixed(2)
+    if (speed === 0 || speed === null || speed === undefined) return 'N/A'
+    return Number(speed).toFixed(2)
 }
 
+function send_network_measurement_request() {
+    isTestingTrainClient.value = true
+    trainStore.sendCommand({
+        "instruction": 'CALCULATE_NETWORK_SPEED',
+        "train_id": telemetryData.value.train_id
+    })
+}
+
+watch(download_speed, () => {
+    isTestingWebClient.value = false
+})
+
+watch(
+  () => telemetryData.value?.download_speed,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal && newVal !== undefined) {
+      isTestingTrainClient.value = false
+    }
+  }
+)
 </script>
 
 <style scoped>

@@ -123,6 +123,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.on_change_direction(DIRECTION[direction])
             else:
                 logger.warning(f"Unknown direction: {direction}")
+        elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
+            self.networkspeed.start()
         else:
             logger.warning(f"Unknown instruction: {message['instruction']}")
 
