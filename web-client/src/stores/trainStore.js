@@ -221,7 +221,7 @@ export const useTrainStore = defineStore('train', () => {
         download_end_time.value = performance.now()
         const downloadDuration = (download_end_time.value - download_start_time.value) / 1000 // seconds
         const speedMbps = (total_downloaded_bytes.value * 8) / (1024 * 1024) / downloadDuration
-        console.log(`Download speed: ${speedMbps.toFixed(2)} Mbps`)
+        console.log(`Download speed calculated: ${speedMbps.toFixed(2)} Mbps`)
         break
       }
     }

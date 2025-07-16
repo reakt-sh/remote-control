@@ -245,20 +245,22 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         # send 10MB of random bytes to the remote control
         totalBytes = 0
 
-        data = bytearray(os.urandom(1024))  # 1 KB of random data
-        data[0] = PACKET_TYPE["download_start"]
-        self.h3_connection.send_datagram(self.session_id, data)
-        totalBytes += len(data)
+        data = bytearray(os.urandom(10 * 1024 * 1024))  # 10 MB of random data
 
-        while totalBytes < 5 * 1024 * 1024:    # 5 MB
-            data = bytearray(os.urandom(1024))       # 1 KB of random data
-            data[0] = PACKET_TYPE["downloading"]
-            self.h3_connection.send_datagram(self.session_id, data)
-            totalBytes += len(data)
+        packet = data[:1024]  # 1 KB of random data
+        packet[0] = PACKET_TYPE["download_start"]
+        self.h3_connection.send_datagram(self.session_id, packet)
+        totalBytes += len(packet)
 
-        data = bytearray(os.urandom(1024))  # 1 KB of random data
-        data[0] = PACKET_TYPE["download_end"]
-        self.h3_connection.send_datagram(self.session_id, data)
+        while totalBytes < 10 * 1024 * 1024:
+            packet = data[totalBytes:totalBytes + 1024]  # 1 KB of random data
+            packet[0] = PACKET_TYPE["downloading"]
+            self.h3_connection.send_datagram(self.session_id, packet)
+            totalBytes += len(packet)
+
+        packet = bytearray(10)
+        packet[0] = PACKET_TYPE["download_end"]
+        self.h3_connection.send_datagram(self.session_id, packet)
         self.transmit()
 
     async def measure_upload_speed(self, data):
