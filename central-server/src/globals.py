@@ -11,7 +11,13 @@ PACKET_TYPE = {
     "imu": 18,
     "lidar": 19,
     "keepalive": 20,
-    "notification": 21
+    "notification": 21,
+    "download_start": 22,
+    "downloading": 23,
+    "download_end": 24,
+    "upload_start": 25,
+    "uploading": 26,
+    "upload_end": 27
 }
 
 HOST = "0.0.0.0"

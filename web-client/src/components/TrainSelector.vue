@@ -2,10 +2,6 @@
   <div class="train-selector-container">
     <div class="train-selector-header">
       <h2 class="train-selector-title">Available Trains</h2>
-      <div class="connection-status" :class="{ connected: availableTrains.length > 0 }">
-        <span class="status-indicator"></span>
-        {{ availableTrains.length > 0 ? 'Connected' : 'Disconnected' }}
-      </div>
     </div>
 
     <transition name="fade" mode="out-in">
@@ -90,35 +86,6 @@ const selectTrain = (id) => {
   margin: 0;
 }
 
-.connection-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: #f5f5f5;
-  color: #616161;
-}
-
-.connection-status.connected {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.status-indicator {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #9e9e9e;
-}
-
-.connected .status-indicator {
-  background: #4caf50;
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
-}
 
 .train-grid {
   display: grid;

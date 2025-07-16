@@ -16,6 +16,9 @@
         <template #telemetry>
           <TelemetryPanel />
         </template>
+        <template #network>
+          <NetworkPanel />
+        </template>
       </Tabs>
     </main>
   </div>
@@ -31,6 +34,7 @@ import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
 import { useTrainStore } from '@/stores/trainStore'
+import NetworkPanel from '@/components/network/NetworkPanel.vue'
 
 const route = useRoute()
 const trainId = route.params.trainId
@@ -40,7 +44,8 @@ const { fetchAvailableTrains, connectToServer, initializeRemoteControlId } = use
 
 const tabs = ref([
   { id: 'control', label: 'Control Center', icon: 'fas fa-gamepad' },
-  { id: 'telemetry', label: 'Telemetry Data', icon: 'fas fa-chart-line' }
+  { id: 'telemetry', label: 'Telemetry Data', icon: 'fas fa-chart-line' },
+  { id: 'network', label: 'Network', icon: 'fas fa-network-wired' }
 ])
 
 onMounted(() => {

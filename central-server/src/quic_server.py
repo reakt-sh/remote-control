@@ -1,6 +1,6 @@
 import asyncio
 from typing import Dict, Optional
-import json
+import json, os
 
 from aioquic.asyncio import serve
 from aioquic.asyncio.protocol import QuicConnectionProtocol
@@ -132,6 +132,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
                     self.transmit()
                     logger.debug(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
+
+                    # initiate download/upload speed test with the remote control
+                    # asyncio.create_task(self.measure_download_speed())
                     return
                 else:
                     logger.warning(f"Unknown client identification message: {message}")
@@ -236,6 +239,45 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
             print(f"Error decoding packet: {e}")
             print(f"Raw JSON bytes: {json_bytes}")
+
+    async def measure_download_speed(self):
+        logger.info(f"QUIC: Starting download speed test for remote control {self.remote_control_id}")
+        # send 10MB of random bytes to the remote control
+        totalBytes = 0
+
+        data = bytearray(os.urandom(10 * 1024 * 1024))  # 10 MB of random data
+
+        packet = data[:1024]  # 1 KB of random data
+        packet[0] = PACKET_TYPE["download_start"]
+        self.h3_connection.send_datagram(self.session_id, packet)
+        totalBytes += len(packet)
+
+        while totalBytes < 10 * 1024 * 1024:
+            packet = data[totalBytes:totalBytes + 1024]  # 1 KB of random data
+            packet[0] = PACKET_TYPE["downloading"]
+            self.h3_connection.send_datagram(self.session_id, packet)
+            totalBytes += len(packet)
+
+        packet = bytearray(10)
+        packet[0] = PACKET_TYPE["download_end"]
+        self.h3_connection.send_datagram(self.session_id, packet)
+        self.transmit()
+
+    async def measure_upload_speed(self, data):
+        packet_type = data[0]
+        if packet_type == PACKET_TYPE["upload_start"]:
+            totalBytes = len(data)
+            self.upload_start_time = asyncio.get_event_loop().time()
+        elif packet_type == PACKET_TYPE["uploading"]:
+            totalBytes += len(data)
+        elif packet_type == PACKET_TYPE["upload_end"]:
+            self.upload_end_time = asyncio.get_event_loop().time()
+            elapsed_time = self.upload_end_time - self.upload_start_time
+            self.upload_speed = totalBytes / elapsed_time / 1024 / 1024
+            logger.info(f"QUIC: Upload speed: {self.upload_speed:.2f} MB/s")
+        else:
+            logger.warning(f"QUIC: Received unhandled upload packet type: {packet_type}")
+
 
 async def run_quic_server():
     try:

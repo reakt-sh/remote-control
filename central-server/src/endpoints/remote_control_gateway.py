@@ -1,5 +1,7 @@
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Response
+from fastapi.responses import JSONResponse
+import time, os
 
 from server_controller import ServerController
 from utils.app_logger import logger
@@ -8,6 +10,8 @@ from globals import PACKET_TYPE
 
 s_controller = ServerController()
 router = APIRouter()
+size_mb = 10  # 10MB test file
+test_data = os.urandom(size_mb * 1024 * 1024)  # Generate random binary data
 
 @router.websocket("/ws/remote_control/{remote_control_id}")
 async def remote_control_interface(websocket: WebSocket, remote_control_id: str):
@@ -60,3 +64,14 @@ async def unmap_client_from_train(remote_control_id: str):
         "status": "success",
         "message": f"Unmapped {remote_control_id}"
     }
+
+@router.get("/api/speedtest/download")
+async def speedtest_download():
+    return Response(content=test_data, media_type="application/octet-stream")
+
+
+@router.post("/api/speedtest/upload")
+async def speedtest_upload(request: Request):
+    # Just acknowledge receipt (timing is done on the client)
+    await request.body()
+    return {"status": "ok"}

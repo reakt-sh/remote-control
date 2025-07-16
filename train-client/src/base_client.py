@@ -9,6 +9,7 @@ from loguru import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
+from networkspeed import NetworkSpeed
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
@@ -72,6 +73,16 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
+        self.networkspeed = NetworkSpeed(duration=5)
+        self.networkspeed.speed_calculated.connect(self.on_network_speed_calculated)
+
+    def on_network_speed_calculated(self, data):
+        logger.info(
+            f"Network speed calculated - Download: {data["download_speed"]:.2f} Mbps, "
+            f"Upload: {data["upload_speed"]:.2f} Mbps"
+        )
+        self.telemetry.set_network_speed(data["download_speed"], data["upload_speed"])
+
     def on_quic_connected(self):
         logger.info("QUIC connection established")
 
@@ -112,6 +123,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.on_change_direction(DIRECTION[direction])
             else:
                 logger.warning(f"Unknown direction: {direction}")
+        elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
+            self.networkspeed.start()
         else:
             logger.warning(f"Unknown instruction: {message['instruction']}")
 
@@ -159,6 +172,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
+        # logger.info(f"{timestamp} {message}")
 
     def close(self):
         self._running = False

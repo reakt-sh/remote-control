@@ -5,6 +5,7 @@ import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { SERVER_URL } from '@/scripts/config'
+import { useNetworkSpeed } from '@/scripts/networkspeed'
 
 
 // Define server IP and host
@@ -20,7 +21,13 @@ const PACKET_TYPE = {
   imu: 18,
   lidar: 19,
   keepalive: 20,
-  notification: 21
+  notification: 21,
+  download_start: 22,
+  downloading: 23,
+  download_end: 24,
+  upload_start: 25,
+  uploading: 26,
+  upload_end: 27
 }
 
 
@@ -35,12 +42,20 @@ export const useTrainStore = defineStore('train', () => {
   const direction = ref('FORWARD')
   const isPoweredOn = ref(true)
   const router = useRouter()
+  const download_start_time = ref(0)
+  const download_end_time = ref(0)
+  const total_downloaded_bytes = ref(0)
+  const download_speed = ref(0)
+  const upload_speed = ref(0)
+  const networkspeed = ref(null)
 
   const {
+    isWSConnected,
     connectWebSocket,
   } = useWebSocket(remoteControlId, handleWsMessage)
 
   const {
+    isWTConnected,
     connectWebTransport,
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
@@ -75,6 +90,8 @@ export const useTrainStore = defineStore('train', () => {
     await connectWebSocket()
     await connectWebTransport()
     setInterval(sendKeepAliveWebTransport, 10000);
+    networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
+    networkspeed.value.runFullTest()
   }
 
   async function mappingToTrain(trainId) {
@@ -194,6 +211,23 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.video:
         videoDatagramAssembler.value.processPacket(payload)
         break
+      case PACKET_TYPE.download_start: {
+        download_start_time.value = performance.now()
+        total_downloaded_bytes.value = payload.length + 1
+        break
+      }
+      case PACKET_TYPE.downloading: {
+        total_downloaded_bytes.value += payload.length + 1
+        break
+      }
+      case PACKET_TYPE.download_end: {
+        total_downloaded_bytes.value += payload.length + 1
+        download_end_time.value = performance.now()
+        const downloadDuration = (download_end_time.value - download_start_time.value) / 1000 // seconds
+        const speedMbps = (total_downloaded_bytes.value * 8) / (1024 * 1024) / downloadDuration
+        console.log(`Download speed calculated: ${speedMbps.toFixed(2)} Mbps`)
+        break
+      }
     }
   }
 
@@ -213,6 +247,11 @@ export const useTrainStore = defineStore('train', () => {
     sendWtMessage(packet)
     console.log('WebTransport keepalive sent:', keepalivePacket);
   }
+
+  async function onNetworkSpeedCalculated(downloadSpeed, uploadSpeed) {
+    download_speed.value = downloadSpeed
+    upload_speed.value = uploadSpeed
+  }
   return {
     availableTrains,
     selectedTrainId,
@@ -221,6 +260,11 @@ export const useTrainStore = defineStore('train', () => {
     remoteControlId,
     isPoweredOn,
     direction,
+    isWSConnected,
+    isWTConnected,
+    download_speed,
+    upload_speed,
+    networkspeed,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
