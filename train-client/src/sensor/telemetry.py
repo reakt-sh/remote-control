@@ -39,6 +39,9 @@ class Telemetry(QObject):
         self.last_simulation_at_frame = 0
         self.frame_counter = 0
 
+        self.download_speed = 0.0
+        self.upload_speed = 0.0
+
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
 
@@ -60,6 +63,10 @@ class Telemetry(QObject):
 
     def set_direction(self, direction: int):
         self.direction = direction
+
+    def set_network_speed(self, download_speed: float, upload_speed: float):
+        self.download_speed = download_speed
+        self.upload_speed = upload_speed
 
     def start(self):
         self.timer.start(self.poll_interval_ms)
@@ -113,7 +120,9 @@ class Telemetry(QObject):
             "timestamp": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in milliseconds,
             "engine_temperature": random.randint(self.engine_temperature_min, self.engine_temperature_max),
             "fuel_level": self.fuel_level,
-            "network_signal_strength": self.network_signal_strength
+            "network_signal_strength": self.network_signal_strength,
+            "download_speed": self.download_speed,
+            "upload_speed": self.upload_speed,
         }
 
         self.simulte_data()

@@ -7,7 +7,7 @@ from globals import SERVER
 import asyncio
 
 class NetworkSpeed(QThread):
-    speed_calculated = pyqtSignal(float, float)  # Fixed typo in signal name
+    speed_calculated = pyqtSignal(object)  # Fixed typo in signal name
     def __init__(self, server_host: str = SERVER, port: int = 5201, duration: int = 10):
         super().__init__()
         self.server_host = server_host
@@ -56,4 +56,8 @@ class NetworkSpeed(QThread):
         upload = self._run_iperf_test(reverse=True)
         download_speed = download['end']['sum_received']['bits_per_second'] / 1e6 if download else None
         upload_speed = upload['end']['sum_sent']['bits_per_second'] / 1e6 if upload else None
-        self.speed_calculated.emit(download_speed, upload_speed)
+        data = {
+            "download_speed": download_speed,
+            "upload_speed": upload_speed
+        }
+        self.speed_calculated.emit(data)
