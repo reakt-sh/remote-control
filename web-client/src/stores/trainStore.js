@@ -47,10 +47,12 @@ export const useTrainStore = defineStore('train', () => {
   const total_downloaded_bytes = ref(0)
 
   const {
+    isWSConnected,
     connectWebSocket,
   } = useWebSocket(remoteControlId, handleWsMessage)
 
   const {
+    isWTConnected,
     connectWebTransport,
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
@@ -251,6 +253,8 @@ export const useTrainStore = defineStore('train', () => {
     remoteControlId,
     isPoweredOn,
     direction,
+    isWSConnected,
+    isWTConnected,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
