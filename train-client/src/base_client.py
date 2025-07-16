@@ -73,13 +73,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
-        tester = NetworkSpeed(duration=5)
-        download, upload = tester.measure_speeds()
-        logger.info(
-            f"Network speed test results - Download: {download:.2f} Mbps, "
-            f"Upload: {upload:.2f} Mbps"
-        )
+        self.networkspeed = NetworkSpeed(duration=5)
+        self.networkspeed.speed_calculated.connect(self.on_network_speed_calculated)
 
+    def on_network_speed_calculated(self, download_speed, upload_speed):
+        logger.info(
+            f"Network speed calculated - Download: {download_speed:.2f} Mbps, "
+            f"Upload: {upload_speed:.2f} Mbps"
+        )
     def on_quic_connected(self):
         logger.info("QUIC connection established")
 

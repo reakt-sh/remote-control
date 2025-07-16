@@ -1,14 +1,20 @@
 import subprocess
 import json
 from typing import Dict, Optional, Tuple
-from loguru import logger  # Assuming you have this logger setup
+from PyQt5.QtCore import pyqtSignal, QThread, QTimer
+from loguru import logger
 from globals import SERVER
+import asyncio
 
-class NetworkSpeed:
+class NetworkSpeed(QThread):
+    speed_calculated = pyqtSignal(float, float)  # Fixed typo in signal name
     def __init__(self, server_host: str = SERVER, port: int = 5201, duration: int = 10):
+        super().__init__()
         self.server_host = server_host
         self.port = port
         self.duration = duration
+        self.loop = asyncio.new_event_loop()
+        self.start()
         logger.debug(f"NetworkSpeedTester initialized for server {server_host}:{port}")
 
     def _run_iperf_test(self, reverse: bool = False) -> Optional[Dict]:
@@ -17,12 +23,11 @@ class NetworkSpeed:
             "-c", self.server_host,
             "-p", str(self.port),
             "-t", str(self.duration),
-            "-J",  # JSON output
-            "--forceflush",  # Ensure timely output
+            "-J",
+            "--forceflush",
         ]
-
         if reverse:
-            cmd.append("-R")  # Reverse mode for upload test
+            cmd.append("-R")
 
         try:
             logger.info(f"Starting iperf3 test: {' '.join(cmd)}")
@@ -42,13 +47,13 @@ class NetworkSpeed:
             logger.error(f"Unexpected error during iperf3 test: {str(e)}")
         return None
 
-    def measure_speeds(self) -> Tuple[Optional[float], Optional[float]]:
+    def run(self):
+        self.measure_speeds()
+
+    def measure_speeds(self):
+        """Synchronous wrapper for the speed test"""
         download = self._run_iperf_test(reverse=False)
         upload = self._run_iperf_test(reverse=True)
         download_speed = download['end']['sum_received']['bits_per_second'] / 1e6 if download else None
         upload_speed = upload['end']['sum_sent']['bits_per_second'] / 1e6 if upload else None
-        logger.info(
-            f"Speed test results - Download: {download_speed:.2f} Mbps, "
-            f"Upload: {upload_speed:.2f} Mbps"
-        )
-        return download_speed, upload_speed
+        self.speed_calculated.emit(download_speed, upload_speed)

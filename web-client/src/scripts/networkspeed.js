@@ -9,12 +9,12 @@ export class useNetworkSpeed {
     const startTime = performance.now();
     const response = await fetch(`${this.serverUrl}/api/speedtest/download`);
     if (!response.ok) throw new Error('Download failed');
-    
+
     // Measure actual download time
     const blob = await response.blob();
     const duration = (performance.now() - startTime) / 1000; // seconds
     const speedMbps = (blob.size * 8) / (1024 * 1024) / duration;
-    
+
     return { speed: speedMbps, bytesTransferred: blob.size };
   }
 
