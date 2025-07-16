@@ -60,7 +60,6 @@ const trainStore = useTrainStore()
 const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
 const isTestingWebClient = ref(false)
 const isTestingTrainClient = ref(false)
-const previousDownloadSpeed = ref(0)
 
 function formatSpeed(speed) {
     if (speed === 0 || speed === null || speed === undefined) return 'N/A'
