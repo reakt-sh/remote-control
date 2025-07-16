@@ -55,6 +55,7 @@ import { ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
+import FastSpeedtest from 'fast-speedtest-api';
 
 const trainStore = useTrainStore()
 const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
@@ -66,12 +67,27 @@ function formatSpeed(speed) {
     return Number(speed).toFixed(2)
 }
 
-function send_network_measurement_request() {
+async function send_network_measurement_request() {
     isTestingTrainClient.value = true
     trainStore.sendCommand({
         "instruction": 'CALCULATE_NETWORK_SPEED',
         "train_id": telemetryData.value.train_id
     })
+
+    try {
+        const speedtest = new FastSpeedtest({
+          token: 'YXNkZmFzZGxmbnNkYWZoYXNkZmhrYWxm',
+          verbose: true,
+          timeout: 10000,
+          https: true,
+          urlCount: 5,
+          bufferSize: 8,
+          unit: FastSpeedtest.UNITS.Mbps,
+        });
+        this.result = await speedtest.getSpeed();
+      } catch (err) {
+        this.result = `Error: ${err.message}`;
+      }
 }
 
 watch(download_speed, () => {
