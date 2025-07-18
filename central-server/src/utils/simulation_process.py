@@ -12,7 +12,7 @@ class SimulationProcess:
         python_executable = sys.executable
 
         # Create logs directory if it doesn't exist
-        logs_dir = os.path.join(os.path.dirname(__file__), '../logs')
+        logs_dir = os.path.join(os.path.dirname(__file__), '../../logs')
         os.makedirs(logs_dir, exist_ok=True)
 
         # Create log file path for subprocess

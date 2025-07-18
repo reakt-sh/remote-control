@@ -123,6 +123,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
                     # If no train clients are connected, spawn a subprocess to run a simulated train client
+                    logger.info(f"Check self.client_manager.train_clients = {self.client_manager.train_clients}")
                     if not self.client_manager.train_clients:
                         logger.info("No train clients connected. Spawning a simulated train client subprocess.")
                         self.sim_process.create_simulation_process()
