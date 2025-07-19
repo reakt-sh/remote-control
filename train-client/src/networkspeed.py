@@ -52,8 +52,8 @@ class NetworkSpeed(QThread):
 
     def measure_speeds(self):
         """Synchronous wrapper for the speed test"""
-        download = self._run_iperf_test(reverse=False)
-        upload = self._run_iperf_test(reverse=True)
+        download = self._run_iperf_test(reverse=True)
+        upload = self._run_iperf_test(reverse=False)
         download_speed = download['end']['sum_received']['bits_per_second'] / 1e6 if download else None
         upload_speed = upload['end']['sum_sent']['bits_per_second'] / 1e6 if upload else None
         data = {
