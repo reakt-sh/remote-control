@@ -46,6 +46,16 @@
           </button>
         </div>
       </TelemetryCard>
+
+      <!-- New iFrame Card -->
+      <TelemetryCard title="External Speedtest" icon="fas fa-tachometer-alt">
+        <iframe
+          src="https://speedtest.rtsys-lab.de/"
+          width="100%"
+          height="650px"
+          frameborder="0"
+        ></iframe>
+      </TelemetryCard>
     </div>
   </div>
 </template>
@@ -55,7 +65,7 @@ import { ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
-import FastSpeedtest from 'fast-speedtest-api';
+
 
 const trainStore = useTrainStore()
 const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
@@ -73,21 +83,6 @@ async function send_network_measurement_request() {
         "instruction": 'CALCULATE_NETWORK_SPEED',
         "train_id": telemetryData.value.train_id
     })
-
-    try {
-        const speedtest = new FastSpeedtest({
-          token: 'YXNkZmFzZGxmbnNkYWZoYXNkZmhrYWxm',
-          verbose: true,
-          timeout: 10000,
-          https: true,
-          urlCount: 5,
-          bufferSize: 8,
-          unit: FastSpeedtest.UNITS.Mbps,
-        });
-        this.result = await speedtest.getSpeed();
-      } catch (err) {
-        this.result = `Error: ${err.message}`;
-      }
 }
 
 watch(download_speed, () => {
