@@ -1,7 +1,7 @@
 <template>
   <div class="network-panel">
     <div class="network-grid">
-      <TelemetryCard title="Train to Server" icon="fas fa-train">
+      <TelemetryCard title="Train to Server (Iperf3)" icon="fas fa-train">
         <div class="network-metrics">
           <div class="metric-item">
             <div class="metric-label">Download Speed</div>
@@ -24,7 +24,7 @@
         </div>
       </TelemetryCard>
 
-      <TelemetryCard title="Remote Control to Server" icon="fas fa-globe">
+      <TelemetryCard title="Remote Control to Server (Manual)" icon="fas fa-globe">
         <div class="network-metrics">
           <div class="metric-item">
             <div class="metric-label">Download Speed</div>
@@ -47,14 +47,21 @@
         </div>
       </TelemetryCard>
 
-      <!-- New iFrame Card -->
-      <TelemetryCard title="External Speedtest" icon="fas fa-tachometer-alt">
-        <iframe
-          src="https://speedtest.rtsys-lab.de/"
-          width="100%"
-          height="650px"
-          frameborder="0"
-        ></iframe>
+      <!-- New iFrame Card with Reload Button -->
+      <TelemetryCard title="Remote Control to Server (OpenSpeedTest)" icon="fas fa-tachometer-alt">
+        <div class="iframe-container">
+          <iframe
+            ref="speedtestIframe"
+            src="https://speedtest.rtsys-lab.de/"
+            width="100%"
+            height="100%"
+            frameborder="0"
+          ></iframe>
+        </div>
+        <button class="test-button" @click="reloadIframe();">
+          <i class="fas fa-sync-alt"></i>
+            {{'Re-Calculate' }}
+        </button>
       </TelemetryCard>
     </div>
   </div>
@@ -66,15 +73,24 @@ import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
 
-
 const trainStore = useTrainStore()
 const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
 const isTestingWebClient = ref(false)
 const isTestingTrainClient = ref(false)
 
+// Reference to the iframe element
+const speedtestIframe = ref(null)
+
 function formatSpeed(speed) {
     if (speed === 0 || speed === null || speed === undefined) return 'N/A'
     return Number(speed).toFixed(2)
+}
+
+// Function to reload the iframe
+function reloadIframe() {
+  if (speedtestIframe.value) {
+    speedtestIframe.value.src = speedtestIframe.value.src
+  }
 }
 
 async function send_network_measurement_request() {
@@ -175,6 +191,34 @@ watch(
 
 .test-button .fa-spin {
   animation: fa-spin 1s infinite linear;
+}
+
+/* Special styling for iframe reload button */
+.iframe-reload-btn {
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.iframe-reload-btn:hover {
+  background: linear-gradient(90deg, #218838, #1eb584);
+}
+
+/* Style the iframe container */
+.iframe-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 65%; /* Adjust this value to control the iframe's aspect ratio */
+  overflow: hidden;
+}
+
+.iframe-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 @media (max-width: 900px) {
