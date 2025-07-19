@@ -48,61 +48,136 @@ google-chrome --ignore-certificate-errors-spki-list=YiYMyuzMaVh0vd+xmKMWNhHbTRIy
 google-chrome --ignore-certificate-errors-spki-list=5Q5Qbo1MT9UH92OkjjOkb89GlAiREgWWU+fvxcQTqxk=
 ```
 
-## to Configure Secured Connection on remote droplet
+### Generate certificate to access publicly
+```
+sudo certbot certonly --standalone -d rtsys-lab.de -d www.rtsys-lab.de -d speedtest.rtsys-lab.de
+sudo openssl x509 -in /etc/letsencrypt/live/rtsys-lab.de/fullchain.pem -text -noout | grep DNS
+```
+
+### to Configure Secured Connection on remote droplet
 ```
 sudo apt update
 sudo apt install nginx -y
 
-sudo nano /etc/nginx/sites-available/vue-app
+sudo nano /etc/nginx/sites-available/rtsys-lab.de
 # add following code to that file
 --------------------------------------------------------------------
+# HTTP to HTTPS redirect for all domains
 server {
     listen 80;
-    server_name 209.38.218.207;
-    return 301 https://$server_name$request_uri;  # Redirect HTTP → HTTPS
+    listen [::]:80;
+    server_name rtsys-lab.de www.rtsys-lab.de speedtest.rtsys-lab.de;
+    return 301 https://$host$request_uri;
 }
 
+# Main Vue.js application (HTTPS + HTTP/2)
 server {
-    listen 443 ssl;
-    server_name 209.38.218.207;
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
 
-    # SSL Configuration
-    ssl_certificate /etc/ssl/quic_conf/certificate.pem;      # Your certificate
-    ssl_certificate_key /etc/ssl/quic_conf/certificate.key; # Your private key
+    server_name rtsys-lab.de www.rtsys-lab.de;
 
-    # Security settings (recommended)
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_certificate /etc/letsencrypt/live/rtsys-lab.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/rtsys-lab.de/privkey.pem;
 
-    # Proxy to your Vue.js dev server (running on port 8080)
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
     location / {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_pass https://127.0.0.1:8080;
         proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
 
-    # FastAPI WebSocket Backend (port 8000)
-    location /ws/ {
-        proxy_pass http://localhost:8000;  # FastAPI running on port 8000
+        # WebSocket support
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-
-        # Timeout settings for persistent connections
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
     }
 }
 
+# OpenSpeedTest Server
+server {
+    listen 443 ssl http2;
+    server_name speedtest.rtsys-lab.de;
+
+    ssl_certificate /etc/letsencrypt/live/rtsys-lab.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/rtsys-lab.de/privkey.pem;
+
+    client_max_body_size 100m; # Allow large POST requests
+    gzip off; # Disable compression
+    proxy_buffering off; # Disable proxy buffering
+
+    # CORS headers - must be in server or location context
+    location / {
+        # CORS headers
+        add_header 'Access-Control-Allow-Origin' 'https://localhost:8080' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+        # Handle preflight requests
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain; charset=utf-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Disable caching
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+
+    # API routes
+    location /api {
+        proxy_pass http://127.0.0.1:3000/api;
+        proxy_set_header Host $host;
+    }
+}
 ----------------------------------------------------------------------
 sudo ln -s /etc/nginx/sites-available/vue-app /etc/nginx/sites-enabled
 sudo nginx -t  # Test the config
 sudo systemctl restart nginx
 ```
+
+### Run OpenSpeedTest service
+```
+ sudo apt update
+ sudo apt install docker.io -y
+ sudo systemctl enable docker
+ sudo systemctl start docker
+
+ # Without CORS
+ sudo docker run --restart=unless-stopped --name=openspeedtest -d -p 3000:3000 -p 3001:3001 openspeedtest/latest
+
+ # Enable CORS
+ sudo docker run --restart=unless-stopped \
+  --name=openspeedtest \
+  -d \
+  -p 3000:3000 \
+  -p 3001:3001 \
+  -e ENABLE_CORS=true \
+  -e CORS_ORIGINS="https://localhost:8080,https://rtsys-lab.de,https://localhost:3000,https://speedtest.rtsys-lab.de" \
+  openspeedtest/latest
+
+ sudo ufw allow 3000/tcp
+ sudo ufw allow 3001/tcp
+ sudo ufw reload
+ ```
 ### Run Central Server
 ```
 python src/main.py
