@@ -47,20 +47,20 @@
         </div>
       </TelemetryCard>
 
-      <!-- New iFrame Card with Reload Button -->
+      <!-- Updated iFrame Card with key-based reload -->
       <TelemetryCard title="Remote Control to Server (OpenSpeedTest)" icon="fas fa-tachometer-alt">
         <div class="iframe-container">
           <iframe
-            ref="speedtestIframe"
+            :key="iframeKey"
             src="https://speedtest.rtsys-lab.de/"
             width="100%"
             height="100%"
             frameborder="0"
           ></iframe>
         </div>
-        <button class="test-button" @click="reloadIframe();">
+        <button class="test-button" @click="reloadIframe()">
           <i class="fas fa-sync-alt"></i>
-            {{'Re-Calculate' }}
+          Re-Calculate
         </button>
       </TelemetryCard>
     </div>
@@ -78,19 +78,17 @@ const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRef
 const isTestingWebClient = ref(false)
 const isTestingTrainClient = ref(false)
 
-// Reference to the iframe element
-const speedtestIframe = ref(null)
+// Use key-based approach for iframe reload
+const iframeKey = ref(0)
 
 function formatSpeed(speed) {
     if (speed === 0 || speed === null || speed === undefined) return 'N/A'
     return Number(speed).toFixed(2)
 }
 
-// Function to reload the iframe
+// Function to reload the iframe by changing the key
 function reloadIframe() {
-  if (speedtestIframe.value) {
-    speedtestIframe.value.src = speedtestIframe.value.src
-  }
+  iframeKey.value += 1
 }
 
 async function send_network_measurement_request() {
