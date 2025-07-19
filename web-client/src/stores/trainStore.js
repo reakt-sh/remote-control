@@ -91,7 +91,6 @@ export const useTrainStore = defineStore('train', () => {
     await connectWebTransport()
     setInterval(sendKeepAliveWebTransport, 10000);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
-    networkspeed.value.runFullTest()
   }
 
   async function mappingToTrain(trainId) {
