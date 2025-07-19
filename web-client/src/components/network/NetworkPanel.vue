@@ -1,30 +1,7 @@
 <template>
   <div class="network-panel">
     <div class="network-grid">
-      <TelemetryCard title="Web Client Network" icon="fas fa-globe">
-        <div class="network-metrics">
-          <div class="metric-item">
-            <div class="metric-label">Download Speed</div>
-            <div class="metric-value">
-              {{ formatSpeed(download_speed) }}
-              <span class="unit">Mbps</span>
-            </div>
-          </div>
-          <div class="metric-item">
-            <div class="metric-label">Upload Speed</div>
-            <div class="metric-value">
-              {{ formatSpeed(upload_speed) }}
-              <span class="unit">Mbps</span>
-            </div>
-          </div>
-          <button class="test-button" @click="networkspeed.runFullTest(); isTestingWebClient = true" :disabled="isTestingWebClient">
-            <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingWebClient }"></i>
-            {{ isTestingWebClient ? 'Testing...' : 'Test Web Client' }}
-          </button>
-        </div>
-      </TelemetryCard>
-
-      <TelemetryCard title="Train Client Network" icon="fas fa-train">
+      <TelemetryCard title="Train to Server (Iperf3)" icon="fas fa-train">
         <div class="network-metrics">
           <div class="metric-item">
             <div class="metric-label">Download Speed</div>
@@ -42,9 +19,49 @@
           </div>
           <button class="test-button" @click="send_network_measurement_request()" :disabled="isTestingTrainClient">
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingTrainClient }"></i>
-            {{ isTestingTrainClient ? 'Testing...' : 'Test Train Client' }}
+            {{ isTestingTrainClient ? 'Calculating...' : 'Re-Calculate' }}
           </button>
         </div>
+      </TelemetryCard>
+
+      <TelemetryCard title="Remote Control to Server (Manual)" icon="fas fa-globe">
+        <div class="network-metrics">
+          <div class="metric-item">
+            <div class="metric-label">Download Speed</div>
+            <div class="metric-value">
+              {{ formatSpeed(download_speed) }}
+              <span class="unit">Mbps</span>
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Upload Speed</div>
+            <div class="metric-value">
+              {{ formatSpeed(upload_speed) }}
+              <span class="unit">Mbps</span>
+            </div>
+          </div>
+          <button class="test-button" @click="networkspeed.runFullTest(); isTestingWebClient = true" :disabled="isTestingWebClient">
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingWebClient }"></i>
+            {{ isTestingWebClient ? 'Calculating...' : 'Re-Calculate' }}
+          </button>
+        </div>
+      </TelemetryCard>
+
+      <!-- New iFrame Card with Reload Button -->
+      <TelemetryCard title="Remote Control to Server (OpenSpeedTest)" icon="fas fa-tachometer-alt">
+        <div class="iframe-container">
+          <iframe
+            ref="speedtestIframe"
+            src="https://speedtest.rtsys-lab.de/"
+            width="100%"
+            height="100%"
+            frameborder="0"
+          ></iframe>
+        </div>
+        <button class="test-button" @click="reloadIframe();">
+          <i class="fas fa-sync-alt"></i>
+            {{'Re-Calculate' }}
+        </button>
       </TelemetryCard>
     </div>
   </div>
@@ -61,12 +78,22 @@ const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRef
 const isTestingWebClient = ref(false)
 const isTestingTrainClient = ref(false)
 
+// Reference to the iframe element
+const speedtestIframe = ref(null)
+
 function formatSpeed(speed) {
     if (speed === 0 || speed === null || speed === undefined) return 'N/A'
     return Number(speed).toFixed(2)
 }
 
-function send_network_measurement_request() {
+// Function to reload the iframe
+function reloadIframe() {
+  if (speedtestIframe.value) {
+    speedtestIframe.value.src = speedtestIframe.value.src
+  }
+}
+
+async function send_network_measurement_request() {
     isTestingTrainClient.value = true
     trainStore.sendCommand({
         "instruction": 'CALCULATE_NETWORK_SPEED',
@@ -164,6 +191,34 @@ watch(
 
 .test-button .fa-spin {
   animation: fa-spin 1s infinite linear;
+}
+
+/* Special styling for iframe reload button */
+.iframe-reload-btn {
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.iframe-reload-btn:hover {
+  background: linear-gradient(90deg, #218838, #1eb584);
+}
+
+/* Style the iframe container */
+.iframe-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 65%; /* Adjust this value to control the iframe's aspect ratio */
+  overflow: hidden;
+}
+
+.iframe-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 @media (max-width: 900px) {
