@@ -30,51 +30,51 @@ const { isWSConnected, isWTConnected } = storeToRefs(useTrainStore())
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  padding: 8px 16px;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .status-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: #ff4757;
-  box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+  box-shadow: 0 0 12px rgba(255, 71, 87, 0.5);
   animation: pulse-red 2s infinite;
 }
 
 .status-dot.connected {
   background-color: #2ed573;
-  box-shadow: 0 0 10px rgba(46, 213, 115, 0.5);
+  box-shadow: 0 0 12px rgba(46, 213, 115, 0.5);
   animation: pulse-green 2s infinite;
 }
 
 .status-text {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
 }
 
 .connection-details {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
 .connection-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
+  gap: 6px;
+  font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   transition: color 0.3s ease;
 }
@@ -84,8 +84,13 @@ const { isWSConnected, isWTConnected } = storeToRefs(useTrainStore())
   font-weight: 600;
 }
 
+.connection-item span:not(.active) {
+  color: #ff4757;
+  font-weight: 600;
+}
+
 .connection-item i {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 @keyframes pulse-red {
