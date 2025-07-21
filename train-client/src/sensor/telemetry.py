@@ -84,9 +84,10 @@ class Telemetry(QObject):
         if everything:
             self.location_index = self.next_station_index
             self.next_station_index = self.get_next_station(self.location_index)
-            self.network_signal_strength = random.randint(10,100)
-            self.temperature = random.randint(self.temperature_min, self.temperature_max)
 
+
+        self.network_signal_strength = random.randint(10,100)
+        self.temperature = random.randint(self.temperature_min, self.temperature_max)
 
         self.battery_level -= random.uniform(0.1, 0.4)  # Simulate battery drain
         if self.battery_level < 0:
