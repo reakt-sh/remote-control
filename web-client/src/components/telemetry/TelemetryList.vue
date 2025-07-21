@@ -12,26 +12,30 @@
         </button>
       </div>
     </div>
-    <div class="list-container">
+    <div class="list-table">
+      <div class="table-header">
+        <div class="header-cell timestamp">Timestamp</div>
+        <div class="header-cell location">Location</div>
+        <div class="header-cell speed">Speed</div>
+        <div class="header-cell passengers">Passengers</div>
+      </div>
       <div 
         v-for="item in paginatedData" 
         :key="item.timestamp" 
-        class="list-item"
+        class="table-row"
         @click="selectItem(item)"
       >
-        <div class="item-timestamp">
+        <div class="table-cell timestamp">
           {{ formatTime(item.timestamp) }}
         </div>
-        <div class="item-summary">
-          <span class="item-location">
-            <i class="fas fa-map-marker-alt"></i> {{ item.location }}
-          </span>
-          <span class="item-speed">
-            <i class="fas fa-tachometer-alt"></i> {{ item.speed }} km/h
-          </span>
-          <span class="item-passengers">
-            <i class="fas fa-users"></i> {{ item.passenger_count }}
-          </span>
+        <div class="table-cell location">
+          <i class="fas fa-map-marker-alt"></i> {{ item.location }}
+        </div>
+        <div class="table-cell speed">
+          <i class="fas fa-tachometer-alt"></i> {{ item.speed }} km/h
+        </div>
+        <div class="table-cell passengers">
+          <i class="fas fa-users"></i> {{ item.passenger_count }}
         </div>
       </div>
     </div>
@@ -135,46 +139,60 @@ function formatTime(timestamp) {
   cursor: not-allowed;
 }
 
-.list-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.list-table {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr;
+  gap: 1px;
+  background-color: #e0e7ef;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.table-header, .table-row {
+  display: contents;
+}
+
+.header-cell, .table-cell {
   padding: 12px 16px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-cell {
+  font-weight: 600;
+  color: #4b5563;
   background: #f8fafc;
-  border-radius: 12px;
+}
+
+.table-cell {
+  color: #4b5563;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.list-item:hover {
+.table-row:hover .table-cell {
   background: #e3f0fa;
 }
 
-.item-timestamp {
-  font-size: 0.9rem;
-  color: #7b8794;
-}
-
-.item-summary {
-  display: flex;
-  gap: 16px;
-}
-
-.item-summary span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  color: #4b5563;
-}
-
-.item-summary i {
+.table-cell i {
   color: #0096ff;
+}
+
+.timestamp {
+  justify-content: flex-start;
+}
+
+.location {
+  justify-content: flex-start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.speed, .passengers {
+  justify-content: flex-end;
 }
 </style>
