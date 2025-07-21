@@ -5,6 +5,7 @@ from base_client import BaseClient
 class CLIClient(BaseClient, QThread):
     def __init__(self):
         super().__init__(video_source=FileProcessor(), has_motor=False)
+        self.encoder.set_bitrate(1000000) # Set initial bitrate to 1Mbps
 
     def update_speed(self, speed):
         self.video_source.set_speed(speed)

@@ -1,9 +1,6 @@
 <template>
   <div class="main-view">
-    <header class="app-header">
-      <h1>Remote Control System</h1>
-      <ConnectionStatus />
-    </header>
+    <AppHeader />
 
     <main class="app-main">
       <Tabs :tabs="tabs">
@@ -28,11 +25,11 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { onMounted, watch } from 'vue'
+import AppHeader from '@/components/AppHeader.vue'
 import Tabs from '@/components/Tabs.vue'
 import VideoPanel from '@/components/VideoPanel.vue'
 import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
-import ConnectionStatus from '@/components/ConnectionStatus.vue'
 import { useTrainStore } from '@/stores/trainStore'
 import NetworkPanel from '@/components/network/NetworkPanel.vue'
 

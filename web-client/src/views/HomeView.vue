@@ -1,9 +1,6 @@
 <template>
   <div class="main-view">
-    <header class="app-header">
-      <h1>Remote Control System</h1>
-      <ConnectionStatus />
-    </header>
+    <AppHeader />
 
     <main class="app-main">
       <TrainSelector />
@@ -12,7 +9,7 @@
 </template>
 
 <script setup>
-import ConnectionStatus from '@/components/ConnectionStatus.vue'
+import AppHeader from '@/components/AppHeader.vue'
 import TrainSelector from '@/components/TrainSelector.vue'
 import { useTrainStore } from '@/stores/trainStore'
 import { onMounted } from 'vue'

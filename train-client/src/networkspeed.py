@@ -14,7 +14,6 @@ class NetworkSpeed(QThread):
         self.port = port
         self.duration = duration
         self.loop = asyncio.new_event_loop()
-        self.start()
         logger.debug(f"NetworkSpeedTester initialized for server {server_host}:{port}")
 
     def _run_iperf_test(self, reverse: bool = False) -> Optional[Dict]:
