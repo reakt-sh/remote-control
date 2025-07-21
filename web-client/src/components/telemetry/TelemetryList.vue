@@ -17,7 +17,9 @@
         <div class="header-cell timestamp">Timestamp</div>
         <div class="header-cell location">Location</div>
         <div class="header-cell speed">Speed</div>
-        <div class="header-cell passengers">Passengers</div>
+        <div class="header-cell gps">GPS</div>
+        <div class="header-cell signal">Signal</div>
+        <div class="header-cell temperature">Temp</div>
       </div>
       <div 
         v-for="item in paginatedData" 
@@ -34,8 +36,14 @@
         <div class="table-cell speed">
           <i class="fas fa-tachometer-alt"></i> {{ item.speed }} km/h
         </div>
-        <div class="table-cell passengers">
-          <i class="fas fa-users"></i> {{ item.passenger_count }}
+        <div class="table-cell gps">
+          <i class="fas fa-globe"></i> {{ formatGPS(item.gps) }}
+        </div>
+        <div class="table-cell signal">
+          <i class="fas fa-signal"></i> {{ item.network_signal_strength }}%
+        </div>
+        <div class="table-cell temperature">
+          <i class="fas fa-thermometer-half"></i> {{ item.temperature }}°C
         </div>
       </div>
     </div>
@@ -96,6 +104,11 @@ function formatTime(timestamp) {
   const date = new Date(timestamp);
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
 }
+
+function formatGPS(gps) {
+  if (!gps || !gps.latitude || !gps.longitude) return 'N/A';
+  return `${Number(gps.latitude).toFixed(6)}, ${Number(gps.longitude).toFixed(6)}`;
+}
 </script>
 
 <style scoped>
@@ -141,7 +154,7 @@ function formatTime(timestamp) {
 
 .list-table {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr;
+  grid-template-columns: 1fr 2fr 0.8fr 1.2fr 0.8fr 0.8fr;
   gap: 1px;
   background-color: #e0e7ef;
   border-radius: 8px;
@@ -192,7 +205,7 @@ function formatTime(timestamp) {
   text-overflow: ellipsis;
 }
 
-.speed, .passengers {
-  justify-content: flex-end;
+.speed, .gps, .signal, .temperature {
+  justify-content: center;
 }
 </style>
