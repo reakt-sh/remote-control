@@ -1,0 +1,180 @@
+<template>
+  <div class="telemetry-list">
+    <div class="list-header">
+      <h3>Telemetry History</h3>
+      <div class="pagination-controls">
+        <button @click="prevPage" :disabled="currentPage === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span>{{ currentPage }} / {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+    <div class="list-container">
+      <div 
+        v-for="item in paginatedData" 
+        :key="item.timestamp" 
+        class="list-item"
+        @click="selectItem(item)"
+      >
+        <div class="item-timestamp">
+          {{ formatTime(item.timestamp) }}
+        </div>
+        <div class="item-summary">
+          <span class="item-location">
+            <i class="fas fa-map-marker-alt"></i> {{ item.location }}
+          </span>
+          <span class="item-speed">
+            <i class="fas fa-tachometer-alt"></i> {{ item.speed }} km/h
+          </span>
+          <span class="item-passengers">
+            <i class="fas fa-users"></i> {{ item.passenger_count }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <TelemetryDetailModal 
+      v-if="selectedItem" 
+      :item="selectedItem" 
+      @close="selectedItem = null"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import TelemetryDetailModal from './TelemetryDetailModal.vue';
+
+const props = defineProps({
+  telemetryData: {
+    type: Array,
+    required: true,
+  },
+});
+
+const itemsPerPage = 5;
+const currentPage = ref(1);
+const selectedItem = ref(null);
+
+const sortedData = computed(() => {
+  return [...props.telemetryData].sort((a, b) => b.timestamp - a.timestamp);
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(sortedData.value.length / itemsPerPage);
+});
+
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return sortedData.value.slice(start, end);
+});
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+}
+
+function selectItem(item) {
+  selectedItem.value = item;
+}
+
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+}
+</script>
+
+<style scoped>
+.telemetry-list {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.list-header h3 {
+  font-size: 1.2rem;
+  color: #222;
+  margin: 0;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-controls button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4b5563;
+  font-size: 1rem;
+}
+
+.pagination-controls button:disabled {
+  color: #b0b7c3;
+  cursor: not-allowed;
+}
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.list-item:hover {
+  background: #e3f0fa;
+}
+
+.item-timestamp {
+  font-size: 0.9rem;
+  color: #7b8794;
+}
+
+.item-summary {
+  display: flex;
+  gap: 16px;
+}
+
+.item-summary span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.item-summary i {
+  color: #0096ff;
+}
+</style>
