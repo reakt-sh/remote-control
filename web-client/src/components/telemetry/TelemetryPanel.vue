@@ -104,18 +104,28 @@
         </div>
       </TelemetryCard>
     </div>
+    <TelemetryList :telemetry-data="telemetryHistory" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useTrainStore } from '@/stores/trainStore'
-import TelemetryCard from './TelemetryCard.vue'
-import PassengerCount from './PassengerCount.vue'
-import CircularProgress from './CircularProgress.vue'
+import { computed, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useTrainStore } from '@/stores/trainStore';
+import TelemetryCard from './TelemetryCard.vue';
+import PassengerCount from './PassengerCount.vue';
+import CircularProgress from './CircularProgress.vue';
+import TelemetryList from './TelemetryList.vue';
 
-const { telemetryData } = storeToRefs(useTrainStore())
+const { telemetryData } = storeToRefs(useTrainStore());
+const telemetryHistory = ref([]);
+
+// Update history when new data arrives
+watch(telemetryData, (newData) => {
+  if (newData) {
+    telemetryHistory.value.unshift({ ...newData });
+  }
+}, { deep: true });
 
 const formattedTime = computed(() => {
   if (!telemetryData.value?.timestamp) return 'N/A'
