@@ -57,17 +57,17 @@ const options = [
   {
     value: 'low',
     label: 'Low',
-    description: '480p - Data Saver'
+    description: 'Data Saver'
   },
   {
     value: 'medium',
     label: 'Medium',
-    description: '720p - Balanced'
+    description: 'Balanced'
   },
   {
     value: 'high',
     label: 'High',
-    description: '1080p - Best Quality'
+    description: 'Best Quality'
   }
 ]
 
