@@ -1,6 +1,7 @@
 import av
 from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
+from loguru import logger
 
 from globals import *
 class Encoder(QObject):
@@ -60,10 +61,16 @@ class Encoder(QObject):
 
     def set_bitrate(self, new_bitrate: int, immediate: bool = True):
         # Clamp to allowed range
+        old_bitrate = self.current_bitrate
         self.current_bitrate = max(self.min_bitrate, min(self.max_bitrate, new_bitrate))
 
-        # Reconfigure encoder
-        self.update_encoder_parameters()
+        if old_bitrate != self.current_bitrate:
+            # Close the current encoder and reinitialize with new bitrate
+            self.close()
+            self.init_encoder()
+            logger.info(f"Encoder reinitialized with bitrate: {self.current_bitrate} bps")
+
+        logger.info(f"Encoder bitrate set to {self.current_bitrate} bps")
 
 
     def encode_frame(self, frame_id, frame, width, height, log_callback=None):
@@ -96,4 +103,8 @@ class Encoder(QObject):
                     self.encode_ready.emit(frame_id, packet_bytes)
 
     def close(self):
-        self.output_container.close()
+        try:
+            if hasattr(self, 'output_container') and self.output_container:
+                self.output_container.close()
+        except Exception as e:
+            logger.warning(f"Error closing encoder container: {e}")

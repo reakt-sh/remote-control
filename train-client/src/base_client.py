@@ -129,10 +129,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
             video_quality = message.get('quality')
             logger.info(f"Video quality is changing to {video_quality}")
             if video_quality ==  "low":
+                logger.info(f"Setting encoder bitrate to LOW_BITRATE: {LOW_BITRATE}")
                 self.encoder.set_bitrate(LOW_BITRATE)
             elif video_quality == "medium":
+                logger.info(f"Setting encoder bitrate to MEDIUM_BITRATE: {MEDIUM_BITRATE}")
                 self.encoder.set_bitrate(MEDIUM_BITRATE)
             elif video_quality == "high":
+                logger.info(f"Setting encoder bitrate to HIGH_BITRATE: {HIGH_BITRATE}")
                 self.encoder.set_bitrate(HIGH_BITRATE)
             else:
                 logger.warning(f"Unknown video quality: {video_quality}")
