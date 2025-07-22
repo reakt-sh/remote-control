@@ -117,8 +117,8 @@ import PassengerCount from './PassengerCount.vue';
 import CircularProgress from './CircularProgress.vue';
 import TelemetryList from './TelemetryList.vue';
 
-const { telemetryData } = storeToRefs(useTrainStore());
-const telemetryHistory = ref([]);
+const { telemetryData, telemetryHistory } = storeToRefs(useTrainStore());
+
 
 // Update history when new data arrives
 watch(telemetryData, (newData) => {

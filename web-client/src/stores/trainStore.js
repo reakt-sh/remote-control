@@ -48,6 +48,7 @@ export const useTrainStore = defineStore('train', () => {
   const download_speed = ref(0)
   const upload_speed = ref(0)
   const networkspeed = ref(null)
+  const telemetryHistory = ref([])
 
   const {
     isWSConnected,
@@ -264,6 +265,7 @@ export const useTrainStore = defineStore('train', () => {
     download_speed,
     upload_speed,
     networkspeed,
+    telemetryHistory,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
