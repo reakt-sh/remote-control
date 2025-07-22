@@ -19,10 +19,10 @@
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
-      <VideoBitrateControl
-        v-model="videoBitrate"
+      <VideoQuality
+        v-model="videoQuality"
         :disabled="!telemetryData?.train_id"
-        @change="handleBitrateChange"
+        @change="handleQualityChange"
       />
     </div>
   </div>
@@ -36,7 +36,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
-import VideoBitrateControl from './VideoBitrateControl.vue'
+import VideoQuality from './VideoQuality.vue'
 
 const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
@@ -45,7 +45,7 @@ const { telemetryData, direction } = storeToRefs(trainStore)
 const maxSpeed = ref(60)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
-const videoBitrate = ref('medium')
+const videoQuality = ref('medium')
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
@@ -87,11 +87,11 @@ function onTargetSpeedCommit(val) {
   })
 }
 
-function handleBitrateChange(bitrate) {
+function handleQualityChange(quality) {
   trainStore.sendCommand({
-    "instruction": "CHANGE_VIDEO_BITRATE",
+    "instruction": "CHANGE_VIDEO_QUALITY",
     "train_id": telemetryData.value.train_id,
-    "bitrate": bitrate
+    "quality": quality
   })
 }
 

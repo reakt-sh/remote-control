@@ -74,6 +74,9 @@ STATION_LIST = [
     {"name": "Lütjenburg",                  "latitude": 54.2941,        "longitude": 10.5868}
 ]
 
+LOW_BITRATE = 1000000  # 1 Mbps
+MEDIUM_BITRATE = 5000000  # 5 Mbps
+HIGH_BITRATE = 10000000  # 10 Mbps
 
 TEXT_FIELD_HEIGHT = 23
 BG_COLOR = "#9CAFB4"

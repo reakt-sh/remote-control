@@ -10,9 +10,9 @@ class Encoder(QObject):
         self.frame_rate = FRAME_RATE
         self.pixel_format = PIXEL_FORMAT
         self.h264_dump_path = H264_DUMP
-        self.current_bitrate = 5000000 # INITIAL_BITRATE 5Mbps
-        self.min_bitrate = 500000 # MIN_BITRATE 0.5Mbps
-        self.max_bitrate = 10000000 # MAX_BITRATE 10Mbps
+        self.current_bitrate = MEDIUM_BITRATE
+        self.min_bitrate = LOW_BITRATE
+        self.max_bitrate = HIGH_BITRATE
         self.init_encoder()
 
     def init_encoder(self):

@@ -125,6 +125,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 logger.warning(f"Unknown direction: {direction}")
         elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
             self.networkspeed.start()
+        elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
+            video_quality = message.get('quality')
+            logger.info(f"Video quality is changing to {video_quality}")
+            if video_quality ==  "low":
+                self.encoder.set_bitrate(LOW_BITRATE)
+            elif video_quality == "medium":
+                self.encoder.set_bitrate(MEDIUM_BITRATE)
+            elif video_quality == "high":
+                self.encoder.set_bitrate(HIGH_BITRATE)
+            else:
+                logger.warning(f"Unknown video quality: {video_quality}")
+
         else:
             logger.warning(f"Unknown instruction: {message['instruction']}")
 
