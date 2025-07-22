@@ -19,6 +19,11 @@
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
+      <VideoQuality
+        v-model="videoQuality"
+        :disabled="!telemetryData?.train_id"
+        @change="handleQualityChange"
+      />
     </div>
   </div>
 </template>
@@ -31,6 +36,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
+import VideoQuality from './VideoQuality.vue'
 
 const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
@@ -39,6 +45,7 @@ const { telemetryData, direction } = storeToRefs(trainStore)
 const maxSpeed = ref(60)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
+const videoQuality = ref('medium')
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
@@ -77,6 +84,14 @@ function onTargetSpeedCommit(val) {
     "instruction": "CHANGE_TARGET_SPEED",
     "train_id": telemetryData.value.train_id,
     "target_speed": val
+  })
+}
+
+function handleQualityChange(quality) {
+  trainStore.sendCommand({
+    "instruction": "CHANGE_VIDEO_QUALITY",
+    "train_id": telemetryData.value.train_id,
+    "quality": quality
   })
 }
 

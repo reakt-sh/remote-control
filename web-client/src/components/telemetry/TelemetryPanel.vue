@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useTrainStore } from '@/stores/trainStore';
 import TelemetryCard from './TelemetryCard.vue';
@@ -117,8 +117,8 @@ import PassengerCount from './PassengerCount.vue';
 import CircularProgress from './CircularProgress.vue';
 import TelemetryList from './TelemetryList.vue';
 
-const { telemetryData } = storeToRefs(useTrainStore());
-const telemetryHistory = ref([]);
+const { telemetryData, telemetryHistory } = storeToRefs(useTrainStore());
+
 
 // Update history when new data arrives
 watch(telemetryData, (newData) => {
