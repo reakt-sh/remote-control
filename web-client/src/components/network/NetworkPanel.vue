@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
@@ -77,6 +77,20 @@ const trainStore = useTrainStore()
 const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
 const isTestingWebClient = ref(false)
 const isTestingTrainClient = ref(false)
+
+// OpenSpeedTest results
+const openSpeedTestResults = ref({
+  downloadSpeed: 0,
+  uploadSpeed: 0,
+  ping: 0,
+  jitter: 0,
+  downloadDataUsed: 0,
+  uploadDataUsed: 0,
+  timestamp: null,
+  testType: '',
+  isRunning: false,
+  hasResults: false
+})
 
 // Use key-based approach for iframe reload
 const iframeKey = ref(0)
@@ -89,6 +103,50 @@ function formatSpeed(speed) {
 // Function to reload the iframe by changing the key
 function reloadIframe() {
   iframeKey.value += 1
+  
+  // Reset results and set running state
+  openSpeedTestResults.value = {
+    downloadSpeed: 0,
+    uploadSpeed: 0,
+    ping: 0,
+    jitter: 0,
+    downloadDataUsed: 0,
+    uploadDataUsed: 0,
+    timestamp: null,
+    testType: '',
+    isRunning: true,
+    hasResults: false
+  }
+}
+
+// Listen for postMessage from OpenSpeedTest iframe
+function handleSpeedTestMessage(event) {
+  // For security, verify origin in production
+  if (event.origin !== 'https://speedtest.rtsys-lab.de') {
+    console.log('Message from unexpected origin:', event.origin)
+    return
+  }
+  
+  console.log('Received message from OpenSpeedTest iframe:', event)
+  
+  if (event.data && event.data.type === 'openspeedtest-complete') {
+    const results = event.data.data
+    
+    openSpeedTestResults.value = {
+      downloadSpeed: results.downloadSpeed || 0,
+      uploadSpeed: results.uploadSpeed || 0,
+      ping: results.ping || 0,
+      jitter: results.jitter || 0,
+      downloadDataUsed: results.downloadDataUsed || 0,
+      uploadDataUsed: results.uploadDataUsed || 0,
+      timestamp: results.timestamp || new Date().toISOString(),
+      testType: results.testType || 'full',
+      isRunning: false,
+      hasResults: true
+    }
+    
+    console.log('OpenSpeedTest Results Updated:', openSpeedTestResults.value)
+  }
 }
 
 async function send_network_measurement_request() {
@@ -98,6 +156,15 @@ async function send_network_measurement_request() {
         "train_id": telemetryData.value.train_id
     })
 }
+
+// Lifecycle hooks
+onMounted(() => {
+  window.addEventListener('message', handleSpeedTestMessage)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', handleSpeedTestMessage)
+})
 
 watch(download_speed, () => {
     isTestingWebClient.value = false
