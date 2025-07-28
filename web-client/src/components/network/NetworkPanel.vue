@@ -24,29 +24,6 @@
         </div>
       </TelemetryCard>
 
-      <TelemetryCard title="Remote Control to Server (Manual)" icon="fas fa-globe">
-        <div class="network-metrics">
-          <div class="metric-item">
-            <div class="metric-label">Download Speed</div>
-            <div class="metric-value">
-              {{ formatSpeed(download_speed) }}
-              <span class="unit">Mbps</span>
-            </div>
-          </div>
-          <div class="metric-item">
-            <div class="metric-label">Upload Speed</div>
-            <div class="metric-value">
-              {{ formatSpeed(upload_speed) }}
-              <span class="unit">Mbps</span>
-            </div>
-          </div>
-          <button class="test-button" @click="networkspeed.runFullTest(); isTestingWebClient = true" :disabled="isTestingWebClient">
-            <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingWebClient }"></i>
-            {{ isTestingWebClient ? 'Calculating...' : 'Re-Calculate' }}
-          </button>
-        </div>
-      </TelemetryCard>
-
       <!-- OpenSpeedTest Results Display -->
       <TelemetryCard title="Remote Control to Server (OpenSpeedTest)" icon="fas fa-tachometer-alt">
         <div class="network-metrics">
@@ -80,7 +57,7 @@
           </div>
           <button class="test-button" @click="runSpeedTest()" :disabled="openSpeedTestResults.isRunning">
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': openSpeedTestResults.isRunning }"></i>
-            {{ openSpeedTestResults.isRunning ? 'Testing...' : 'Run Test' }}
+            {{ openSpeedTestResults.isRunning ? 'Calculating...' : 'Re-Calculate' }}
           </button>
         </div>
         <!-- Hidden iframe for running the test -->
@@ -105,8 +82,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import TelemetryCard from '@/components/telemetry/TelemetryCard.vue'
 
 const trainStore = useTrainStore()
-const { networkspeed, telemetryData, download_speed, upload_speed } = storeToRefs(trainStore)
-const isTestingWebClient = ref(false)
+const { telemetryData } = storeToRefs(trainStore)
 const isTestingTrainClient = ref(false)
 
 // OpenSpeedTest results
@@ -202,10 +178,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('message', handleSpeedTestMessage)
-})
-
-watch(download_speed, () => {
-    isTestingWebClient.value = false
 })
 
 watch(
