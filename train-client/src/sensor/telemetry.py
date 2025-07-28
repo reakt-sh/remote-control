@@ -41,6 +41,8 @@ class Telemetry(QObject):
 
         self.download_speed = 0.0
         self.upload_speed = 0.0
+        self.jitter = 0.0
+        self.ping = 0.0
 
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
@@ -64,9 +66,11 @@ class Telemetry(QObject):
     def set_direction(self, direction: int):
         self.direction = direction
 
-    def set_network_speed(self, download_speed: float, upload_speed: float):
+    def set_network_speed(self, download_speed: float, upload_speed: float, jitter: float, ping: float):
         self.download_speed = download_speed
         self.upload_speed = upload_speed
+        self.jitter = jitter
+        self.ping = ping
 
     def start(self):
         self.timer.start(self.poll_interval_ms)
@@ -124,6 +128,8 @@ class Telemetry(QObject):
             "network_signal_strength": self.network_signal_strength,
             "download_speed": self.download_speed,
             "upload_speed": self.upload_speed,
+            "jitter": self.jitter,
+            "ping": self.ping,
         }
 
         self.simulte_data()
