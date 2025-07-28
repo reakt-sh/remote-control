@@ -87,7 +87,7 @@
         <div class="hidden-iframe">
           <iframe
             :key="iframeKey"
-            src="https://speedtest.rtsys-lab.de/?Run"
+            :src="iframeSource"
             width="800"
             height="600"
             frameborder="0"
@@ -125,6 +125,7 @@ const openSpeedTestResults = ref({
 
 // Use key-based approach for iframe reload
 const iframeKey = ref(0)
+const iframeSource = ref('') // Start with empty source
 
 function formatSpeed(speed) {
     if (speed === 0 || speed === null || speed === undefined) return 'N/A'
@@ -133,7 +134,14 @@ function formatSpeed(speed) {
 
 // Function to run the speed test
 function runSpeedTest() {
+  console.log('Starting speed test...')
+  
+  // Increment key to force iframe reload
   iframeKey.value += 1
+  
+  // Set the iframe source to start the test
+  iframeSource.value = 'https://speedtest.rtsys-lab.de/?Run'
+  
   // Set running state and reset results
   openSpeedTestResults.value = {
     downloadSpeed: 0,
