@@ -47,21 +47,52 @@
         </div>
       </TelemetryCard>
 
-      <!-- Updated iFrame Card with key-based reload -->
+      <!-- OpenSpeedTest Results Display -->
       <TelemetryCard title="Remote Control to Server (OpenSpeedTest)" icon="fas fa-tachometer-alt">
-        <div class="iframe-container">
+        <div class="network-metrics">
+          <div class="metric-item">
+            <div class="metric-label">Download Speed</div>
+            <div class="metric-value">
+              {{ formatSpeed(openSpeedTestResults.downloadSpeed) }}
+              <span class="unit">Mbps</span>
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Upload Speed</div>
+            <div class="metric-value">
+              {{ formatSpeed(openSpeedTestResults.uploadSpeed) }}
+              <span class="unit">Mbps</span>
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Ping</div>
+            <div class="metric-value">
+              {{ openSpeedTestResults.ping || 'N/A' }}
+              <span class="unit">ms</span>
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Jitter</div>
+            <div class="metric-value">
+              {{ openSpeedTestResults.jitter || 'N/A' }}
+              <span class="unit">ms</span>
+            </div>
+          </div>
+          <button class="test-button" @click="runSpeedTest()" :disabled="openSpeedTestResults.isRunning">
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': openSpeedTestResults.isRunning }"></i>
+            {{ openSpeedTestResults.isRunning ? 'Testing...' : 'Run Test' }}
+          </button>
+        </div>
+        <!-- Hidden iframe for running the test -->
+        <div class="hidden-iframe">
           <iframe
             :key="iframeKey"
-            src="https://speedtest.rtsys-lab.de/"
-            width="100%"
-            height="100%"
+            src="https://speedtest.rtsys-lab.de/?Run"
+            width="800"
+            height="600"
             frameborder="0"
           ></iframe>
         </div>
-        <button class="test-button" @click="reloadIframe()">
-          <i class="fas fa-sync-alt"></i>
-          Re-Calculate
-        </button>
       </TelemetryCard>
     </div>
   </div>
@@ -100,11 +131,10 @@ function formatSpeed(speed) {
     return Number(speed).toFixed(2)
 }
 
-// Function to reload the iframe by changing the key
-function reloadIframe() {
+// Function to run the speed test
+function runSpeedTest() {
   iframeKey.value += 1
-  
-  // Reset results and set running state
+  // Set running state and reset results
   openSpeedTestResults.value = {
     downloadSpeed: 0,
     uploadSpeed: 0,
@@ -268,22 +298,22 @@ watch(
   background: linear-gradient(90deg, #218838, #1eb584);
 }
 
-/* Style the iframe container */
-.iframe-container {
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 65%; /* Adjust this value to control the iframe's aspect ratio */
+/* Hide the iframe container but keep it functional */
+.hidden-iframe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 800px;
+  height: 600px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
   overflow: hidden;
 }
 
-.iframe-container iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
+.hidden-iframe iframe {
   width: 100%;
   height: 100%;
-  border: 0;
 }
 
 @media (max-width: 900px) {
