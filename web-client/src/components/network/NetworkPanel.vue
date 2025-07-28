@@ -17,6 +17,20 @@
               <span class="unit">Mbps</span>
             </div>
           </div>
+          <div class="metric-item">
+            <div class="metric-label">Ping</div>
+            <div class="metric-value">
+              {{ telemetryData?.ping || 'N/A' }}
+              <span class="unit">ms</span>
+            </div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Jitter</div>
+            <div class="metric-value">
+              {{ telemetryData.jitter || 'N/A' }}
+              <span class="unit">ms</span>
+            </div>
+          </div>
           <button class="test-button" @click="send_network_measurement_request()" :disabled="isTestingTrainClient">
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': isTestingTrainClient }"></i>
             {{ isTestingTrainClient ? 'Calculating...' : 'Re-Calculate' }}
