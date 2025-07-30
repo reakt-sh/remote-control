@@ -309,7 +309,7 @@ def example_telemetry_handler(train_id: str, telemetry_data: Dict):
     pass
 
 
-def main():
+def run_mqtt_bridge():
     """Example usage of MqttBridge"""
     
     # Create MQTT bridge instance
@@ -337,8 +337,3 @@ def main():
         logger.error(f"MQTT bridge error: {e}")
     finally:
         mqtt_bridge.stop()
-
-
-if __name__ == "__main__":
-    # Run the example
-    main()
