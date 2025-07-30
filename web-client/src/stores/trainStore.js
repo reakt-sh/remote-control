@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
-import { SERVER_URL } from '@/scripts/config'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient, formatMqttTelemetryMessage } from '@/scripts/mqtt'
+import { SERVER_URL } from '@/scripts/config'
 
 
 // Define server IP and host
@@ -67,8 +67,6 @@ export const useTrainStore = defineStore('train', () => {
     connectMqtt,
     subscribeToTrain,
     unsubscribeFromTrain,
-    sendCommandToTrain,
-    getConnectionInfo
   } = useMqttClient(handleMqttMessage)
 
   function generateUUID() {
@@ -108,7 +106,11 @@ export const useTrainStore = defineStore('train', () => {
   async function mappingToTrain(trainId) {
     if (!trainId) return
     telemetryData.value = {}
+    if (selectedTrainId.value !== trainId) {
+      unsubscribeFromTrain(selectedTrainId.value)
+    }
     selectedTrainId.value = trainId
+    subscribeToTrain(trainId)
 
     if (!videoDatagramAssembler.value) {
       videoDatagramAssembler.value = new useAssembler({
@@ -349,8 +351,6 @@ export const useTrainStore = defineStore('train', () => {
     sendCommand,
     // MQTT methods
     subscribeToTrain,
-    unsubscribeFromTrain,
-    sendCommandToTrain,
-    getConnectionInfo
+    unsubscribeFromTrain
   }
 })

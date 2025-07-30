@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { MQTT_BROKER_URL } from '@/scripts/config'
 
 /**
  * MQTT Client for Web Browser using native WebSocket implementation
@@ -12,7 +13,7 @@ export function useMqttClient(messageHandler) {
   // MQTT Broker Configuration - using WebSocket directly
   const MQTT_CONFIG = {
     // Use WebSocket connection for browser compatibility
-    brokerUrl: 'ws://localhost:9001/mqtt', // WebSocket endpoint for MQTT broker
+    brokerUrl: MQTT_BROKER_URL, // WebSocket endpoint for MQTT broker
     reconnectDelay: 3000,
     keepAliveInterval: 30000,
   }
@@ -35,10 +36,7 @@ export function useMqttClient(messageHandler) {
       wsConnection.value.onopen = () => {
         isMqttConnected.value = true
         console.log('✅ MQTT WebSocket connected successfully')
-        
-        // Subscribe to default topics after connection
-        subscribeToTrainTelemetry()
-        
+
         // Start keep-alive mechanism
         startKeepAlive()
       }
@@ -168,12 +166,12 @@ export function useMqttClient(messageHandler) {
   /**
    * Subscribe to a specific MQTT topic
    */
-  function subscribe(topic, qos = 1) {
+  function subscribe(train_id, qos = 1) {
     if (!wsConnection.value || !isMqttConnected.value) {
       console.warn('Cannot subscribe: MQTT client not connected')
       return false
     }
-
+    const topic = `train/${train_id}/telemetry` // Example topic format
     try {
       const subscribeMessage = JSON.stringify({
         type: 'subscribe',
@@ -194,12 +192,12 @@ export function useMqttClient(messageHandler) {
   /**
    * Unsubscribe from a specific MQTT topic
    */
-  function unsubscribe(topic) {
+  function unsubscribe(train_id) {
     if (!wsConnection.value || !isMqttConnected.value) {
       console.warn('Cannot unsubscribe: MQTT client not connected')
       return false
     }
-
+    const topic = `train/${train_id}/telemetry` // Example topic format
     try {
       const unsubscribeMessage = JSON.stringify({
         type: 'unsubscribe',
