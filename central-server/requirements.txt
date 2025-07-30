@@ -8,6 +8,9 @@ pydantic_settings
 websockets
 aioredis # Optional for Redis pub/sub
 
+# MQTT Support
+paho-mqtt
+
 # Video Processing (if doing any server-side decoding)
 numpy
 opencv-python-headless  # Only if processing frames
