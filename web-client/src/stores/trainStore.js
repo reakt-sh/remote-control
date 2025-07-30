@@ -65,7 +65,6 @@ export const useTrainStore = defineStore('train', () => {
   const {
     isMqttConnected,
     connectMqtt,
-    disconnectMqtt,
     subscribeToTrain,
     unsubscribeFromTrain,
     sendCommandToTrain,
@@ -246,12 +245,12 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   function handleMqttMessage(mqttMessage) {
-    const { trainId, messageType, data, timestamp } = mqttMessage
+    const { trainId, messageType, data } = mqttMessage
     
     console.log(`📨 MQTT: Received ${messageType} from train ${trainId}:`, data)
     
     switch (messageType) {
-      case 'telemetry':
+      case 'telemetry': {
         // Format MQTT message to match existing telemetry structure
         const formattedTelemetry = formatMqttTelemetryMessage(mqttMessage)
         
@@ -290,6 +289,7 @@ export const useTrainStore = defineStore('train', () => {
           battery: data.battery_level
         })
         break
+      }
         
       case 'status':
         console.log(`🔄 Train ${trainId} status update:`, data)
