@@ -6,6 +6,7 @@ import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { SERVER_URL } from '@/scripts/config'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
+import { useMqttClient, formatMqttTelemetryMessage } from '@/scripts/mqtt'
 
 
 // Define server IP and host
@@ -61,6 +62,16 @@ export const useTrainStore = defineStore('train', () => {
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
 
+  const {
+    isMqttConnected,
+    connectMqtt,
+    disconnectMqtt,
+    subscribeToTrain,
+    unsubscribeFromTrain,
+    sendCommandToTrain,
+    getConnectionInfo
+  } = useMqttClient(handleMqttMessage)
+
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -90,6 +101,7 @@ export const useTrainStore = defineStore('train', () => {
   async function connectToServer() {
     await connectWebSocket()
     await connectWebTransport()
+    await connectMqtt()  // Add MQTT connection
     setInterval(sendKeepAliveWebTransport, 10000);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
@@ -137,6 +149,8 @@ export const useTrainStore = defineStore('train', () => {
     // Send a message through WebTransport to notify the server
     sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
 
+    // Subscribe to MQTT telemetry for this specific train
+    subscribeToTrain(trainId)
   }
 
   async function sendCommand(command) {
@@ -231,6 +245,67 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  function handleMqttMessage(mqttMessage) {
+    const { trainId, messageType, data, timestamp } = mqttMessage
+    
+    console.log(`📨 MQTT: Received ${messageType} from train ${trainId}:`, data)
+    
+    switch (messageType) {
+      case 'telemetry':
+        // Format MQTT message to match existing telemetry structure
+        const formattedTelemetry = formatMqttTelemetryMessage(mqttMessage)
+        
+        // Update telemetry data
+        telemetryData.value = formattedTelemetry
+        
+        // Add to telemetry history
+        telemetryHistory.value.unshift({
+          ...formattedTelemetry,
+          source: 'mqtt',
+          received_at: new Date().toISOString()
+        })
+        
+        // Keep only last 100 entries
+        if (telemetryHistory.value.length > 100) {
+          telemetryHistory.value = telemetryHistory.value.slice(0, 100)
+        }
+        
+        // Update power and direction states
+        if (data.status === 'running') {
+          isPoweredOn.value = true
+        } else {
+          isPoweredOn.value = false
+        }
+        
+        if (data.direction === 1) {
+          direction.value = 'FORWARD'
+        } else if (data.direction === -1) {
+          direction.value = 'BACKWARD'
+        }
+        
+        console.log(`📊 MQTT Telemetry updated for train ${trainId}:`, {
+          speed: data.speed,
+          status: data.status,
+          location: data.location,
+          battery: data.battery_level
+        })
+        break
+        
+      case 'status':
+        console.log(`🔄 Train ${trainId} status update:`, data)
+        // Handle status updates
+        break
+        
+      case 'heartbeat':
+        console.log(`💓 Train ${trainId} heartbeat:`, data)
+        // Handle heartbeat messages
+        break
+        
+      default:
+        console.log(`❓ Unknown MQTT message type: ${messageType}`)
+    }
+  }
+
   async function sendKeepAliveWebTransport() {
     const keepalivePacket = {
       type: "keepalive",
@@ -262,6 +337,7 @@ export const useTrainStore = defineStore('train', () => {
     direction,
     isWSConnected,
     isWTConnected,
+    isMqttConnected,
     download_speed,
     upload_speed,
     networkspeed,
@@ -270,6 +346,11 @@ export const useTrainStore = defineStore('train', () => {
     fetchAvailableTrains,
     connectToServer,
     mappingToTrain,
-    sendCommand
+    sendCommand,
+    // MQTT methods
+    subscribeToTrain,
+    unsubscribeFromTrain,
+    sendCommandToTrain,
+    getConnectionInfo
   }
 })
