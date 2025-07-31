@@ -9,10 +9,10 @@ export function useMqttClient(remoteControlId, messageHandler) {
   const isMqttConnected = ref(false)
   const mqttClient = ref(null)
   const subscriptions = ref(new Set())
-  
+
   // Parse MQTT broker URL to extract host, port, and path
   const brokerConfig = parseBrokerUrl(MQTT_BROKER_URL)
-  
+
   console.log('🔗 MQTT Broker Config:', brokerConfig)
 
   /**
@@ -50,11 +50,10 @@ export function useMqttClient(remoteControlId, messageHandler) {
 
     try {
       // Use existing remoteControlId as client ID
-      const clientId = remoteControlId.value || `web-client-${Math.random().toString(16).substring(2, 10)}`
-      
+      const clientId = remoteControlId.value
       console.log(`🔌 Connecting to MQTT broker at ${brokerConfig.host}:${brokerConfig.port}${brokerConfig.path}`)
       console.log(`📋 Using client ID: ${clientId}`)
-      
+
       // Create Paho MQTT client
       mqttClient.value = new Client(
         brokerConfig.host,
@@ -114,7 +113,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
     if (responseObject.errorCode !== 0) {
       console.log('🔌 MQTT connection lost:', responseObject.errorMessage)
     }
-    
+
     // Automatic reconnection is handled by Paho MQTT library
     console.log('🔄 MQTT will attempt to reconnect automatically...')
   }
@@ -126,12 +125,12 @@ export function useMqttClient(remoteControlId, messageHandler) {
     try {
       const topic = message.destinationName
       const payload = message.payloadString
-      
+
       console.log(`📨 MQTT message received on topic "${topic}":`, payload)
-      
+
       // Parse topic to extract train_id and message type
       handleMqttMessage(topic, payload)
-      
+
     } catch (error) {
       console.error('Error processing MQTT message:', error)
     }
@@ -146,7 +145,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
     if (topicParts.length >= 3) {
       const trainId = topicParts[1]
       const messageType = topicParts[2]
-      
+
       // Parse JSON payload
       let data
       try {
@@ -155,7 +154,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
         console.error('Failed to parse MQTT payload:', e)
         return
       }
-      
+
       // Call the message handler with structured data
       if (messageHandler) {
         messageHandler({
@@ -284,7 +283,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
 
     try {
       const payload = typeof messagePayload === 'string' ? messagePayload : JSON.stringify(messagePayload)
-      
+
       const message = new Message(payload)
       message.destinationName = topic
       message.qos = qos
@@ -331,22 +330,22 @@ export function useMqttClient(remoteControlId, messageHandler) {
   return {
     // Connection state
     isMqttConnected,
-    
+
     // Connection methods
     connectMqtt: connect,
     disconnectMqtt: disconnect,
-    
+
     // Subscription methods
     subscribe,
     unsubscribe,
     subscribeToTrain,
     unsubscribeFromTrain,
     subscribeToTrainTelemetry,
-    
+
     // Publishing methods
     publish,
     sendCommandToTrain,
-    
+
     // Utility methods
     getConnectionInfo,
     isConnected
@@ -358,7 +357,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
  */
 export function formatMqttTelemetryMessage(mqttMessage) {
   const { trainId, messageType, data, timestamp } = mqttMessage
-  
+
   return {
     train_id: trainId,
     message_type: messageType,
@@ -383,10 +382,10 @@ export const MqttTopics = {
   TRAIN_TELEMETRY: (trainId) => `train/${trainId}/telemetry`,
   TRAIN_STATUS: (trainId) => `train/${trainId}/status`,
   TRAIN_HEARTBEAT: (trainId) => `train/${trainId}/heartbeat`,
-  
+
   // Command topics
   TRAIN_COMMANDS: (trainId) => `commands/${trainId}/control`,
-  
+
   // Wildcard topics
   ALL_TRAIN_TELEMETRY: 'train/+/telemetry',
   ALL_TRAIN_STATUS: 'train/+/status',
