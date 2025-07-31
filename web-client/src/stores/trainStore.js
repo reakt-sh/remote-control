@@ -5,7 +5,7 @@ import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
-import { useMqttClient, formatMqttTelemetryMessage } from '@/scripts/mqtt'
+import { useMqttClient, formatMqttTelemetryMessage } from '@/scripts/mqtt-paho'
 import { SERVER_URL } from '@/scripts/config'
 
 
@@ -67,7 +67,7 @@ export const useTrainStore = defineStore('train', () => {
     connectMqtt,
     subscribeToTrain,
     unsubscribeFromTrain,
-  } = useMqttClient(handleMqttMessage)
+  } = useMqttClient(remoteControlId, handleMqttMessage)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -351,6 +351,6 @@ export const useTrainStore = defineStore('train', () => {
     sendCommand,
     // MQTT methods
     subscribeToTrain,
-    unsubscribeFromTrain
+    unsubscribeFromTrain,
   }
 })

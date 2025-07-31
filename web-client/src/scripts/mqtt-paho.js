@@ -1,25 +1,46 @@
 import { ref } from 'vue'
+import { Client, Message } from 'paho-mqtt'
 import { MQTT_BROKER_URL } from '@/scripts/config'
 
 /**
- * MQTT Client for Web Browser using native WebSocket implementation
- * This avoids Babel compatibility issues with the mqtt library
+ * MQTT Client for Web Browser using Paho MQTT JavaScript library
  */
-export function useMqttClient(messageHandler) {
+export function useMqttClient(remoteControlId, messageHandler) {
   const isMqttConnected = ref(false)
-  const wsConnection = ref(null)
+  const mqttClient = ref(null)
   const subscriptions = ref(new Set())
   
-  // MQTT Broker Configuration - using WebSocket directly
-  const MQTT_CONFIG = {
-    // Use WebSocket connection for browser compatibility
-    brokerUrl: MQTT_BROKER_URL, // WebSocket endpoint for MQTT broker
-    reconnectDelay: 3000,
-    keepAliveInterval: 30000,
+  // Parse MQTT broker URL to extract host, port, and path
+  const brokerConfig = parseBrokerUrl(MQTT_BROKER_URL)
+  
+  console.log('🔗 MQTT Broker Config:', brokerConfig)
+
+  /**
+   * Parse MQTT broker URL
+   */
+  function parseBrokerUrl(url) {
+    try {
+      const urlObj = new URL(url)
+      return {
+        host: urlObj.hostname,
+        port: parseInt(urlObj.port) || (urlObj.protocol === 'wss:' ? 8084 : 8083),
+        path: urlObj.pathname || '/mqtt',
+        useSSL: urlObj.protocol === 'wss:'
+      }
+    } catch (error) {
+      console.error('Failed to parse MQTT broker URL:', error)
+      // Fallback configuration
+      return {
+        host: 'localhost',
+        port: 8083,
+        path: '/mqtt',
+        useSSL: false
+      }
+    }
   }
 
   /**
-   * Connect to MQTT broker via WebSocket
+   * Connect to MQTT broker using Paho MQTT
    */
   async function connect() {
     if (isMqttConnected.value) {
@@ -28,58 +49,91 @@ export function useMqttClient(messageHandler) {
     }
 
     try {
-      console.log(`Connecting to MQTT broker at ${MQTT_CONFIG.brokerUrl}`)
+      // Use existing remoteControlId as client ID
+      const clientId = remoteControlId.value || `web-client-${Math.random().toString(16).substring(2, 10)}`
       
-      wsConnection.value = new WebSocket(MQTT_CONFIG.brokerUrl, ['mqtt'])
+      console.log(`🔌 Connecting to MQTT broker at ${brokerConfig.host}:${brokerConfig.port}${brokerConfig.path}`)
+      console.log(`📋 Using client ID: ${clientId}`)
+      
+      // Create Paho MQTT client
+      mqttClient.value = new Client(
+        brokerConfig.host,
+        brokerConfig.port,
+        brokerConfig.path,
+        clientId
+      )
 
-      // Connection successful
-      wsConnection.value.onopen = () => {
-        isMqttConnected.value = true
-        console.log('✅ MQTT WebSocket connected successfully')
+      // Set up event handlers
+      mqttClient.value.onConnectionLost = onConnectionLost
+      mqttClient.value.onMessageArrived = onMessageArrived
 
-        // Start keep-alive mechanism
-        startKeepAlive()
+      // Connection options
+      const connectOptions = {
+        useSSL: brokerConfig.useSSL,
+        cleanSession: true,
+        keepAliveInterval: 30,
+        timeout: 10,
+        onSuccess: onConnect,
+        onFailure: onConnectFailure,
+        reconnect: true
       }
 
-      // Handle incoming messages
-      wsConnection.value.onmessage = (event) => {
-        try {
-          // For now, simulate MQTT message format
-          // In a real implementation, you'd parse the MQTT protocol
-          const message = JSON.parse(event.data)
-          console.log(`📨 MQTT message received:`, message)
-          
-          if (message.topic && message.payload) {
-            handleMqttMessage(message.topic, message.payload)
-          }
-        } catch (error) {
-          console.error('Error processing MQTT message:', error)
-        }
-      }
-
-      // Handle connection errors
-      wsConnection.value.onerror = (error) => {
-        console.error('❌ MQTT WebSocket connection error:', error)
-        isMqttConnected.value = false
-      }
-
-      // Handle disconnection
-      wsConnection.value.onclose = () => {
-        console.log('� MQTT WebSocket connection closed')
-        isMqttConnected.value = false
-        
-        // Attempt reconnection
-        setTimeout(() => {
-          if (!isMqttConnected.value) {
-            console.log('🔄 Attempting MQTT reconnection...')
-            connect()
-          }
-        }, MQTT_CONFIG.reconnectDelay)
-      }
+      // Connect to broker
+      mqttClient.value.connect(connectOptions)
 
     } catch (error) {
-      console.error('Failed to create MQTT WebSocket connection:', error)
+      console.error('❌ Failed to create MQTT client:', error)
       isMqttConnected.value = false
+    }
+  }
+
+  /**
+   * Handle successful connection
+   */
+  function onConnect() {
+    isMqttConnected.value = true
+    console.log('✅ MQTT client connected successfully')
+
+    // Subscribe to default topics after connection
+    // subscribeToTrainTelemetry()
+  }
+
+  /**
+   * Handle connection failure
+   */
+  function onConnectFailure(error) {
+    console.error('❌ MQTT connection failed:', error)
+    isMqttConnected.value = false
+  }
+
+  /**
+   * Handle connection lost
+   */
+  function onConnectionLost(responseObject) {
+    isMqttConnected.value = false
+    if (responseObject.errorCode !== 0) {
+      console.log('🔌 MQTT connection lost:', responseObject.errorMessage)
+    }
+    
+    // Automatic reconnection is handled by Paho MQTT library
+    console.log('🔄 MQTT will attempt to reconnect automatically...')
+  }
+
+  /**
+   * Handle incoming MQTT messages
+   */
+  function onMessageArrived(message) {
+    try {
+      const topic = message.destinationName
+      const payload = message.payloadString
+      
+      console.log(`📨 MQTT message received on topic "${topic}":`, payload)
+      
+      // Parse topic to extract train_id and message type
+      handleMqttMessage(topic, payload)
+      
+    } catch (error) {
+      console.error('Error processing MQTT message:', error)
     }
   }
 
@@ -116,34 +170,11 @@ export function useMqttClient(messageHandler) {
   }
 
   /**
-   * Start keep-alive mechanism
-   */
-  function startKeepAlive() {
-    const keepAliveTimer = setInterval(() => {
-      if (isMqttConnected.value && wsConnection.value) {
-        try {
-          // Send ping message
-          const pingMessage = JSON.stringify({
-            type: 'ping',
-            timestamp: Date.now()
-          })
-          wsConnection.value.send(pingMessage)
-        } catch (error) {
-          console.error('Failed to send keep-alive ping:', error)
-          clearInterval(keepAliveTimer)
-        }
-      } else {
-        clearInterval(keepAliveTimer)
-      }
-    }, MQTT_CONFIG.keepAliveInterval)
-  }
-
-  /**
    * Disconnect from MQTT broker
    */
   function disconnect() {
-    if (wsConnection.value && isMqttConnected.value) {
-      wsConnection.value.close()
+    if (mqttClient.value && isMqttConnected.value) {
+      mqttClient.value.disconnect()
       isMqttConnected.value = false
       subscriptions.value.clear()
       console.log('🔌 MQTT client disconnected')
@@ -166,22 +197,23 @@ export function useMqttClient(messageHandler) {
   /**
    * Subscribe to a specific MQTT topic
    */
-  function subscribe(train_id, qos = 1) {
-    if (!wsConnection.value || !isMqttConnected.value) {
+  function subscribe(topic, qos = 1) {
+    if (!mqttClient.value || !isMqttConnected.value) {
       console.warn('Cannot subscribe: MQTT client not connected')
       return false
     }
-    const topic = `train/${train_id}/telemetry` // Example topic format
+
     try {
-      const subscribeMessage = JSON.stringify({
-        type: 'subscribe',
-        topic: topic,
-        qos: qos
+      mqttClient.value.subscribe(topic, {
+        qos: qos,
+        onSuccess: () => {
+          subscriptions.value.add(topic)
+          console.log(`✅ Subscribed to MQTT topic: ${topic}`)
+        },
+        onFailure: (error) => {
+          console.error(`❌ Failed to subscribe to ${topic}:`, error)
+        }
       })
-      
-      wsConnection.value.send(subscribeMessage)
-      subscriptions.value.add(topic)
-      console.log(`✅ Subscribed to MQTT topic: ${topic}`)
       return true
     } catch (error) {
       console.error(`❌ Failed to subscribe to ${topic}:`, error)
@@ -192,21 +224,22 @@ export function useMqttClient(messageHandler) {
   /**
    * Unsubscribe from a specific MQTT topic
    */
-  function unsubscribe(train_id) {
-    if (!wsConnection.value || !isMqttConnected.value) {
+  function unsubscribe(topic) {
+    if (!mqttClient.value || !isMqttConnected.value) {
       console.warn('Cannot unsubscribe: MQTT client not connected')
       return false
     }
-    const topic = `train/${train_id}/telemetry` // Example topic format
+
     try {
-      const unsubscribeMessage = JSON.stringify({
-        type: 'unsubscribe',
-        topic: topic
+      mqttClient.value.unsubscribe(topic, {
+        onSuccess: () => {
+          subscriptions.value.delete(topic)
+          console.log(`🚫 Unsubscribed from MQTT topic: ${topic}`)
+        },
+        onFailure: (error) => {
+          console.error(`❌ Failed to unsubscribe from ${topic}:`, error)
+        }
       })
-      
-      wsConnection.value.send(unsubscribeMessage)
-      subscriptions.value.delete(topic)
-      console.log(`🚫 Unsubscribed from MQTT topic: ${topic}`)
       return true
     } catch (error) {
       console.error(`❌ Failed to unsubscribe from ${topic}:`, error)
@@ -241,24 +274,23 @@ export function useMqttClient(messageHandler) {
   }
 
   /**
-   * Publish a message to MQTT broker (for commands)
+   * Publish a message to MQTT broker
    */
-  function publish(topic, message, qos = 1) {
-    if (!wsConnection.value || !isMqttConnected.value) {
+  function publish(topic, messagePayload, qos = 1, retained = false) {
+    if (!mqttClient.value || !isMqttConnected.value) {
       console.warn('Cannot publish: MQTT client not connected')
       return false
     }
 
     try {
-      const payload = typeof message === 'string' ? message : JSON.stringify(message)
-      const publishMessage = JSON.stringify({
-        type: 'publish',
-        topic: topic,
-        payload: payload,
-        qos: qos
-      })
+      const payload = typeof messagePayload === 'string' ? messagePayload : JSON.stringify(messagePayload)
+      
+      const message = new Message(payload)
+      message.destinationName = topic
+      message.qos = qos
+      message.retained = retained
 
-      wsConnection.value.send(publishMessage)
+      mqttClient.value.send(message)
       console.log(`📤 Published to MQTT topic ${topic}:`, payload)
       return true
     } catch (error) {
@@ -281,10 +313,11 @@ export function useMqttClient(messageHandler) {
   function getConnectionInfo() {
     return {
       connected: isMqttConnected.value,
-      brokerUrl: MQTT_CONFIG.brokerUrl,
+      brokerConfig: brokerConfig,
       subscriptions: Array.from(subscriptions.value),
       subscriptionCount: subscriptions.value.size,
-      connectionType: 'WebSocket'
+      clientId: mqttClient.value?.clientId || null,
+      connectionType: 'Paho MQTT'
     }
   }
 
