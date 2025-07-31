@@ -178,6 +178,27 @@ sudo systemctl restart nginx
  sudo ufw allow 3001/tcp
  sudo ufw reload
  ```
+
+### Run MQTT Broker
+```
+docker run -d \
+  --name nanomq \
+  -p 1883:1883 \
+  -p 8081:8081 \
+  -p 8083:8083 \
+  -p 8084:8084 \
+  -p 8883:8883 \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain1.pem:/etc/fullchain1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/chain1.pem:/etc/chain1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey1.pem:/etc/privkey1.pem \
+  -v /home/rcd/Desktop/Workspace/remote-control/central-server/NanoMQ/nanomq.conf:/etc/nanomq.conf \
+  --cpus=0.5 \
+  --memory=100m \
+  --memory-swap=200m \
+  emqx/nanomq:latest-full \
+  nanomq start --conf /etc/nanomq.conf
+```
+
 ### Run Central Server
 ```
 python src/main.py
