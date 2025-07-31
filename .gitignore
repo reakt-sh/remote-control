@@ -29,5 +29,13 @@
 *.log
 *.zip
 *.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.cer
+*.csr
+*.der
 yt-dlp
 yt-dlp_linux
