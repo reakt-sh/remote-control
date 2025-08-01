@@ -177,7 +177,14 @@ export const useTrainStore = defineStore('train', () => {
   async function handleWsMessage(packetType, payload) {
     switch (packetType) {
       case PACKET_TYPE.telemetry: {
-        telemetryData.value = JSON.parse(new TextDecoder().decode(payload))
+        const jsonData =  JSON.parse(new TextDecoder().decode(payload))
+
+        // get system timestamp
+        const timestamp = Date.now()
+        const latency = timestamp - jsonData.timestamp
+        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
+
+        console.log('WebSocket: Received telemetry data:', jsonData)
         break
       }
       case PACKET_TYPE.notification: {
@@ -205,8 +212,6 @@ export const useTrainStore = defineStore('train', () => {
           const latency = timestamp - jsonData.timestamp
           console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
           console.log('WebTransport: Received telemetry data:', jsonData)
-
-          telemetryData.value = jsonData
 
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
@@ -264,16 +269,7 @@ export const useTrainStore = defineStore('train', () => {
         console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
 
         // Add to telemetry history
-        telemetryHistory.value.unshift({
-          ...data,
-          source: 'mqtt',
-          received_at: new Date().toISOString()
-        })
-
-        // Keep only last 100 entries
-        if (telemetryHistory.value.length > 100) {
-          telemetryHistory.value = telemetryHistory.value.slice(0, 100)
-        }
+        telemetryData.value = data
 
         // Update power and direction states
         if (data.status === 'running') {

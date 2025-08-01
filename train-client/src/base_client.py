@@ -160,6 +160,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
             self.network_worker_quic.enqueue_stream_packet(packet)
+            self.network_worker_ws.enqueue_packet(packet)
             self.network_worker_mqtt.send_data(packet_data)
 
     def on_imu_data(self, data):
