@@ -4,8 +4,9 @@ import { useRouter } from 'vue-router'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
-import { SERVER_URL } from '@/scripts/config'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
+import { useMqttClient } from '@/scripts/mqtt-paho'
+import { SERVER_URL } from '@/scripts/config'
 
 
 // Define server IP and host
@@ -61,6 +62,13 @@ export const useTrainStore = defineStore('train', () => {
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
 
+  const {
+    isMqttConnected,
+    connectMqtt,
+    subscribeToTrain,
+    unsubscribeFromTrain,
+  } = useMqttClient(remoteControlId, handleMqttMessage)
+
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -90,6 +98,7 @@ export const useTrainStore = defineStore('train', () => {
   async function connectToServer() {
     await connectWebSocket()
     await connectWebTransport()
+    await connectMqtt()  // Add MQTT connection
     setInterval(sendKeepAliveWebTransport, 10000);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
@@ -97,6 +106,9 @@ export const useTrainStore = defineStore('train', () => {
   async function mappingToTrain(trainId) {
     if (!trainId) return
     telemetryData.value = {}
+    if (selectedTrainId.value !== trainId) {
+      unsubscribeFromTrain(selectedTrainId.value)
+    }
     selectedTrainId.value = trainId
 
     if (!videoDatagramAssembler.value) {
@@ -137,6 +149,8 @@ export const useTrainStore = defineStore('train', () => {
     // Send a message through WebTransport to notify the server
     sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
 
+    // Subscribe to MQTT telemetry for this specific train
+    subscribeToTrain(trainId)
   }
 
   async function sendCommand(command) {
@@ -162,7 +176,14 @@ export const useTrainStore = defineStore('train', () => {
   async function handleWsMessage(packetType, payload) {
     switch (packetType) {
       case PACKET_TYPE.telemetry: {
-        telemetryData.value = JSON.parse(new TextDecoder().decode(payload))
+        const jsonData =  JSON.parse(new TextDecoder().decode(payload))
+
+        // get system timestamp
+        const timestamp = Date.now()
+        const latency = timestamp - jsonData.timestamp
+        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
+
+        console.log('WebSocket: Received telemetry data:', jsonData)
         break
       }
       case PACKET_TYPE.notification: {
@@ -184,11 +205,14 @@ export const useTrainStore = defineStore('train', () => {
         try {
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
+
+          // get system timestamp
+          const timestamp = Date.now()
+          const latency = timestamp - jsonData.timestamp
+          console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
           console.log('WebTransport: Received telemetry data:', jsonData)
-          telemetryData.value = jsonData
 
           // also update isPoweredOn and direction
-
           if (jsonData.status === 'running'){
             isPoweredOn.value = true
           } else {
@@ -231,6 +255,57 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  function handleMqttMessage(mqttMessage) {
+    const { trainId, messageType, data } = mqttMessage
+    console.log(`📨 MQTT: Received ${messageType} from train ${trainId}:`, data)
+
+    switch (messageType) {
+      case 'telemetry': {
+
+        // get system timestamp
+        const timestamp = Date.now()
+        const latency = timestamp - data.timestamp
+        console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
+
+        // Add to telemetry history
+        telemetryData.value = data
+
+        // Update power and direction states
+        if (data.status === 'running') {
+          isPoweredOn.value = true
+        } else {
+          isPoweredOn.value = false
+        }
+
+        if (data.direction === 1) {
+          direction.value = 'FORWARD'
+        } else if (data.direction === -1) {
+          direction.value = 'BACKWARD'
+        }
+        break
+      }
+
+      case 'status':
+        console.log(`🔄 Train ${trainId} status update:`, data)
+        // Handle status updates
+        break
+
+      case 'heartbeat':
+        console.log(`💓 Train ${trainId} heartbeat:`, data)
+        // Handle heartbeat messages
+        break
+
+      case 'onConnect':
+        if (selectedTrainId.value) {
+          subscribeToTrain(selectedTrainId.value)
+        }
+        break
+
+      default:
+        console.log(`❓ Unknown MQTT message type: ${messageType}`)
+    }
+  }
+
   async function sendKeepAliveWebTransport() {
     const keepalivePacket = {
       type: "keepalive",
@@ -262,6 +337,7 @@ export const useTrainStore = defineStore('train', () => {
     direction,
     isWSConnected,
     isWTConnected,
+    isMqttConnected,
     download_speed,
     upload_speed,
     networkspeed,
@@ -270,6 +346,9 @@ export const useTrainStore = defineStore('train', () => {
     fetchAvailableTrains,
     connectToServer,
     mappingToTrain,
-    sendCommand
+    sendCommand,
+    // MQTT methods
+    subscribeToTrain,
+    unsubscribeFromTrain,
   }
 })

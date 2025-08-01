@@ -9,6 +9,7 @@ from loguru import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
+from network_worker_mqtt import NetworkWorkerMqtt
 from networkspeed import NetworkSpeed
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
@@ -61,10 +62,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.output_file = open(output_filename, 'wb')
 
     def init_network(self):
+        # WebSocket
         self.network_worker_ws = NetworkWorkerWS(self.train_client_id)
         self.network_worker_ws.process_command.connect(self.on_new_command)
         self.network_worker_ws.start()
 
+        # QUIC
         self.network_worker_quic = NetworkWorkerQUIC(self.train_client_id)
         self.network_worker_quic.connection_established.connect(self.on_quic_connected)
         self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
@@ -73,8 +76,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
+        # MQTT
+        self.network_worker_mqtt = NetworkWorkerMqtt(self.train_client_id)
+
         self.networkspeed = NetworkSpeed(duration=5)
         self.networkspeed.speed_calculated.connect(self.on_network_speed_calculated)
+
+
 
     def on_network_speed_calculated(self, data):
         logger.info(
@@ -152,6 +160,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
             self.network_worker_quic.enqueue_stream_packet(packet)
+            self.network_worker_ws.enqueue_packet(packet)
+            self.network_worker_mqtt.send_data(packet_data)
 
     def on_imu_data(self, data):
         self.log_message(f"IMU Data: {data}")
