@@ -110,7 +110,6 @@ export const useTrainStore = defineStore('train', () => {
       unsubscribeFromTrain(selectedTrainId.value)
     }
     selectedTrainId.value = trainId
-    subscribeToTrain(trainId)
 
     if (!videoDatagramAssembler.value) {
       videoDatagramAssembler.value = new useAssembler({
@@ -294,6 +293,12 @@ export const useTrainStore = defineStore('train', () => {
       case 'heartbeat':
         console.log(`💓 Train ${trainId} heartbeat:`, data)
         // Handle heartbeat messages
+        break
+
+      case 'onConnect':
+        if (selectedTrainId.value) {
+          subscribeToTrain(selectedTrainId.value)
+        }
         break
 
       default:

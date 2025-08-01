@@ -93,6 +93,16 @@ export function useMqttClient(remoteControlId, messageHandler) {
     isMqttConnected.value = true
     console.log('✅ MQTT client connected successfully')
 
+    // on connect callback
+    if (messageHandler) {
+      messageHandler({
+        train_id: 'null',
+        messageType: 'onConnect',
+        status: 'connected',
+        timestamp: Date.now()
+      })
+    }
+
     // Subscribe to default topics after connection
     // subscribeToTrainTelemetry()
   }
