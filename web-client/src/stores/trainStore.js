@@ -5,7 +5,7 @@ import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
-import { useMqttClient, formatMqttTelemetryMessage } from '@/scripts/mqtt-paho'
+import { useMqttClient } from '@/scripts/mqtt-paho'
 import { SERVER_URL } from '@/scripts/config'
 
 
@@ -203,7 +203,6 @@ export const useTrainStore = defineStore('train', () => {
           telemetryData.value = jsonData
 
           // also update isPoweredOn and direction
-
           if (jsonData.status === 'running'){
             isPoweredOn.value = true
           } else {
@@ -248,61 +247,48 @@ export const useTrainStore = defineStore('train', () => {
 
   function handleMqttMessage(mqttMessage) {
     const { trainId, messageType, data } = mqttMessage
-    
     console.log(`📨 MQTT: Received ${messageType} from train ${trainId}:`, data)
-    
+
     switch (messageType) {
       case 'telemetry': {
-        // Format MQTT message to match existing telemetry structure
-        const formattedTelemetry = formatMqttTelemetryMessage(mqttMessage)
-        
-        // Update telemetry data
-        telemetryData.value = formattedTelemetry
-        
+
         // Add to telemetry history
         telemetryHistory.value.unshift({
-          ...formattedTelemetry,
+          ...data,
           source: 'mqtt',
           received_at: new Date().toISOString()
         })
-        
+
         // Keep only last 100 entries
         if (telemetryHistory.value.length > 100) {
           telemetryHistory.value = telemetryHistory.value.slice(0, 100)
         }
-        
+
         // Update power and direction states
         if (data.status === 'running') {
           isPoweredOn.value = true
         } else {
           isPoweredOn.value = false
         }
-        
+
         if (data.direction === 1) {
           direction.value = 'FORWARD'
         } else if (data.direction === -1) {
           direction.value = 'BACKWARD'
         }
-        
-        console.log(`📊 MQTT Telemetry updated for train ${trainId}:`, {
-          speed: data.speed,
-          status: data.status,
-          location: data.location,
-          battery: data.battery_level
-        })
         break
       }
-        
+
       case 'status':
         console.log(`🔄 Train ${trainId} status update:`, data)
         // Handle status updates
         break
-        
+
       case 'heartbeat':
         console.log(`💓 Train ${trainId} heartbeat:`, data)
         // Handle heartbeat messages
         break
-        
+
       default:
         console.log(`❓ Unknown MQTT message type: ${messageType}`)
     }

@@ -10,14 +10,14 @@ class MqttBridge:
     """
     MQTT Bridge for receiving telemetry data from trains via NanoMQ broker using paho-mqtt
     """
-    
-    def __init__(self, 
-                 broker_host: str = "localhost", 
+
+    def __init__(self,
+                 broker_host: str = "localhost",
                  broker_port: int = 1883,
                  client_id: str = "central-server-bridge"):
         """
         Initialize MQTT Bridge
-        
+
         Args:
             broker_host: NanoMQ broker hostname/IP
             broker_port: NanoMQ broker port
@@ -29,20 +29,20 @@ class MqttBridge:
         self.client: Optional[mqtt.Client] = None
         self.is_connected = False
         self.is_running = False
-        
+
         # Topic patterns
         self.telemetry_topic_pattern = "train/+/telemetry"
         self.status_topic_pattern = "train/+/status"
         self.heartbeat_topic_pattern = "train/+/heartbeat"
-        
+
         # Callback handlers
         self.telemetry_handlers: Dict[str, Callable] = {}
         self.status_handlers: Dict[str, Callable] = {}
-        
+
         # Threading for async integration
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.mqtt_thread: Optional[threading.Thread] = None
-        
+
         logger.info(f"MQTT Bridge initialized for broker {broker_host}:{broker_port}")
 
     def start(self):
@@ -50,28 +50,28 @@ class MqttBridge:
         if self.is_running:
             logger.warning("MQTT Bridge is already running")
             return
-        
+
         try:
             logger.info(f"Connecting to NanoMQ broker at {self.broker_host}:{self.broker_port}")
-            
+
             # Create MQTT client
             self.client = mqtt.Client(client_id=self.client_id)
-            
+
             # Set up callbacks
             self.client.on_connect = self._on_connect
             self.client.on_disconnect = self._on_disconnect
             self.client.on_message = self._on_message
             self.client.on_subscribe = self._on_subscribe
-            
+
             # Connect to broker
             self.client.connect(self.broker_host, self.broker_port, keepalive=60)
-            
+
             # Start the MQTT loop in a separate thread
             self.client.loop_start()
             self.is_running = True
-            
+
             logger.success(f"MQTT Bridge started, connecting to broker...")
-            
+
         except Exception as e:
             logger.error(f"Failed to start MQTT bridge: {e}")
             self.is_running = False
@@ -81,9 +81,9 @@ class MqttBridge:
         """Stop the MQTT bridge and disconnect from broker"""
         if not self.is_running:
             return
-        
+
         self.is_running = False
-        
+
         if self.client:
             try:
                 self.client.loop_stop()
@@ -91,7 +91,7 @@ class MqttBridge:
                 logger.info("Disconnected from MQTT broker")
             except Exception as e:
                 logger.error(f"Error disconnecting from MQTT broker: {e}")
-        
+
         self.is_connected = False
         self.client = None
 
@@ -100,10 +100,10 @@ class MqttBridge:
         if rc == 0:
             self.is_connected = True
             logger.success(f"Connected to NanoMQ broker with result code {rc}")
-            
+
             # Subscribe to topics after successful connection
             self._subscribe_to_topics()
-            
+
         else:
             self.is_connected = False
             logger.error(f"Failed to connect to MQTT broker with result code {rc}")
@@ -125,15 +125,15 @@ class MqttBridge:
         try:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
-            
+
             logger.debug(f"Received MQTT message on topic: {topic}")
-            
+
             # Parse topic to extract train_id and message type
             topic_parts = topic.split('/')
             if len(topic_parts) >= 3:
                 train_id = topic_parts[1]
                 message_type = topic_parts[2]
-                
+
                 # Route message based on type
                 if message_type == "telemetry":
                     self._handle_telemetry_message(train_id, payload)
@@ -145,7 +145,7 @@ class MqttBridge:
                     logger.warning(f"Unknown message type: {message_type} from train {train_id}")
             else:
                 logger.warning(f"Invalid topic format: {topic}")
-                
+
         except Exception as e:
             logger.error(f"Error handling MQTT message: {e}")
 
@@ -156,7 +156,7 @@ class MqttBridge:
             (self.status_topic_pattern, 1),
             (self.heartbeat_topic_pattern, 0)   # Heartbeat can use QoS 0
         ]
-        
+
         for topic, qos in topics:
             result, mid = self.client.subscribe(topic, qos=qos)
             if result == mqtt.MQTT_ERR_SUCCESS:
@@ -169,19 +169,19 @@ class MqttBridge:
         try:
             # Parse JSON payload
             telemetry_data = json.loads(payload)
-            
+
             # Log telemetry data as requested
             logger.info(f"Telemetry from train {train_id}: {telemetry_data}")
-            
+
             # Extract key metrics for summary logging
             speed = telemetry_data.get('speed', 'N/A')
             status = telemetry_data.get('status', 'N/A')
             location = telemetry_data.get('location', 'N/A')
             battery = telemetry_data.get('battery_level', 'N/A')
-            
+
             logger.info(f"Train {train_id} - Speed: {speed}, Status: {status}, "
                        f"Location: {location}, Battery: {battery}%")
-            
+
             # Call registered telemetry handlers
             for handler_name, handler in self.telemetry_handlers.items():
                 try:
@@ -196,7 +196,7 @@ class MqttBridge:
                         handler(train_id, telemetry_data)
                 except Exception as e:
                     logger.error(f"Error in telemetry handler {handler_name}: {e}")
-                    
+
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in telemetry message from train {train_id}: {e}")
         except Exception as e:
@@ -207,7 +207,7 @@ class MqttBridge:
         try:
             status_data = json.loads(payload)
             logger.info(f"Status update from train {train_id}: {status_data}")
-            
+
             # Call registered status handlers
             for handler_name, handler in self.status_handlers.items():
                 try:
@@ -222,7 +222,7 @@ class MqttBridge:
                         handler(train_id, status_data)
                 except Exception as e:
                     logger.error(f"Error in status handler {handler_name}: {e}")
-                    
+
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in status message from train {train_id}: {e}")
         except Exception as e:
@@ -234,7 +234,7 @@ class MqttBridge:
             heartbeat_data = json.loads(payload)
             timestamp = heartbeat_data.get('timestamp', 'N/A')
             logger.debug(f"Heartbeat from train {train_id} at {timestamp}")
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in heartbeat from train {train_id}: {e}")
         except Exception as e:
@@ -264,11 +264,11 @@ class MqttBridge:
         if not self.is_connected:
             logger.error("Cannot publish command: MQTT client not connected")
             return False
-        
+
         try:
             topic = f"commands/{train_id}/control"
             payload = json.dumps(command)
-            
+
             result = self.client.publish(topic, payload, qos=1)
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 logger.info(f"Published command to train {train_id}: {command}")
@@ -276,7 +276,7 @@ class MqttBridge:
             else:
                 logger.error(f"Failed to publish command to train {train_id}: {result.rc}")
                 return False
-            
+
         except Exception as e:
             logger.error(f"Error publishing command to train {train_id}: {e}")
             return False
@@ -311,26 +311,26 @@ def example_telemetry_handler(train_id: str, telemetry_data: Dict):
 
 def run_mqtt_bridge():
     """Example usage of MqttBridge"""
-    
+
     # Create MQTT bridge instance
     mqtt_bridge = MqttBridge(
         broker_host="localhost",  # Your NanoMQ host
         broker_port=1883,         # Your NanoMQ port
         client_id="central-server-mqtt-bridge"
     )
-    
+
     # Register custom handlers
     mqtt_bridge.register_telemetry_handler("example", example_telemetry_handler)
-    
+
     try:
         # Start the bridge
         mqtt_bridge.start()
-        
+
         # Keep the main thread alive
         import time
         while mqtt_bridge.is_running:
             time.sleep(1)
-            
+
     except KeyboardInterrupt:
         logger.info("Shutting down MQTT bridge...")
     except Exception as e:

@@ -126,8 +126,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
       const topic = message.destinationName
       const payload = message.payloadString
 
-      console.log(`📨 MQTT message received on topic "${topic}":`, payload)
-
       // Parse topic to extract train_id and message type
       handleMqttMessage(topic, payload)
 
@@ -349,28 +347,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     // Utility methods
     getConnectionInfo,
     isConnected
-  }
-}
-
-/**
- * Simple MQTT message formatter for telemetry data
- */
-export function formatMqttTelemetryMessage(mqttMessage) {
-  const { trainId, messageType, data, timestamp } = mqttMessage
-
-  return {
-    train_id: trainId,
-    message_type: messageType,
-    timestamp: timestamp,
-    data: data,
-    // Convert to format expected by existing components
-    speed: data.speed,
-    status: data.status,
-    location: data.location,
-    battery_level: data.battery_level,
-    temperature: data.temperature,
-    // Add all other telemetry fields
-    ...data
   }
 }
 
