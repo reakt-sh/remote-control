@@ -199,7 +199,13 @@ export const useTrainStore = defineStore('train', () => {
         try {
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
+
+          // get system timestamp
+          const timestamp = Date.now()
+          const latency = timestamp - jsonData.timestamp
+          console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
           console.log('WebTransport: Received telemetry data:', jsonData)
+
           telemetryData.value = jsonData
 
           // also update isPoweredOn and direction
@@ -251,6 +257,11 @@ export const useTrainStore = defineStore('train', () => {
 
     switch (messageType) {
       case 'telemetry': {
+
+        // get system timestamp
+        const timestamp = Date.now()
+        const latency = timestamp - data.timestamp
+        console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
 
         // Add to telemetry history
         telemetryHistory.value.unshift({
