@@ -6,6 +6,7 @@ import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
+import { useLatencyTracker } from '@/scripts/latencyTracker'
 import { SERVER_URL } from '@/scripts/config'
 
 
@@ -68,6 +69,11 @@ export const useTrainStore = defineStore('train', () => {
     subscribeToTrain,
     unsubscribeFromTrain,
   } = useMqttClient(remoteControlId, handleMqttMessage)
+
+  const {
+    recordLatency,
+    exportToJson,
+  } = useLatencyTracker()
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -183,6 +189,9 @@ export const useTrainStore = defineStore('train', () => {
         const latency = timestamp - jsonData.timestamp
         console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
 
+        // Record latency data
+        recordLatency('websocket', latency, jsonData.sequence_number)
+
         console.log('WebSocket: Received telemetry data:', jsonData)
         break
       }
@@ -210,6 +219,10 @@ export const useTrainStore = defineStore('train', () => {
           const timestamp = Date.now()
           const latency = timestamp - jsonData.timestamp
           console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
+
+          // Record latency data
+          recordLatency('webtransport', latency, jsonData.sequence_number)
+
           console.log('WebTransport: Received telemetry data:', jsonData)
 
           // also update isPoweredOn and direction
@@ -266,6 +279,9 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - data.timestamp
         console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
+
+        // Record latency data
+        recordLatency('mqtt', latency, data.sequence_number)
 
         // Add to telemetry history
         telemetryData.value = data
@@ -350,5 +366,7 @@ export const useTrainStore = defineStore('train', () => {
     // MQTT methods
     subscribeToTrain,
     unsubscribeFromTrain,
+    // Latency tracking
+    exportToJson
   }
 })
