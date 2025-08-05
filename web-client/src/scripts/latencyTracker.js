@@ -20,7 +20,7 @@ export function useLatencyTracker() {
    * @param {number} latency - Latency in milliseconds
    * @param {number} sequenceNumber - Sequence number from telemetry data
    */
-  function recordLatency(protocol, latency, sequenceNumber) {
+  function recordLatency(protocol, latency, sequenceNumber, timestamp) {
     const protocolKey = getProtocolKey(protocol)
     // Find existing entry with same sequence number
     let existingEntry = latencyList.value.find(entry => entry.sequence_number === sequenceNumber)
@@ -32,6 +32,7 @@ export function useLatencyTracker() {
       // Create new entry
       const newEntry = {
         sequence_number: sequenceNumber,
+        created_at: timestamp,
         ws_latency: null,
         wt_latency: null,
         mqtt_latency: null

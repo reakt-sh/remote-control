@@ -197,7 +197,7 @@ export const useTrainStore = defineStore('train', () => {
         console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
 
         // Record latency data
-        recordLatency('websocket', latency, jsonData.sequence_number)
+        recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
 
         console.log('WebSocket: Received telemetry data:', jsonData)
         break
@@ -228,7 +228,7 @@ export const useTrainStore = defineStore('train', () => {
           console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
 
           // Record latency data
-          recordLatency('webtransport', latency, jsonData.sequence_number)
+          recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
 
           console.log('WebTransport: Received telemetry data:', jsonData)
 
@@ -288,7 +288,7 @@ export const useTrainStore = defineStore('train', () => {
         console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
 
         // Record latency data
-        recordLatency('mqtt', latency, data.sequence_number)
+        recordLatency('mqtt', latency, data.sequence_number, data.timestamp)
 
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data

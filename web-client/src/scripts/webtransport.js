@@ -15,7 +15,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
 
     try {
       transport.value = new WebTransport(QUIC_URL)
-      
+
       // Handle connection closed event
       transport.value.closed.then(() => {
         console.log('WebTransport connection closed')
@@ -24,7 +24,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
         console.error('WebTransport connection lost:', error)
         isWTConnected.value = false
       })
-      
+
       await transport.value.ready
       console.log('WebTransport connected:', QUIC_URL)
       isWTConnected.value = true
@@ -117,7 +117,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
         isWTConnected.value = false
       }
     }
-    
+
     readChunk().catch((error) => {
       console.error('WebTransport datagram reader error:', error)
       isWTConnected.value = false
