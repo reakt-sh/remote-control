@@ -283,8 +283,9 @@ export const useTrainStore = defineStore('train', () => {
         // Record latency data
         recordLatency('mqtt', latency, data.sequence_number)
 
-        // Add to telemetry history
+        // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
+        telemetryHistory.value.unshift({ ...data });
 
         // Update power and direction states
         if (data.status === 'running') {

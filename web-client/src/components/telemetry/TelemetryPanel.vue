@@ -120,13 +120,6 @@ import TelemetryList from './TelemetryList.vue';
 const { telemetryData, telemetryHistory } = storeToRefs(useTrainStore());
 
 
-// Update history when new data arrives
-watch(telemetryData, (newData) => {
-  if (newData) {
-    telemetryHistory.value.unshift({ ...newData });
-  }
-}, { deep: true });
-
 const formattedTime = computed(() => {
   if (!telemetryData.value?.timestamp) return 'N/A'
   const ts = Number(telemetryData.value.timestamp)

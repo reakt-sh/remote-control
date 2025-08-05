@@ -110,20 +110,12 @@ export function useLatencyTracker() {
       rawData: [...latencyList.value],
       summary: {
         totalEntries: latencyList.value.length,
-        timeRange: getTimeRange(),
         protocols: ['websocket', 'webtransport', 'mqtt'],
         sequenceRange: getSequenceRange()
       }
     }
   }
 
-  /**
-   * Get time range of collected data
-   */
-  function getTimeRange() {
-    // Since we no longer store timestamps, return null
-    return { start: null, end: null }
-  }
 
   /**
    * Get sequence number range of collected data
@@ -147,17 +139,17 @@ export function useLatencyTracker() {
     try {
       const data = getAllLatencyData()
       console.log('📊 Exporting data:', data)
-      
+
       // Check if there's any data to export
       if (data.rawData.length === 0) {
         console.warn('⚠️ No latency data to export')
         alert('No latency data available to export. Please wait for some telemetry data to be received.')
         return false
       }
-      
+
       const jsonString = JSON.stringify(data, null, 2)
       console.log('📄 JSON string length:', jsonString.length)
-      
+
       // Try multiple download methods for better compatibility
       if (window.navigator && window.navigator.msSaveOrOpenBlob) {
         // For IE/Edge
@@ -167,24 +159,26 @@ export function useLatencyTracker() {
         // For modern browsers
         const blob = new Blob([jsonString], { type: 'application/json' })
         const url = window.URL.createObjectURL(blob)
-        
+
         const link = document.createElement('a')
         link.style.display = 'none'
         link.href = url
-        link.download = `latency-data-${new Date().toISOString().split('T')[0]}.json`
-        link.setAttribute('download', `latency-data-${new Date().toISOString().split('T')[0]}.json`)
-        
+
+        // download file name add date, also add time for uniqueness
+        link.download = `latency-data-${new Date().toISOString().split('T')[0]}-${new Date().toISOString().split('T')[1].split('.')[0]}.json`
+        link.setAttribute('download', `latency-data-${new Date().toISOString().split('T')[0]}-${new Date().toISOString().split('T')[1].split('.')[0]}.json`)
+
         document.body.appendChild(link)
-        
+
         // Force click event
         const clickEvent = new MouseEvent('click', {
           view: window,
           bubbles: true,
           cancelable: true
         })
-        
+
         link.dispatchEvent(clickEvent)
-        
+
         // Cleanup with delay
         setTimeout(() => {
           if (document.body.contains(link)) {
