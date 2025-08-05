@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useTrainStore } from '@/stores/trainStore';
 import TelemetryCard from './TelemetryCard.vue';

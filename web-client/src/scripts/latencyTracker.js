@@ -164,9 +164,9 @@ export function useLatencyTracker() {
         link.style.display = 'none'
         link.href = url
 
-        // download file name add date, also add time for uniqueness
-        link.download = `latency-data-${new Date().toISOString().split('T')[0]}-${new Date().toISOString().split('T')[1].split('.')[0]}.json`
-        link.setAttribute('download', `latency-data-${new Date().toISOString().split('T')[0]}-${new Date().toISOString().split('T')[1].split('.')[0]}.json`)
+        // just use timestamp for uniqueness
+        link.download = `latency-data-${Date.now()}.json`
+        link.setAttribute('download', `latency-data-${Date.now()}.json`)
 
         document.body.appendChild(link)
 
@@ -251,7 +251,6 @@ export function useLatencyTracker() {
     getRecentData,
     getDataBySequenceRange,
     getDataBySequenceNumber,
-    getTimeRange,
     getSequenceRange
   }
 }

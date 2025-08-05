@@ -73,6 +73,7 @@ export const useTrainStore = defineStore('train', () => {
   const {
     recordLatency,
     exportToJson,
+    clearData,
   } = useLatencyTracker()
 
   function generateUUID() {
@@ -114,6 +115,12 @@ export const useTrainStore = defineStore('train', () => {
     telemetryData.value = {}
     if (selectedTrainId.value !== trainId) {
       unsubscribeFromTrain(selectedTrainId.value)
+
+      // also reset telemetry history
+      telemetryHistory.value = []
+
+      // also reset latency data
+      clearData()
     }
     selectedTrainId.value = trainId
 
