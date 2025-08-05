@@ -1,11 +1,12 @@
 import av
+import datetime
 from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
 from loguru import logger
 
 from globals import *
 class Encoder(QObject):
-    encode_ready = pyqtSignal(int, object)  # Emits the encoded bytes
+    encode_ready = pyqtSignal(int, int, object)  # Emits the encoded bytes
     def __init__(self, parent=None):
         super().__init__(parent)
         self.frame_rate = FRAME_RATE
@@ -79,9 +80,10 @@ class Encoder(QObject):
         av_frame = av.VideoFrame.from_ndarray(frame, format='bgr24')
         for packet in self.stream.encode(av_frame):
             current_sps_pps = self.stream.codec_context.extradata
-            packet_bytes = bytes(packet)
-            if len(packet_bytes) > 0:
-                nal_type = packet_bytes[4] & 0x1F
+            encoded_frame = bytes(packet)
+            timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+            if len(encoded_frame) > 0:
+                nal_type = encoded_frame[4] & 0x1F
                 if log_callback:
                     if nal_type == 7:
                         log_callback(f"SPS NAL unit detected for Frame ID: {frame_id}")
@@ -97,10 +99,9 @@ class Encoder(QObject):
 
                 if nal_type == 5:  # IDR frame
                     # Prepend SPS and PPS to the IDR frame
-                    sps_pps_idr = current_sps_pps + packet_bytes
-                    self.encode_ready.emit(frame_id, sps_pps_idr)
-                else:
-                    self.encode_ready.emit(frame_id, packet_bytes)
+                    encoded_frame = current_sps_pps + encoded_frame
+                self.encode_ready.emit(frame_id, timestamp, encoded_frame)
+
 
     def close(self):
         try:

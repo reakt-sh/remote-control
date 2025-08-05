@@ -22,10 +22,9 @@ export function useLatencyTracker() {
    */
   function recordLatency(protocol, latency, sequenceNumber) {
     const protocolKey = getProtocolKey(protocol)
-    
     // Find existing entry with same sequence number
     let existingEntry = latencyList.value.find(entry => entry.sequence_number === sequenceNumber)
-    
+
     if (existingEntry) {
       // Update existing entry with new protocol latency
       existingEntry[protocolKey] = latency
@@ -66,13 +65,13 @@ export function useLatencyTracker() {
   function updateStats() {
     const protocols = ['websocket', 'webtransport', 'mqtt']
     const protocolKeys = ['ws_latency', 'wt_latency', 'mqtt_latency']
-    
+
     protocols.forEach((protocol, index) => {
       const protocolKey = protocolKeys[index]
       const latencies = latencyList.value
         .map(entry => entry[protocolKey])
         .filter(latency => latency !== null && latency !== undefined)
-      
+
       if (latencies.length === 0) {
         stats.value[protocol] = { count: 0, avg: 0, min: 0, max: 0 }
         return
@@ -241,7 +240,7 @@ export function useLatencyTracker() {
     // Data access
     latencyList: readonly(latencyList),
     stats,
-    
+
     // Methods
     recordLatency,
     getStats,

@@ -59,7 +59,9 @@ export class useAssembler {
       frameId: (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
       numberOfPackets: (data[5] << 8) | data[6],
       packetId: (data[7] << 8) | data[8],
-      payload: data.slice(45)
+      train_id: new TextDecoder().decode(data.slice(9, 45)).replace(/\0/g, '').trim(),
+      timestamp: (data[45] << 56) | (data[46] << 48) | (data[47] << 40) | (data[48] << 32) | (data[49] << 24) | (data[50] << 16) | (data[51] << 8) | data[52],
+      payload: data.slice(53)
     }
   }
 
