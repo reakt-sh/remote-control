@@ -171,6 +171,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.output_file.write(encoded_bytes)
             self.output_file.flush()
         if self.is_sending:
+            # Send the encoded frame over QUIC
             self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 

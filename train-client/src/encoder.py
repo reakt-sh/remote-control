@@ -6,7 +6,7 @@ from loguru import logger
 
 from globals import *
 class Encoder(QObject):
-    encode_ready = pyqtSignal(int, int, object)  # Emits the encoded bytes
+    encode_ready = pyqtSignal(int, object, object)  # Emits frame_id, timestamp (as object to handle 64-bit), encoded_bytes
     def __init__(self, parent=None):
         super().__init__(parent)
         self.frame_rate = FRAME_RATE

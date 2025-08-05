@@ -28,11 +28,11 @@ export class useAssembler {
    */
   processPacket(data) {
     try {
-      const { frameId, numberOfPackets, packetId, payload } = this._parsePacket(data)
+      const { frameId, numberOfPackets, packetId, payload, timestamp } = this._parsePacket(data)
       // Get or create frame state
       let frameState = this.frameBuffer.get(frameId)
       if (!frameState) {
-        frameState = this._createFrameState(frameId, numberOfPackets)
+        frameState = this._createFrameState(frameId, numberOfPackets, timestamp)
       }
 
       // Store payload if not already received
@@ -60,16 +60,27 @@ export class useAssembler {
       numberOfPackets: (data[5] << 8) | data[6],
       packetId: (data[7] << 8) | data[8],
       train_id: new TextDecoder().decode(data.slice(9, 45)).replace(/\0/g, '').trim(),
-      timestamp: (data[45] << 56) | (data[46] << 48) | (data[47] << 40) | (data[48] << 32) | (data[49] << 24) | (data[50] << 16) | (data[51] << 8) | data[52],
+      timestamp: this._parseTimestamp(data, 45),
       payload: data.slice(53)
     }
+  }
+
+  /**
+   * Parse 64-bit timestamp from packet data
+   * @private
+   */
+  _parseTimestamp(data, offset) {
+    const view = new DataView(data.buffer, data.byteOffset + offset, 8)
+    const high = view.getUint32(0, false) // Big-endian, first 4 bytes
+    const low = view.getUint32(4, false)  // Big-endian, last 4 bytes
+    return (high * 0x100000000) + low
   }
 
   /**
    * Create new frame state and manage buffer limits
    * @private
    */
-  _createFrameState(frameId, numberOfPackets) {
+  _createFrameState(frameId, numberOfPackets, timestamp) {
     // Evict oldest frame if buffer is full
     if (this.frameBuffer.size >= this.maxFrames) {
       const oldestFrameId = this.frameOrderQueue.shift()
@@ -81,7 +92,7 @@ export class useAssembler {
       expectedPackets: numberOfPackets,
       receivedPackets: 0,
       packetBuffer: new Array(numberOfPackets),
-      createdAt: Date.now()
+      createdAt: timestamp
     }
 
     this.frameBuffer.set(frameId, frameState)
@@ -95,6 +106,12 @@ export class useAssembler {
    * @private
    */
   _handleCompleteFrame(frameState) {
+    // Calculate frame reconstruction latency
+    const currentTime = Date.now()
+    const frameLatency = currentTime - frameState.createdAt
+    // log both timestamp, created at and now, and latency
+    console.log(`🎬 Frame ${frameState.frameId} reconstructed - Created At: ${frameState.createdAt}, Now: ${currentTime}, Latency: ${frameLatency}ms`)
+
     // Concatenate all packets in order
     const frameData = new Uint8Array(
       frameState.packetBuffer.reduce(
