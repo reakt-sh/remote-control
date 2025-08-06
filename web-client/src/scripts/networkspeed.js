@@ -38,14 +38,8 @@ export class useNetworkSpeed {
   }
 
   async runFullTest() {
-    console.log('Starting download test...');
     const download = await this.testDownload();
-    console.log(`Download: ${download.speed.toFixed(2)} Mbps`);
-
-    console.log('Starting upload test...');
     const upload = await this.testUpload();
-    console.log(`Upload: ${upload.speed.toFixed(2)} Mbps`);
-
     this.callback?.(download.speed, upload.speed);
   }
 }

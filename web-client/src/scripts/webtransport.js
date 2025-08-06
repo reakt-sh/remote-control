@@ -18,15 +18,15 @@ export function useWebTransport(remoteControlId, messageHandler) {
 
       // Handle connection closed event
       transport.value.closed.then(() => {
-        console.log('WebTransport connection closed')
+        console.log('❌ WebTransport connection closed')
         isWTConnected.value = false
       }).catch((error) => {
-        console.error('WebTransport connection lost:', error)
+        console.error('❌ WebTransport connection lost:', error)
         isWTConnected.value = false
       })
 
       await transport.value.ready
-      console.log('WebTransport connected:', QUIC_URL)
+      console.log('✅ WebTransport connected:', QUIC_URL)
       isWTConnected.value = true
 
       bidistream.value = await transport.value.createBidirectionalStream()
@@ -34,7 +34,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
       setupDatagramReader()
       await send(`REMOTE_CONTROL:${remoteControlId.value}`);
     } catch (error) {
-      console.error('WT connection error:', error)
+      console.error('❌ WT connection error:', error)
       isWTConnected.value = false
     }
   }
@@ -48,7 +48,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
 
   async function send(message) {
     if (!isWTConnected.value || !bidistream.value) {
-      console.log('WebTransport not connected')
+      console.log('❌ WebTransport not connected')
       return
     }
 
@@ -64,9 +64,8 @@ export function useWebTransport(remoteControlId, messageHandler) {
       }
       await writer.write(data);
       writer.releaseLock();
-      console.log('WebTransport message sent:', message);
     } catch (error) {
-      console.error('Error sending WebTransport message:', error);
+      console.error('❌ Error sending WebTransport message:', error);
       // Check if connection is lost
       if (error.name === 'WebTransportError' && error.message.includes('Connection lost')) {
         isWTConnected.value = false
@@ -80,7 +79,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
       try {
         const { value, done } = await reader.read()
         if (done) {
-          console.log('WebTransport stream ended')
+          console.log('❌ WebTransport stream ended')
           isWTConnected.value = false
           return
         }
@@ -89,13 +88,13 @@ export function useWebTransport(remoteControlId, messageHandler) {
         messageHandler(byteArray[0], byteArray.slice(1))
         readChunk()
       } catch (error) {
-        console.error('WebTransport stream read error:', error)
+        console.error('❌ WebTransport stream read error:', error)
         isWTConnected.value = false
       }
     }
 
     readChunk().catch((error) => {
-      console.error('WebTransport stream reader error:', error)
+      console.error('❌ WebTransport stream reader error:', error)
       isWTConnected.value = false
     })
   }
@@ -106,20 +105,20 @@ export function useWebTransport(remoteControlId, messageHandler) {
       try {
         const { value, done } = await reader.read()
         if (done) {
-          console.log('WebTransport datagram stream ended')
+          console.log('❌ WebTransport datagram stream ended')
           return
         }
 
         messageHandler(value[0], value)
         readChunk()
       } catch (error) {
-        console.error('WebTransport datagram read error:', error)
+        console.error('❌ WebTransport datagram read error:', error)
         isWTConnected.value = false
       }
     }
 
     readChunk().catch((error) => {
-      console.error('WebTransport datagram reader error:', error)
+      console.error('❌ WebTransport datagram reader error:', error)
       isWTConnected.value = false
     })
   }

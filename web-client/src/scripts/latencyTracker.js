@@ -51,7 +51,7 @@ export function useLatencyTracker() {
     // Update statistics
     updateStats()
 
-    console.log(`📊 Latency recorded for ${protocol}: ${latency}ms (seq: ${sequenceNumber})`)
+    // console.log(`📊 Latency recorded for ${protocol}: ${latency}ms (seq: ${sequenceNumber})`)
   }
 
   /**
@@ -146,7 +146,6 @@ export function useLatencyTracker() {
   function exportToJson() {
     try {
       const data = getAllLatencyData()
-      console.log('📊 Exporting data:', data)
 
       // Check if there's any data to export
       if (data.telemetryLatencies.length === 0) {
@@ -156,7 +155,6 @@ export function useLatencyTracker() {
       }
 
       const jsonString = JSON.stringify(data, null, 2)
-      console.log('📄 JSON string length:', jsonString.length)
 
       // Try multiple download methods for better compatibility
       if (window.navigator && window.navigator.msSaveOrOpenBlob) {
@@ -195,12 +193,9 @@ export function useLatencyTracker() {
           window.URL.revokeObjectURL(url)
         }, 1000)
       }
-
-      console.log('✅ Latency data exported successfully')
       return true
     } catch (error) {
       console.error('❌ Failed to export latency data:', error)
-      alert('Failed to export latency data. Check console for details.')
       return false
     }
   }

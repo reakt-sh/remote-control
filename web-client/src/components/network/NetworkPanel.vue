@@ -124,14 +124,11 @@ function formatSpeed(speed) {
 
 // Function to run the speed test
 function runSpeedTest() {
-  console.log('Starting speed test...')
-  
   // Increment key to force iframe reload
   iframeKey.value += 1
-  
   // Set the iframe source to start the test
   iframeSource.value = 'https://speedtest.rtsys-lab.de/?Run'
-  
+
   // Set running state and reset results
   openSpeedTestResults.value = {
     downloadSpeed: 0,
@@ -151,15 +148,12 @@ function runSpeedTest() {
 function handleSpeedTestMessage(event) {
   // For security, verify origin in production
   if (event.origin !== 'https://speedtest.rtsys-lab.de') {
-    console.log('Message from unexpected origin:', event.origin)
     return
   }
-  
-  console.log('Received message from OpenSpeedTest iframe:', event)
-  
+
   if (event.data && event.data.type === 'openspeedtest-complete') {
     const results = event.data.data
-    
+
     openSpeedTestResults.value = {
       downloadSpeed: results.downloadSpeed || 0,
       uploadSpeed: results.uploadSpeed || 0,
@@ -172,8 +166,6 @@ function handleSpeedTestMessage(event) {
       isRunning: false,
       hasResults: true
     }
-    
-    console.log('OpenSpeedTest Results Updated:', openSpeedTestResults.value)
   }
 }
 

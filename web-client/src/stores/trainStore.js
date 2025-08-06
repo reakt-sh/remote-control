@@ -88,18 +88,16 @@ export const useTrainStore = defineStore('train', () => {
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
       remoteControlId.value = generateUUID()
-      console.log('Remote control ID initialized:', remoteControlId.value)
+      console.log('✅ Remote control ID initialized:', remoteControlId.value)
     }
   }
   async function fetchAvailableTrains() {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)
       const data = await response.json()
-      console.log('Available trains:', data)
       availableTrains.value = data
-      console.log('after write availableTrains :', availableTrains.value)
     } catch (error) {
-      console.error('Error fetching trains:', error)
+      console.error('❌ Error fetching trains:', error)
     }
   }
 
@@ -151,10 +149,9 @@ export const useTrainStore = defineStore('train', () => {
           throw new Error(`Failed to assign train. Status: ${response.status}`)
         }
 
-        const data = await response.json()
-        console.log('Train assigned successfully:', data)
+        await response.json()
       } catch (error) {
-        console.error('Error assigning train to remote control:', error)
+        console.error('❌ Error assigning train to remote control:', error)
       }
     } else {
       console.error('Remote control ID is not initialized')
@@ -195,12 +192,11 @@ export const useTrainStore = defineStore('train', () => {
         // get system timestamp
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp
-        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
 
+        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
         // Record latency data
         recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
 
-        console.log('WebSocket: Received telemetry data:', jsonData)
         break
       }
       case PACKET_TYPE.notification: {
@@ -231,8 +227,6 @@ export const useTrainStore = defineStore('train', () => {
           // Record latency data
           recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
 
-          console.log('WebTransport: Received telemetry data:', jsonData)
-
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
             isPoweredOn.value = true
@@ -246,11 +240,9 @@ export const useTrainStore = defineStore('train', () => {
             direction.value = 'BACKWARD'
           }
 
-          console.log("receiveWebTransportStream: isPoweredOn:", isPoweredOn.value)
-
           break;
         } catch (error) {
-          console.error('Error parsing telemetry data:', error)
+          console.error('❌ Error parsing telemetry data:', error)
           break;
         }
       case PACKET_TYPE.video:
@@ -278,7 +270,6 @@ export const useTrainStore = defineStore('train', () => {
 
   function handleMqttMessage(mqttMessage) {
     const { trainId, messageType, data } = mqttMessage
-    console.log(`📨 MQTT: Received ${messageType} from train ${trainId}:`, data)
 
     switch (messageType) {
       case 'telemetry': {
@@ -345,7 +336,6 @@ export const useTrainStore = defineStore('train', () => {
     packet.set(packetData, 1);
 
     sendWtMessage(packet)
-    console.log('WebTransport keepalive sent:', keepalivePacket);
   }
 
   async function onNetworkSpeedCalculated(downloadSpeed, uploadSpeed) {

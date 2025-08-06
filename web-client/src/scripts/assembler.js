@@ -97,7 +97,7 @@ export class useAssembler {
    * @private
    */
   _parseTimestampFast(data, offset) {
-    // Direct memory access without creating new DataView
+    // Try little-endian interpretation first (most common)
     const b0 = data[offset]
     const b1 = data[offset + 1]
     const b2 = data[offset + 2]
@@ -106,12 +106,13 @@ export class useAssembler {
     const b5 = data[offset + 5]
     const b6 = data[offset + 6]
     const b7 = data[offset + 7]
-    
-    // Reconstruct 64-bit timestamp using bit operations
-    const high = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
-    const low = (b4 << 24) | (b5 << 16) | (b6 << 8) | b7
-    
-    return (high * 0x100000000) + low
+
+
+    // Try big-endian: most significant bytes first
+    const highBE = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+    const lowBE = (b4 << 24) | (b5 << 16) | (b6 << 8) | b7
+    const timestampBE = (highBE * 0x100000000) + (lowBE >>> 0)
+    return timestampBE
   }
 
   /**

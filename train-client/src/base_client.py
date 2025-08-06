@@ -173,6 +173,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if self.is_sending:
             # Send the encoded frame over QUIC
             self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+            logger.debug(f"Encoded frame {frame_id} and timestamp {timestamp} sent over QUIC")
             self.telemetry.notify_new_frame_processed()
 
     def toggle_capture(self):

@@ -18,12 +18,7 @@ import { useTrainStore } from '@/stores/trainStore'
 const { exportToJson } = useTrainStore()
 
 function exportLatencyData() {
-  const success = exportToJson()
-  if (success) {
-    console.log('✅ Latency data exported successfully')
-  } else {
-    console.error('❌ Failed to export latency data')
-  }
+  exportToJson()
 }
 </script>
 
