@@ -20,6 +20,11 @@ export class useAssembler {
     this.onFrameComplete = onFrameComplete
     this.frameBuffer = new Map()
     this.frameOrderQueue = []
+    
+    // Pre-create reusable objects for performance
+    this.textDecoder = new TextDecoder()
+    this.tempDataView = null
+    this.tempUint8Array = new Uint8Array(36) // For train_id extraction
   }
 
   /**
@@ -51,28 +56,61 @@ export class useAssembler {
   }
 
   /**
-   * Parse packet header and extract metadata
+   * Parse packet header and extract metadata (optimized version)
    * @private
    */
   _parsePacket(data) {
+    // Extract frame ID using bit operations (fastest)
+    const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4]
+    
+    // Extract packet counts and ID
+    const numberOfPackets = (data[5] << 8) | data[6]
+    const packetId = (data[7] << 8) | data[8]
+    
+    // Extract train_id efficiently by copying only the needed bytes
+    this.tempUint8Array.set(data.subarray(9, 45))
+    let trainIdEnd = 36
+    // Find the first null byte or end of array
+    for (let i = 0; i < 36; i++) {
+      if (this.tempUint8Array[i] === 0) {
+        trainIdEnd = i
+        break
+      }
+    }
+    const train_id = this.textDecoder.decode(this.tempUint8Array.subarray(0, trainIdEnd))
+    
+    // Fast timestamp parsing using direct memory access
+    const timestamp = this._parseTimestampFast(data, 45)
+    
     return {
-      frameId: (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
-      numberOfPackets: (data[5] << 8) | data[6],
-      packetId: (data[7] << 8) | data[8],
-      train_id: new TextDecoder().decode(data.slice(9, 45)).replace(/\0/g, '').trim(),
-      timestamp: this._parseTimestamp(data, 45),
-      payload: data.slice(53)
+      frameId,
+      numberOfPackets,
+      packetId,
+      train_id,
+      timestamp,
+      payload: data.subarray(53) // Use subarray instead of slice for better performance
     }
   }
 
   /**
-   * Parse 64-bit timestamp from packet data
+   * Optimized 64-bit timestamp parsing
    * @private
    */
-  _parseTimestamp(data, offset) {
-    const view = new DataView(data.buffer, data.byteOffset + offset, 8)
-    const high = view.getUint32(0, false) // Big-endian, first 4 bytes
-    const low = view.getUint32(4, false)  // Big-endian, last 4 bytes
+  _parseTimestampFast(data, offset) {
+    // Direct memory access without creating new DataView
+    const b0 = data[offset]
+    const b1 = data[offset + 1]
+    const b2 = data[offset + 2]
+    const b3 = data[offset + 3]
+    const b4 = data[offset + 4]
+    const b5 = data[offset + 5]
+    const b6 = data[offset + 6]
+    const b7 = data[offset + 7]
+    
+    // Reconstruct 64-bit timestamp using bit operations
+    const high = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+    const low = (b4 << 24) | (b5 << 16) | (b6 << 8) | b7
+    
     return (high * 0x100000000) + low
   }
 
@@ -102,7 +140,7 @@ export class useAssembler {
   }
 
   /**
-   * Handle completed frame assembly
+   * Handle completed frame assembly (optimized)
    * @private
    */
   _handleCompleteFrame(frameState) {
@@ -112,13 +150,26 @@ export class useAssembler {
     // log both timestamp, created at and now, and latency
     console.log(`🎬 Frame ${frameState.frameId} reconstructed - Created At: ${frameState.createdAt}, Now: ${currentTime}, Latency: ${frameLatency}ms`)
 
-    // Concatenate all packets in order
-    const frameData = new Uint8Array(
-      frameState.packetBuffer.reduce(
-        (acc, part) => acc.concat(Array.from(part)),
-        []
-      )
-    )
+    // Pre-calculate total size for better memory allocation
+    let totalSize = 0
+    for (let i = 0; i < frameState.packetBuffer.length; i++) {
+      if (frameState.packetBuffer[i]) {
+        totalSize += frameState.packetBuffer[i].length
+      }
+    }
+
+    // Allocate frame data once with correct size
+    const frameData = new Uint8Array(totalSize)
+    let offset = 0
+    
+    // Copy packets in order with single allocation
+    for (let i = 0; i < frameState.packetBuffer.length; i++) {
+      const packet = frameState.packetBuffer[i]
+      if (packet) {
+        frameData.set(packet, offset)
+        offset += packet.length
+      }
+    }
 
     // Remove from buffer and queue
     this.frameBuffer.delete(frameState.frameId)
