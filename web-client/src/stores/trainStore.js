@@ -71,6 +71,7 @@ export const useTrainStore = defineStore('train', () => {
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
   const {
+    recordFrameLatency,
     recordLatency,
     exportToJson,
     clearData,
@@ -129,7 +130,7 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          console.log('Frame completed for frameID :', completedFrame.frameId)
+          recordFrameLatency(completedFrame.frameId, completedFrame.latency)
         }
       })
     }

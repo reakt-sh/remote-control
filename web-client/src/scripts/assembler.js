@@ -147,8 +147,6 @@ export class useAssembler {
     // Calculate frame reconstruction latency
     const currentTime = Date.now()
     const frameLatency = currentTime - frameState.createdAt
-    // log both timestamp, created at and now, and latency
-    console.log(`🎬 Frame ${frameState.frameId} reconstructed - Created At: ${frameState.createdAt}, Now: ${currentTime}, Latency: ${frameLatency}ms`)
 
     // Pre-calculate total size for better memory allocation
     let totalSize = 0
@@ -180,7 +178,7 @@ export class useAssembler {
       this.onFrameComplete({
         frameId: frameState.frameId,
         data: frameData,
-        timestamp: frameState.createdAt
+        latency: frameLatency
       })
     }
   }

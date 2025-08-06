@@ -7,12 +7,19 @@ export function useLatencyTracker() {
   // Store latency data as array of objects with sequence_number and protocol latencies
   const latencyList = ref([])
 
+  // Store latency for each completed video frame
+  const frameLatencies = ref([])
+
   // Statistics
   const stats = ref({
     websocket: { count: 0, avg: 0, min: 0, max: 0 },
     webtransport: { count: 0, avg: 0, min: 0, max: 0 },
     mqtt: { count: 0, avg: 0, min: 0, max: 0 }
   })
+
+  function recordFrameLatency(frameId, latency) {
+    frameLatencies.value.push({ frameId, latency })
+  }
 
   /**
    * Record latency data for a specific protocol
@@ -107,7 +114,8 @@ export function useLatencyTracker() {
     return {
       exportTime: new Date().toISOString(),
       statistics: getStats(),
-      rawData: [...latencyList.value],
+      telemetryLatencies: [...latencyList.value],
+      videoLatencies: [...frameLatencies.value],
       summary: {
         totalEntries: latencyList.value.length,
         protocols: ['websocket', 'webtransport', 'mqtt'],
@@ -141,7 +149,7 @@ export function useLatencyTracker() {
       console.log('📊 Exporting data:', data)
 
       // Check if there's any data to export
-      if (data.rawData.length === 0) {
+      if (data.telemetryLatencies.length === 0) {
         console.warn('⚠️ No latency data to export')
         alert('No latency data available to export. Please wait for some telemetry data to be received.')
         return false
@@ -244,6 +252,7 @@ export function useLatencyTracker() {
 
     // Methods
     recordLatency,
+    recordFrameLatency,
     getStats,
     getAllLatencyData,
     exportToJson,
