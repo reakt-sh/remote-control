@@ -48,9 +48,6 @@ export function useLatencyTracker() {
       latencyList.value.push(newEntry)
     }
 
-    // Update statistics
-    updateStats()
-
     // console.log(`📊 Latency recorded for ${protocol}: ${latency}ms (seq: ${sequenceNumber})`)
   }
 
@@ -111,6 +108,8 @@ export function useLatencyTracker() {
    * Get all latency data for export
    */
   function getAllLatencyData() {
+    // Update statistics
+    updateStats()
     return {
       exportTime: new Date().toISOString(),
       statistics: getStats(),
