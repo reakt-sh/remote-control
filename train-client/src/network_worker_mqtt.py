@@ -12,12 +12,12 @@ class NetworkWorkerMqtt:
         self.train_id = train_id
         self.topic = f"train/{train_id}/telemetry"
         self.is_connected = False
-        
+
         # Set up callbacks
         self.mqtt_client.on_connect = self._on_connect
         self.mqtt_client.on_disconnect = self._on_disconnect
         self.mqtt_client.on_publish = self._on_publish
-        
+
         self.connect()
 
     def connect(self):
@@ -49,27 +49,26 @@ class NetworkWorkerMqtt:
 
     def _on_publish(self, client, userdata, mid):
         """Callback for when a message is successfully published"""
-        logger.debug(f"Message published successfully (mid: {mid})")
+        pass
 
     def send_data(self, data):
         if not self.is_connected:
             logger.warning("Cannot send data: MQTT client not connected")
             return False
-            
+
         try:
             result = self.mqtt_client.publish(
                 topic=self.topic,
                 payload=data,
                 qos=1,  # Quality of Service level 1 ensures message delivery at least once
             )
-            
+
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                logger.info(f"MQTT Published message to {self.topic}: {data}")
                 return True
             else:
                 logger.error(f"Failed to publish MQTT message: {result.rc}")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Error publishing MQTT message: {e}")
             return False

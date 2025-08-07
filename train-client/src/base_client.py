@@ -166,12 +166,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_imu_data(self, data):
         self.log_message(f"IMU Data: {data}")
 
-    def on_encoded_frame(self, frame_id, encoded_bytes):
+    def on_encoded_frame(self, frame_id, timestamp, encoded_bytes):
         if self.write_to_file:
             self.output_file.write(encoded_bytes)
             self.output_file.flush()
         if self.is_sending:
-            self.network_worker_quic.enqueue_frame(frame_id, encoded_bytes)
+            # Send the encoded frame over QUIC
+            self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 
     def toggle_capture(self):

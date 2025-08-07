@@ -17,7 +17,8 @@ PACKET_TYPE = {
     "download_end": 24,
     "upload_start": 25,
     "uploading": 26,
-    "upload_end": 27
+    "upload_end": 27,
+    "rtt": 28,  # Round Trip Time
 }
 
 HOST = "0.0.0.0"

@@ -20,6 +20,11 @@ export class useAssembler {
     this.onFrameComplete = onFrameComplete
     this.frameBuffer = new Map()
     this.frameOrderQueue = []
+    
+    // Pre-create reusable objects for performance
+    this.textDecoder = new TextDecoder()
+    this.tempDataView = null
+    this.tempUint8Array = new Uint8Array(36) // For train_id extraction
   }
 
   /**
@@ -28,11 +33,11 @@ export class useAssembler {
    */
   processPacket(data) {
     try {
-      const { frameId, numberOfPackets, packetId, payload } = this._parsePacket(data)
+      const { frameId, numberOfPackets, packetId, payload, timestamp } = this._parsePacket(data)
       // Get or create frame state
       let frameState = this.frameBuffer.get(frameId)
       if (!frameState) {
-        frameState = this._createFrameState(frameId, numberOfPackets)
+        frameState = this._createFrameState(frameId, numberOfPackets, timestamp)
       }
 
       // Store payload if not already received
@@ -51,23 +56,70 @@ export class useAssembler {
   }
 
   /**
-   * Parse packet header and extract metadata
+   * Parse packet header and extract metadata (optimized version)
    * @private
    */
   _parsePacket(data) {
-    return {
-      frameId: (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
-      numberOfPackets: (data[5] << 8) | data[6],
-      packetId: (data[7] << 8) | data[8],
-      payload: data.slice(45)
+    // Extract frame ID using bit operations (fastest)
+    const frameId = (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4]
+    
+    // Extract packet counts and ID
+    const numberOfPackets = (data[5] << 8) | data[6]
+    const packetId = (data[7] << 8) | data[8]
+    
+    // Extract train_id efficiently by copying only the needed bytes
+    this.tempUint8Array.set(data.subarray(9, 45))
+    let trainIdEnd = 36
+    // Find the first null byte or end of array
+    for (let i = 0; i < 36; i++) {
+      if (this.tempUint8Array[i] === 0) {
+        trainIdEnd = i
+        break
+      }
     }
+    const train_id = this.textDecoder.decode(this.tempUint8Array.subarray(0, trainIdEnd))
+    
+    // Fast timestamp parsing using direct memory access
+    const timestamp = this._parseTimestampFast(data, 45)
+    
+    return {
+      frameId,
+      numberOfPackets,
+      packetId,
+      train_id,
+      timestamp,
+      payload: data.subarray(53) // Use subarray instead of slice for better performance
+    }
+  }
+
+  /**
+   * Optimized 64-bit timestamp parsing
+   * @private
+   */
+  _parseTimestampFast(data, offset) {
+    // Try little-endian interpretation first (most common)
+    const b0 = data[offset]
+    const b1 = data[offset + 1]
+    const b2 = data[offset + 2]
+    const b3 = data[offset + 3]
+    const b4 = data[offset + 4]
+    const b5 = data[offset + 5]
+    const b6 = data[offset + 6]
+    const b7 = data[offset + 7]
+
+
+    // Try big-endian: most significant bytes first
+    const highBE = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+    const lowBE = (b4 << 24) | (b5 << 16) | (b6 << 8) | b7
+    const timestampBE = (highBE * 0x100000000) + (lowBE >>> 0)
+    return timestampBE
   }
 
   /**
    * Create new frame state and manage buffer limits
    * @private
    */
-  _createFrameState(frameId, numberOfPackets) {
+  _createFrameState(frameId, numberOfPackets, timestamp) {
     // Evict oldest frame if buffer is full
     if (this.frameBuffer.size >= this.maxFrames) {
       const oldestFrameId = this.frameOrderQueue.shift()
@@ -79,7 +131,7 @@ export class useAssembler {
       expectedPackets: numberOfPackets,
       receivedPackets: 0,
       packetBuffer: new Array(numberOfPackets),
-      createdAt: Date.now()
+      createdAt: timestamp
     }
 
     this.frameBuffer.set(frameId, frameState)
@@ -89,17 +141,34 @@ export class useAssembler {
   }
 
   /**
-   * Handle completed frame assembly
+   * Handle completed frame assembly (optimized)
    * @private
    */
   _handleCompleteFrame(frameState) {
-    // Concatenate all packets in order
-    const frameData = new Uint8Array(
-      frameState.packetBuffer.reduce(
-        (acc, part) => acc.concat(Array.from(part)),
-        []
-      )
-    )
+    // Calculate frame reconstruction latency
+    const currentTime = Date.now()
+    const frameLatency = currentTime - frameState.createdAt
+
+    // Pre-calculate total size for better memory allocation
+    let totalSize = 0
+    for (let i = 0; i < frameState.packetBuffer.length; i++) {
+      if (frameState.packetBuffer[i]) {
+        totalSize += frameState.packetBuffer[i].length
+      }
+    }
+
+    // Allocate frame data once with correct size
+    const frameData = new Uint8Array(totalSize)
+    let offset = 0
+    
+    // Copy packets in order with single allocation
+    for (let i = 0; i < frameState.packetBuffer.length; i++) {
+      const packet = frameState.packetBuffer[i]
+      if (packet) {
+        frameData.set(packet, offset)
+        offset += packet.length
+      }
+    }
 
     // Remove from buffer and queue
     this.frameBuffer.delete(frameState.frameId)
@@ -110,7 +179,7 @@ export class useAssembler {
       this.onFrameComplete({
         frameId: frameState.frameId,
         data: frameData,
-        timestamp: frameState.createdAt
+        latency: frameLatency
       })
     }
   }

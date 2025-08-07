@@ -8,6 +8,7 @@ class Telemetry(QObject):
 
     def __init__(self, train_id: str, poll_interval_ms=1000, parent=None):
         super().__init__(parent)
+        self.sequence_number = 0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._poll_telemetry)
         self.poll_interval_ms = poll_interval_ms
@@ -82,9 +83,9 @@ class Telemetry(QObject):
         self.frame_counter += 1
         if self.frame_counter > self.last_simulation_at_frame + (60*5):
             self.last_simulation_at_frame = self.frame_counter
-            self.simulte_data(True)
+            self.simulate_data(True)
 
-    def simulte_data(self, everything=False):
+    def simulate_data(self, everything=False):
         if everything:
             self.location_index = self.next_station_index
             self.next_station_index = self.get_next_station(self.location_index)
@@ -130,9 +131,11 @@ class Telemetry(QObject):
             "upload_speed": self.upload_speed,
             "jitter": self.jitter,
             "ping": self.ping,
+            "sequence_number": self.sequence_number,
         }
 
-        self.simulte_data()
+        self.simulate_data()
+        self.sequence_number += 1
 
         # Emit the telemetry data
         self.telemetry_ready.emit(data)

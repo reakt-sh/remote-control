@@ -6,6 +6,7 @@ import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
+import { useLatencyTracker } from '@/scripts/latencyTracker'
 import { SERVER_URL } from '@/scripts/config'
 
 
@@ -28,7 +29,8 @@ const PACKET_TYPE = {
   download_end: 24,
   upload_start: 25,
   uploading: 26,
-  upload_end: 27
+  upload_end: 27,
+  rtt: 28,
 }
 
 
@@ -69,6 +71,14 @@ export const useTrainStore = defineStore('train', () => {
     unsubscribeFromTrain,
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
+  const {
+    recordFrameLatency,
+    recordLatency,
+    exportToJson,
+    clearData,
+    setClockOffset,
+  } = useLatencyTracker()
+
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -80,18 +90,16 @@ export const useTrainStore = defineStore('train', () => {
   function initializeRemoteControlId() {
     if(!remoteControlId.value) {
       remoteControlId.value = generateUUID()
-      console.log('Remote control ID initialized:', remoteControlId.value)
+      console.log('✅ Remote control ID initialized:', remoteControlId.value)
     }
   }
   async function fetchAvailableTrains() {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)
       const data = await response.json()
-      console.log('Available trains:', data)
       availableTrains.value = data
-      console.log('after write availableTrains :', availableTrains.value)
     } catch (error) {
-      console.error('Error fetching trains:', error)
+      console.error('❌ Error fetching trains:', error)
     }
   }
 
@@ -108,6 +116,12 @@ export const useTrainStore = defineStore('train', () => {
     telemetryData.value = {}
     if (selectedTrainId.value !== trainId) {
       unsubscribeFromTrain(selectedTrainId.value)
+
+      // also reset telemetry history
+      telemetryHistory.value = []
+
+      // also reset latency data
+      clearData()
     }
     selectedTrainId.value = trainId
 
@@ -116,7 +130,7 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          console.log('Frame completed for frameID :', completedFrame.frameId)
+          recordFrameLatency(completedFrame.frameId, completedFrame.latency)
         }
       })
     }
@@ -137,20 +151,22 @@ export const useTrainStore = defineStore('train', () => {
           throw new Error(`Failed to assign train. Status: ${response.status}`)
         }
 
-        const data = await response.json()
-        console.log('Train assigned successfully:', data)
+        await response.json()
       } catch (error) {
-        console.error('Error assigning train to remote control:', error)
+        console.error('❌ Error assigning train to remote control:', error)
       }
     } else {
       console.error('Remote control ID is not initialized')
     }
 
     // Send a message through WebTransport to notify the server
-    sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+    await sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
 
     // Subscribe to MQTT telemetry for this specific train
     subscribeToTrain(trainId)
+
+    // Send a rtt message to synchronize timestamps
+    await sendRTT()
   }
 
   async function sendCommand(command) {
@@ -161,16 +177,30 @@ export const useTrainStore = defineStore('train', () => {
     }
 
     // Convert command object to JSON and then to Uint8Array
-    const jsonString = JSON.stringify(command)
-    const jsonBytes = new TextEncoder().encode(jsonString)
+    const jsonBytes = new TextEncoder().encode(JSON.stringify(command))
     try {
       const packet = new Uint8Array(1 + jsonBytes.length)
       packet[0] = PACKET_TYPE.command
-      packet.set(new TextEncoder().encode(JSON.stringify(command)), 1)
+      packet.set(jsonBytes, 1)
       await sendWtMessage(packet)
     } catch (error) {
       console.error('Command send error:', error)
     }
+  }
+
+  async function sendRTT() {
+    console.log('Sending RTT packet to synchronize timestamps')
+    const rttPacket = {
+      type: "rtt",
+      remote_control_timestamp: Date.now(),
+      train_timestamp: 0
+    };
+    const packetData = new TextEncoder().encode(JSON.stringify(rttPacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.rtt; // Set the first byte as PACKET_TYPE.rtt
+    packet.set(packetData, 1);
+
+    await sendWtMessage(packet)
   }
 
   async function handleWsMessage(packetType, payload) {
@@ -181,9 +211,11 @@ export const useTrainStore = defineStore('train', () => {
         // get system timestamp
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp
-        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
 
-        console.log('WebSocket: Received telemetry data:', jsonData)
+        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
+        // Record latency data
+        recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
+
         break
       }
       case PACKET_TYPE.notification: {
@@ -210,7 +242,9 @@ export const useTrainStore = defineStore('train', () => {
           const timestamp = Date.now()
           const latency = timestamp - jsonData.timestamp
           console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
-          console.log('WebTransport: Received telemetry data:', jsonData)
+
+          // Record latency data
+          recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
 
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
@@ -225,11 +259,9 @@ export const useTrainStore = defineStore('train', () => {
             direction.value = 'BACKWARD'
           }
 
-          console.log("receiveWebTransportStream: isPoweredOn:", isPoweredOn.value)
-
           break;
         } catch (error) {
-          console.error('Error parsing telemetry data:', error)
+          console.error('❌ Error parsing telemetry data:', error)
           break;
         }
       case PACKET_TYPE.video:
@@ -252,12 +284,34 @@ export const useTrainStore = defineStore('train', () => {
         console.log(`Download speed calculated: ${speedMbps.toFixed(2)} Mbps`)
         break
       }
+      case PACKET_TYPE.rtt: {
+        jsonString = new TextDecoder().decode(payload)
+        jsonData = JSON.parse(jsonString)
+
+        // get system timestamp
+        const currentTime = Date.now()
+        const round_trip_time = currentTime - jsonData.remote_control_timestamp
+        const one_way_latency = round_trip_time / 2
+        const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
+        const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
+
+        console.log(`📊 RTT Analysis:`)
+        console.log(`   Round trip time: ${round_trip_time} ms`)
+        console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
+        console.log(`   Clock offset (includes processing): ${clock_offset.toFixed(1)} ms`)
+        console.log(`   Remote sent: ${jsonData.remote_control_timestamp}`)
+        console.log(`   Train processed: ${jsonData.train_timestamp}`)
+        console.log(`   Remote received: ${currentTime}`)
+        console.log(`   Expected train receive: ${expected_train_receive_time.toFixed(1)}`)
+
+        setClockOffset(clock_offset)
+        break
+      }
     }
   }
 
   function handleMqttMessage(mqttMessage) {
     const { trainId, messageType, data } = mqttMessage
-    console.log(`📨 MQTT: Received ${messageType} from train ${trainId}:`, data)
 
     switch (messageType) {
       case 'telemetry': {
@@ -267,8 +321,12 @@ export const useTrainStore = defineStore('train', () => {
         const latency = timestamp - data.timestamp
         console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
 
-        // Add to telemetry history
+        // Record latency data
+        recordLatency('mqtt', latency, data.sequence_number, data.timestamp)
+
+        // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
+        telemetryHistory.value.unshift({ ...data });
 
         // Update power and direction states
         if (data.status === 'running') {
@@ -320,7 +378,6 @@ export const useTrainStore = defineStore('train', () => {
     packet.set(packetData, 1);
 
     sendWtMessage(packet)
-    console.log('WebTransport keepalive sent:', keepalivePacket);
   }
 
   async function onNetworkSpeedCalculated(downloadSpeed, uploadSpeed) {
@@ -350,5 +407,7 @@ export const useTrainStore = defineStore('train', () => {
     // MQTT methods
     subscribeToTrain,
     unsubscribeFromTrain,
+    // Latency tracking
+    exportToJson
   }
 })

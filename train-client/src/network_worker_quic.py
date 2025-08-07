@@ -3,6 +3,7 @@ import queue
 import ssl
 import json
 import struct
+import datetime
 from typing import Optional
 
 
@@ -133,13 +134,13 @@ class NetworkWorkerQUIC(QThread):
             try:
                 # Get frame from queue with timeout
                 try:
-                    frame_id, frame = self.frame_queue.get_nowait()
+                    frame_id, timestamp, frame = self.frame_queue.get_nowait()
                 except queue.Empty:
                     await asyncio.sleep(0.01)
                     continue
 
                 # Split frame into packets and send
-                packet_list = self.create_packets(frame_id, frame)
+                packet_list = self.create_packets(frame_id, timestamp, frame)
                 for packet in packet_list:
                     if not self._running:
                         break
@@ -185,7 +186,7 @@ class NetworkWorkerQUIC(QThread):
                 logger.error(f"Error sending keepalive: {e}")
                 await asyncio.sleep(10)
 
-    def create_packets(self, frame_id: int, frame: bytes) -> list[bytes]:
+    def create_packets(self, frame_id: int, timestamp: int, frame: bytes) -> list[bytes]:
         packet_list = []
         frame_size = len(frame)
         number_of_packets = (frame_size // MAX_PACKET_SIZE) + 1
@@ -198,6 +199,7 @@ class NetworkWorkerQUIC(QThread):
             header.extend(number_of_packets.to_bytes(2, byteorder='big'))
             header.extend(packet_id.to_bytes(2, byteorder='big'))
             header.extend(self.train_client_id_bytes)
+            header.extend(timestamp.to_bytes(8, byteorder='big'))
 
             chunk = remaining_data[:MAX_PACKET_SIZE]
             remaining_data = remaining_data[MAX_PACKET_SIZE:]
@@ -205,12 +207,12 @@ class NetworkWorkerQUIC(QThread):
 
         return packet_list
 
-    def enqueue_frame(self, frame_id: int, frame: bytes):
+    def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes):
         if not self._running or not self._loop:
             logger.warning("Cannot enqueue frame - client not running")
             return
         try:
-            self.frame_queue.put((frame_id, frame))
+            self.frame_queue.put((frame_id, timestamp, frame))
         except Exception as e:
             logger.error(f"Error enqueuing frame: {e}")
 
@@ -239,6 +241,14 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
+                elif packet_type == PACKET_TYPE["rtt"]:
+                    # just modify event data with current timestamp
+                    rtt_data = json.loads(payload.decode('utf-8'))
+                    rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+                    rtt_packet = json.dumps(rtt_data).encode('utf-8')
+                    self.network_worker.enqueue_stream_packet(
+                        struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+                    )
                 else:
                     logger.warning(f"Invalid process command with packet type = {packet_type}")
             except Exception as e:

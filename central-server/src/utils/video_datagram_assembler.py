@@ -19,7 +19,8 @@ class VideoDatagramAssembler:
             number_of_packets = int.from_bytes(data[5:7], byteorder='big')
             packet_id = int.from_bytes(data[7:9], byteorder='big')
             train_id = data[9:45].decode('utf-8').strip()
-            payload = data[45:]
+            timestamp = int.from_bytes(data[45:53], byteorder='big')
+            payload = data[53:]
 
             if train_id != self.train_id:
                 logger.warning(f"Packet train ID mismatch: expected {self.train_id}, got {train_id}")

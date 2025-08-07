@@ -53,7 +53,6 @@ const props = defineProps({
 });
 
 const statusClass = computed(() => {
-  console.log("TheKing--> props.systemStatus = ", props.systemStatus);
   return {
     'status-online': props.systemStatus === 'running',
     'status-warning': props.systemStatus === 'standby',

@@ -17,7 +17,7 @@ export function useWebSocket(remoteControlId, messageHandler) {
 
     webSocket.value.onopen = () => {
       isWSConnected.value = true
-      console.log('WebSocket connected')
+      console.log('✅ WebSocket connected')
     }
 
     webSocket.value.onmessage = async (event) => {
@@ -34,11 +34,11 @@ export function useWebSocket(remoteControlId, messageHandler) {
 
     webSocket.value.onclose = () => {
       isWSConnected.value = false
-      console.log('WebSocket disconnected')
+      console.log('❌ WebSocket disconnected')
     }
 
     webSocket.value.onerror = (error) => {
-      console.error('WebSocket error:', error)
+      console.error('❌ WebSocket error:', error)
       isWSConnected.value = false
     }
   }
@@ -51,7 +51,8 @@ export function useWebSocket(remoteControlId, messageHandler) {
 
   function send(data) {
     if (!isWSConnected.value || !webSocket.value) {
-      console.log('WebSocket not connected')
+      console.log('❌ WebSocket not connected')
+      return
     }
     webSocket.value.send(data)
   }

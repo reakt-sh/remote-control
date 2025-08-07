@@ -144,7 +144,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
-        elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["telemetry"]:
+        elif self.client_type == "TRAIN" and event.data and (event.data[0] == PACKET_TYPE["telemetry"] or event.data[0] == PACKET_TYPE["rtt"]):
             asyncio.create_task(
                 self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
             )
@@ -161,7 +161,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
-            elif event.data[0] == PACKET_TYPE["command"]:
+            elif event.data[0] == PACKET_TYPE["command"] or event.data[0] == PACKET_TYPE["rtt"]:
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
                 )
