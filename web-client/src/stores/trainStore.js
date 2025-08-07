@@ -163,6 +163,9 @@ export const useTrainStore = defineStore('train', () => {
 
     // Subscribe to MQTT telemetry for this specific train
     subscribeToTrain(trainId)
+
+    // Send a rtt message to synchronize timestamps
+    sendRTT()
   }
 
   async function sendCommand(command) {
@@ -173,16 +176,29 @@ export const useTrainStore = defineStore('train', () => {
     }
 
     // Convert command object to JSON and then to Uint8Array
-    const jsonString = JSON.stringify(command)
-    const jsonBytes = new TextEncoder().encode(jsonString)
+    const jsonBytes = new TextEncoder().encode(JSON.stringify(command))
     try {
       const packet = new Uint8Array(1 + jsonBytes.length)
       packet[0] = PACKET_TYPE.command
-      packet.set(new TextEncoder().encode(JSON.stringify(command)), 1)
+      packet.set(jsonBytes, 1)
       await sendWtMessage(packet)
     } catch (error) {
       console.error('Command send error:', error)
     }
+  }
+
+  async function sendRTT() {
+    const rttPacket = {
+      type: "rtt",
+      remote_control_timestamp: Date.now(),
+      train_timestamp: 0
+    };
+    const packetData = new TextEncoder().encode(JSON.stringify(rttPacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.rtt; // Set the first byte as PACKET_TYPE.rtt
+    packet.set(packetData, 1);
+
+    sendWtMessage(packet)
   }
 
   async function handleWsMessage(packetType, payload) {
@@ -264,6 +280,17 @@ export const useTrainStore = defineStore('train', () => {
         const downloadDuration = (download_end_time.value - download_start_time.value) / 1000 // seconds
         const speedMbps = (total_downloaded_bytes.value * 8) / (1024 * 1024) / downloadDuration
         console.log(`Download speed calculated: ${speedMbps.toFixed(2)} Mbps`)
+        break
+      }
+      case PACKET_TYPE.rtt: {
+        jsonString = new TextDecoder().decode(payload)
+        jsonData = JSON.parse(jsonString)
+
+        // get system timestamp
+        const currentTime = Date.now()
+        const round_trip_time = currentTime - jsonData.remote_control_timestamp
+        const clock_offset = jsonData.train_timestamp - jsonData.remote_control_timestamp - (round_trip_time / 2)
+        console.log(`Round trip time: ${round_trip_time} ms, clock offset: ${clock_offset} ms`)
         break
       }
     }

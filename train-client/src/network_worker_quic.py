@@ -3,6 +3,7 @@ import queue
 import ssl
 import json
 import struct
+import datetime
 from typing import Optional
 
 
@@ -240,6 +241,14 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
+                elif packet_type == PACKET_TYPE["rtt"]:
+                    # just modify event data with current timestamp
+                    rtt_data = json.loads(payload.decode('utf-8'))
+                    rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+                    rtt_packet = json.dumps(rtt_data).encode('utf-8')
+                    self.network_worker.enqueue_stream_packet(
+                        struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+                    )
                 else:
                     logger.warning(f"Invalid process command with packet type = {packet_type}")
             except Exception as e:
