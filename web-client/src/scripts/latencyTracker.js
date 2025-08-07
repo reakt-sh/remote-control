@@ -7,6 +7,8 @@ export function useLatencyTracker() {
   // Store latency data as array of objects with sequence_number and protocol latencies
   const latencyList = ref([])
 
+  const clockOffset = ref(0)
+
   // Store latency for each completed video frame
   const frameLatencies = ref([])
 
@@ -17,7 +19,18 @@ export function useLatencyTracker() {
     mqtt: { count: 0, avg: 0, min: 0, max: 0 }
   })
 
+  function setClockOffset(newOffset) {
+    clockOffset.value = newOffset
+    console.log(`Clock offset updated: ${newOffset} ms`)
+  }
+
   function recordFrameLatency(frameId, latency) {
+    // fix latency with clock offset
+    latency += clockOffset.value
+    if (latency < 0) {
+      console.warn(`Negative frame latency recorded for frame ${frameId}: ${latency}ms`)
+    }
+
     frameLatencies.value.push({ frameId, latency })
   }
 
@@ -28,6 +41,12 @@ export function useLatencyTracker() {
    * @param {number} sequenceNumber - Sequence number from telemetry data
    */
   function recordLatency(protocol, latency, sequenceNumber, timestamp) {
+    // Adjust latency with clock offset
+    latency += clockOffset.value
+    if (latency < 0) {
+      console.warn(`Negative latency recorded for ${protocol}: ${latency}ms (seq: ${sequenceNumber})`)
+    }
+
     const protocolKey = getProtocolKey(protocol)
     // Find existing entry with same sequence number
     let existingEntry = latencyList.value.find(entry => entry.sequence_number === sequenceNumber)
@@ -254,7 +273,8 @@ export function useLatencyTracker() {
     getRecentData,
     getDataBySequenceRange,
     getDataBySequenceNumber,
-    getSequenceRange
+    getSequenceRange,
+    setClockOffset
   }
 }
 

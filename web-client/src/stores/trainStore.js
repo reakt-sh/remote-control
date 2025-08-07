@@ -76,6 +76,7 @@ export const useTrainStore = defineStore('train', () => {
     recordLatency,
     exportToJson,
     clearData,
+    setClockOffset,
   } = useLatencyTracker()
 
   function generateUUID() {
@@ -290,8 +291,20 @@ export const useTrainStore = defineStore('train', () => {
         // get system timestamp
         const currentTime = Date.now()
         const round_trip_time = currentTime - jsonData.remote_control_timestamp
-        const clock_offset = jsonData.train_timestamp - jsonData.remote_control_timestamp - (round_trip_time / 2)
-        console.log(`Round trip time: ${round_trip_time} ms, clock offset: ${clock_offset} ms`)
+        const one_way_latency = round_trip_time / 2
+        const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
+        const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
+
+        console.log(`📊 RTT Analysis:`)
+        console.log(`   Round trip time: ${round_trip_time} ms`)
+        console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
+        console.log(`   Clock offset (includes processing): ${clock_offset.toFixed(1)} ms`)
+        console.log(`   Remote sent: ${jsonData.remote_control_timestamp}`)
+        console.log(`   Train processed: ${jsonData.train_timestamp}`)
+        console.log(`   Remote received: ${currentTime}`)
+        console.log(`   Expected train receive: ${expected_train_receive_time.toFixed(1)}`)
+
+        setClockOffset(clock_offset)
         break
       }
     }
