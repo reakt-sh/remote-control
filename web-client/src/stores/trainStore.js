@@ -159,13 +159,13 @@ export const useTrainStore = defineStore('train', () => {
     }
 
     // Send a message through WebTransport to notify the server
-    sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+    await sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
 
     // Subscribe to MQTT telemetry for this specific train
     subscribeToTrain(trainId)
 
     // Send a rtt message to synchronize timestamps
-    sendRTT()
+    await sendRTT()
   }
 
   async function sendCommand(command) {
@@ -188,6 +188,7 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function sendRTT() {
+    console.log('Sending RTT packet to synchronize timestamps')
     const rttPacket = {
       type: "rtt",
       remote_control_timestamp: Date.now(),
@@ -198,7 +199,7 @@ export const useTrainStore = defineStore('train', () => {
     packet[0] = PACKET_TYPE.rtt; // Set the first byte as PACKET_TYPE.rtt
     packet.set(packetData, 1);
 
-    sendWtMessage(packet)
+    await sendWtMessage(packet)
   }
 
   async function handleWsMessage(packetType, payload) {
