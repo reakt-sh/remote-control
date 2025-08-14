@@ -130,7 +130,7 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          recordFrameLatency(completedFrame.frameId, completedFrame.latency)
+          recordFrameLatency(completedFrame.frameId, completedFrame.latency, completedFrame.created_at)
         }
       })
     }

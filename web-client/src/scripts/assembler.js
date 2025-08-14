@@ -179,7 +179,8 @@ export class useAssembler {
       this.onFrameComplete({
         frameId: frameState.frameId,
         data: frameData,
-        latency: frameLatency
+        latency: frameLatency,
+        created_at: frameState.createdAt
       })
     }
   }

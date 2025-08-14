@@ -24,14 +24,18 @@ export function useLatencyTracker() {
     console.log(`Clock offset updated: ${newOffset} ms`)
   }
 
-  function recordFrameLatency(frameId, latency) {
+  function recordFrameLatency(frameId, latency, createdAt = null) {
     // fix latency with clock offset
     latency += clockOffset.value
     if (latency < 0) {
       console.warn(`Negative frame latency recorded for frame ${frameId}: ${latency}ms`)
     }
 
-    frameLatencies.value.push({ frameId, latency })
+    frameLatencies.value.push({
+      frameId,
+      latency,
+      created_at: createdAt
+    })
   }
 
   /**
