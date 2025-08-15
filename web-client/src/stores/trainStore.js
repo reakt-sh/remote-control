@@ -7,6 +7,7 @@ import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
 import { useLatencyTracker } from '@/scripts/latencyTracker'
+import { useDataStorage } from '@/scripts/dataStorage'
 import { SERVER_URL } from '@/scripts/config'
 
 
@@ -79,6 +80,8 @@ export const useTrainStore = defineStore('train', () => {
     setClockOffset,
   } = useLatencyTracker()
 
+  const dataStorage = useDataStorage("TrainDataStorage", 1)
+
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -131,6 +134,14 @@ export const useTrainStore = defineStore('train', () => {
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
           recordFrameLatency(completedFrame.frameId, completedFrame.latency, completedFrame.created_at)
+          // Store the frame data
+          dataStorage.storeFrame({
+            frameId: completedFrame.frameId,
+            data: completedFrame.data,
+            trainId: selectedTrainId.value,
+            createdAt: completedFrame.created_at,
+            latency: completedFrame.latency
+          })
         }
       })
     }
