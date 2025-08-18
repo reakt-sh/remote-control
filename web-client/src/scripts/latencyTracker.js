@@ -51,6 +51,10 @@ export function useLatencyTracker() {
       console.warn(`Negative latency recorded for ${protocol}: ${latency}ms (seq: ${sequenceNumber})`)
     }
 
+    // Pad protocol name for aligned output
+    const paddedProtocol = protocol.padEnd(12, ' ')
+    console.log(`🕒 Latency for train Telemetry: ${paddedProtocol}, ${latency}ms, seq: ${sequenceNumber}`)
+
     const protocolKey = getProtocolKey(protocol)
     // Find existing entry with same sequence number
     let existingEntry = latencyList.value.find(entry => entry.sequence_number === sequenceNumber)

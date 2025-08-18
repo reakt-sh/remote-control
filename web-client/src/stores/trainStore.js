@@ -223,7 +223,7 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp
 
-        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
+        
         // Record latency data
         recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
 
@@ -252,7 +252,6 @@ export const useTrainStore = defineStore('train', () => {
           // get system timestamp
           const timestamp = Date.now()
           const latency = timestamp - jsonData.timestamp
-          console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
 
           // Record latency data
           recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
@@ -330,7 +329,6 @@ export const useTrainStore = defineStore('train', () => {
         // get system timestamp
         const timestamp = Date.now()
         const latency = timestamp - data.timestamp
-        console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
 
         // Record latency data
         recordLatency('mqtt', latency, data.sequence_number, data.timestamp)
