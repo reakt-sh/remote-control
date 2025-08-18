@@ -10,7 +10,7 @@ class DataStorage {
     this.baseDbName = baseDbName
     this.version = version
     this.trainDatabases = new Map() // Cache for train-specific databases
-    
+
     // Track storage stats across all trains
     this.stats = {
       totalFrames: 0,
@@ -37,7 +37,7 @@ class DataStorage {
     // Create new database for this train
     const dbName = `${this.baseDbName}_${trainId}`
     const db = new Dexie(dbName)
-    
+
     // Define schema without trainId since each train has its own database
     db.version(this.version).stores({
       frames: '++id, frameId, timestamp, size, data, metadata, createdAt, latency',
@@ -78,7 +78,7 @@ class DataStorage {
       const trainIds = databases
         .filter(name => name.startsWith(this.baseDbName + '_'))
         .map(name => name.replace(this.baseDbName + '_', ''))
-      
+
       console.log(`📋 Found ${trainIds.length} train databases:`, trainIds)
       return trainIds
     } catch (error) {
@@ -104,7 +104,7 @@ class DataStorage {
       }
 
       const db = await this.getTrainDatabase(frameData.trainId)
-      
+
       const frame = {
         frameId: frameData.frameId,
         timestamp: Date.now(),
@@ -142,7 +142,7 @@ class DataStorage {
       }
 
       const db = await this.getTrainDatabase(telemetryData.trainId)
-      
+
       const telemetry = {
         timestamp: Date.now(),
         sequenceNumber: telemetryData.sequenceNumber || 0,
@@ -174,7 +174,7 @@ class DataStorage {
       }
 
       const db = await this.getTrainDatabase(sensorData.trainId)
-      
+
       const sensor = {
         sensorType: sensorData.sensorType,
         timestamp: Date.now(),
@@ -275,7 +275,7 @@ class DataStorage {
         .orderBy('timestamp')
         .limit(limit)
         .toArray()
-      
+
       console.log(`📥 Retrieved ${frames.length} frames for train ${trainId}`)
       return frames
     } catch (error) {
@@ -300,7 +300,7 @@ class DataStorage {
         .orderBy('timestamp')
         .limit(limit)
         .toArray()
-      
+
       console.log(`📊 Retrieved ${telemetry.length} telemetry records for train ${trainId}`)
       return telemetry
     } catch (error) {
@@ -323,16 +323,16 @@ class DataStorage {
 
       const db = await this.getTrainDatabase(trainId)
       let query = db.sensorData
-      
+
       if (sensorType) {
         query = query.where('sensorType').equals(sensorType)
       }
-      
+
       const sensorData = await query
         .orderBy('timestamp')
         .limit(limit)
         .toArray()
-      
+
       console.log(`🔬 Retrieved ${sensorData.length} sensor records for train ${trainId}`)
       return sensorData
     } catch (error) {
@@ -357,7 +357,7 @@ class DataStorage {
         .where('timestamp')
         .between(startTime, endTime, true, true)
         .toArray()
-      
+
       console.log(`📥 Retrieved ${frames.length} frames in time range for train ${trainId}`)
       return frames
     } catch (error) {
@@ -427,7 +427,7 @@ class DataStorage {
       // Delete the entire database
       const dbName = `${this.baseDbName}_${trainId}`
       await Dexie.delete(dbName)
-      
+
       console.log(`🗑️ Deleted entire database for train ${trainId}`)
       await this.updateStats()
       return true
@@ -451,11 +451,11 @@ class DataStorage {
       const frameCount = await db.frames.count()
       const telemetryCount = await db.telemetry.count()
       const sensorCount = await db.sensorData.count()
-      
+
       await db.frames.clear()
       await db.telemetry.clear()
       await db.sensorData.clear()
-      
+
       console.log(`🗑️ Deleted all data for train ${trainId}: ${frameCount} frames, ${telemetryCount} telemetry, ${sensorCount} sensor records`)
       await this.updateStats()
       return { frameCount, telemetryCount, sensorCount }
@@ -506,7 +506,7 @@ class DataStorage {
         count = await db.sensorData.clear()
         console.log(`🗑️ Deleted all sensor records for train ${trainId}`)
       }
-      
+
       return count
     } catch (error) {
       console.error('❌ Failed to delete sensor data by train:', error)
@@ -526,11 +526,11 @@ class DataStorage {
 
       const db = await this.getTrainDatabase(trainId)
       const cutoffTime = Date.now() - (hoursOld * 60 * 60 * 1000)
-      
+
       const frameCount = await db.frames.where('timestamp').below(cutoffTime).delete()
       const telemetryCount = await db.telemetry.where('timestamp').below(cutoffTime).delete()
       const sensorCount = await db.sensorData.where('timestamp').below(cutoffTime).delete()
-      
+
       console.log(`🧹 Cleaned up old data for train ${trainId} (older than ${hoursOld} hours): ${frameCount} frames, ${telemetryCount} telemetry, ${sensorCount} sensor records`)
       return { frameCount, telemetryCount, sensorCount }
     } catch (error) {
@@ -556,7 +556,7 @@ class DataStorage {
         totalTelemetryCount += result.telemetryCount
         totalSensorCount += result.sensorCount
       }
-      
+
       console.log(`🧹 Cleaned up old data across all trains (older than ${hoursOld} hours): ${totalFrameCount} frames, ${totalTelemetryCount} telemetry, ${totalSensorCount} sensor records`)
       await this.updateStats()
       this.stats.lastCleanup = Date.now()
@@ -592,7 +592,7 @@ class DataStorage {
       const frameCount = await db.frames.count()
       const telemetryCount = await db.telemetry.count()
       const sensorCount = await db.sensorData.count()
-      
+
       // Calculate total size for this train
       const frames = await db.frames.toArray()
       const totalSize = frames.reduce((total, frame) => total + frame.size, 0)
@@ -644,11 +644,11 @@ class DataStorage {
   async clearAll() {
     try {
       const trainIds = await this.getAvailableTrains()
-      
+
       for (const trainId of trainIds) {
         await this.deleteTrainDatabase(trainId)
       }
-      
+
       this.stats.totalFrames = 0
       this.stats.totalSize = 0
       this.stats.trainCount = 0
@@ -679,13 +679,13 @@ class DataStorage {
 // Export a composable function for Vue 3
 export function useDataStorage(baseDbName, version) {
   const dataStorage = new DataStorage(baseDbName, version)
-  
+
   return {
     // Database operations
     init: () => dataStorage.init(),
     getAvailableTrains: () => dataStorage.getAvailableTrains(),
     getTrainDatabase: (trainId) => dataStorage.getTrainDatabase(trainId),
-    
+
     // Frame operations
     storeFrame: (frameData) => dataStorage.storeFrame(frameData),
     getFrame: (trainId, id) => dataStorage.getFrame(trainId, id),
@@ -693,33 +693,33 @@ export function useDataStorage(baseDbName, version) {
     getFramesByTimeRange: (trainId, start, end) => dataStorage.getFramesByTimeRange(trainId, start, end),
     deleteFrame: (trainId, id) => dataStorage.deleteFrame(trainId, id),
     deleteFramesByTrain: (trainId) => dataStorage.deleteFramesByTrain(trainId),
-    
+
     // Telemetry operations
     storeTelemetry: (telemetryData) => dataStorage.storeTelemetry(telemetryData),
     getTelemetry: (trainId, id) => dataStorage.getTelemetry(trainId, id),
     getTelemetryByTrain: (trainId, limit) => dataStorage.getTelemetryByTrain(trainId, limit),
     deleteTelemetryByTrain: (trainId) => dataStorage.deleteTelemetryByTrain(trainId),
-    
+
     // Sensor data operations
     storeSensorData: (sensorData) => dataStorage.storeSensorData(sensorData),
     getSensorData: (trainId, id) => dataStorage.getSensorData(trainId, id),
     getSensorDataByTrain: (trainId, sensorType, limit) => dataStorage.getSensorDataByTrain(trainId, sensorType, limit),
     deleteSensorDataByTrain: (trainId, sensorType) => dataStorage.deleteSensorDataByTrain(trainId, sensorType),
-    
+
     // Train-specific management operations
     deleteAllDataByTrain: (trainId) => dataStorage.deleteAllDataByTrain(trainId),
     deleteTrainDatabase: (trainId) => dataStorage.deleteTrainDatabase(trainId),
     cleanupOldDataByTrain: (trainId, hours) => dataStorage.cleanupOldDataByTrain(trainId, hours),
-    
+
     // General management operations
     cleanupOldData: (hours) => dataStorage.cleanupOldData(hours),
     clearAll: () => dataStorage.clearAll(),
-    
+
     // Utility operations
     getStats: () => dataStorage.getStats(),
     getStatsByTrain: (trainId) => dataStorage.getStatsByTrain(trainId),
     close: () => dataStorage.close(),
-    
+
     // Direct access to the storage instance if needed
     storage: dataStorage
   }
