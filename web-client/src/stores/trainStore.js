@@ -399,6 +399,15 @@ export const useTrainStore = defineStore('train', () => {
         // Record latency data
         recordLatency('mqtt', latency, data.sequence_number, data.timestamp)
 
+        // Also store it to indexDB
+        dataStorage.storeTelemetry({
+          trainId: trainId,
+          data: data,
+          createdAt: timestamp,
+          latency: latency,
+          sequenceNumber: data.sequence_number
+        })
+
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
         telemetryHistory.value.unshift({ ...data });
