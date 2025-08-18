@@ -6,6 +6,10 @@
         <i class="fas fa-download"></i>
         <span>Export Data</span>
       </button>
+      <button @click="exportVideoData" class="export-btn video-export" title="Export Video">
+        <i class="fas fa-video"></i>
+        <span>Export Video</span>
+      </button>
       <ConnectionStatus />
     </div>
   </header>
@@ -15,10 +19,14 @@
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { exportToJson } = useTrainStore()
+const { exportToJson, exportVideo } = useTrainStore()
 
 function exportLatencyData() {
   exportToJson()
+}
+
+function exportVideoData() {
+  exportVideo()
 }
 </script>
 
@@ -68,6 +76,14 @@ function exportLatencyData() {
 
 .export-btn:active {
   transform: translateY(0);
+}
+
+.export-btn.video-export {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.export-btn.video-export:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #ff3d00 100%);
 }
 
 .export-btn i {

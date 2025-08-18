@@ -448,6 +448,72 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  /**
+   * Export video frames from the selected train as H.264 file
+   */
+  async function exportVideo() {
+    try {
+      if (!selectedTrainId.value) {
+        alert('Please select a train first before exporting video.')
+        return false
+      }
+
+      console.log(`🎬 Starting video export for train ${selectedTrainId.value}...`)
+
+      // Get all frames for the selected train
+      const frames = await dataStorage.getAllFramesByTrain(selectedTrainId.value)
+
+      if (frames.length === 0) {
+        alert('No video frames found for the selected train. Please wait for some video data to be received.')
+        return false
+      }
+
+      console.log(`📦 Found ${frames.length} frames for train ${selectedTrainId.value}`)
+
+      // Sort frames by timestamp to ensure correct order
+      frames.sort((a, b) => a.timestamp - b.timestamp)
+
+      // Calculate total size for progress tracking
+      const totalSize = frames.reduce((total, frame) => total + frame.data.byteLength, 0)
+      console.log(`📊 Total video data size: ${(totalSize / (1024 * 1024)).toFixed(2)} MB`)
+
+      // Merge all frame data into a single Uint8Array
+      const mergedData = new Uint8Array(totalSize)
+      let offset = 0
+
+      for (const frame of frames) {
+        mergedData.set(new Uint8Array(frame.data), offset)
+        offset += frame.data.byteLength
+      }
+
+      console.log(`✅ Merged ${frames.length} frames into single H.264 file`)
+
+      // Create blob and download
+      const blob = new Blob([mergedData], { type: 'video/h264' })
+      const url = window.URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.style.display = 'none'
+      link.href = url
+      link.download = `Train_${selectedTrainId.value}_Video.h264`
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Clean up the URL object
+      window.URL.revokeObjectURL(url)
+
+      console.log(`🎉 Video export completed: Train_${selectedTrainId.value}_Video.h264`)
+      return true
+
+    } catch (error) {
+      console.error('❌ Failed to export video:', error)
+      alert('Failed to export video. Please check the console for details.')
+      return false
+    }
+  }
+
   async function sendKeepAliveWebTransport() {
     const keepalivePacket = {
       type: "keepalive",
@@ -503,6 +569,8 @@ export const useTrainStore = defineStore('train', () => {
     subscribeToTrain,
     unsubscribeFromTrain,
     // Latency tracking
-    exportToJson
+    exportToJson,
+    // Video export
+    exportVideo
   }
 })

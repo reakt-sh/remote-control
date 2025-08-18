@@ -285,6 +285,29 @@ class DataStorage {
   }
 
   /**
+   * Retrieve all frames by train ID (no limit)
+   * @param {string} trainId - Train identifier
+   */
+  async getAllFramesByTrain(trainId) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const frames = await db.frames
+        .orderBy('timestamp')
+        .toArray()
+
+      console.log(`📥 Retrieved all ${frames.length} frames for train ${trainId}`)
+      return frames
+    } catch (error) {
+      console.error('❌ Failed to retrieve all frames by train:', error)
+      throw error
+    }
+  }
+
+  /**
    * Retrieve telemetry data by train ID
    * @param {string} trainId - Train identifier
    * @param {number} limit - Maximum number of records to retrieve (default: 100)
@@ -690,6 +713,7 @@ export function useDataStorage(baseDbName, version) {
     storeFrame: (frameData) => dataStorage.storeFrame(frameData),
     getFrame: (trainId, id) => dataStorage.getFrame(trainId, id),
     getFramesByTrain: (trainId, limit) => dataStorage.getFramesByTrain(trainId, limit),
+    getAllFramesByTrain: (trainId) => dataStorage.getAllFramesByTrain(trainId),
     getFramesByTimeRange: (trainId, start, end) => dataStorage.getFramesByTimeRange(trainId, start, end),
     deleteFrame: (trainId, id) => dataStorage.deleteFrame(trainId, id),
     deleteFramesByTrain: (trainId) => dataStorage.deleteFramesByTrain(trainId),
