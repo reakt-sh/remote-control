@@ -188,7 +188,7 @@ export const useTrainStore = defineStore('train', () => {
 
   async function performRTTCalibration() {
     console.log(`🔄 Starting RTT calibration with ${rttCalibrationCount.value} measurements...`)
-    
+
     rttMeasurements.value = []
     rttCalibrationInProgress.value = true
     rttCalibrationIndex.value = 0
@@ -197,9 +197,9 @@ export const useTrainStore = defineStore('train', () => {
     for (let i = 0; i < rttCalibrationCount.value; i++) {
       rttCalibrationIndex.value = i + 1
       console.log(`📡 Sending RTT calibration packet ${i + 1}/${rttCalibrationCount.value}`)
-      
+
       await sendRTT()
-      
+
       // Wait 500ms between measurements to avoid overwhelming the connection
       if (i < rttCalibrationCount.value - 1) {
         await new Promise(resolve => setTimeout(resolve, 100))
@@ -232,7 +232,7 @@ export const useTrainStore = defineStore('train', () => {
 
     // Set the calibrated clock offset
     setClockOffset(averageClockOffset)
-    
+
     rttCalibrationInProgress.value = false
     console.log(`✅ Clock offset calibrated and set to: ${averageClockOffset.toFixed(1)} ms`)
   }
@@ -280,7 +280,6 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp
 
-        
         // Record latency data
         recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
 
@@ -381,7 +380,7 @@ export const useTrainStore = defineStore('train', () => {
         if (rttMeasurements.value.length >= rttCalibrationCount.value) {
           calculateAverageClockOffset()
         }
-        
+
         break
       }
     }
