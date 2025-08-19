@@ -169,7 +169,6 @@ const videoDatagramAssembler = new useAssembler({
   maxFrames: 30,
   onFrameComplete: async (completedFrame) => {
     frameRef.value = completedFrame.data
-    recordFrameLatency(completedFrame.frameId, completedFrame.latency, completedFrame.created_at)
     
     // Store the frame data
     await storeVideoFrame(completedFrame.data, selectedTrainId.value)

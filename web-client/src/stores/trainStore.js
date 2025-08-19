@@ -6,7 +6,6 @@ import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
-import { useLatencyTracker } from '@/scripts/latencyTracker'
 import { useDataStorage } from '@/scripts/dataStorage'
 import { SERVER_URL } from '@/scripts/config'
 
@@ -79,13 +78,6 @@ export const useTrainStore = defineStore('train', () => {
     unsubscribeFromTrain,
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
-  const {
-    recordFrameLatency,
-    recordLatency,
-    clearData,
-    setClockOffset,
-  } = useLatencyTracker()
-
   const dataStorage = useDataStorage("TrainDataStorage", 1)
 
   function generateUUID() {
@@ -128,9 +120,6 @@ export const useTrainStore = defineStore('train', () => {
 
       // also reset telemetry history
       telemetryHistory.value = []
-
-      // also reset latency data
-      clearData()
     }
     selectedTrainId.value = trainId
 
@@ -139,7 +128,6 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          recordFrameLatency(completedFrame.frameId, completedFrame.latency + averageClockOffset.value, completedFrame.created_at)
           // Store the frame data
           dataStorage.storeFrame({
             frameId: completedFrame.frameId,
@@ -230,9 +218,6 @@ export const useTrainStore = defineStore('train', () => {
     console.log(`   Max RTT: ${maxRTT.toFixed(1)} ms`)
     console.log(`   Average Clock Offset: ${averageClockOffset.value.toFixed(1)} ms`)
 
-    // Set the calibrated clock offset
-    setClockOffset(averageClockOffset.value)
-
     rttCalibrationInProgress.value = false
     console.log(`✅ Clock offset calibrated and set to: ${averageClockOffset.value.toFixed(1)} ms`)
   }
@@ -280,9 +265,6 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-        // Record latency data
-        recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
-
         // Also store it to indexDB
         dataStorage.storeTelemetry({
           trainId: jsonData.train_id,
@@ -316,9 +298,6 @@ export const useTrainStore = defineStore('train', () => {
           // get system timestamp
           const timestamp = Date.now()
           const latency = timestamp - jsonData.timestamp + averageClockOffset.value
-
-          // Record latency data
-          recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
 
           // Also store it to indexDB
           dataStorage.storeTelemetry({
@@ -411,9 +390,6 @@ export const useTrainStore = defineStore('train', () => {
         // get system timestamp
         const timestamp = Date.now()
         const latency = timestamp - data.timestamp + averageClockOffset.value
-
-        // Record latency data
-        recordLatency('mqtt', latency, data.sequence_number, data.timestamp)
 
         // Also store it to indexDB
         dataStorage.storeTelemetry({
