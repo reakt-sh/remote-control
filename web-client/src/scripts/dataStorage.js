@@ -88,6 +88,65 @@ class DataStorage {
   }
 
   /**
+   * Get detailed metadata for available recorded trains
+   */
+  async getRecordedTrainsMetadata() {
+    try {
+      const trainIds = await this.getAvailableTrains()
+      const metadata = []
+
+      for (const trainId of trainIds) {
+        try {
+          const db = await this.getTrainDatabase(trainId)
+          const frameCount = await db.frames.count()
+          const telemetryCount = await db.telemetry.count()
+          const sensorCount = await db.sensorData.count()
+
+          // Get first and last timestamps
+          const firstFrame = await db.frames.orderBy('timestamp').first()
+          const lastFrame = await db.frames.orderBy('timestamp').last()
+          const firstTelemetry = await db.telemetry.orderBy('timestamp').first()
+          const lastTelemetry = await db.telemetry.orderBy('timestamp').last()
+
+          // Calculate data range
+          const startTime = Math.min(
+            firstFrame?.timestamp || Infinity,
+            firstTelemetry?.timestamp || Infinity
+          )
+          const endTime = Math.max(
+            lastFrame?.timestamp || 0,
+            lastTelemetry?.timestamp || 0
+          )
+
+          // Calculate total size
+          const frames = await db.frames.toArray()
+          const totalSize = frames.reduce((total, frame) => total + frame.size, 0)
+
+          metadata.push({
+            trainId,
+            frameCount,
+            telemetryCount,
+            sensorCount,
+            totalSize,
+            totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+            startTime: startTime === Infinity ? null : startTime,
+            endTime: endTime === 0 ? null : endTime,
+            duration: (startTime !== Infinity && endTime !== 0) ? endTime - startTime : 0,
+            lastUpdated: Math.max(lastFrame?.timestamp || 0, lastTelemetry?.timestamp || 0)
+          })
+        } catch (error) {
+          console.warn(`⚠️ Failed to get metadata for train ${trainId}:`, error)
+        }
+      }
+
+      return metadata.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0))
+    } catch (error) {
+      console.error('❌ Failed to get recorded trains metadata:', error)
+      return []
+    }
+  }
+
+  /**
    * Store a single H.264 frame
    * @param {Object} frameData - Frame data object
    * @param {string} frameData.frameId - Unique frame identifier
@@ -328,6 +387,85 @@ class DataStorage {
       return telemetry
     } catch (error) {
       console.error('❌ Failed to retrieve telemetry by train:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve all telemetry data by train ID (no limit)
+   * @param {string} trainId - Train identifier
+   */
+  async getAllTelemetryByTrain(trainId) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const telemetry = await db.telemetry
+        .orderBy('timestamp')
+        .toArray()
+
+      console.log(`📊 Retrieved all ${telemetry.length} telemetry records for train ${trainId}`)
+      return telemetry
+    } catch (error) {
+      console.error('❌ Failed to retrieve all telemetry by train:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve telemetry data by time range for a specific train
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp
+   * @param {number} endTime - End timestamp
+   */
+  async getTelemetryByTimeRange(trainId, startTime, endTime) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const telemetry = await db.telemetry
+        .where('timestamp')
+        .between(startTime, endTime, true, true)
+        .toArray()
+
+      console.log(`📊 Retrieved ${telemetry.length} telemetry records in time range for train ${trainId}`)
+      return telemetry
+    } catch (error) {
+      console.error('❌ Failed to retrieve telemetry by time range:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve sensor data by time range for a specific train
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp
+   * @param {number} endTime - End timestamp
+   * @param {string} sensorType - Type of sensor (optional)
+   */
+  async getSensorDataByTimeRange(trainId, startTime, endTime, sensorType = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      let query = db.sensorData.where('timestamp').between(startTime, endTime, true, true)
+
+      if (sensorType) {
+        query = query.and(item => item.sensorType === sensorType)
+      }
+
+      const sensorData = await query.toArray()
+
+      console.log(`🔬 Retrieved ${sensorData.length} sensor records in time range for train ${trainId}`)
+      return sensorData
+    } catch (error) {
+      console.error('❌ Failed to retrieve sensor data by time range:', error)
       throw error
     }
   }
@@ -697,6 +835,177 @@ class DataStorage {
       console.error('❌ Failed to close DataStorage:', error)
     }
   }
+
+  /**
+   * Export video frames as H.264 data within time range
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp (optional)
+   * @param {number} endTime - End timestamp (optional)
+   */
+  async exportVideoFrames(trainId, startTime = null, endTime = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      let query = db.frames.orderBy('timestamp')
+
+      if (startTime && endTime) {
+        query = db.frames.where('timestamp').between(startTime, endTime, true, true)
+      } else if (startTime) {
+        query = db.frames.where('timestamp').aboveOrEqual(startTime)
+      } else if (endTime) {
+        query = db.frames.where('timestamp').belowOrEqual(endTime)
+      }
+
+      const frames = await query.toArray()
+      
+      // Create a combined H.264 stream
+      let totalSize = 0
+      frames.forEach(frame => totalSize += frame.data.byteLength)
+      
+      const combinedData = new Uint8Array(totalSize)
+      let offset = 0
+      
+      frames.forEach(frame => {
+        combinedData.set(frame.data, offset)
+        offset += frame.data.byteLength
+      })
+
+      const blob = new Blob([combinedData], { type: 'video/h264' })
+      const url = URL.createObjectURL(blob)
+      
+      // Download the file
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `train_${trainId}_video_${startTime || 'all'}_${endTime || 'all'}.h264`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log(`📹 Exported ${frames.length} video frames for train ${trainId}`)
+      return { frameCount: frames.length, totalSize }
+    } catch (error) {
+      console.error('❌ Failed to export video frames:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export telemetry data as JSON within time range
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp (optional)
+   * @param {number} endTime - End timestamp (optional)
+   */
+  async exportTelemetryData(trainId, startTime = null, endTime = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      let query = db.telemetry.orderBy('timestamp')
+
+      if (startTime && endTime) {
+        query = db.telemetry.where('timestamp').between(startTime, endTime, true, true)
+      } else if (startTime) {
+        query = db.telemetry.where('timestamp').aboveOrEqual(startTime)
+      } else if (endTime) {
+        query = db.telemetry.where('timestamp').belowOrEqual(endTime)
+      }
+
+      const telemetryData = await query.toArray()
+      
+      const exportData = {
+        trainId,
+        exportTimestamp: Date.now(),
+        timeRange: { startTime, endTime },
+        recordCount: telemetryData.length,
+        data: telemetryData
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      
+      // Download the file
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `train_${trainId}_telemetry_${startTime || 'all'}_${endTime || 'all'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log(`📊 Exported ${telemetryData.length} telemetry records for train ${trainId}`)
+      return { recordCount: telemetryData.length }
+    } catch (error) {
+      console.error('❌ Failed to export telemetry data:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export sensor data as JSON within time range
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp (optional)
+   * @param {number} endTime - End timestamp (optional)
+   * @param {string} sensorType - Sensor type (optional)
+   */
+  async exportSensorData(trainId, startTime = null, endTime = null, sensorType = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      let query = db.sensorData
+
+      if (sensorType) {
+        query = query.where('sensorType').equals(sensorType)
+      }
+
+      if (startTime && endTime) {
+        query = query.and(item => item.timestamp >= startTime && item.timestamp <= endTime)
+      } else if (startTime) {
+        query = query.and(item => item.timestamp >= startTime)
+      } else if (endTime) {
+        query = query.and(item => item.timestamp <= endTime)
+      }
+
+      const sensorData = await query.toArray()
+      
+      const exportData = {
+        trainId,
+        sensorType: sensorType || 'all',
+        exportTimestamp: Date.now(),
+        timeRange: { startTime, endTime },
+        recordCount: sensorData.length,
+        data: sensorData
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      
+      // Download the file
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `train_${trainId}_sensor_${sensorType || 'all'}_${startTime || 'all'}_${endTime || 'all'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log(`🔬 Exported ${sensorData.length} sensor records for train ${trainId}`)
+      return { recordCount: sensorData.length }
+    } catch (error) {
+      console.error('❌ Failed to export sensor data:', error)
+      throw error
+    }
+  }
 }
 
 // Export a composable function for Vue 3
@@ -722,12 +1031,15 @@ export function useDataStorage(baseDbName, version) {
     storeTelemetry: (telemetryData) => dataStorage.storeTelemetry(telemetryData),
     getTelemetry: (trainId, id) => dataStorage.getTelemetry(trainId, id),
     getTelemetryByTrain: (trainId, limit) => dataStorage.getTelemetryByTrain(trainId, limit),
+    getAllTelemetryByTrain: (trainId) => dataStorage.getAllTelemetryByTrain(trainId),
+    getTelemetryByTimeRange: (trainId, start, end) => dataStorage.getTelemetryByTimeRange(trainId, start, end),
     deleteTelemetryByTrain: (trainId) => dataStorage.deleteTelemetryByTrain(trainId),
 
     // Sensor data operations
     storeSensorData: (sensorData) => dataStorage.storeSensorData(sensorData),
     getSensorData: (trainId, id) => dataStorage.getSensorData(trainId, id),
     getSensorDataByTrain: (trainId, sensorType, limit) => dataStorage.getSensorDataByTrain(trainId, sensorType, limit),
+    getSensorDataByTimeRange: (trainId, start, end, sensorType) => dataStorage.getSensorDataByTimeRange(trainId, start, end, sensorType),
     deleteSensorDataByTrain: (trainId, sensorType) => dataStorage.deleteSensorDataByTrain(trainId, sensorType),
 
     // Train-specific management operations
@@ -745,7 +1057,13 @@ export function useDataStorage(baseDbName, version) {
     close: () => dataStorage.close(),
 
     // Direct access to the storage instance if needed
-    storage: dataStorage
+    storage: dataStorage,
+
+    // New metadata and export operations
+    getRecordedTrainsMetadata: () => dataStorage.getRecordedTrainsMetadata(),
+    exportVideoFrames: (trainId, startTime, endTime) => dataStorage.exportVideoFrames(trainId, startTime, endTime),
+    exportTelemetryData: (trainId, startTime, endTime) => dataStorage.exportTelemetryData(trainId, startTime, endTime),
+    exportSensorData: (trainId, startTime, endTime, sensorType) => dataStorage.exportSensorData(trainId, startTime, endTime, sensorType)
   }
 }
 
