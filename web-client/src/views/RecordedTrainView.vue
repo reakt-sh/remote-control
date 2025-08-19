@@ -523,7 +523,6 @@ onMounted(() => {
 <style scoped>
 .recorded-train-view {
   min-height: 100vh;
-  background: #f8f9fa;
 }
 
 .recorded-train-main {
@@ -641,6 +640,10 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+.loading-state p, .error-state h3, .error-state p {
+  color: #333;
+}
+
 .loading-spinner {
   width: 40px;
   height: 40px;
@@ -711,6 +714,8 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 0.875rem;
+  background: white;
+  color: #333;
 }
 
 .apply-range-btn, .reset-range-btn {
@@ -734,6 +739,7 @@ onMounted(() => {
 .reset-range-btn {
   background: #f0f0f0;
   color: #333;
+  border: none;
 }
 
 .reset-range-btn:hover {
@@ -759,6 +765,7 @@ onMounted(() => {
   border-radius: 8px;
   padding: 1rem;
   transition: all 0.2s ease;
+  background: white;
 }
 
 .export-card:hover {
@@ -856,6 +863,7 @@ onMounted(() => {
   max-width: 400px;
   width: 90%;
   text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .modal-content h3 {
@@ -886,6 +894,7 @@ onMounted(() => {
 .cancel-btn {
   background: #f0f0f0;
   color: #333;
+  border: none;
 }
 
 .cancel-btn:hover {
