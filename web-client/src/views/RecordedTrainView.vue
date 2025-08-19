@@ -56,6 +56,7 @@
               <label>Start Time:</label>
               <input
                 type="datetime-local"
+                step="1"
                 v-model="startTimeInput"
                 :max="endTimeInput"
                 class="time-input"
@@ -65,6 +66,7 @@
               <label>End Time:</label>
               <input
                 type="datetime-local"
+                step="1"
                 v-model="endTimeInput"
                 :min="startTimeInput"
                 class="time-input"
@@ -246,8 +248,9 @@ const resetTimeRange = () => {
     selectedTimeRange.value.start = trainMetadata.value.startTime
     selectedTimeRange.value.end = trainMetadata.value.endTime
     
-    startTimeInput.value = new Date(trainMetadata.value.startTime).toISOString().slice(0, 16)
-    endTimeInput.value = new Date(trainMetadata.value.endTime).toISOString().slice(0, 16)
+    // Format to include seconds (YYYY-MM-DDTHH:MM:SS)
+    startTimeInput.value = new Date(trainMetadata.value.startTime).toISOString().slice(0, 19)
+    endTimeInput.value = new Date(trainMetadata.value.endTime).toISOString().slice(0, 19)
   }
 }
 
