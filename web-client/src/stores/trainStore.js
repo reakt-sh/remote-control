@@ -59,6 +59,7 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationInProgress = ref(false)
   const rttCalibrationCount = ref(10) // Number of RTT measurements to perform
   const rttCalibrationIndex = ref(0)
+  const averageClockOffset = ref(0)
 
   const {
     isWSConnected,
@@ -139,14 +140,14 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          recordFrameLatency(completedFrame.frameId, completedFrame.latency, completedFrame.created_at)
+          recordFrameLatency(completedFrame.frameId, completedFrame.latency + averageClockOffset.value, completedFrame.created_at)
           // Store the frame data
           dataStorage.storeFrame({
             frameId: completedFrame.frameId,
             data: completedFrame.data,
             trainId: selectedTrainId.value,
             createdAt: completedFrame.created_at,
-            latency: completedFrame.latency
+            latency: completedFrame.latency + averageClockOffset.value
           })
         }
       })
@@ -215,7 +216,7 @@ export const useTrainStore = defineStore('train', () => {
 
     // Calculate average clock offset from all measurements
     const totalClockOffset = rttMeasurements.value.reduce((sum, measurement) => sum + measurement.clockOffset, 0)
-    const averageClockOffset = totalClockOffset / rttMeasurements.value.length
+    averageClockOffset.value = totalClockOffset / rttMeasurements.value.length
 
     // Calculate statistics for analysis
     const roundTripTimes = rttMeasurements.value.map(m => m.roundTripTime)
@@ -228,13 +229,13 @@ export const useTrainStore = defineStore('train', () => {
     console.log(`   Average RTT: ${avgRTT.toFixed(1)} ms`)
     console.log(`   Min RTT: ${minRTT.toFixed(1)} ms`)
     console.log(`   Max RTT: ${maxRTT.toFixed(1)} ms`)
-    console.log(`   Average Clock Offset: ${averageClockOffset.toFixed(1)} ms`)
+    console.log(`   Average Clock Offset: ${averageClockOffset.value.toFixed(1)} ms`)
 
     // Set the calibrated clock offset
-    setClockOffset(averageClockOffset)
+    setClockOffset(averageClockOffset.value)
 
     rttCalibrationInProgress.value = false
-    console.log(`✅ Clock offset calibrated and set to: ${averageClockOffset.toFixed(1)} ms`)
+    console.log(`✅ Clock offset calibrated and set to: ${averageClockOffset.value.toFixed(1)} ms`)
   }
 
   async function sendCommand(command) {
@@ -278,7 +279,7 @@ export const useTrainStore = defineStore('train', () => {
 
         // get system timestamp
         const timestamp = Date.now()
-        const latency = timestamp - jsonData.timestamp
+        const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
         // Record latency data
         recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
@@ -315,7 +316,7 @@ export const useTrainStore = defineStore('train', () => {
 
           // get system timestamp
           const timestamp = Date.now()
-          const latency = timestamp - jsonData.timestamp
+          const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
           // Record latency data
           recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
@@ -410,7 +411,7 @@ export const useTrainStore = defineStore('train', () => {
 
         // get system timestamp
         const timestamp = Date.now()
-        const latency = timestamp - data.timestamp
+        const latency = timestamp - data.timestamp + averageClockOffset.value
 
         // Record latency data
         recordLatency('mqtt', latency, data.sequence_number, data.timestamp)

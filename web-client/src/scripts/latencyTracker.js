@@ -7,8 +7,6 @@ export function useLatencyTracker() {
   // Store latency data as array of objects with sequence_number and protocol latencies
   const latencyList = ref([])
 
-  const clockOffset = ref(0)
-
   // Store latency for each completed video frame
   const frameLatencies = ref([])
 
@@ -20,13 +18,10 @@ export function useLatencyTracker() {
   })
 
   function setClockOffset(newOffset) {
-    clockOffset.value = newOffset
     console.log(`Clock offset updated: ${newOffset} ms`)
   }
 
   function recordFrameLatency(frameId, latency, createdAt = null) {
-    // fix latency with clock offset
-    latency += clockOffset.value
     if (latency < 0) {
       console.warn(`Negative frame latency recorded for frame ${frameId}: ${latency}ms`)
     }
@@ -45,8 +40,6 @@ export function useLatencyTracker() {
    * @param {number} sequenceNumber - Sequence number from telemetry data
    */
   function recordLatency(protocol, latency, sequenceNumber, timestamp) {
-    // Adjust latency with clock offset
-    latency += clockOffset.value
     if (latency < 0) {
       console.warn(`Negative latency recorded for ${protocol}: ${latency}ms (seq: ${sequenceNumber})`)
     }
