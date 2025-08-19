@@ -147,19 +147,19 @@
 
             <div class="export-card">
               <div class="export-info">
-                <h4>Complete Dataset</h4>
-                <p>Export all data types</p>
+                <h4>Latency Data</h4>
+                <p>Export latency statistics as JSON</p>
                 <div class="export-stats">
-                  Full dataset
+                  Video & Telemetry latencies
                 </div>
               </div>
               <button 
                 class="export-btn"
-                @click="exportAllData"
-                :disabled="exporting.all"
+                @click="exportLatency"
+                :disabled="exporting.latency"
               >
-                <span v-if="exporting.all">Exporting...</span>
-                <span v-else>Export All</span>
+                <span v-if="exporting.latency">Exporting...</span>
+                <span v-else>Export Latency</span>
               </button>
             </div>
           </div>
@@ -214,7 +214,7 @@ const exporting = ref({
   video: false,
   telemetry: false,
   sensor: false,
-  all: false
+  latency: false
 })
 
 const frameCountInRange = ref(0)
@@ -456,20 +456,19 @@ const exportSensorData = async () => {
   }
 }
 
-const exportAllData = async () => {
-  exporting.value.all = true
+const exportLatency = async () => {
+  exporting.value.latency = true
   try {
-    // Export all data types sequentially
-    await Promise.all([
-      dataStorage.exportVideoFrames(trainId.value, selectedTimeRange.value.start, selectedTimeRange.value.end),
-      dataStorage.exportTelemetryData(trainId.value, selectedTimeRange.value.start, selectedTimeRange.value.end),
-      dataStorage.exportSensorData(trainId.value, selectedTimeRange.value.start, selectedTimeRange.value.end)
-    ])
+    await dataStorage.exportLatencyData(
+      trainId.value,
+      selectedTimeRange.value.start,
+      selectedTimeRange.value.end
+    )
   } catch (error) {
-    console.error('Failed to export all data:', error)
-    alert('Failed to export all data. Please try again.')
+    console.error('Failed to export latency data:', error)
+    alert('Failed to export latency data. Please try again.')
   } finally {
-    exporting.value.all = false
+    exporting.value.latency = false
   }
 }
 

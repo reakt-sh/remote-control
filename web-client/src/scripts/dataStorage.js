@@ -1025,6 +1025,125 @@ class DataStorage {
       throw error
     }
   }
+
+  /**
+   * Export latency data as JSON within time range
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp (optional)
+   * @param {number} endTime - End timestamp (optional)
+   */
+  async exportLatencyData(trainId, startTime = null, endTime = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      
+      // Get video frame latency data
+      let videoQuery = db.frames.orderBy('timestamp')
+      if (startTime && endTime) {
+        videoQuery = db.frames.where('timestamp').between(startTime, endTime, true, true)
+      } else if (startTime) {
+        videoQuery = db.frames.where('timestamp').aboveOrEqual(startTime)
+      } else if (endTime) {
+        videoQuery = db.frames.where('timestamp').belowOrEqual(endTime)
+      }
+      
+      const videoFrames = await videoQuery.toArray()
+      
+      // Get telemetry data with latency information
+      let telemetryQuery = db.telemetry.orderBy('timestamp')
+      if (startTime && endTime) {
+        telemetryQuery = db.telemetry.where('timestamp').between(startTime, endTime, true, true)
+      } else if (startTime) {
+        telemetryQuery = db.telemetry.where('timestamp').aboveOrEqual(startTime)
+      } else if (endTime) {
+        telemetryQuery = db.telemetry.where('timestamp').belowOrEqual(endTime)
+      }
+      
+      const telemetryRecords = await telemetryQuery.toArray()
+
+      // Process video latency data
+      const videoLatencies = videoFrames
+        .filter(frame => frame.latency !== undefined && frame.latency !== null)
+        .map(frame => ({
+          frameId: frame.frameId,
+          latency: frame.latency,
+          created_at: frame.createdAt || frame.timestamp
+        }))
+
+      // Process telemetry latency data
+      const telemetryLatencies = telemetryRecords
+        .filter(record => record.mqtt || record.wt || record.ws)
+        .map(record => ({
+          sequence_id: record.sequence_number,
+          mqtt: record.mqtt || null,
+          wt: record.wt || null,
+          ws: record.ws || null
+        }))
+
+      // Calculate statistics
+      const calculateStats = (latencies, field = null) => {
+        if (latencies.length === 0) return { count: 0, avg: 0, min: 0, max: 0 }
+        
+        const values = field ? latencies.map(item => item[field]).filter(val => val !== null && val !== undefined) 
+                            : latencies.map(item => item.latency || item).filter(val => val !== null && val !== undefined)
+        
+        if (values.length === 0) return { count: 0, avg: 0, min: 0, max: 0 }
+        
+        const count = values.length
+        const avg = values.reduce((sum, val) => sum + val, 0) / count
+        const min = Math.min(...values)
+        const max = Math.max(...values)
+        
+        return { count, avg, min, max }
+      }
+
+      // Calculate statistics for each protocol
+      const wsLatencies = telemetryLatencies.map(t => t.ws).filter(val => val !== null && val !== undefined)
+      const wtLatencies = telemetryLatencies.map(t => t.wt).filter(val => val !== null && val !== undefined)
+      const mqttLatencies = telemetryLatencies.map(t => t.mqtt).filter(val => val !== null && val !== undefined)
+      const videoLatencyValues = videoLatencies.map(v => v.latency).filter(val => val !== null && val !== undefined)
+
+      const statistics = {
+        websocket: calculateStats(wsLatencies),
+        webtransport: calculateStats(wtLatencies),
+        mqtt: calculateStats(mqttLatencies),
+        videoframe: calculateStats(videoLatencyValues)
+      }
+
+      const exportData = {
+        exportTime: new Date().toISOString(),
+        statistics,
+        telemetryLatencies,
+        videoLatencies
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      
+      // Download the file
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `train_${trainId}_latency_${startTime || 'all'}_${endTime || 'all'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log(`📊 Exported latency data for train ${trainId}: ${videoLatencies.length} video latencies, ${telemetryLatencies.length} telemetry latencies`)
+      return { 
+        videoLatencyCount: videoLatencies.length, 
+        telemetryLatencyCount: telemetryLatencies.length,
+        statistics
+      }
+    } catch (error) {
+      console.error('❌ Failed to export latency data:', error)
+      throw error
+    }
+  }
 }
 
 // Export a composable function for Vue 3
@@ -1082,7 +1201,8 @@ export function useDataStorage(baseDbName, version) {
     getRecordedTrainsMetadata: () => dataStorage.getRecordedTrainsMetadata(),
     exportVideoFrames: (trainId, startTime, endTime) => dataStorage.exportVideoFrames(trainId, startTime, endTime),
     exportTelemetryData: (trainId, startTime, endTime) => dataStorage.exportTelemetryData(trainId, startTime, endTime),
-    exportSensorData: (trainId, startTime, endTime, sensorType) => dataStorage.exportSensorData(trainId, startTime, endTime, sensorType)
+    exportSensorData: (trainId, startTime, endTime, sensorType) => dataStorage.exportSensorData(trainId, startTime, endTime, sensorType),
+    exportLatencyData: (trainId, startTime, endTime) => dataStorage.exportLatencyData(trainId, startTime, endTime)
   }
 }
 
