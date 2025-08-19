@@ -217,6 +217,10 @@ const exporting = ref({
   all: false
 })
 
+const frameCountInRange = ref(0)
+const telemetryCountInRange = ref(0)
+const sensorCountInRange = ref(0)
+
 const selectedTimeRange = ref({
   start: null,
   end: null
@@ -224,6 +228,18 @@ const selectedTimeRange = ref({
 
 const startTimeInput = ref('')
 const endTimeInput = ref('')
+
+// Helper function to format date for datetime-local input
+const formatDateTimeLocal = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
 
 const loadTrainData = async () => {
   loading.value = true
@@ -245,34 +261,151 @@ const loadTrainData = async () => {
 
 const resetTimeRange = () => {
   if (trainMetadata.value) {
+    console.log('🔄 Resetting time range with metadata:', {
+      startTime: trainMetadata.value.startTime,
+      endTime: trainMetadata.value.endTime,
+      startDate: new Date(trainMetadata.value.startTime).toISOString(),
+      endDate: new Date(trainMetadata.value.endTime).toISOString(),
+      frameCount: trainMetadata.value.frameCount,
+      telemetryCount: trainMetadata.value.telemetryCount
+    })
+    
     selectedTimeRange.value.start = trainMetadata.value.startTime
     selectedTimeRange.value.end = trainMetadata.value.endTime
     
-    // Format to include seconds (YYYY-MM-DDTHH:MM:SS)
-    startTimeInput.value = new Date(trainMetadata.value.startTime).toISOString().slice(0, 19)
-    endTimeInput.value = new Date(trainMetadata.value.endTime).toISOString().slice(0, 19)
+    // Convert UTC timestamps to local datetime strings for the input
+    const startDate = new Date(trainMetadata.value.startTime)
+    const endDate = new Date(trainMetadata.value.endTime)
+    
+    // Format for datetime-local input (local time)
+    startTimeInput.value = formatDateTimeLocal(startDate)
+    endTimeInput.value = formatDateTimeLocal(endDate)
+    
+    console.log('🕐 Time input values:', {
+      startTimeInput: startTimeInput.value,
+      endTimeInput: endTimeInput.value,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    })
+    
+    // Update counts for the new time range
+    updateCountsInRange()
   }
 }
 
 const applyTimeRange = () => {
-  selectedTimeRange.value.start = new Date(startTimeInput.value).getTime()
-  selectedTimeRange.value.end = new Date(endTimeInput.value).getTime()
+  // Convert from local datetime input to UTC timestamp
+  const startDate = new Date(startTimeInput.value)
+  const endDate = new Date(endTimeInput.value)
+  
+  selectedTimeRange.value.start = startDate.getTime()
+  selectedTimeRange.value.end = endDate.getTime()
+  
+  console.log('🕐 Applied time range:', {
+    inputStart: startTimeInput.value,
+    inputEnd: endTimeInput.value,
+    timestampStart: selectedTimeRange.value.start,
+    timestampEnd: selectedTimeRange.value.end,
+    utcStart: new Date(selectedTimeRange.value.start).toISOString(),
+    utcEnd: new Date(selectedTimeRange.value.end).toISOString()
+  })
+  
+  // Update counts for the new time range
+  updateCountsInRange()
+}
+
+const updateCountsInRange = async () => {
+  try {
+    if (!trainMetadata.value) {
+      frameCountInRange.value = 0
+      telemetryCountInRange.value = 0
+      sensorCountInRange.value = 0
+      return
+    }
+
+    // If no specific time range is selected, use total counts
+    if (!selectedTimeRange.value.start || !selectedTimeRange.value.end) {
+      frameCountInRange.value = trainMetadata.value?.frameCount || 0
+      telemetryCountInRange.value = trainMetadata.value?.telemetryCount || 0
+      sensorCountInRange.value = trainMetadata.value?.sensorCount || 0
+      return
+    }
+
+    console.log('🔍 Updating counts for time range:', {
+      start: selectedTimeRange.value.start,
+      end: selectedTimeRange.value.end,
+      startDate: new Date(selectedTimeRange.value.start).toISOString(),
+      endDate: new Date(selectedTimeRange.value.end).toISOString(),
+      trainId: trainId.value
+    })
+
+    // If the selected range covers the entire dataset or beyond, use total counts
+    const metadataStart = trainMetadata.value.startTime
+    const metadataEnd = trainMetadata.value.endTime
+    
+    if (selectedTimeRange.value.start <= metadataStart && selectedTimeRange.value.end >= metadataEnd) {
+      console.log('📊 Selected range covers entire dataset, using total counts')
+      frameCountInRange.value = trainMetadata.value?.frameCount || 0
+      telemetryCountInRange.value = trainMetadata.value?.telemetryCount || 0
+      sensorCountInRange.value = trainMetadata.value?.sensorCount || 0
+      return
+    }
+
+    // Get counts for the selected time range
+    const [frames, telemetry, sensorData] = await Promise.all([
+      dataStorage.getFramesByTimeRange(
+        trainId.value,
+        selectedTimeRange.value.start,
+        selectedTimeRange.value.end
+      ).catch(error => {
+        console.error('Error getting frames:', error)
+        return []
+      }),
+      dataStorage.getTelemetryByTimeRange(
+        trainId.value,
+        selectedTimeRange.value.start,
+        selectedTimeRange.value.end
+      ).catch(error => {
+        console.error('Error getting telemetry:', error)
+        return []
+      }),
+      dataStorage.getSensorDataByTimeRange(
+        trainId.value,
+        selectedTimeRange.value.start,
+        selectedTimeRange.value.end
+      ).catch(error => {
+        console.error('Error getting sensor data:', error)
+        return []
+      })
+    ])
+    
+    console.log('📊 Query results:', {
+      frames: frames.length,
+      telemetry: telemetry.length,
+      sensorData: sensorData.length
+    })
+    
+    frameCountInRange.value = frames.length
+    telemetryCountInRange.value = telemetry.length
+    sensorCountInRange.value = sensorData.length
+  } catch (error) {
+    console.error('Failed to update counts in range:', error)
+    // Fallback to total counts if there's an error
+    frameCountInRange.value = trainMetadata.value?.frameCount || 0
+    telemetryCountInRange.value = trainMetadata.value?.telemetryCount || 0
+    sensorCountInRange.value = trainMetadata.value?.sensorCount || 0
+  }
 }
 
 const getFrameCountInRange = () => {
-  // This would need to be calculated based on the actual data
-  // For now, return the total count or a placeholder
-  return trainMetadata.value?.frameCount || 0
+  return frameCountInRange.value
 }
 
 const getTelemetryCountInRange = () => {
-  // This would need to be calculated based on the actual data
-  return trainMetadata.value?.telemetryCount || 0
+  return telemetryCountInRange.value
 }
 
 const getSensorCountInRange = () => {
-  // This would need to be calculated based on the actual data
-  return trainMetadata.value?.sensorCount || 0
+  return sensorCountInRange.value
 }
 
 const exportVideo = async () => {
