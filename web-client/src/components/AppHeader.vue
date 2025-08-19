@@ -2,14 +2,6 @@
   <header class="app-header">
     <h1 @click="goToHome" class="clickable-title">Remote Control System</h1>
     <div class="header-controls">
-      <button @click="exportLatencyData" class="export-btn" title="Export Latency Data">
-        <i class="fas fa-download"></i>
-        <span>Export Latency</span>
-      </button>
-      <button @click="exportVideoData" class="export-btn video-export" title="Export Video">
-        <i class="fas fa-video"></i>
-        <span>Export Video</span>
-      </button>
       <ConnectionStatus />
     </div>
   </header>
@@ -17,22 +9,12 @@
 
 <script setup>
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
-import { useTrainStore } from '@/stores/trainStore'
 import { useRouter } from 'vue-router'
 
-const { exportToJson, exportVideo } = useTrainStore()
 const router = useRouter()
 
 function goToHome() {
   router.push('/')
-}
-
-function exportLatencyData() {
-  exportToJson()
-}
-
-function exportVideoData() {
-  exportVideo()
 }
 </script>
 
@@ -71,43 +53,6 @@ function exportVideoData() {
   gap: 1rem;
 }
 
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.export-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-.export-btn:active {
-  transform: translateY(0);
-}
-
-.export-btn.video-export {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-}
-
-.export-btn.video-export:hover {
-  background: linear-gradient(135deg, #ff5252 0%, #ff3d00 100%);
-}
-
-.export-btn i {
-  font-size: 0.8rem;
-}
-
 @media (max-width: 768px) {
   .app-header {
     padding: 1rem;
@@ -119,14 +64,6 @@ function exportVideoData() {
   
   .header-controls {
     gap: 0.5rem;
-  }
-  
-  .export-btn span {
-    display: none;
-  }
-  
-  .export-btn {
-    padding: 0.5rem;
   }
 }
 </style>

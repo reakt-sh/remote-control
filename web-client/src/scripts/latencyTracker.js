@@ -160,66 +160,6 @@ export function useLatencyTracker() {
   }
 
   /**
-   * Export latency data as JSON file
-   */
-  function exportToJson() {
-    try {
-      const data = getAllLatencyData()
-
-      // Check if there's any data to export
-      if (data.telemetryLatencies.length === 0) {
-        console.warn('⚠️ No latency data to export')
-        alert('No latency data available to export. Please wait for some telemetry data to be received.')
-        return false
-      }
-
-      const jsonString = JSON.stringify(data, null, 2)
-
-      // Try multiple download methods for better compatibility
-      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-        // For IE/Edge
-        const blob = new Blob([jsonString], { type: 'application/json' })
-        window.navigator.msSaveOrOpenBlob(blob, `latency-data-${new Date().toISOString().split('T')[0]}.json`)
-      } else {
-        // For modern browsers
-        const blob = new Blob([jsonString], { type: 'application/json' })
-        const url = window.URL.createObjectURL(blob)
-
-        const link = document.createElement('a')
-        link.style.display = 'none'
-        link.href = url
-
-        // just use timestamp for uniqueness
-        link.download = `latency-data-${Date.now()}.json`
-        link.setAttribute('download', `latency-data-${Date.now()}.json`)
-
-        document.body.appendChild(link)
-
-        // Force click event
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true
-        })
-
-        link.dispatchEvent(clickEvent)
-
-        // Cleanup with delay
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link)
-          }
-          window.URL.revokeObjectURL(url)
-        }, 1000)
-      }
-      return true
-    } catch (error) {
-      console.error('❌ Failed to export latency data:', error)
-      return false
-    }
-  }
-
-  /**
    * Clear all latency data
    */
   function clearData() {
@@ -269,7 +209,6 @@ export function useLatencyTracker() {
     recordFrameLatency,
     getStats,
     getAllLatencyData,
-    exportToJson,
     clearData,
     getRecentData,
     getDataBySequenceRange,
