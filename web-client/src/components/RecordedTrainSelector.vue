@@ -15,13 +15,26 @@
         <div class="loading-spinner"></div>
         <p>Loading recorded train data...</p>
       </div>
-      <div v-else-if="recordedTrains.length > 0" class="train-grid">
-        <div
-          v-for="train in recordedTrains"
-          :key="train.trainId"
-          class="train-card"
-          @click="selectRecordedTrain(train.trainId)"
+      <div v-else-if="recordedTrains.length > 0" class="train-carousel-container">
+        <button 
+          class="carousel-nav-btn left" 
+          @click="scrollLeft" 
+          :disabled="!canScrollLeft"
+          v-show="recordedTrains.length > visibleCards"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+          </svg>
+        </button>
+        
+        <div class="train-carousel" ref="trainCarousel" @scroll="updateScrollPosition">
+          <div class="train-grid">
+            <div
+              v-for="train in recordedTrains"
+              :key="train.trainId"
+              class="train-card"
+              @click="selectRecordedTrain(train.trainId)"
+            >
           <div class="train-card-gradient"></div>
           <div class="train-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -55,7 +68,20 @@
               <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
             </svg>
           </div>
+            </div>
+          </div>
         </div>
+        
+        <button 
+          class="carousel-nav-btn right" 
+          @click="scrollRight" 
+          :disabled="!canScrollRight"
+          v-show="recordedTrains.length > visibleCards"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </button>
       </div>
       <div v-else class="no-trains-message">
         <div class="no-trains-icon">
@@ -77,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataStorage } from '@/scripts/dataStorage'
 
@@ -86,6 +112,59 @@ const dataStorage = useDataStorage()
 
 const recordedTrains = ref([])
 const loading = ref(false)
+const trainCarousel = ref(null)
+const scrollPosition = ref(0)
+const visibleCards = ref(4) // Number of cards visible at once
+
+// Computed properties for navigation
+const canScrollLeft = computed(() => scrollPosition.value > 0)
+const canScrollRight = computed(() => {
+  if (!trainCarousel.value) return false
+  const maxScroll = trainCarousel.value.scrollWidth - trainCarousel.value.clientWidth
+  return scrollPosition.value < maxScroll
+})
+
+// Carousel navigation methods
+const scrollLeft = () => {
+  if (trainCarousel.value && canScrollLeft.value) {
+    const cardWidth = 220 // Card width + gap
+    const newPosition = Math.max(0, scrollPosition.value - cardWidth * 2)
+    trainCarousel.value.scrollTo({
+      left: newPosition,
+      behavior: 'smooth'
+    })
+    scrollPosition.value = newPosition
+  }
+}
+
+const scrollRight = () => {
+  if (trainCarousel.value && canScrollRight.value) {
+    const cardWidth = 220 // Card width + gap
+    const maxScroll = trainCarousel.value.scrollWidth - trainCarousel.value.clientWidth
+    const newPosition = Math.min(maxScroll, scrollPosition.value + cardWidth * 2)
+    trainCarousel.value.scrollTo({
+      left: newPosition,
+      behavior: 'smooth'
+    })
+    scrollPosition.value = newPosition
+  }
+}
+
+// Update scroll position when user scrolls manually
+const updateScrollPosition = () => {
+  if (trainCarousel.value) {
+    scrollPosition.value = trainCarousel.value.scrollLeft
+  }
+}
+
+// Update visible cards based on container width
+const updateVisibleCards = () => {
+  if (trainCarousel.value) {
+    const containerWidth = trainCarousel.value.clientWidth
+    const cardWidth = 220 // Card width + gap
+    visibleCards.value = Math.floor(containerWidth / cardWidth)
+  }
+}
 
 const loadRecordedTrains = async () => {
   loading.value = true
@@ -93,6 +172,8 @@ const loadRecordedTrains = async () => {
     await dataStorage.init()
     const metadata = await dataStorage.getRecordedTrainsMetadata()
     recordedTrains.value = metadata
+    await nextTick()
+    updateVisibleCards()
   } catch (error) {
     console.error('Failed to load recorded trains:', error)
   } finally {
@@ -147,6 +228,22 @@ const formatRelativeTime = (timestamp) => {
 
 onMounted(() => {
   loadRecordedTrains()
+  
+  // Add scroll event listener
+  if (trainCarousel.value) {
+    trainCarousel.value.addEventListener('scroll', updateScrollPosition)
+  }
+  
+  // Add resize event listener
+  window.addEventListener('resize', updateVisibleCards)
+})
+
+// Cleanup event listeners
+onUnmounted(() => {
+  if (trainCarousel.value) {
+    trainCarousel.value.removeEventListener('scroll', updateScrollPosition)
+  }
+  window.removeEventListener('resize', updateVisibleCards)
 })
 </script>
 
@@ -233,10 +330,65 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
-.train-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+.train-carousel-container {
+  position: relative;
+  display: flex;
+  align-items: center;
   gap: 1rem;
+}
+
+.carousel-nav-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+  flex-shrink: 0;
+}
+
+.carousel-nav-btn:hover:not(:disabled) {
+  background: #1565c0;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+}
+
+.carousel-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.carousel-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.train-carousel {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.train-carousel::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+.train-grid {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
 }
 
 .train-card {
@@ -249,6 +401,9 @@ onMounted(() => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  min-width: 200px;
+  max-width: 200px;
+  flex-shrink: 0;
 }
 
 .train-card:hover {
@@ -453,19 +608,34 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .train-carousel-container {
+    gap: 0.5rem;
+  }
+  
+  .carousel-nav-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .carousel-nav-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  
   .train-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 0.75rem;
+  }
+  
+  .train-card {
+    padding: 0.8rem;
+    min-width: 160px;
+    max-width: 160px;
   }
   
   .recorded-train-selector-header {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
-  }
-  
-  .train-card {
-    padding: 0.8rem;
   }
   
   .train-icon {
