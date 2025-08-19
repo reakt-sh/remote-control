@@ -495,7 +495,8 @@ export const useTrainStore = defineStore('train', () => {
       const link = document.createElement('a')
       link.style.display = 'none'
       link.href = url
-      link.download = `Train_${selectedTrainId.value}_Video.h264`
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0]
+      link.download = `Train_${timestamp}_${selectedTrainId.value}_video.h264`
 
       document.body.appendChild(link)
       link.click()
@@ -504,7 +505,7 @@ export const useTrainStore = defineStore('train', () => {
       // Clean up the URL object
       window.URL.revokeObjectURL(url)
 
-      console.log(`🎉 Video export completed: Train_${selectedTrainId.value}_Video.h264`)
+      console.log(`🎉 Video export completed: Train_${timestamp}_${selectedTrainId.value}_video.h264`)
       return true
 
     } catch (error) {

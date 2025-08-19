@@ -4,7 +4,7 @@
     <div class="header-controls">
       <button @click="exportLatencyData" class="export-btn" title="Export Latency Data">
         <i class="fas fa-download"></i>
-        <span>Export Data</span>
+        <span>Export Latency</span>
       </button>
       <button @click="exportVideoData" class="export-btn video-export" title="Export Video">
         <i class="fas fa-video"></i>
