@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from './views/HomeView.vue'
-import TrainView from './views/TrainView.vue'
+import LiveTrainView from './views/LiveTrainView.vue'
 import RecordedTrainView from './views/RecordedTrainView.vue'
 
 const routes = [
@@ -12,7 +12,7 @@ const routes = [
   {
     path: '/:trainId',
     name: 'train',
-    component: TrainView,
+    component: LiveTrainView,
     props: true
   },
   {
