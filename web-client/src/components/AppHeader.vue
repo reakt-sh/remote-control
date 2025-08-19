@@ -1,6 +1,6 @@
 <template>
   <header class="app-header">
-    <h1>Remote Control System</h1>
+    <h1 @click="goToHome" class="clickable-title">Remote Control System</h1>
     <div class="header-controls">
       <button @click="exportLatencyData" class="export-btn" title="Export Latency Data">
         <i class="fas fa-download"></i>
@@ -18,8 +18,14 @@
 <script setup>
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
 import { useTrainStore } from '@/stores/trainStore'
+import { useRouter } from 'vue-router'
 
 const { exportToJson, exportVideo } = useTrainStore()
+const router = useRouter()
+
+function goToHome() {
+  router.push('/')
+}
 
 function exportLatencyData() {
   exportToJson()
@@ -45,6 +51,18 @@ function exportVideoData() {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 600;
+}
+
+.clickable-title {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+}
+
+.clickable-title:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .header-controls {
