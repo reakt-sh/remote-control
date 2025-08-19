@@ -29,28 +29,23 @@
             </svg>
           </div>
           <div class="train-info">
-            <div class="train-id">Train ID</div>
             <div class="train-id-value">{{ train.trainId }}</div>
             <div class="train-stats">
               <div class="stat-item">
-                <span class="stat-label">Frames:</span>
+                <span class="stat-icon">📹</span>
                 <span class="stat-value">{{ formatNumber(train.frameCount) }}</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">Telemetry:</span>
+                <span class="stat-icon">📊</span>
                 <span class="stat-value">{{ formatNumber(train.telemetryCount) }}</span>
               </div>
-              <div class="stat-item">
-                <span class="stat-label">Size:</span>
-                <span class="stat-value">{{ train.totalSizeMB }} MB</span>
-              </div>
               <div class="stat-item" v-if="train.duration">
-                <span class="stat-label">Duration:</span>
+                <span class="stat-icon">⏱️</span>
                 <span class="stat-value">{{ formatDuration(train.duration) }}</span>
               </div>
               <div class="stat-item" v-if="train.lastUpdated">
-                <span class="stat-label">Last Updated:</span>
-                <span class="stat-value">{{ formatDate(train.lastUpdated) }}</span>
+                <span class="stat-icon">🕒</span>
+                <span class="stat-value">{{ formatRelativeTime(train.lastUpdated) }}</span>
               </div>
             </div>
           </div>
@@ -132,8 +127,22 @@ const formatDuration = (duration) => {
   }
 }
 
-const formatDate = (timestamp) => {
-  return new Date(timestamp).toLocaleDateString() + ' ' + new Date(timestamp).toLocaleTimeString()
+const formatRelativeTime = (timestamp) => {
+  const now = Date.now()
+  const diff = now - timestamp
+  const minutes = Math.floor(diff / (1000 * 60))
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  if (days > 0) {
+    return `${days}d ago`
+  } else if (hours > 0) {
+    return `${hours}h ago`
+  } else if (minutes > 0) {
+    return `${minutes}m ago`
+  } else {
+    return 'Just now'
+  }
 }
 
 onMounted(() => {
@@ -226,24 +235,25 @@ onMounted(() => {
 
 .train-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .train-card {
   position: relative;
   background: white;
-  border-radius: 12px;
-  border: 2px solid #e3f2fd;
-  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #e8f4fd;
+  padding: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
 }
 
 .train-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(25, 118, 210, 0.15);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(25, 118, 210, 0.2);
   border-color: #1976d2;
 }
 
@@ -252,94 +262,121 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  height: 3px;
+  background: linear-gradient(90deg, #1976d2, #42a5f5, #81c784, #ffb74d);
+  background-size: 200% 100%;
+  animation: gradient-flow 3s ease infinite;
+}
+
+@keyframes gradient-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .train-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #1976d2, #42a5f5);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .train-icon svg {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   color: white;
 }
 
 .train-info {
-  margin-bottom: 1.5rem;
-}
-
-.train-id {
-  font-size: 0.875rem;
-  color: #666;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-
-.train-id-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1a237e;
   margin-bottom: 1rem;
 }
 
+.train-id {
+  font-size: 0.75rem;
+  color: #8e9aaf;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.train-id-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .train-stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .stat-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0;
+}
+
+.stat-icon {
   font-size: 0.875rem;
+  width: 16px;
+  flex-shrink: 0;
 }
 
 .stat-label {
-  color: #666;
+  color: #8e9aaf;
   font-weight: 500;
+  font-size: 0.75rem;
 }
 
 .stat-value {
-  color: #1976d2;
+  color: #4a5568;
   font-weight: 600;
+  font-size: 0.8rem;
 }
 
 .select-train-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #1976d2, #42a5f5);
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .select-train-btn:hover {
-  background: linear-gradient(135deg, #1565c0, #1e88e5);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .select-train-btn svg {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.2s ease;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s ease;
 }
 
 .train-card:hover .select-train-btn svg {
-  transform: translateX(4px);
+  transform: translateX(3px);
 }
 
 .no-trains-message {
@@ -417,7 +454,8 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .train-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
   }
   
   .recorded-train-selector-header {
@@ -426,8 +464,31 @@ onMounted(() => {
     align-items: stretch;
   }
   
-  .train-stats {
-    grid-template-columns: 1fr;
+  .train-card {
+    padding: 0.8rem;
+  }
+  
+  .train-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .train-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .train-id-value {
+    font-size: 0.9rem;
+  }
+  
+  .stat-item {
+    font-size: 0.75rem;
+  }
+  
+  .select-train-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
   }
 }
 </style>
