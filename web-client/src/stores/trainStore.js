@@ -6,7 +6,7 @@ import { useWebTransport } from '@/scripts/webtransport'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
-import { useLatencyTracker } from '@/scripts/latencyTracker'
+import { useDataStorage } from '@/scripts/dataStorage'
 import { SERVER_URL } from '@/scripts/config'
 
 
@@ -52,6 +52,13 @@ export const useTrainStore = defineStore('train', () => {
   const upload_speed = ref(0)
   const networkspeed = ref(null)
   const telemetryHistory = ref([])
+  
+  // RTT measurements for clock offset calibration
+  const rttMeasurements = ref([])
+  const rttCalibrationInProgress = ref(false)
+  const rttCalibrationCount = ref(10) // Number of RTT measurements to perform
+  const rttCalibrationIndex = ref(0)
+  const averageClockOffset = ref(0)
 
   const {
     isWSConnected,
@@ -71,13 +78,7 @@ export const useTrainStore = defineStore('train', () => {
     unsubscribeFromTrain,
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
-  const {
-    recordFrameLatency,
-    recordLatency,
-    exportToJson,
-    clearData,
-    setClockOffset,
-  } = useLatencyTracker()
+  const dataStorage = useDataStorage("TrainDataStorage", 1)
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -119,9 +120,6 @@ export const useTrainStore = defineStore('train', () => {
 
       // also reset telemetry history
       telemetryHistory.value = []
-
-      // also reset latency data
-      clearData()
     }
     selectedTrainId.value = trainId
 
@@ -130,7 +128,14 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          recordFrameLatency(completedFrame.frameId, completedFrame.latency)
+          // Store the frame data
+          dataStorage.storeFrame({
+            frameId: completedFrame.frameId,
+            data: completedFrame.data,
+            trainId: selectedTrainId.value,
+            createdAt: completedFrame.created_at,
+            latency: completedFrame.latency + averageClockOffset.value
+          })
         }
       })
     }
@@ -165,8 +170,56 @@ export const useTrainStore = defineStore('train', () => {
     // Subscribe to MQTT telemetry for this specific train
     subscribeToTrain(trainId)
 
-    // Send a rtt message to synchronize timestamps
-    await sendRTT()
+    // Send multiple RTT messages to calibrate clock offset
+    await performRTTCalibration()
+  }
+
+  async function performRTTCalibration() {
+    console.log(`🔄 Starting RTT calibration with ${rttCalibrationCount.value} measurements...`)
+
+    rttMeasurements.value = []
+    rttCalibrationInProgress.value = true
+    rttCalibrationIndex.value = 0
+
+    // Send multiple RTT packets with delays between them
+    for (let i = 0; i < rttCalibrationCount.value; i++) {
+      rttCalibrationIndex.value = i + 1
+      console.log(`📡 Sending RTT calibration packet ${i + 1}/${rttCalibrationCount.value}`)
+
+      await sendRTT()
+
+      // Wait 500ms between measurements to avoid overwhelming the connection
+      if (i < rttCalibrationCount.value - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+  }
+
+  function calculateAverageClockOffset() {
+    if (rttMeasurements.value.length === 0) {
+      console.warn('⚠️ No RTT measurements available for clock offset calculation')
+      return
+    }
+
+    // Calculate average clock offset from all measurements
+    const totalClockOffset = rttMeasurements.value.reduce((sum, measurement) => sum + measurement.clockOffset, 0)
+    averageClockOffset.value = totalClockOffset / rttMeasurements.value.length
+
+    // Calculate statistics for analysis
+    const roundTripTimes = rttMeasurements.value.map(m => m.roundTripTime)
+    const avgRTT = roundTripTimes.reduce((sum, rtt) => sum + rtt, 0) / roundTripTimes.length
+    const minRTT = Math.min(...roundTripTimes)
+    const maxRTT = Math.max(...roundTripTimes)
+
+    console.log(`📊 RTT Calibration Complete:`)
+    console.log(`   Measurements: ${rttMeasurements.value.length}`)
+    console.log(`   Average RTT: ${avgRTT.toFixed(1)} ms`)
+    console.log(`   Min RTT: ${minRTT.toFixed(1)} ms`)
+    console.log(`   Max RTT: ${maxRTT.toFixed(1)} ms`)
+    console.log(`   Average Clock Offset: ${averageClockOffset.value.toFixed(1)} ms`)
+
+    rttCalibrationInProgress.value = false
+    console.log(`✅ Clock offset calibrated and set to: ${averageClockOffset.value.toFixed(1)} ms`)
   }
 
   async function sendCommand(command) {
@@ -210,11 +263,15 @@ export const useTrainStore = defineStore('train', () => {
 
         // get system timestamp
         const timestamp = Date.now()
-        const latency = timestamp - jsonData.timestamp
+        const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-        console.log(`🕒 Latency for train Telemetry over WebSocket: ${latency} ms`)
-        // Record latency data
-        recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
+        // Also store it to indexDB
+        dataStorage.storeTelemetry({
+          trainId: jsonData.train_id,
+          data: jsonData,
+          latency: latency,
+          protocol: 'ws'
+        })
 
         break
       }
@@ -240,11 +297,15 @@ export const useTrainStore = defineStore('train', () => {
 
           // get system timestamp
           const timestamp = Date.now()
-          const latency = timestamp - jsonData.timestamp
-          console.log(`🕒 Latency for train Telemetry over WebTransport: ${latency} ms`)
+          const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-          // Record latency data
-          recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
+          // Also store it to indexDB
+          dataStorage.storeTelemetry({
+            trainId: jsonData.train_id,
+            data: jsonData,
+            latency: latency,
+            protocol: 'wt'
+          })
 
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
@@ -295,16 +356,26 @@ export const useTrainStore = defineStore('train', () => {
         const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
         const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
 
-        console.log(`📊 RTT Analysis:`)
+        // Store this RTT measurement
+        rttMeasurements.value.push({
+          roundTripTime: round_trip_time,
+          oneWayLatency: one_way_latency,
+          clockOffset: clock_offset,
+          remoteSentTime: jsonData.remote_control_timestamp,
+          trainProcessedTime: jsonData.train_timestamp,
+          remoteReceivedTime: currentTime
+        })
+
+        console.log(`📊 RTT Measurement ${rttMeasurements.value.length}/${rttCalibrationCount.value}:`)
         console.log(`   Round trip time: ${round_trip_time} ms`)
         console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
-        console.log(`   Clock offset (includes processing): ${clock_offset.toFixed(1)} ms`)
-        console.log(`   Remote sent: ${jsonData.remote_control_timestamp}`)
-        console.log(`   Train processed: ${jsonData.train_timestamp}`)
-        console.log(`   Remote received: ${currentTime}`)
-        console.log(`   Expected train receive: ${expected_train_receive_time.toFixed(1)}`)
+        console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
 
-        setClockOffset(clock_offset)
+        // If we've collected enough measurements, calculate the average
+        if (rttMeasurements.value.length >= rttCalibrationCount.value) {
+          calculateAverageClockOffset()
+        }
+
         break
       }
     }
@@ -318,11 +389,15 @@ export const useTrainStore = defineStore('train', () => {
 
         // get system timestamp
         const timestamp = Date.now()
-        const latency = timestamp - data.timestamp
-        console.log(`🕒 Latency for train Telemetry over MQTT: ${latency} ms`)
+        const latency = timestamp - data.timestamp + averageClockOffset.value
 
-        // Record latency data
-        recordLatency('mqtt', latency, data.sequence_number, data.timestamp)
+        // Also store it to indexDB
+        dataStorage.storeTelemetry({
+          trainId: trainId,
+          data: data,
+          latency: latency,
+          protocol: 'mqtt'
+        })
 
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
@@ -384,6 +459,12 @@ export const useTrainStore = defineStore('train', () => {
     download_speed.value = downloadSpeed
     upload_speed.value = uploadSpeed
   }
+
+  function setRTTCalibrationCount(count) {
+    rttCalibrationCount.value = Math.max(1, Math.min(count, 20)) // Limit between 1 and 20
+    console.log(`🔧 RTT calibration count set to: ${rttCalibrationCount.value}`)
+  }
+
   return {
     availableTrains,
     selectedTrainId,
@@ -399,15 +480,18 @@ export const useTrainStore = defineStore('train', () => {
     upload_speed,
     networkspeed,
     telemetryHistory,
+    rttCalibrationInProgress,
+    rttMeasurements,
+    rttCalibrationCount,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
     mappingToTrain,
     sendCommand,
+    performRTTCalibration,
+    setRTTCalibrationCount,
     // MQTT methods
     subscribeToTrain,
     unsubscribeFromTrain,
-    // Latency tracking
-    exportToJson
   }
 })

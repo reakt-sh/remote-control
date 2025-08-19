@@ -3,14 +3,16 @@
     <AppHeader />
 
     <main class="app-main">
-      <TrainSelector />
+      <LiveTrainSelector />
+      <RecordedTrainSelector />
     </main>
   </div>
 </template>
 
 <script setup>
 import AppHeader from '@/components/AppHeader.vue'
-import TrainSelector from '@/components/TrainSelector.vue'
+import LiveTrainSelector from '@/components/LiveTrainSelector.vue'
+import RecordedTrainSelector from '@/components/RecordedTrainSelector.vue'
 import { useTrainStore } from '@/stores/trainStore'
 import { onMounted } from 'vue'
 

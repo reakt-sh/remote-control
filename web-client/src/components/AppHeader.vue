@@ -1,11 +1,7 @@
 <template>
   <header class="app-header">
-    <h1>Remote Control System</h1>
+    <h1 @click="goToHome" class="clickable-title">Remote Control System</h1>
     <div class="header-controls">
-      <button @click="exportLatencyData" class="export-btn" title="Export Latency Data">
-        <i class="fas fa-download"></i>
-        <span>Export Data</span>
-      </button>
       <ConnectionStatus />
     </div>
   </header>
@@ -13,12 +9,12 @@
 
 <script setup>
 import ConnectionStatus from '@/components/ConnectionStatus.vue'
-import { useTrainStore } from '@/stores/trainStore'
+import { useRouter } from 'vue-router'
 
-const { exportToJson } = useTrainStore()
+const router = useRouter()
 
-function exportLatencyData() {
-  exportToJson()
+function goToHome() {
+  router.push('/')
 }
 </script>
 
@@ -39,39 +35,22 @@ function exportLatencyData() {
   font-weight: 600;
 }
 
+.clickable-title {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+}
+
+.clickable-title:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
 .header-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.export-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-.export-btn:active {
-  transform: translateY(0);
-}
-
-.export-btn i {
-  font-size: 0.8rem;
 }
 
 @media (max-width: 768px) {
@@ -85,14 +64,6 @@ function exportLatencyData() {
   
   .header-controls {
     gap: 0.5rem;
-  }
-  
-  .export-btn span {
-    display: none;
-  }
-  
-  .export-btn {
-    padding: 0.5rem;
   }
 }
 </style>

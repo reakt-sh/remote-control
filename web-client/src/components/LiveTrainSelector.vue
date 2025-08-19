@@ -1,7 +1,7 @@
 <template>
-  <div class="train-selector-container">
-    <div class="train-selector-header">
-      <h2 class="train-selector-title">Available Trains</h2>
+  <div class="live-train-selector-container">
+    <div class="live-train-selector-header">
+      <h2 class="live-train-selector-title">Available Live Trains</h2>
     </div>
 
     <transition name="fade" mode="out-in">
@@ -55,6 +55,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import { useRouter } from 'vue-router'
 
 const { availableTrains } = storeToRefs(useTrainStore())
+const { fetchAvailableTrains } = useTrainStore()
 const router = useRouter()
 
 const selectTrain = (id) => {
@@ -63,7 +64,7 @@ const selectTrain = (id) => {
 </script>
 
 <style scoped>
-.train-selector-container {
+.live-train-selector-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
@@ -72,14 +73,14 @@ const selectTrain = (id) => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
-.train-selector-header {
+.live-train-selector-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
 }
 
-.train-selector-title {
+.live-train-selector-title {
   font-size: 1.75rem;
   font-weight: 700;
   color: #1a237e;
@@ -241,7 +242,7 @@ const selectTrain = (id) => {
   .train-grid {
     grid-template-columns: 1fr;
   }
-  .train-selector-title {
+  .live-train-selector-title {
     font-size: 1.5rem;
   }
 }
