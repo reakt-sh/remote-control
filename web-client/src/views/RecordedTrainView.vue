@@ -51,7 +51,6 @@
       <div v-else class="recorded-train-content">
         <!-- Time Range Selector -->
         <div class="time-range-panel">
-          <h3>Time Range Selection</h3>
           <div class="time-controls">
             <div class="time-input-group">
               <label>Start Time:</label>
@@ -91,11 +90,6 @@
           <h3>Export Options</h3>
           <div class="export-grid">
             <div class="export-card">
-              <div class="export-icon video">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-                </svg>
-              </div>
               <div class="export-info">
                 <h4>Video Frames</h4>
                 <p>Export H.264 video data</p>
@@ -114,11 +108,6 @@
             </div>
 
             <div class="export-card">
-              <div class="export-icon telemetry">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                </svg>
-              </div>
               <div class="export-info">
                 <h4>Telemetry Data</h4>
                 <p>Export telemetry as JSON</p>
@@ -137,11 +126,6 @@
             </div>
 
             <div class="export-card">
-              <div class="export-icon sensor">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
               <div class="export-info">
                 <h4>Sensor Data</h4>
                 <p>Export sensor data as JSON</p>
@@ -160,11 +144,6 @@
             </div>
 
             <div class="export-card">
-              <div class="export-icon combined">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-                </svg>
-              </div>
               <div class="export-info">
                 <h4>Complete Dataset</h4>
                 <p>Export all data types</p>
@@ -180,60 +159,6 @@
                 <span v-if="exporting.all">Exporting...</span>
                 <span v-else>Export All</span>
               </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Data Preview -->
-        <div class="preview-panel">
-          <h3>Data Preview</h3>
-          <div class="preview-tabs">
-            <button 
-              v-for="tab in previewTabs" 
-              :key="tab.id"
-              :class="['tab-btn', { active: activeTab === tab.id }]"
-              @click="activeTab = tab.id"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-          
-          <div class="preview-content">
-            <div v-if="activeTab === 'overview'" class="overview-preview">
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <h4>Video Frames</h4>
-                  <div class="stat-number">{{ formatNumber(trainMetadata.frameCount) }}</div>
-                  <div class="stat-detail">{{ trainMetadata.totalSizeMB }} MB</div>
-                </div>
-                <div class="stat-card">
-                  <h4>Telemetry Records</h4>
-                  <div class="stat-number">{{ formatNumber(trainMetadata.telemetryCount) }}</div>
-                  <div class="stat-detail">JSON data</div>
-                </div>
-                <div class="stat-card">
-                  <h4>Sensor Records</h4>
-                  <div class="stat-number">{{ formatNumber(trainMetadata.sensorCount) }}</div>
-                  <div class="stat-detail">Multiple types</div>
-                </div>
-                <div class="stat-card">
-                  <h4>Recording Duration</h4>
-                  <div class="stat-number">{{ formatDuration(trainMetadata.duration) }}</div>
-                  <div class="stat-detail">{{ formatDate(trainMetadata.startTime) }}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div v-else-if="activeTab === 'frames'" class="frames-preview">
-              <p>Frame data preview will be implemented based on your specific needs</p>
-            </div>
-            
-            <div v-else-if="activeTab === 'telemetry'" class="telemetry-preview">
-              <p>Telemetry data preview will be implemented based on your specific needs</p>
-            </div>
-            
-            <div v-else-if="activeTab === 'sensors'" class="sensors-preview">
-              <p>Sensor data preview will be implemented based on your specific needs</p>
             </div>
           </div>
         </div>
@@ -282,7 +207,6 @@ const trainId = computed(() => route.params.trainId)
 const loading = ref(false)
 const trainMetadata = ref(null)
 const confirmDelete = ref(false)
-const activeTab = ref('overview')
 
 const exporting = ref({
   video: false,
@@ -298,13 +222,6 @@ const selectedTimeRange = ref({
 
 const startTimeInput = ref('')
 const endTimeInput = ref('')
-
-const previewTabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'frames', label: 'Video Frames' },
-  { id: 'telemetry', label: 'Telemetry' },
-  { id: 'sensors', label: 'Sensors' }
-]
 
 const loadTrainData = async () => {
   loading.value = true
@@ -622,14 +539,14 @@ onMounted(() => {
   gap: 2rem;
 }
 
-.time-range-panel, .export-panel, .preview-panel, .management-panel {
+.time-range-panel, .export-panel, .management-panel {
   background: white;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.time-range-panel h3, .export-panel h3, .preview-panel h3, .management-panel h3 {
+.time-range-panel h3, .export-panel h3, .management-panel h3 {
   font-size: 1.5rem;
   font-weight: 600;
   color: #1a237e;
@@ -698,14 +615,14 @@ onMounted(() => {
 
 .export-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .export-card {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 1.5rem;
+  padding: 1rem;
   transition: all 0.2s ease;
 }
 
@@ -714,67 +631,37 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.1);
 }
 
-.export-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.export-icon.video {
-  background: linear-gradient(135deg, #e91e63, #f06292);
-}
-
-.export-icon.telemetry {
-  background: linear-gradient(135deg, #2196f3, #64b5f6);
-}
-
-.export-icon.sensor {
-  background: linear-gradient(135deg, #ff9800, #ffb74d);
-}
-
-.export-icon.combined {
-  background: linear-gradient(135deg, #9c27b0, #ba68c8);
-}
-
-.export-icon svg {
-  width: 24px;
-  height: 24px;
-  color: white;
-}
-
 .export-info h4 {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #333;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0;
 }
 
 .export-info p {
   color: #666;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
 }
 
 .export-stats {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #1976d2;
   font-weight: 500;
 }
 
 .export-btn {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   background: #1976d2;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .export-btn:hover:not(:disabled) {
@@ -784,67 +671,6 @@ onMounted(() => {
 .export-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.preview-tabs {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.tab-btn {
-  padding: 0.75rem 1rem;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #666;
-}
-
-.tab-btn.active {
-  color: #1976d2;
-  border-bottom-color: #1976d2;
-}
-
-.tab-btn:hover {
-  color: #1976d2;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.stat-card {
-  padding: 1.5rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.stat-card h4 {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #666;
-  margin: 0 0 0.5rem 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1976d2;
-  margin-bottom: 0.25rem;
-}
-
-.stat-detail {
-  font-size: 0.875rem;
-  color: #666;
 }
 
 .management-actions {
@@ -968,14 +794,6 @@ onMounted(() => {
   
   .export-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .preview-tabs {
-    flex-wrap: wrap;
   }
 }
 </style>
