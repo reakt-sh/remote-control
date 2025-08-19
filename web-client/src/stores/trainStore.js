@@ -283,6 +283,14 @@ export const useTrainStore = defineStore('train', () => {
         // Record latency data
         recordLatency('websocket', latency, jsonData.sequence_number, jsonData.timestamp)
 
+        // Also store it to indexDB
+        dataStorage.storeTelemetry({
+          trainId: jsonData.train_id,
+          data: jsonData,
+          latency: latency,
+          protocol: 'ws'
+        })
+
         break
       }
       case PACKET_TYPE.notification: {
@@ -311,6 +319,14 @@ export const useTrainStore = defineStore('train', () => {
 
           // Record latency data
           recordLatency('webtransport', latency, jsonData.sequence_number, jsonData.timestamp)
+
+          // Also store it to indexDB
+          dataStorage.storeTelemetry({
+            trainId: jsonData.train_id,
+            data: jsonData,
+            latency: latency,
+            protocol: 'wt'
+          })
 
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
@@ -403,9 +419,8 @@ export const useTrainStore = defineStore('train', () => {
         dataStorage.storeTelemetry({
           trainId: trainId,
           data: data,
-          createdAt: timestamp,
           latency: latency,
-          sequenceNumber: data.sequence_number
+          protocol: 'mqtt'
         })
 
         // Assign to telemetryData also Add to telemetry history

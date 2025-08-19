@@ -41,7 +41,7 @@ class DataStorage {
     // Define schema without trainId since each train has its own database
     db.version(this.version).stores({
       frames: '++id, frameId, timestamp, size, data, metadata, createdAt, latency',
-      telemetry: '++id, timestamp, sequenceNumber, data, metadata',
+      telemetry: '++id, timestamp, sequence_number, data, metadata',
       sensorData: '++id, sensorType, timestamp, data, metadata'
     })
 
@@ -190,7 +190,7 @@ class DataStorage {
    * Store telemetry data
    * @param {Object} telemetryData - Telemetry data object
    * @param {string} telemetryData.trainId - Train identifier
-   * @param {number} telemetryData.sequenceNumber - Sequence number
+   * @param {number} telemetryData.sequence_number - Sequence number
    * @param {Object} telemetryData.data - Telemetry data
    * @param {Object} telemetryData.metadata - Additional metadata
    */
@@ -202,12 +202,31 @@ class DataStorage {
 
       const db = await this.getTrainDatabase(telemetryData.trainId)
 
+      // check if this telemetry data is already stored
+      // find existing telemetry data by sequence id in indexedDB (trainId is implicit since each train has its own DB)
+      const existingTelemetry = await db.telemetry
+        .where('sequence_number')
+        .equals(telemetryData.data.sequence_number)
+        .first()
+
+      if (existingTelemetry) {
+        existingTelemetry[telemetryData.protocol] = telemetryData.latency
+        await db.telemetry.put(existingTelemetry)
+        return existingTelemetry.id
+      }
+
       const telemetry = {
         timestamp: Date.now(),
-        sequenceNumber: telemetryData.sequenceNumber || 0,
+        sequence_number: telemetryData.data.sequence_number,
         data: telemetryData.data,
-        metadata: telemetryData.metadata || {}
+        metadata: telemetryData.metadata || {},
+        mqtt: null,
+        wt: null,
+        ws: null
       }
+
+      // update with new protocol and latency data
+      telemetry[telemetryData.protocol] = telemetryData.latency
 
       const id = await db.telemetry.add(telemetry)
       console.log(`📊 Telemetry stored for train ${telemetryData.trainId}: ID=${id}`)
