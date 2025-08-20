@@ -12,6 +12,7 @@ export function useVideoPanel(canvasRef, options = {}) {
 
   const isFullScreen = ref(false)
   let videoDecoder = null
+  let isCanvasInitialized = false
 
   function initializeDecoder() {
     videoDecoder = new VideoDecoderWrapper({
@@ -26,6 +27,12 @@ export function useVideoPanel(canvasRef, options = {}) {
     if (!ctx) {
       console.error('Canvas context is null')
       return
+    }
+
+    // Only update canvas size if not initialized yet
+    if (!isCanvasInitialized) {
+      updateCanvasSize()
+      isCanvasInitialized = true
     }
 
     // Clear the canvas with black background
@@ -77,8 +84,29 @@ export function useVideoPanel(canvasRef, options = {}) {
     // Set canvas dimensions to match container
     canvasRef.value.style.width = `${displayWidth}px`
     canvasRef.value.style.height = `${displayHeight}px`
+    
+    // Set the actual canvas resolution to match the video resolution
+    // This ensures crisp rendering without scaling artifacts
     canvasRef.value.width = videoWidth
     canvasRef.value.height = videoHeight
+
+    // Force a redraw to prevent blurriness
+    const ctx = canvasRef.value.getContext('2d')
+    if (ctx) {
+      // Disable image smoothing for crisp pixel-perfect rendering
+      ctx.imageSmoothingEnabled = false
+      ctx.webkitImageSmoothingEnabled = false
+      ctx.mozImageSmoothingEnabled = false
+      ctx.msImageSmoothingEnabled = false
+    }
+    
+    // Mark as initialized
+    isCanvasInitialized = true
+  }
+
+  function handleResize() {
+    isCanvasInitialized = false
+    updateCanvasSize()
   }
 
   function toggleFullScreen() {
@@ -94,12 +122,15 @@ export function useVideoPanel(canvasRef, options = {}) {
 
   function handleFullscreenChange() {
     isFullScreen.value = !!document.fullscreenElement
+    // Reset initialization and update canvas size when fullscreen changes
+    isCanvasInitialized = false
+    setTimeout(() => updateCanvasSize(), 100)
   }
 
   onMounted(() => {
     initializeDecoder()
     updateCanvasSize()
-    window.addEventListener('resize', updateCanvasSize)
+    window.addEventListener('resize', handleResize)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
   })
 
@@ -107,7 +138,7 @@ export function useVideoPanel(canvasRef, options = {}) {
     if (videoDecoder) {
       videoDecoder.cleanup()
     }
-    window.removeEventListener('resize', updateCanvasSize)
+    window.removeEventListener('resize', handleResize)
     document.removeEventListener('fullscreenchange', handleFullscreenChange)
   })
 

@@ -343,7 +343,8 @@ const playbackInterval = ref(null)
 const {
   isFullScreen,
   toggleFullScreen,
-  handleFrame
+  handleFrame,
+  updateCanvasSize
 } = useVideoPanel(videoCanvas, {
   videoWidth: 1280,
   videoHeight: 720,
@@ -392,6 +393,9 @@ const loadVideoFrames = async () => {
     
     console.log(`📹 Loaded ${videoFrames.value.length} video frames for playback`)
     
+    // Ensure canvas is properly sized before loading first frame
+    await updateCanvasSize()
+    
     // Load first frame if available
     if (videoFrames.value.length > 0) {
       displayFrame(0)
@@ -409,7 +413,16 @@ const displayFrame = (frameIndex) => {
   
   const frame = videoFrames.value[frameIndex]
   if (frame && frame.data) {
-    handleFrame(frame.data)
+    // Ensure canvas is properly sized before displaying frame
+    if (frameIndex === 0) {
+      // For the first frame, wait a bit for DOM to be ready then update canvas size
+      setTimeout(() => {
+        updateCanvasSize()
+        handleFrame(frame.data)
+      }, 50)
+    } else {
+      handleFrame(frame.data)
+    }
     currentFrameIndex.value = frameIndex
   }
 }
@@ -1079,6 +1092,11 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  /* Prevent browser from applying smoothing/blur to the canvas */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .fullscreen-btn {
