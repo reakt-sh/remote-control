@@ -106,7 +106,7 @@ class TrainClient(BaseClient, QMainWindow):
         self.write_button.clicked.connect(self.toggle_write_to_file)
 
         # Video source switch button (purple)
-        self.source_button = QPushButton("  Use Camera Source")
+        self.source_button = QPushButton("  Camera Source")
         self.source_button.setMinimumWidth(BUTTON_WIDTH)
         self.source_button.setMaximumWidth(BUTTON_WIDTH)
         self.source_button_style = self.button_style.replace("#2d89ef", "#9c27b0").replace("#1b5fa7", "#6d1b7b").replace("#174c88", "#4a0d52")
@@ -192,10 +192,10 @@ class TrainClient(BaseClient, QMainWindow):
         # Switch between FileProcessor and Camera
         if self.using_file_source:
             new_source = Camera()
-            self.source_button.setText("  Use File Source")
+            self.source_button.setText("  File Source")
         else:
             new_source = FileProcessor()
-            self.source_button.setText("  Use Camera Source")
+            self.source_button.setText("  Camera Source")
         self.switch_video_source(new_source)
         self.using_file_source = not self.using_file_source
 
