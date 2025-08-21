@@ -3,6 +3,7 @@ from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor
 from PyQt5.QtCore import Qt, QSize, QDateTime
 import os
 import cv2
+import numpy as np
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
 from base_client import BaseClient
@@ -19,10 +20,17 @@ class TrainClient(BaseClient, QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle("Train Client")
         self.setGeometry(START_X, START_Y, START_X + WINDOW_WIDTH, START_Y + WINDOW_HEIGHT)
+        self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Fix window size
         self.setStyleSheet(f"background-color: {BG_COLOR};")
 
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
+        # Set fixed size for video display area
+        video_display_width = WINDOW_WIDTH - BUTTON_WIDTH - 200  # Account for button width and margins
+        video_display_height = int(WINDOW_HEIGHT * 0.8)  # Use 80% of window height for video
+        self.image_label.setFixedSize(video_display_width, video_display_height)
+        self.image_label.setStyleSheet("border: 1px solid #444; background-color: #2a2a2a;")
+        self.image_label.setScaledContents(True)  # Enable scaling
 
         self.console_log = QTextEdit()
         self.console_log.setReadOnly(True)
@@ -128,9 +136,41 @@ class TrainClient(BaseClient, QMainWindow):
     def on_new_frame(self, frame_id, frame, width, height):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
-        qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        self.image_label.setPixmap(QPixmap.fromImage(qt_image))
+        
+        # Get the fixed size of the image label
+        label_width = self.image_label.width()
+        label_height = self.image_label.height()
+        
+        # Calculate scaling to fit within label while maintaining aspect ratio
+        scale_w = label_width / w
+        scale_h = label_height / h
+        scale = min(scale_w, scale_h)  # Use smaller scale to ensure it fits
+        
+        # Calculate new dimensions
+        new_width = int(w * scale)
+        new_height = int(h * scale)
+        
+        # Resize the frame
+        resized_image = cv2.resize(rgb_image, (new_width, new_height))
+        
+        # Create a black background image with the label dimensions
+        background = np.zeros((label_height, label_width, 3), dtype=np.uint8)
+        
+        # Calculate position to center the resized video
+        x_offset = (label_width - new_width) // 2
+        y_offset = (label_height - new_height) // 2
+        
+        # Place the resized video on the black background
+        background[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized_image
+        
+        # Convert to QImage
+        bytes_per_line = 3 * label_width
+        qt_image = QImage(background.data, label_width, label_height, bytes_per_line, QImage.Format_RGB888)
+        
+        # Create pixmap and set it to the label
+        pixmap = QPixmap.fromImage(qt_image)
+        self.image_label.setPixmap(pixmap)
+        
         super().on_new_frame(frame_id, frame, width, height)
 
     def toggle_capture(self):
