@@ -36,17 +36,22 @@
               @click="selectRecordedTrain(train.trainId)"
             >
           <div class="train-card-gradient"></div>
-          <button 
-            class="delete-btn" 
-            @click.stop="confirmDeleteTrain(train.trainId)"
-            :disabled="deletingTrainId === train.trainId"
-            :title="`Delete ${train.trainId} recorded data`"
-          >
-            <svg v-if="deletingTrainId !== train.trainId" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-            </svg>
-            <div v-else class="delete-spinner"></div>
-          </button>
+          <div class="card-actions">
+            <button 
+              class="delete-btn" 
+              @click.stop="confirmDeleteTrain(train.trainId)"
+              :disabled="deletingTrainId === train.trainId"
+              :title="`Delete ${train.trainId} recorded data`"
+            >
+              <div class="delete-btn-content">
+                <svg v-if="deletingTrainId !== train.trainId" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                <div v-else class="delete-spinner"></div>
+                <span class="delete-tooltip">Delete</span>
+              </div>
+            </button>
+          </div>
           <div class="train-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm8 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-4H6V7h12v6z"/>
@@ -704,31 +709,64 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* Delete Button Styles */
-.delete-btn {
+/* Card Actions Container */
+.card-actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  top: 0;
+  right: 0;
+  padding: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
   z-index: 10;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.train-card:hover .card-actions {
+  opacity: 1;
+}
+
+/* Professional Delete Button */
+.delete-btn {
+  position: relative;
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(148, 163, 184, 0.1);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.delete-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.delete-btn:hover::before {
+  opacity: 1;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: rgba(220, 38, 38, 0.95);
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    0 8px 25px rgba(239, 68, 68, 0.25),
+    0 0 0 1px rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.delete-btn:active:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
 }
 
 .delete-btn:disabled {
@@ -737,18 +775,69 @@ onUnmounted(() => {
   transform: none;
 }
 
+.delete-btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
 .delete-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  transition: color 0.3s ease;
+}
+
+.delete-btn:hover:not(:disabled) svg {
+  color: #dc2626;
 }
 
 .delete-spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  border-top: 2px solid #dc2626;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+/* Elegant Tooltip */
+.delete-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(30, 41, 59, 0.95);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.delete-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: rgba(30, 41, 59, 0.95);
+}
+
+.delete-btn:hover .delete-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(4px);
 }
 
 /* Delete Dialog Styles */
@@ -978,16 +1067,27 @@ onUnmounted(() => {
     font-size: 0.75rem;
   }
 
+  .card-actions {
+    padding: 0.5rem;
+    opacity: 1; /* Always visible on mobile */
+  }
+
   .delete-btn {
-    width: 24px;
-    height: 24px;
-    top: 6px;
-    right: 6px;
+    padding: 0.375rem;
+  }
+
+  .delete-btn-content {
+    width: 20px;
+    height: 20px;
   }
 
   .delete-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .delete-tooltip {
+    display: none; /* Hide tooltip on mobile */
   }
 
   .delete-dialog {
