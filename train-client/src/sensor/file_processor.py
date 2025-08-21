@@ -3,6 +3,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
 import random
 import os
+from loguru import logger
 from globals import ASSET_DIR
 
 class FileProcessor(QObject):
@@ -140,5 +141,8 @@ class FileProcessor(QObject):
                     thickness,
                     cv2.LINE_AA
                 )
-
-            self.frame_ready.emit(self.frame_count, frame, self.width, self.height)
+            # add a try catch here
+            try:
+                self.frame_ready.emit(self.frame_count, frame, self.width, self.height)
+            except Exception as e:
+                logger.error(f"Error emitting frame_ready signal, call back is not connected: {e}")
