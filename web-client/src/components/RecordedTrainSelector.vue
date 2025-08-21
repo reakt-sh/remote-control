@@ -407,7 +407,7 @@ onUnmounted(() => {
 }
 
 .train-card:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-6px);
   box-shadow: 0 20px 40px rgba(25, 118, 210, 0.2);
   border-color: #1976d2;
 }
