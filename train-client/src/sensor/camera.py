@@ -20,12 +20,78 @@ class Camera(QObject):
         self.current_fps = 30
         self.direction = 1  # forward/backward placeholder for API compatibility
 
+    def _set_maximum_resolution(self):
+        """Try to set the camera to its maximum supported resolution."""
+        # Common high-quality resolutions in order of preference
+        high_quality_resolutions = [
+            (1920, 1080),  # 1080p
+            (1280, 720),   # 720p
+            (1024, 768),   # XGA
+            (800, 600),    # SVGA
+            (640, 480),    # VGA (fallback)
+        ]
+        
+        logger.info("Attempting to set camera to maximum resolution...")
+        
+        for width, height in high_quality_resolutions:
+            # Try to set the resolution
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            
+            # Verify if the resolution was actually set
+            actual_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            actual_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            
+            if actual_width == width and actual_height == height:
+                logger.info(f"Successfully set camera resolution to {width}x{height}")
+                break
+            else:
+                logger.debug(f"Camera doesn't support {width}x{height}, got {actual_width}x{actual_height}")
+        
+        # Also try to set other quality parameters
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))  # Motion JPEG for better quality
+        self.cap.set(cv2.CAP_PROP_FPS, 30)  # Set to 30 FPS if supported
+
+    def get_camera_capabilities(self):
+        """Get and log camera capabilities for debugging."""
+        if not self.cap:
+            return
+        
+        capabilities = {
+            'Width': self.cap.get(cv2.CAP_PROP_FRAME_WIDTH),
+            'Height': self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
+            'FPS': self.cap.get(cv2.CAP_PROP_FPS),
+            'Brightness': self.cap.get(cv2.CAP_PROP_BRIGHTNESS),
+            'Contrast': self.cap.get(cv2.CAP_PROP_CONTRAST),
+            'Saturation': self.cap.get(cv2.CAP_PROP_SATURATION),
+            'Hue': self.cap.get(cv2.CAP_PROP_HUE),
+            'Gain': self.cap.get(cv2.CAP_PROP_GAIN),
+            'Exposure': self.cap.get(cv2.CAP_PROP_EXPOSURE),
+        }
+        
+        logger.info("Camera capabilities:")
+        for prop, value in capabilities.items():
+            logger.info(f"  {prop}: {value}")
+        
+        return capabilities
+
     def init_capture(self):
         self.cap = cv2.VideoCapture(self.index)
         if not self.cap.isOpened():
             raise RuntimeError("Could not open camera")
+        
+        # Set camera to maximum quality
+        self._set_maximum_resolution()
+        
+        # Get the actual resolution after setting
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
+        
+        logger.info(f"Camera initialized with resolution: {self.width}x{self.height}")
+        
+        # Log camera capabilities for debugging
+        self.get_camera_capabilities()
+        
         fps = self.cap.get(cv2.CAP_PROP_FPS)
         if fps and fps > 1:
             self.base_fps = fps
