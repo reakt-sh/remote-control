@@ -12,11 +12,15 @@
             Back to Home
           </button>
           <div class="train-title">
-            <h1>Recorded Data: Train {{ trainId }}</h1>
+            <h1>Train ID: {{ trainId }}</h1>
             <p v-if="trainMetadata">
-              {{ formatNumber(trainMetadata.frameCount) }} frames, 
+              {{ formatNumber(trainMetadata.frameCount) }} frames,
               {{ formatNumber(trainMetadata.telemetryCount) }} telemetry records
               <span v-if="trainMetadata.duration"> • {{ formatDuration(trainMetadata.duration) }}</span>
+            </p>
+            <p v-if="trainMetadata" class="data-age">
+              Recorded {{ formatTimeAgo(trainMetadata.startTime) }} • 
+              {{ formatDate(trainMetadata.startTime) }}
             </p>
           </div>
         </div>
@@ -813,6 +817,35 @@ const formatDate = (timestamp) => {
   return new Date(timestamp).toLocaleDateString() + ' ' + new Date(timestamp).toLocaleTimeString()
 }
 
+const formatTimeAgo = (timestamp) => {
+  const now = Date.now()
+  const diff = now - timestamp
+  
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  const weeks = Math.floor(days / 7)
+  const months = Math.floor(days / 30)
+  const years = Math.floor(days / 365)
+  
+  if (years > 0) {
+    return years === 1 ? '1 year ago' : `${years} years ago`
+  } else if (months > 0) {
+    return months === 1 ? '1 month ago' : `${months} months ago`
+  } else if (weeks > 0) {
+    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+  } else if (days > 0) {
+    return days === 1 ? '1 day ago' : `${days} days ago`
+  } else if (hours > 0) {
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`
+  } else if (minutes > 0) {
+    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`
+  } else {
+    return 'Just now'
+  }
+}
+
 onMounted(() => {
   loadTrainData()
 })
@@ -888,6 +921,12 @@ onUnmounted(() => {
 .train-title p {
   color: #666;
   margin: 0;
+}
+
+.train-title p.data-age {
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
 }
 
 .header-actions {

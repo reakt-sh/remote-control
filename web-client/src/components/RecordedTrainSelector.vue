@@ -53,7 +53,7 @@
             </svg>
           </div>
           <div class="train-info">
-            <div class="train-id-value">{{ train.trainId }}</div>
+            <div class="train-id-value">{{ formatTrainId(train.trainId) }}</div>
             <div class="train-stats">
               <div class="stat-item">
                 <span class="stat-icon">📹</span>
@@ -282,6 +282,13 @@ const formatNumber = (num) => {
     return (num / 1000).toFixed(1) + 'K'
   }
   return num.toString()
+}
+
+const formatTrainId = (trainId) => {
+  if (trainId && trainId.length > 12) {
+    return trainId.slice(-12)
+  }
+  return trainId
 }
 
 const formatDuration = (duration) => {
