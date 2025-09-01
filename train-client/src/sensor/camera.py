@@ -24,7 +24,6 @@ class Camera(QObject):
         """Try to set the camera to its maximum supported resolution."""
         # Common high-quality resolutions in order of preference
         high_quality_resolutions = [
-            (1920, 1080),  # 1080p
             (1280, 720),   # 720p
             (1024, 768),   # XGA
             (800, 600),    # SVGA
