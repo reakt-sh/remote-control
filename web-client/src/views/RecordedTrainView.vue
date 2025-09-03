@@ -12,11 +12,15 @@
             Back to Home
           </button>
           <div class="train-title">
-            <h1>Recorded Data: Train {{ trainId }}</h1>
+            <h1>Train ID: {{ trainId }}</h1>
             <p v-if="trainMetadata">
-              {{ formatNumber(trainMetadata.frameCount) }} frames, 
+              {{ formatNumber(trainMetadata.frameCount) }} frames,
               {{ formatNumber(trainMetadata.telemetryCount) }} telemetry records
               <span v-if="trainMetadata.duration"> • {{ formatDuration(trainMetadata.duration) }}</span>
+            </p>
+            <p v-if="trainMetadata" class="data-age">
+              Recorded {{ formatTimeAgo(trainMetadata.startTime) }} • 
+              {{ formatDate(trainMetadata.startTime) }}
             </p>
           </div>
         </div>
@@ -84,6 +88,105 @@
               Selected: {{ formatDate(selectedTimeRange.start) }} - {{ formatDate(selectedTimeRange.end) }}
               ({{ formatDuration(selectedTimeRange.end - selectedTimeRange.start) }})
             </p>
+          </div>
+        </div>
+
+        <!-- Video Player -->
+        <div class="video-player-panel">
+          <h3>Recorded Video Playback</h3>
+          <div class="video-player-container">
+            <div class="video-display">
+              <canvas ref="videoCanvas" class="video-canvas"></canvas>
+              <button
+                class="fullscreen-btn"
+                @click="toggleFullScreen"
+                :title="isFullScreen ? 'Exit Full Screen' : 'Full Screen'"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path v-if="!isFullScreen" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                  <path v-else d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                </svg>
+              </button>
+              <div v-if="!isPlaying && !loadingVideo" class="play-overlay">
+                <button class="play-btn" @click="startPlayback">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  Play Recorded Video
+                </button>
+              </div>
+              <div v-if="loadingVideo" class="loading-overlay">
+                <div class="loading-spinner"></div>
+                <p>Loading video frames...</p>
+              </div>
+            </div>
+            <div class="video-controls">
+              <div class="playback-controls">
+                <button 
+                  class="control-btn" 
+                  @click="togglePlayback"
+                  :disabled="!videoFrames.length"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path v-if="!isPlaying" d="M8 5v14l11-7z"/>
+                    <path v-else d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                  </svg>
+                  {{ isPlaying ? 'Pause' : 'Play' }}
+                </button>
+                <button 
+                  class="control-btn" 
+                  @click="stopPlayback"
+                  :disabled="!videoFrames.length"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 6h12v12H6z"/>
+                  </svg>
+                  Stop
+                </button>
+                <div class="frame-info">
+                  <span>Frame {{ currentFrameIndex + 1 }} of {{ videoFrames.length }}</span>
+                </div>
+              </div>
+              <div class="progress-container">
+                <input
+                  type="range"
+                  class="progress-slider"
+                  :min="0"
+                  :max="Math.max(0, videoFrames.length - 1)"
+                  v-model="currentFrameIndex"
+                  @input="seekToFrame"
+                  :disabled="!videoFrames.length"
+                />
+                <div class="time-display">
+                  <span>{{ formatPlaybackTime(currentPlaybackTime) }}</span>
+                  <span>/</span>
+                  <span>{{ formatPlaybackTime(totalPlaybackTime) }}</span>
+                </div>
+              </div>
+              <div class="control-settings">
+                <div class="playback-speed">
+                  <label>Speed:</label>
+                  <select v-model="playbackSpeed" @change="updatePlaybackSpeed">
+                    <option value="0.25">0.25x</option>
+                    <option value="0.5">0.5x</option>
+                    <option value="1">1x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                    <option value="4">4x</option>
+                  </select>
+                </div>
+                <div class="framerate-control">
+                  <label>FPS:</label>
+                  <select v-model="targetFramerate" @change="updateFramerate">
+                    <option value="10">10 FPS</option>
+                    <option value="15">15 FPS</option>
+                    <option value="24">24 FPS</option>
+                    <option value="30">30 FPS</option>
+                    <option value="60">60 FPS</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -195,10 +298,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useDataStorage } from '@/scripts/dataStorage'
+import { useVideoPanel } from '@/composables/useVideoPanel'
 
 const route = useRoute()
 const router = useRouter()
@@ -229,6 +333,42 @@ const selectedTimeRange = ref({
 const startTimeInput = ref('')
 const endTimeInput = ref('')
 
+// Video player state
+const videoCanvas = ref(null)
+const videoFrames = ref([])
+const currentFrameIndex = ref(0)
+const isPlaying = ref(false)
+const loadingVideo = ref(false)
+const playbackSpeed = ref(1)
+const targetFramerate = ref(30)
+const playbackInterval = ref(null)
+
+// Initialize video panel composable
+const {
+  isFullScreen,
+  toggleFullScreen,
+  handleFrame,
+  updateCanvasSize
+} = useVideoPanel(videoCanvas, {
+  videoWidth: 1280,
+  videoHeight: 720,
+  maxQueueSize: 10
+})
+
+// Computed properties for video playback
+const currentPlaybackTime = computed(() => {
+  if (!videoFrames.value.length) return 0
+  const currentFrame = videoFrames.value[currentFrameIndex.value]
+  return currentFrame ? currentFrame.timestamp : 0
+})
+
+const totalPlaybackTime = computed(() => {
+  if (!videoFrames.value.length) return 0
+  const lastFrame = videoFrames.value[videoFrames.value.length - 1]
+  const firstFrame = videoFrames.value[0]
+  return lastFrame.timestamp - firstFrame.timestamp
+})
+
 // Helper function to format date for datetime-local input
 const formatDateTimeLocal = (date) => {
   const year = date.getFullYear()
@@ -239,6 +379,160 @@ const formatDateTimeLocal = (date) => {
   const seconds = String(date.getSeconds()).padStart(2, '0')
   
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
+// Video playback functions
+const loadVideoFrames = async () => {
+  loadingVideo.value = true
+  try {
+    const frames = await dataStorage.getFramesByTimeRange(
+      trainId.value,
+      selectedTimeRange.value.start,
+      selectedTimeRange.value.end
+    )
+    
+    // Sort frames by timestamp to ensure proper playback order
+    videoFrames.value = frames.sort((a, b) => a.timestamp - b.timestamp)
+    currentFrameIndex.value = 0
+    
+    console.log(`📹 Loaded ${videoFrames.value.length} video frames for playback`)
+    
+    // Ensure canvas is properly sized before loading first frame
+    await updateCanvasSize()
+    
+    // Load first frame if available
+    if (videoFrames.value.length > 0) {
+      displayFrame(0)
+    }
+  } catch (error) {
+    console.error('Failed to load video frames:', error)
+    alert('Failed to load video frames for playback')
+  } finally {
+    loadingVideo.value = false
+  }
+}
+
+const displayFrame = (frameIndex) => {
+  if (frameIndex < 0 || frameIndex >= videoFrames.value.length) return
+  
+  const frame = videoFrames.value[frameIndex]
+  if (frame && frame.data) {
+    // Ensure canvas is properly sized before displaying frame
+    if (frameIndex === 0) {
+      // For the first frame, wait a bit for DOM to be ready then update canvas size
+      setTimeout(() => {
+        updateCanvasSize()
+        handleFrame(frame.data)
+      }, 50)
+    } else {
+      handleFrame(frame.data)
+    }
+    currentFrameIndex.value = frameIndex
+  }
+}
+
+const startPlayback = async () => {
+  if (!videoFrames.value.length) {
+    await loadVideoFrames()
+  }
+  
+  if (videoFrames.value.length > 0) {
+    isPlaying.value = true
+    playFrames()
+  }
+}
+
+const togglePlayback = () => {
+  if (isPlaying.value) {
+    pausePlayback()
+  } else {
+    resumePlayback()
+  }
+}
+
+const pausePlayback = () => {
+  isPlaying.value = false
+  if (playbackInterval.value) {
+    clearTimeout(playbackInterval.value)
+    playbackInterval.value = null
+  }
+}
+
+const resumePlayback = () => {
+  if (videoFrames.value.length > 0) {
+    isPlaying.value = true
+    playFrames()
+  }
+}
+
+const stopPlayback = () => {
+  pausePlayback()
+  currentFrameIndex.value = 0
+  if (videoFrames.value.length > 0) {
+    displayFrame(0)
+  }
+}
+
+const playFrames = () => {
+  if (!isPlaying.value || currentFrameIndex.value >= videoFrames.value.length) {
+    isPlaying.value = false
+    return
+  }
+  
+  displayFrame(currentFrameIndex.value)
+  
+  // Calculate delay between frames based on target framerate and speed
+  const baseDelay = 1000 / targetFramerate.value // milliseconds per frame
+  const adjustedDelay = baseDelay / playbackSpeed.value
+  
+  playbackInterval.value = setTimeout(() => {
+    currentFrameIndex.value++
+    if (currentFrameIndex.value >= videoFrames.value.length) {
+      // End of video reached
+      stopPlayback()
+    } else {
+      playFrames()
+    }
+  }, adjustedDelay)
+}
+
+const seekToFrame = () => {
+  const frameIndex = parseInt(currentFrameIndex.value)
+  displayFrame(frameIndex)
+  
+  // If playing, restart playback from new position
+  if (isPlaying.value) {
+    pausePlayback()
+    resumePlayback()
+  }
+}
+
+const updatePlaybackSpeed = () => {
+  // If currently playing, restart with new speed
+  if (isPlaying.value) {
+    pausePlayback()
+    resumePlayback()
+  }
+}
+
+const updateFramerate = () => {
+  // If currently playing, restart with new framerate
+  if (isPlaying.value) {
+    pausePlayback()
+    resumePlayback()
+  }
+}
+
+const formatPlaybackTime = (timestamp) => {
+  if (!timestamp || !videoFrames.value.length) return '00:00'
+  
+  const firstFrameTime = videoFrames.value[0]?.timestamp || 0
+  const relativeTime = Math.max(0, timestamp - firstFrameTime)
+  const seconds = Math.floor(relativeTime / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
 const loadTrainData = async () => {
@@ -289,6 +583,10 @@ const resetTimeRange = () => {
     
     // Update counts for the new time range
     updateCountsInRange()
+    
+    // Reset video player when time range resets
+    stopPlayback()
+    videoFrames.value = []
   }
 }
 
@@ -311,6 +609,10 @@ const applyTimeRange = () => {
   
   // Update counts for the new time range
   updateCountsInRange()
+  
+  // Reset video player when time range changes
+  stopPlayback()
+  videoFrames.value = []
 }
 
 const updateCountsInRange = async () => {
@@ -515,15 +817,50 @@ const formatDate = (timestamp) => {
   return new Date(timestamp).toLocaleDateString() + ' ' + new Date(timestamp).toLocaleTimeString()
 }
 
+const formatTimeAgo = (timestamp) => {
+  const now = Date.now()
+  const diff = now - timestamp
+  
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  const weeks = Math.floor(days / 7)
+  const months = Math.floor(days / 30)
+  const years = Math.floor(days / 365)
+  
+  if (years > 0) {
+    return years === 1 ? '1 year ago' : `${years} years ago`
+  } else if (months > 0) {
+    return months === 1 ? '1 month ago' : `${months} months ago`
+  } else if (weeks > 0) {
+    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+  } else if (days > 0) {
+    return days === 1 ? '1 day ago' : `${days} days ago`
+  } else if (hours > 0) {
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`
+  } else if (minutes > 0) {
+    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`
+  } else {
+    return 'Just now'
+  }
+}
+
 onMounted(() => {
   loadTrainData()
+})
+
+onUnmounted(() => {
+  // Clean up video playback
+  if (playbackInterval.value) {
+    clearTimeout(playbackInterval.value)
+  }
 })
 </script>
 
 <style scoped>
 .recorded-train-view {
   min-height: 100vh;
-  background: #f8f9fa;
 }
 
 .recorded-train-main {
@@ -586,6 +923,12 @@ onMounted(() => {
   margin: 0;
 }
 
+.train-title p.data-age {
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 .header-actions {
   display: flex;
   gap: 1rem;
@@ -639,6 +982,10 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.loading-state p, .error-state h3, .error-state p {
+  color: #333;
 }
 
 .loading-spinner {
@@ -711,6 +1058,8 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 0.875rem;
+  background: white;
+  color: #333;
 }
 
 .apply-range-btn, .reset-range-btn {
@@ -734,6 +1083,7 @@ onMounted(() => {
 .reset-range-btn {
   background: #f0f0f0;
   color: #333;
+  border: none;
 }
 
 .reset-range-btn:hover {
@@ -748,6 +1098,260 @@ onMounted(() => {
   color: #666;
 }
 
+.video-player-panel {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.video-player-panel h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a237e;
+  margin: 0 0 1.5rem 0;
+}
+
+.video-player-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.video-display {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+}
+
+.video-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Prevent browser from applying smoothing/blur to the canvas */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  background: rgba(30, 30, 30, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(60, 60, 60, 0.85);
+}
+
+.fullscreen-btn svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.play-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.play-btn:hover {
+  background: #1565c0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(25, 118, 210, 0.4);
+}
+
+.play-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+}
+
+.loading-overlay .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.loading-overlay p {
+  color: white;
+  margin: 0;
+}
+
+.video-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.frame-info {
+  color: #666;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.control-settings {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-slider {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.progress-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #1976d2;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.progress-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #1976d2;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.playback-speed, .framerate-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.playback-speed label, .framerate-control label {
+  font-weight: 500;
+  color: #333;
+  min-width: 45px;
+}
+
+.playback-speed select, .framerate-control select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.875rem;
+  min-width: 80px;
+}
+
 .export-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -759,6 +1363,7 @@ onMounted(() => {
   border-radius: 8px;
   padding: 1rem;
   transition: all 0.2s ease;
+  background: white;
 }
 
 .export-card:hover {
@@ -856,6 +1461,7 @@ onMounted(() => {
   max-width: 400px;
   width: 90%;
   text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .modal-content h3 {
@@ -886,6 +1492,7 @@ onMounted(() => {
 .cancel-btn {
   background: #f0f0f0;
   color: #333;
+  border: none;
 }
 
 .cancel-btn:hover {
@@ -929,6 +1536,35 @@ onMounted(() => {
   
   .export-grid {
     grid-template-columns: 1fr;
+  }
+
+  .video-player-panel {
+    padding: 1rem;
+  }
+
+  .playback-controls {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .frame-info {
+    margin-left: 0;
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .progress-container {
+    order: 1;
+  }
+
+  .control-settings {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .playback-speed, .framerate-control {
+    justify-content: center;
   }
 }
 </style>

@@ -36,13 +36,29 @@
               @click="selectRecordedTrain(train.trainId)"
             >
           <div class="train-card-gradient"></div>
+          <div class="card-actions">
+            <button 
+              class="delete-btn" 
+              @click.stop="confirmDeleteTrain(train.trainId)"
+              :disabled="deletingTrainId === train.trainId"
+              :title="`Delete ${train.trainId} recorded data`"
+            >
+              <div class="delete-btn-content">
+                <svg v-if="deletingTrainId !== train.trainId" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                <div v-else class="delete-spinner"></div>
+                <span class="delete-tooltip">Delete</span>
+              </div>
+            </button>
+          </div>
           <div class="train-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm8 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-4H6V7h12v6z"/>
             </svg>
           </div>
           <div class="train-info">
-            <div class="train-id-value">{{ train.trainId }}</div>
+            <div class="train-id-value">{{ formatTrainId(train.trainId) }}</div>
             <div class="train-stats">
               <div class="stat-item">
                 <span class="stat-icon">📹</span>
@@ -99,6 +115,39 @@
         </button>
       </div>
     </transition>
+
+    <!-- Delete Confirmation Dialog -->
+    <div v-if="showDeleteDialog" class="delete-dialog-overlay" @click="cancelDelete">
+      <div class="delete-dialog" @click.stop>
+        <div class="delete-dialog-header">
+          <div class="delete-dialog-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z"/>
+            </svg>
+          </div>
+          <h3>Delete Recorded Data</h3>
+          <button class="dialog-close-btn" @click="cancelDelete">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="delete-dialog-body">
+          <p>Are you sure you want to delete all recorded data for <strong>{{ trainToDelete }}</strong>?</p>
+          <p class="delete-warning">This action cannot be undone and will permanently remove all frames, telemetry, and sensor data.</p>
+        </div>
+        <div class="delete-dialog-actions">
+          <button class="cancel-btn" @click="cancelDelete">Cancel</button>
+          <button class="confirm-delete-btn" @click="confirmDelete" :disabled="deletingTrainId">
+            <svg v-if="!deletingTrainId" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+            <div v-else class="delete-spinner"></div>
+            <span>{{ deletingTrainId ? 'Deleting...' : 'Delete' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -115,6 +164,11 @@ const loading = ref(false)
 const trainCarousel = ref(null)
 const scrollPosition = ref(0)
 const visibleCards = ref(4) // Number of cards visible at once
+
+// Delete dialog state
+const showDeleteDialog = ref(false)
+const trainToDelete = ref('')
+const deletingTrainId = ref(null)
 
 // Computed properties for navigation
 const canScrollLeft = computed(() => scrollPosition.value > 0)
@@ -185,6 +239,47 @@ const selectRecordedTrain = (trainId) => {
   router.push(`/${trainId}/record`)
 }
 
+// Delete methods
+const confirmDeleteTrain = (trainId) => {
+  trainToDelete.value = trainId
+  showDeleteDialog.value = true
+}
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false
+  trainToDelete.value = ''
+  deletingTrainId.value = null
+}
+
+const confirmDelete = async () => {
+  if (!trainToDelete.value) return
+  
+  deletingTrainId.value = trainToDelete.value
+  
+  try {
+    await dataStorage.deleteTrainDatabase(trainToDelete.value)
+    
+    // Remove the train from the local list
+    recordedTrains.value = recordedTrains.value.filter(
+      train => train.trainId !== trainToDelete.value
+    )
+    
+    console.log(`✅ Successfully deleted train data: ${trainToDelete.value}`)
+    
+    // Close dialog
+    showDeleteDialog.value = false
+    trainToDelete.value = ''
+    
+    // Optionally refresh the list to ensure consistency
+    await loadRecordedTrains()
+  } catch (error) {
+    console.error('❌ Failed to delete train data:', error)
+    // You could add a toast notification here for error feedback
+  } finally {
+    deletingTrainId.value = null
+  }
+}
+
 const formatNumber = (num) => {
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M'
@@ -192,6 +287,13 @@ const formatNumber = (num) => {
     return (num / 1000).toFixed(1) + 'K'
   }
   return num.toString()
+}
+
+const formatTrainId = (trainId) => {
+  if (trainId && trainId.length > 12) {
+    return trainId.slice(-12)
+  }
+  return trainId
 }
 
 const formatDuration = (duration) => {
@@ -407,7 +509,7 @@ onUnmounted(() => {
 }
 
 .train-card:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-6px);
   box-shadow: 0 20px 40px rgba(25, 118, 210, 0.2);
   border-color: #1976d2;
 }
@@ -607,6 +709,310 @@ onUnmounted(() => {
   opacity: 0;
 }
 
+/* Card Actions Container */
+.card-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.train-card:hover .card-actions {
+  opacity: 1;
+}
+
+/* Professional Delete Button */
+.delete-btn {
+  position: relative;
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(148, 163, 184, 0.1);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.delete-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.delete-btn:hover::before {
+  opacity: 1;
+}
+
+.delete-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    0 8px 25px rgba(239, 68, 68, 0.25),
+    0 0 0 1px rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.delete-btn:active:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.delete-btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.delete-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  transition: color 0.3s ease;
+}
+
+.delete-btn:hover:not(:disabled) svg {
+  color: #dc2626;
+}
+
+.delete-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  border-top: 2px solid #dc2626;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Elegant Tooltip */
+.delete-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(30, 41, 59, 0.95);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.delete-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: rgba(30, 41, 59, 0.95);
+}
+
+.delete-btn:hover .delete-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(4px);
+}
+
+/* Delete Dialog Styles */
+.delete-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.delete-dialog {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: auto;
+  animation: dialogSlideIn 0.3s ease-out;
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.delete-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.delete-dialog-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.delete-dialog-icon svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.delete-dialog-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+}
+
+.dialog-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  background: #f8fafc;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.dialog-close-btn:hover {
+  background: #e2e8f0;
+}
+
+.dialog-close-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+}
+
+.delete-dialog-body {
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+}
+
+.delete-dialog-body p {
+  margin: 0 0 1rem 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.delete-dialog-body p:last-child {
+  margin-bottom: 0;
+}
+
+.delete-warning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #b91c1c !important;
+  font-size: 0.875rem;
+}
+
+.delete-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.confirm-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-delete-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+}
+
+.confirm-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.confirm-delete-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 @media (max-width: 768px) {
   .train-carousel-container {
     gap: 0.5rem;
@@ -659,6 +1065,67 @@ onUnmounted(() => {
   .select-train-btn {
     padding: 0.5rem 0.8rem;
     font-size: 0.75rem;
+  }
+
+  .card-actions {
+    padding: 0.5rem;
+    opacity: 1; /* Always visible on mobile */
+  }
+
+  .delete-btn {
+    padding: 0.375rem;
+  }
+
+  .delete-btn-content {
+    width: 20px;
+    height: 20px;
+  }
+
+  .delete-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .delete-tooltip {
+    display: none; /* Hide tooltip on mobile */
+  }
+
+  .delete-dialog {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .delete-dialog-header {
+    padding: 1rem 1rem 0.75rem 1rem;
+  }
+
+  .delete-dialog-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .delete-dialog-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .delete-dialog-header h3 {
+    font-size: 1.125rem;
+  }
+
+  .delete-dialog-body {
+    padding: 0.75rem 1rem 1rem 1rem;
+  }
+
+  .delete-dialog-actions {
+    padding: 0.75rem 1rem 1rem 1rem;
+    flex-direction: column;
+  }
+
+  .cancel-btn,
+  .confirm-delete-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

@@ -48,6 +48,47 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.telemetry.start()
         self.imu.start()
 
+    def switch_video_source(self, new_source):
+        """Switch the active video source at runtime.
+
+        Stops current source, disconnects signal, assigns new source, connects it and initializes capture if capturing.
+        Maintains speed & direction state if supported.
+        """
+        try:
+            # Disconnect and stop old source
+            if hasattr(self.video_source, 'frame_ready'):
+                try:
+                    self.video_source.frame_ready.disconnect(self.on_new_frame)
+                except Exception:
+                    pass
+            if hasattr(self.video_source, 'stop'):
+                try:
+                    self.video_source.stop()
+                except Exception:
+                    pass
+
+            # Replace
+            self.video_source = new_source
+            self.video_source.frame_ready.connect(self.on_new_frame)
+
+            # Apply current direction & speed if methods exist
+            if hasattr(new_source, 'set_direction'):
+                try:
+                    new_source.set_direction(DIRECTION["FORWARD"])  # default forward
+                except Exception:
+                    pass
+            if hasattr(new_source, 'set_speed'):
+                try:
+                    new_source.set_speed(self.target_speed)
+                except Exception:
+                    pass
+
+            if self.is_capturing:
+                self.video_source.init_capture()
+            self.log_message(f"Video source switched to {new_source.__class__.__name__}")
+        except Exception as e:
+            self.log_message(f"Failed to switch video source: {e}")
+
     def initialize_train_client_id(self):
         client_id = str(uuid.uuid4())
         logger.info(f"TrainClient ID initialized: {client_id}")

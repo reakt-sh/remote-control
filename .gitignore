@@ -28,7 +28,6 @@
 *.webp
 *.log
 *.zip
-*.json
 *.pem
 *.key
 *.crt
