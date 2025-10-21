@@ -48,7 +48,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.telemetry.start()
         self.imu.start()
 
-        self.protocol_for_media = "WebSocket" # or "QUIC"
+        self.protocol_for_media = "QUIC" # or "QUIC"
 
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
