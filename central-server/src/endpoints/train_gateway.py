@@ -56,7 +56,6 @@ async def train_interface(websocket: WebSocket, train_id: str):
             payload = data[1:]
 
             if packet_type == PACKET_TYPE["video"] or packet_type == PACKET_TYPE["telemetry"]:
-                logger.debug(f"WebSocket: Received packet type {packet_type} from train {train_id}, forwarding to clients")
                 await s_controller.send_data_to_clients(train_id, data)
             elif packet_type == PACKET_TYPE["keepalive"]:
                 message = json.loads(payload.decode('utf-8'))

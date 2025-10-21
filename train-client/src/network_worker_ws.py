@@ -63,7 +63,6 @@ class NetworkWorkerWS(QThread):
                 packet = self.packet_queue.get_nowait()
                 if packet:
                     await websocket.send(packet)
-                    print(f"WebSocket: Sent packet of size {len(packet)}, packet type {packet[0]}")
             except queue.Empty:
                 await asyncio.sleep(0.1)  # Increased sleep to yield to other tasks
             except Exception as e:
@@ -139,7 +138,8 @@ class NetworkWorkerWS(QThread):
     def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes):
         packets = self.create_packets(frame_id, timestamp, frame)
         for packet in packets:
-            self.enqueue_packet(packet)
+            packet_with_type = struct.pack("B", PACKET_TYPE["video"]) + packet
+            self.enqueue_packet(packet_with_type)
 
     def enqueue_packet(self, packet):
         self.packet_queue.put(packet)
