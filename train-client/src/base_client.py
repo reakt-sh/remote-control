@@ -48,6 +48,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.telemetry.start()
         self.imu.start()
 
+        self.protocol_for_media = "QUIC" # or "QUIC"
+
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
 
@@ -212,8 +214,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.output_file.write(encoded_bytes)
             self.output_file.flush()
         if self.is_sending:
-            # Send the encoded frame over QUIC
-            self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+            # Send the encoded frame over the network
+            if self.protocol_for_media == "WebSocket":
+                self.network_worker_ws.enqueue_frame(frame_id, timestamp, encoded_bytes)
+            else:
+                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 
     def toggle_capture(self):

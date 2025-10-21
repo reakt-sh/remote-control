@@ -126,7 +126,7 @@ class MqttBridge:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
 
-            logger.debug(f"Received MQTT message on topic: {topic}")
+            # logger.debug(f"Received MQTT message on topic: {topic}")
 
             # Parse topic to extract train_id and message type
             topic_parts = topic.split('/')
@@ -171,7 +171,7 @@ class MqttBridge:
             telemetry_data = json.loads(payload)
 
             # Log telemetry data as requested
-            logger.info(f"Telemetry from train {train_id}: {telemetry_data}")
+            # logger.info(f"Telemetry from train {train_id}: {telemetry_data}")
 
             # Extract key metrics for summary logging
             speed = telemetry_data.get('speed', 'N/A')
@@ -304,7 +304,7 @@ class MqttBridge:
 # Example usage and testing
 def example_telemetry_handler(train_id: str, telemetry_data: Dict):
     """Example handler for processing telemetry data"""
-    logger.info(f"Custom handler processing telemetry from {train_id}")
+    # logger.info(f"Custom handler processing telemetry from {train_id}")
     # Add your custom processing logic here
     pass
 
