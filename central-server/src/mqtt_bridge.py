@@ -171,7 +171,7 @@ class MqttBridge:
             telemetry_data = json.loads(payload)
 
             # Log telemetry data as requested
-            logger.info(f"Telemetry from train {train_id}: {telemetry_data}")
+            # logger.info(f"Telemetry from train {train_id}: {telemetry_data}")
 
             # Extract key metrics for summary logging
             speed = telemetry_data.get('speed', 'N/A')
