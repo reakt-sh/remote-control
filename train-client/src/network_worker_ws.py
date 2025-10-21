@@ -16,6 +16,7 @@ class NetworkWorkerWS(QThread):
         super().__init__(parent)
         self.packet_queue = queue.Queue()
         self.train_client_id = train_client_id
+        self.train_client_id_bytes = train_client_id.encode('utf-8').ljust(36)[:36]  # Ensure 36 bytes
         self.running = False
         self.loop = None
         self.server_url = f"{WEBSOCKET_URL}/train/{train_client_id}"
@@ -62,6 +63,7 @@ class NetworkWorkerWS(QThread):
                 packet = self.packet_queue.get_nowait()
                 if packet:
                     await websocket.send(packet)
+                    print(f"WebSocket: Sent packet of size {len(packet)}, packet type {packet[0]}")
             except queue.Empty:
                 await asyncio.sleep(0.1)  # Increased sleep to yield to other tasks
             except Exception as e:
@@ -112,6 +114,32 @@ class NetworkWorkerWS(QThread):
     def stop(self):
         self.running = False
         logger.info("WebSocket connection closed")
+
+    def create_packets(self, frame_id: int, timestamp: int, frame: bytes) -> list[bytes]:
+        packet_list = []
+        frame_size = len(frame)
+        number_of_packets = (frame_size // MAX_PACKET_SIZE) + 1
+        remaining_data = frame
+
+        for packet_id in range(1, number_of_packets + 1):
+            header = bytearray()
+            header.append(PACKET_TYPE["video"])
+            header.extend(frame_id.to_bytes(4, byteorder='big'))
+            header.extend(number_of_packets.to_bytes(2, byteorder='big'))
+            header.extend(packet_id.to_bytes(2, byteorder='big'))
+            header.extend(self.train_client_id_bytes)
+            header.extend(timestamp.to_bytes(8, byteorder='big'))
+
+            chunk = remaining_data[:MAX_PACKET_SIZE]
+            remaining_data = remaining_data[MAX_PACKET_SIZE:]
+            packet_list.append(bytes(header + chunk))
+
+        return packet_list
+
+    def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes):
+        packets = self.create_packets(frame_id, timestamp, frame)
+        for packet in packets:
+            self.enqueue_packet(packet)
 
     def enqueue_packet(self, packet):
         self.packet_queue.put(packet)

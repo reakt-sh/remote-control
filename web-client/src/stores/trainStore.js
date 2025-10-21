@@ -283,6 +283,10 @@ export const useTrainStore = defineStore('train', () => {
         fetchAvailableTrains()
         break
       }
+      case PACKET_TYPE.video: {
+        videoDatagramAssembler.value.processPacket(payload)
+        break
+      }
     }
   }
 
