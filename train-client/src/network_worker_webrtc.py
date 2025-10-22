@@ -3,7 +3,7 @@ import json
 import struct
 import ssl
 from typing import Optional
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, VideoStreamTrack
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, VideoStreamTrack, RTCConfiguration, RTCIceServer
 from aiortc.contrib.media import MediaBlackhole
 from av import VideoFrame
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -186,12 +186,12 @@ class NetworkWorkerWebRTC(QThread):
     async def create_peer_connection(self):
         """Create and configure RTCPeerConnection."""
         # Configure ICE servers (STUN/TURN)
-        configuration = {
-            "iceServers": [
-                {"urls": "stun:stun.l.google.com:19302"},
-                {"urls": "stun:stun1.l.google.com:19302"},
+        configuration = RTCConfiguration(
+            iceServers=[
+                RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
+                RTCIceServer(urls=["stun:stun1.l.google.com:19302"]),
             ]
-        }
+        )
         
         self.pc = RTCPeerConnection(configuration)
         
