@@ -10,6 +10,7 @@ from utils.app_logger import logger
 from utils.iperf3_process import Iperf3Process
 from endpoints import remote_control_gateway
 from endpoints import train_gateway
+from endpoints import webrtc_signaling
 from config import settings
 from quic_server import run_quic_server
 from mqtt_bridge import run_mqtt_bridge
@@ -55,6 +56,7 @@ app.add_middleware(
 # Include routers
 app.include_router(train_gateway.router)
 app.include_router(remote_control_gateway.router)
+app.include_router(webrtc_signaling.router)
 
 config = get_client_config()
 
