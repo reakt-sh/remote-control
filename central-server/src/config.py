@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     CORS_ORIGINS: list = [
+        "*",  # Allow all origins for WebSocket connections - restrict in production
         "http://localhost:8080",
         "https://localhost:8080",
         "http://209.38.218.207:8080",

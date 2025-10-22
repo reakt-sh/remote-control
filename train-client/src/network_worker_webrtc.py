@@ -97,7 +97,9 @@ class NetworkWorkerWebRTC(QThread):
         self.video_track: Optional[H264VideoStreamTrack] = None
         
         # Signaling WebSocket
-        self.signaling_url = f"{WEBSOCKET_URL}/webrtc/train/{train_client_id}"
+        # Remove /ws prefix from WEBSOCKET_URL and use the correct WebRTC endpoint
+        base_url = WEBSOCKET_URL.replace("/ws", "")
+        self.signaling_url = f"{base_url}/webrtc/train/{train_client_id}"
         self.signaling_ws = None
         
         # State management

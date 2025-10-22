@@ -122,6 +122,8 @@ async def webrtc_signaling_train(websocket: WebSocket, train_client_id: str):
     WebRTC signaling endpoint for train clients.
     Handles offer/answer exchange and ICE candidate forwarding.
     """
+    logger.info(f"WebRTC signaling connection attempt from train {train_client_id}")
+    logger.debug(f"WebSocket headers: {websocket.headers}")
     await websocket.accept()
     await signaling_manager.register_train_client(train_client_id, websocket)
     
