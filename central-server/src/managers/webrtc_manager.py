@@ -23,6 +23,7 @@ class WebRTCManager:
             logger.warning(f"WebRTC: Peer connection already exists for {remote_control_id}")
             return self.peer_connections[remote_control_id]
 
+        # Create peer connection with configuration
         pc = RTCPeerConnection()
         self.peer_connections[remote_control_id] = pc
         self.pending_ice_candidates[remote_control_id] = []
@@ -36,6 +37,10 @@ class WebRTCManager:
         @pc.on("iceconnectionstatechange")
         async def on_iceconnectionstatechange():
             logger.info(f"WebRTC: ICE connection state for {remote_control_id}: {pc.iceConnectionState}")
+
+        @pc.on("icegatheringstatechange")
+        async def on_icegatheringstatechange():
+            logger.info(f"WebRTC: ICE gathering state for {remote_control_id}: {pc.iceGatheringState}")
 
         @pc.on("datachannel")
         def on_datachannel(channel: RTCDataChannel):
@@ -59,8 +64,16 @@ class WebRTCManager:
             logger.error(f"WebRTC: No peer connection found for {remote_control_id}")
             return None
 
-        channel = pc.createDataChannel(channel_name, ordered=False, maxRetransmits=0)
-        self.data_channels[f"{remote_control_id}_{channel_name}"] = channel
+        # Create data channel with proper configuration
+        # ordered=False and maxRetransmits=0 for low latency
+        channel = pc.createDataChannel(
+            channel_name, 
+            ordered=False, 
+            maxRetransmits=0
+        )
+        
+        channel_key = f"{remote_control_id}_{channel_name}"
+        self.data_channels[channel_key] = channel
 
         @channel.on("open")
         def on_open():
@@ -69,8 +82,12 @@ class WebRTCManager:
         @channel.on("close")
         def on_close():
             logger.info(f"WebRTC: Data channel '{channel_name}' closed for {remote_control_id}")
-            if f"{remote_control_id}_{channel_name}" in self.data_channels:
-                del self.data_channels[f"{remote_control_id}_{channel_name}"]
+            if channel_key in self.data_channels:
+                del self.data_channels[channel_key]
+
+        @channel.on("error")
+        def on_error(error):
+            logger.error(f"WebRTC: Data channel '{channel_name}' error for {remote_control_id}: {error}")
 
         logger.info(f"WebRTC: Created data channel '{channel_name}' for {remote_control_id}")
         return channel
@@ -84,14 +101,31 @@ class WebRTCManager:
             logger.error(f"WebRTC: No peer connection found for {remote_control_id}")
             return {"error": "No peer connection found"}
 
-        # Create data channel before creating offer
-        await self.create_data_channel(remote_control_id, "video")
-        await self.create_data_channel(remote_control_id, "commands")
+        # Create data channels before creating offer
+        # This ensures the m= sections are properly created in the SDP
+        video_channel = await self.create_data_channel(remote_control_id, "video")
+        commands_channel = await self.create_data_channel(remote_control_id, "commands")
 
+        if not video_channel or not commands_channel:
+            logger.error(f"WebRTC: Failed to create data channels for {remote_control_id}")
+            return {"error": "Failed to create data channels"}
+
+        # Wait a brief moment to ensure channels are initialized
+        await asyncio.sleep(0.1)
+
+        # Create the offer after data channels are set up
         offer = await pc.createOffer()
         await pc.setLocalDescription(offer)
 
+        # Verify the SDP has proper m= sections
+        sdp_lines = pc.localDescription.sdp.split('\n')
+        m_sections = [line for line in sdp_lines if line.startswith('m=')]
+        mid_lines = [line for line in sdp_lines if line.startswith('a=mid:')]
+        
         logger.info(f"WebRTC: Created offer for {remote_control_id}")
+        logger.debug(f"WebRTC: Offer has {len(m_sections)} m= sections and {len(mid_lines)} MID attributes")
+        logger.debug(f"WebRTC: Offer SDP:\n{pc.localDescription.sdp}")
+        
         return {
             "type": pc.localDescription.type,
             "sdp": pc.localDescription.sdp

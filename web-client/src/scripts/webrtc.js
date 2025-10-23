@@ -111,11 +111,35 @@ export function useWebRTC(remoteControlId, messageHandler) {
       }
 
       console.log('📥 Received offer from server')
+      console.log('📋 Offer type:', offerData.offer.type)
+      console.log('📋 Offer SDP length:', offerData.offer.sdp?.length || 0)
+      
+      // Verify the offer has required components
+      if (!offerData.offer.sdp || !offerData.offer.type) {
+        throw new Error('Invalid offer received: missing sdp or type')
+      }
+
+      // Check for m= sections in the SDP
+      const mSections = offerData.offer.sdp.split('\n').filter(line => line.startsWith('m='))
+      console.log('📋 Offer has', mSections.length, 'm= sections')
+      
+      if (mSections.length === 0) {
+        console.error('❌ Offer SDP has no m= sections!')
+        console.error('SDP:', offerData.offer.sdp)
+        throw new Error('Invalid offer: no media sections')
+      }
       
       // Set remote description (offer from server)
-      await peerConnection.value.setRemoteDescription(
-        new RTCSessionDescription(offerData.offer)
-      )
+      try {
+        await peerConnection.value.setRemoteDescription(
+          new RTCSessionDescription(offerData.offer)
+        )
+        console.log('✅ Successfully set remote description')
+      } catch (error) {
+        console.error('❌ Failed to set remote description:', error)
+        console.error('Problematic SDP:', offerData.offer.sdp)
+        throw error
+      }
 
       // Create answer
       const answer = await peerConnection.value.createAnswer()

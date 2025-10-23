@@ -9,7 +9,6 @@ from loguru import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
-from network_worker_webrtc import NetworkWorkerWebRTC
 from network_worker_mqtt import NetworkWorkerMqtt
 from networkspeed import NetworkSpeed
 from sensor.telemetry import Telemetry
@@ -118,15 +117,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
-        # WebRTC
-        self.network_worker_webrtc = NetworkWorkerWebRTC(self.train_client_id)
-        self.network_worker_webrtc.connection_established.connect(self.on_webrtc_connected)
-        self.network_worker_webrtc.connection_failed.connect(self.on_webrtc_failed)
-        self.network_worker_webrtc.connection_closed.connect(self.on_webrtc_closed)
-        self.network_worker_webrtc.data_received.connect(self.on_data_received_webrtc)
-        self.network_worker_webrtc.process_command.connect(self.on_new_command)
-        self.network_worker_webrtc.start()
-
         # MQTT
         self.network_worker_mqtt = NetworkWorkerMqtt(self.train_client_id)
 
@@ -230,7 +220,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Send telemetry on all active connections
             self.network_worker_quic.enqueue_stream_packet(packet)
             self.network_worker_ws.enqueue_packet(packet)
-            self.network_worker_webrtc.enqueue_packet(packet)
             self.network_worker_mqtt.send_data(packet_data)
 
     def on_imu_data(self, data):
@@ -276,7 +265,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.encoder.close()
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
-        self.network_worker_webrtc.stop()
         self.output_file.close()
         logger.info("BaseClient closed.")
 

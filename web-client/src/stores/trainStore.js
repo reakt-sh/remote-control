@@ -75,8 +75,6 @@ export const useTrainStore = defineStore('train', () => {
   const {
     isRTCConnected,
     connectWebRTC,
-    disconnectWebRTC,
-    sendRTCCommand,
   } = useWebRTC(remoteControlId, handleRtcMessage)
 
   const {
