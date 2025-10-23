@@ -106,9 +106,15 @@ class ServerController:
         if train_id in self.train_to_clients_map:
             remote_control_ids = self.train_to_clients_map[train_id]
             for remote_control_id in remote_control_ids:
+                # Send via WebSocket if connected
                 if remote_control_id in self.remote_control_manager.active_connections:
                     websocket = self.remote_control_manager.active_connections[remote_control_id]
                     await websocket.send_bytes(data)
+                
+                # Also send via WebRTC if video data
+                packet_type = data[0] if len(data) > 0 else None
+                if packet_type == 13:  # video packet type
+                    await self.remote_control_manager.send_video_via_webrtc(remote_control_id, data)
 
     async def send_data_to_train(self, remote_control_id: str, data: bytes) -> None:
         train_id = self.client_to_train_map.get(remote_control_id)
@@ -124,3 +130,15 @@ class ServerController:
             websocket = self.remote_control_manager.active_connections[remote_control_id]
             logger.debug(f"Sending notification to {remote_control_id}")
             await websocket.send_bytes(data)
+
+    async def get_webrtc_offer(self, remote_control_id: str) -> dict:
+        """Get WebRTC offer for remote control client"""
+        return await self.remote_control_manager.get_webrtc_offer(remote_control_id)
+
+    async def set_webrtc_answer(self, remote_control_id: str, answer: dict):
+        """Set WebRTC answer from remote control client"""
+        await self.remote_control_manager.set_webrtc_answer(remote_control_id, answer)
+
+    async def add_webrtc_ice_candidate(self, remote_control_id: str, candidate: dict):
+        """Add WebRTC ICE candidate from remote control client"""
+        await self.remote_control_manager.add_webrtc_ice_candidate(remote_control_id, candidate)

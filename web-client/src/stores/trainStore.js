@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
+import { useWebRTC } from '@/scripts/webrtc'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
@@ -72,6 +73,13 @@ export const useTrainStore = defineStore('train', () => {
   } = useWebTransport(remoteControlId, handleWtMessage)
 
   const {
+    isRTCConnected,
+    connectWebRTC,
+    disconnectWebRTC,
+    sendRTCCommand,
+  } = useWebRTC(remoteControlId, handleRtcMessage)
+
+  const {
     isMqttConnected,
     connectMqtt,
     subscribeToTrain,
@@ -107,6 +115,7 @@ export const useTrainStore = defineStore('train', () => {
   async function connectToServer() {
     await connectWebSocket()
     await connectWebTransport()
+    await connectWebRTC()  // Add WebRTC connection
     await connectMqtt()  // Add MQTT connection
     setInterval(sendKeepAliveWebTransport, 10000);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
@@ -385,6 +394,12 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  // Handler for WebRTC messages - reuses same logic as WebTransport
+  function handleRtcMessage(packetType, payload) {
+    // WebRTC uses the same packet format as WebTransport
+    handleWtMessage(packetType, payload)
+  }
+
   function handleMqttMessage(mqttMessage) {
     const { trainId, messageType, data } = mqttMessage
 
@@ -479,6 +494,7 @@ export const useTrainStore = defineStore('train', () => {
     direction,
     isWSConnected,
     isWTConnected,
+    isRTCConnected,
     isMqttConnected,
     download_speed,
     upload_speed,

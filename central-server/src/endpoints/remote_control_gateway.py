@@ -1,6 +1,7 @@
 import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import time, os
 
 from server_controller import ServerController
@@ -12,6 +13,20 @@ s_controller = ServerController()
 router = APIRouter()
 size_mb = 20  # 20MB test file
 test_data = os.urandom(size_mb * 1024 * 1024)  # Generate random binary data
+
+
+# Pydantic models for WebRTC signaling
+class WebRTCOffer(BaseModel):
+    remote_control_id: str
+
+class WebRTCAnswer(BaseModel):
+    remote_control_id: str
+    sdp: dict
+
+class WebRTCIceCandidate(BaseModel):
+    remote_control_id: str
+    candidate: dict
+
 
 @router.websocket("/ws/remote_control/{remote_control_id}")
 async def remote_control_interface(websocket: WebSocket, remote_control_id: str):
@@ -75,3 +90,42 @@ async def speedtest_upload(request: Request):
     # Just acknowledge receipt (timing is done on the client)
     await request.body()
     return {"status": "ok"}
+
+
+# WebRTC Signaling Endpoints
+@router.post("/api/webrtc/offer")
+async def webrtc_offer(offer_request: WebRTCOffer):
+    """
+    Create a WebRTC offer for the remote control client.
+    Server acts as the offerer, creating data channels for video streaming.
+    """
+    logger.info(f"WebRTC: Creating offer for {offer_request.remote_control_id}")
+    offer = await s_controller.get_webrtc_offer(offer_request.remote_control_id)
+    return {
+        "status": "success",
+        "offer": offer
+    }
+
+@router.post("/api/webrtc/answer")
+async def webrtc_answer(answer_request: WebRTCAnswer):
+    """
+    Receive and process the WebRTC answer from the remote control client.
+    """
+    logger.info(f"WebRTC: Received answer from {answer_request.remote_control_id}")
+    await s_controller.set_webrtc_answer(answer_request.remote_control_id, answer_request.sdp)
+    return {
+        "status": "success",
+        "message": "Answer processed successfully"
+    }
+
+@router.post("/api/webrtc/ice-candidate")
+async def webrtc_ice_candidate(ice_request: WebRTCIceCandidate):
+    """
+    Receive and add ICE candidate from the remote control client.
+    """
+    logger.debug(f"WebRTC: Received ICE candidate from {ice_request.remote_control_id}")
+    await s_controller.add_webrtc_ice_candidate(ice_request.remote_control_id, ice_request.candidate)
+    return {
+        "status": "success",
+        "message": "ICE candidate added successfully"
+    }
