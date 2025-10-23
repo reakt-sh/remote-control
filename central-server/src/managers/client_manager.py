@@ -5,6 +5,10 @@ from aioquic.asyncio.protocol import QuicConnectionProtocol
 import json
 import struct
 from globals import PACKET_TYPE
+from server_controller import ServerController
+
+s_controller = ServerController()
+
 
 class ClientManager:
     def __init__(self):
@@ -119,13 +123,14 @@ class ClientManager:
                 train_id, data = await self.packet_queue.get()
                 remote_controls = self.train_to_remote_controls_map.get(train_id, set())
                 for remote_control_id in remote_controls:
-                    protocol = self.remote_control_clients.get(remote_control_id)
-                    if protocol:
-                        try:
-                            protocol.h3_connection.send_datagram(protocol.session_id, data)
-                            protocol.transmit()
-                        except Exception as e:
-                            logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
+                    s_controller.remote_control_manager.webrtc_manager.send_video_data(remote_control_id, data)
+                    # protocol = self.remote_control_clients.get(remote_control_id)
+                    # if protocol:
+                    #     try:
+                    #         protocol.h3_connection.send_datagram(protocol.session_id, data)
+                    #         protocol.transmit()
+                    #     except Exception as e:
+                    #         logger.error(f"Failed to relay video to remote_control {remote_control_id}: {e}")
             except self.packet_queue.Empty:
                 await asyncio.sleep(0.1)
 
