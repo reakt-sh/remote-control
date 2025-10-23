@@ -395,7 +395,6 @@ export const useTrainStore = defineStore('train', () => {
   // Handler for WebRTC messages - reuses same logic as WebTransport
   function handleRtcMessage(packetType, payload) {
     // WebRTC uses the same packet format as WebTransport
-    console.log('TheKing--> Handling WebRTC message , packetType:', packetType)
     handleWtMessage(packetType, payload)
   }
 

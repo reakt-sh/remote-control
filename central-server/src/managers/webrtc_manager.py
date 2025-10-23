@@ -194,7 +194,7 @@ class WebRTCManager:
         channel = self.data_channels.get(channel_key)
 
         if not channel:
-            logger.debug(f"WebRTC: No video channel found for {remote_control_id}")
+            # logger.debug(f"WebRTC: No video channel found for {remote_control_id}")
             return
 
         if channel.readyState != "open":
@@ -203,7 +203,6 @@ class WebRTCManager:
 
         try:
             channel.send(data)
-            logger.debug(f"WebRTC: Sent {len(data)} bytes of video data to {remote_control_id}")
         except Exception as e:
             logger.error(f"WebRTC: Error sending video data to {remote_control_id}: {e}")
 

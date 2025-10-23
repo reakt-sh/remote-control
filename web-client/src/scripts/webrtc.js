@@ -165,7 +165,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
       const answerData = await answerResponse.json()
       if (answerData.status === 'success') {
         console.log('✅ Answer sent successfully, waiting for connection...')
-      }
+    }
 
     } catch (error) {
       console.error('❌ Error establishing WebRTC connection:', error)
