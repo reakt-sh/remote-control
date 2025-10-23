@@ -123,7 +123,7 @@ class ClientManager:
                 train_id, data = await self.packet_queue.get()
                 remote_controls = self.train_to_remote_controls_map.get(train_id, set())
                 for remote_control_id in remote_controls:
-                    s_controller.remote_control_manager.webrtc_manager.send_video_data(remote_control_id, data)
+                    await s_controller.remote_control_manager.webrtc_manager.send_video_data(remote_control_id, data)
                     logger.debug(f"Relayed datagram(Unreliable) to remote_control webrtc_manager {remote_control_id} from train {train_id}")
                     # protocol = self.remote_control_clients.get(remote_control_id)
                     # if protocol:
