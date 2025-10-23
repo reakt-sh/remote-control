@@ -49,8 +49,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.telemetry.start()
         self.imu.start()
 
-        self.protocol_for_media = "QUIC"  # Options: "WebSocket", "QUIC", "WebRTC"
-
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
 
@@ -243,16 +241,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.output_file.write(encoded_bytes)
             self.output_file.flush()
         if self.is_sending:
-            # Send the encoded frame over the network based on selected protocol
-            if self.protocol_for_media == "WEBSOCKET":
-                self.network_worker_ws.enqueue_frame(frame_id, timestamp, encoded_bytes)
-            elif self.protocol_for_media == "QUIC":
-                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
-            elif self.protocol_for_media == "WEBRTC":
-                self.network_worker_webrtc.enqueue_frame(frame_id, timestamp, encoded_bytes)
-            else:
-                logger.warning(f"Unknown protocol: {self.protocol_for_media}, defaulting to QUIC")
-                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+            # Send the encoded frame over the network
+            self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 
     def toggle_capture(self):
@@ -275,26 +265,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def toggle_write_to_file(self):
         self.write_to_file = not self.write_to_file
         self.log_message(f"Write to file {'enabled' if self.write_to_file else 'disabled'}")
-
-    def switch_protocol(self, protocol: str):
-        """
-        Switch the video transmission protocol.
-        
-        Args:
-            protocol: One of "WEBSOCKET", "QUIC", or "WEBRTC"
-        """
-        old_protocol = self.protocol_for_media
-        if protocol == old_protocol:
-            logger.info(f"Already using {protocol} protocol")
-            return
-        
-        logger.info(f"Switching video transmission protocol from {old_protocol} to {protocol}")
-        self.protocol_for_media = protocol
-        
-        # Notify telemetry about protocol change
-        self.telemetry.set_protocol(protocol)
-        
-        logger.info(f"Protocol switched successfully to {protocol}")
 
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
