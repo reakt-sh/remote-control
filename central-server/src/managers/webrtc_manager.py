@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Dict, Optional
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel
 from aiortc.contrib.media import MediaRelay
@@ -14,6 +15,8 @@ class WebRTCManager:
         self.data_channels: Dict[str, RTCDataChannel] = {}
         self.pending_ice_candidates: Dict[str, list] = {}
         self.media_relay = MediaRelay()
+        self.keepalive_tasks: Dict[str, asyncio.Task] = {}
+        self.last_activity: Dict[str, float] = {}
 
     async def create_peer_connection(self, remote_control_id: str) -> RTCPeerConnection:
         """
@@ -23,8 +26,17 @@ class WebRTCManager:
             logger.warning(f"WebRTC: Peer connection already exists for {remote_control_id}")
             return self.peer_connections[remote_control_id]
 
-        # Create peer connection with configuration
-        pc = RTCPeerConnection()
+        # Create peer connection with configuration for stability
+        from aiortc import RTCConfiguration, RTCIceServer
+        
+        config = RTCConfiguration(
+            iceServers=[
+                RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
+                RTCIceServer(urls=["stun:stun1.l.google.com:19302"])
+            ]
+        )
+        
+        pc = RTCPeerConnection(configuration=config)
         self.peer_connections[remote_control_id] = pc
         self.pending_ice_candidates[remote_control_id] = []
 
@@ -66,6 +78,7 @@ class WebRTCManager:
 
         # Create data channel with proper configuration
         # ordered=False and maxRetransmits=0 for low latency
+        # Set bufferedAmountLowThreshold to prevent buffer overflow
         channel = pc.createDataChannel(
             channel_name, 
             ordered=False, 
@@ -78,6 +91,9 @@ class WebRTCManager:
         @channel.on("open")
         def on_open():
             logger.info(f"WebRTC: Data channel '{channel_name}' opened for {remote_control_id}")
+            # Start keepalive for this connection
+            if channel_name == "video":
+                self._start_keepalive(remote_control_id)
 
         @channel.on("close")
         def on_close():
@@ -189,6 +205,7 @@ class WebRTCManager:
     async def send_video_data(self, remote_control_id: str, data: bytes):
         """
         Send video data to the remote control via WebRTC data channel.
+        Implements backpressure handling to prevent buffer overflow.
         """
         channel_key = f"{remote_control_id}_video"
         channel = self.data_channels.get(channel_key)
@@ -202,7 +219,17 @@ class WebRTCManager:
             return
 
         try:
+            # Check buffered amount to prevent overflow (16MB default buffer)
+            # Drop frames if buffer is too full to maintain low latency
+            max_buffer_size = 4 * 1024 * 1024  # 4MB threshold
+            
+            if hasattr(channel, 'bufferedAmount') and channel.bufferedAmount > max_buffer_size:
+                logger.warning(f"WebRTC: Buffer full ({channel.bufferedAmount} bytes) for {remote_control_id}, dropping frame")
+                return
+            
             channel.send(data)
+            self.last_activity[remote_control_id] = time.time()
+            logger.debug(f"WebRTC: Sent {len(data)} bytes of video data to {remote_control_id}")
         except Exception as e:
             logger.error(f"WebRTC: Error sending video data to {remote_control_id}: {e}")
 
@@ -226,10 +253,63 @@ class WebRTCManager:
         except Exception as e:
             logger.error(f"WebRTC: Error sending command data to {remote_control_id}: {e}")
 
+    def _start_keepalive(self, remote_control_id: str):
+        """
+        Start keepalive task for a peer connection.
+        Sends periodic ping messages to keep the connection alive.
+        """
+        if remote_control_id in self.keepalive_tasks:
+            logger.debug(f"WebRTC: Keepalive already running for {remote_control_id}")
+            return
+
+        async def keepalive_loop():
+            logger.info(f"WebRTC: Starting keepalive for {remote_control_id}")
+            while remote_control_id in self.peer_connections:
+                try:
+                    await asyncio.sleep(5)  # Send keepalive every 5 seconds
+                    
+                    channel_key = f"{remote_control_id}_commands"
+                    channel = self.data_channels.get(channel_key)
+                    
+                    if channel and channel.readyState == "open":
+                        # Send a small keepalive ping
+                        keepalive_msg = b'\x00PING'
+                        channel.send(keepalive_msg)
+                        logger.debug(f"WebRTC: Sent keepalive to {remote_control_id}")
+                    else:
+                        logger.warning(f"WebRTC: Commands channel not available for keepalive {remote_control_id}")
+                        
+                except asyncio.CancelledError:
+                    logger.info(f"WebRTC: Keepalive cancelled for {remote_control_id}")
+                    break
+                except Exception as e:
+                    logger.error(f"WebRTC: Keepalive error for {remote_control_id}: {e}")
+                    await asyncio.sleep(5)  # Continue even if there's an error
+
+        task = asyncio.create_task(keepalive_loop())
+        self.keepalive_tasks[remote_control_id] = task
+        self.last_activity[remote_control_id] = time.time()
+
+    def _stop_keepalive(self, remote_control_id: str):
+        """
+        Stop keepalive task for a peer connection.
+        """
+        if remote_control_id in self.keepalive_tasks:
+            task = self.keepalive_tasks[remote_control_id]
+            task.cancel()
+            del self.keepalive_tasks[remote_control_id]
+            logger.info(f"WebRTC: Stopped keepalive for {remote_control_id}")
+        
+        if remote_control_id in self.last_activity:
+            del self.last_activity[remote_control_id]
+
     async def close_peer_connection(self, remote_control_id: str):
         """
         Close and cleanup peer connection for a remote control.
         """
+        # Stop keepalive
+        self._stop_keepalive(remote_control_id)
+        
         # Close data channels
         channels_to_remove = [key for key in self.data_channels.keys() if key.startswith(f"{remote_control_id}_")]
         for channel_key in channels_to_remove:

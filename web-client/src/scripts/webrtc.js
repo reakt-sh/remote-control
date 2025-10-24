@@ -6,6 +6,9 @@ export function useWebRTC(remoteControlId, messageHandler) {
   const peerConnection = ref(null)
   const videoDataChannel = ref(null)
   const commandsDataChannel = ref(null)
+  const reconnectAttempts = ref(0)
+  const maxReconnectAttempts = ref(5)
+  const reconnectTimeout = ref(null)
 
   // Configuration for the RTCPeerConnection
   const rtcConfig = {
@@ -13,7 +16,10 @@ export function useWebRTC(remoteControlId, messageHandler) {
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' }
     ],
-    iceCandidatePoolSize: 10
+    iceCandidatePoolSize: 10,
+    iceTransportPolicy: 'all',  // Allow both STUN and TURN
+    bundlePolicy: 'max-bundle',  // Bundle all streams
+    rtcpMuxPolicy: 'require'  // Multiplex RTP and RTCP
   }
 
   async function connect() {
@@ -34,17 +40,33 @@ export function useWebRTC(remoteControlId, messageHandler) {
         
         if (peerConnection.value.connectionState === 'connected') {
           isRTCConnected.value = true
+          reconnectAttempts.value = 0  // Reset reconnect counter on successful connection
           console.log('✅ WebRTC peer connection established')
-        } else if (peerConnection.value.connectionState === 'disconnected' || 
-                   peerConnection.value.connectionState === 'failed' || 
-                   peerConnection.value.connectionState === 'closed') {
+        } else if (peerConnection.value.connectionState === 'disconnected') {
           isRTCConnected.value = false
-          console.log('❌ WebRTC peer connection lost')
+          console.log('⚠️ WebRTC peer connection disconnected - attempting to reconnect...')
+          attemptReconnect()
+        } else if (peerConnection.value.connectionState === 'failed') {
+          isRTCConnected.value = false
+          console.log('❌ WebRTC peer connection failed - attempting to reconnect...')
+          attemptReconnect()
+        } else if (peerConnection.value.connectionState === 'closed') {
+          isRTCConnected.value = false
+          console.log('❌ WebRTC peer connection closed')
         }
       }
 
       peerConnection.value.oniceconnectionstatechange = () => {
         console.log(`🧊 ICE connection state: ${peerConnection.value.iceConnectionState}`)
+        
+        // Handle ICE connection failures
+        if (peerConnection.value.iceConnectionState === 'failed') {
+          console.log('🔧 ICE connection failed, attempting ICE restart...')
+          restartIce()
+        } else if (peerConnection.value.iceConnectionState === 'disconnected') {
+          console.log('⚠️ ICE connection disconnected, monitoring...')
+          // ICE might recover on its own, give it some time
+        }
       }
 
       // Handle ICE candidates
@@ -177,6 +199,22 @@ export function useWebRTC(remoteControlId, messageHandler) {
   function setupDataChannelHandlers(channel, label) {
     channel.onopen = () => {
       console.log(`✅ Data channel '${label}' opened, readyState: ${channel.readyState}`)
+      
+      // Configure buffering thresholds for better flow control
+      if (label === 'video') {
+        // Monitor buffer levels to detect network issues
+        const checkBuffer = setInterval(() => {
+          if (channel.readyState !== 'open') {
+            clearInterval(checkBuffer)
+            return
+          }
+          
+          const buffered = channel.bufferedAmount || 0
+          if (buffered > 4 * 1024 * 1024) {  // 4MB threshold
+            console.warn(`⚠️ Video channel buffer high: ${(buffered / 1024 / 1024).toFixed(2)} MB`)
+          }
+        }, 5000)  // Check every 5 seconds
+      }
     }
 
     channel.onclose = () => {
@@ -186,12 +224,31 @@ export function useWebRTC(remoteControlId, messageHandler) {
     channel.onerror = (error) => {
       console.error(`❌ Data channel '${label}' error:`, error)
     }
+    
+    channel.onbufferedamountlow = () => {
+      console.debug(`📉 Data channel '${label}' buffer cleared`)
+    }
 
     channel.onmessage = (event) => {
       try {
         // Handle binary data (video frames)
         if (event.data instanceof ArrayBuffer) {
           const byteArray = new Uint8Array(event.data)
+          
+          // Check if this is a keepalive message
+          if (byteArray.length === 5 && 
+              byteArray[0] === 0 && 
+              String.fromCharCode(byteArray[1], byteArray[2], byteArray[3], byteArray[4]) === 'PING') {
+            console.debug('💓 Received keepalive ping')
+            // Send pong response
+            if (label === 'commands' && channel.readyState === 'open') {
+              const pong = new Uint8Array([0, 80, 79, 78, 71])  // '\x00PONG'
+              channel.send(pong)
+              console.debug('💓 Sent keepalive pong')
+            }
+            return
+          }
+          
           messageHandler(byteArray[0], byteArray)
         } else if (event.data instanceof Blob) {
           // Convert Blob to ArrayBuffer
@@ -208,8 +265,80 @@ export function useWebRTC(remoteControlId, messageHandler) {
     }
   }
 
+  async function attemptReconnect() {
+    // Clear any existing reconnect timeout
+    if (reconnectTimeout.value) {
+      clearTimeout(reconnectTimeout.value)
+    }
+
+    if (reconnectAttempts.value >= maxReconnectAttempts.value) {
+      console.error(`❌ Max reconnection attempts (${maxReconnectAttempts.value}) reached`)
+      return
+    }
+
+    reconnectAttempts.value++
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.value - 1), 10000)  // Exponential backoff, max 10s
+    
+    console.log(`🔄 Reconnection attempt ${reconnectAttempts.value}/${maxReconnectAttempts.value} in ${delay}ms...`)
+    
+    reconnectTimeout.value = setTimeout(async () => {
+      try {
+        await disconnect()
+        await connect()
+      } catch (error) {
+        console.error('❌ Reconnection failed:', error)
+      }
+    }, delay)
+  }
+
+  async function restartIce() {
+    if (!peerConnection.value) {
+      console.warn('⚠️ Cannot restart ICE: no peer connection')
+      return
+    }
+
+    try {
+      console.log('🔄 Restarting ICE...')
+      
+      // Create a new offer with ICE restart
+      const offer = await peerConnection.value.createOffer({ iceRestart: true })
+      await peerConnection.value.setLocalDescription(offer)
+      
+      // Send the new offer to the server
+      const response = await fetch(`${SERVER_URL}/api/webrtc/ice-restart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          remote_control_id: remoteControlId.value,
+          offer: {
+            type: offer.type,
+            sdp: offer.sdp
+          }
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.answer) {
+          await peerConnection.value.setRemoteDescription(new RTCSessionDescription(data.answer))
+          console.log('✅ ICE restart successful')
+        }
+      }
+    } catch (error) {
+      console.error('❌ ICE restart failed:', error)
+    }
+  }
+
   async function disconnect() {
     console.log('🔄 Disconnecting WebRTC...')
+
+    // Clear reconnect timeout
+    if (reconnectTimeout.value) {
+      clearTimeout(reconnectTimeout.value)
+      reconnectTimeout.value = null
+    }
 
     // Close data channels
     if (videoDataChannel.value) {
@@ -229,6 +358,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
     }
 
     isRTCConnected.value = false
+    reconnectAttempts.value = 0
     console.log('✅ WebRTC disconnected')
   }
 

@@ -129,3 +129,55 @@ async def webrtc_ice_candidate(ice_request: WebRTCIceCandidate):
         "status": "success",
         "message": "ICE candidate added successfully"
     }
+
+class WebRTCIceRestart(BaseModel):
+    remote_control_id: str
+    offer: dict
+
+@router.post("/api/webrtc/ice-restart")
+async def webrtc_ice_restart(restart_request: WebRTCIceRestart):
+    """
+    Handle ICE restart from the remote control client.
+    """
+    logger.info(f"WebRTC: ICE restart requested from {restart_request.remote_control_id}")
+    try:
+        # Set the new offer with ICE restart
+        from aiortc import RTCSessionDescription
+        offer = RTCSessionDescription(
+            sdp=restart_request.offer["sdp"],
+            type=restart_request.offer["type"]
+        )
+        
+        # Get the peer connection
+        pc = s_controller.remote_control_manager.webrtc_manager.peer_connections.get(
+            restart_request.remote_control_id
+        )
+        
+        if not pc:
+            return {
+                "status": "error",
+                "message": "Peer connection not found"
+            }
+        
+        # Set remote description (the new offer with ICE restart)
+        await pc.setRemoteDescription(offer)
+        
+        # Create answer
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        
+        logger.info(f"WebRTC: ICE restart answer created for {restart_request.remote_control_id}")
+        
+        return {
+            "status": "success",
+            "answer": {
+                "type": pc.localDescription.type,
+                "sdp": pc.localDescription.sdp
+            }
+        }
+    except Exception as e:
+        logger.error(f"WebRTC: ICE restart failed for {restart_request.remote_control_id}: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
