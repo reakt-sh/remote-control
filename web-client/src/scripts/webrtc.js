@@ -189,19 +189,14 @@ export function useWebRTC(remoteControlId, messageHandler) {
 
     channel.onmessage = (event) => {
       try {
-        console.log(`📨 Received message on channel '${label}', data type: ${typeof event.data}, instanceof ArrayBuffer: ${event.data instanceof ArrayBuffer}, instanceof Blob: ${event.data instanceof Blob}`)
-        
         // Handle binary data (video frames)
         if (event.data instanceof ArrayBuffer) {
           const byteArray = new Uint8Array(event.data)
-          console.log(`📦 Processing ArrayBuffer, size: ${byteArray.length} bytes, first byte: ${byteArray[0]}`)
           messageHandler(byteArray[0], byteArray)
         } else if (event.data instanceof Blob) {
-          console.log(`📦 Processing Blob, size: ${event.data.size} bytes`)
           // Convert Blob to ArrayBuffer
           event.data.arrayBuffer().then(buffer => {
             const byteArray = new Uint8Array(buffer)
-            console.log(`📦 Converted Blob to ArrayBuffer, size: ${byteArray.length} bytes, first byte: ${byteArray[0]}`)
             messageHandler(byteArray[0], byteArray)
           })
         } else {
