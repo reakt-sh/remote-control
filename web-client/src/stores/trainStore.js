@@ -61,6 +61,8 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
+  const indexedDBStorageEnabled = ref(false)
+
   const {
     isWSConnected,
     connectWebSocket,
@@ -135,14 +137,16 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          // Store the frame data
-          dataStorage.storeFrame({
-            frameId: completedFrame.frameId,
-            data: completedFrame.data,
-            trainId: selectedTrainId.value,
-            createdAt: completedFrame.created_at,
-            latency: completedFrame.latency + averageClockOffset.value
-          })
+          if (indexedDBStorageEnabled.value) {
+            // Store the frame data
+            dataStorage.storeFrame({
+              frameId: completedFrame.frameId,
+              data: completedFrame.data,
+              trainId: selectedTrainId.value,
+              createdAt: completedFrame.created_at,
+              latency: completedFrame.latency + averageClockOffset.value
+            })
+          }
         }
       })
     }
@@ -272,13 +276,15 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-        // Also store it to indexDB
-        dataStorage.storeTelemetry({
-          trainId: jsonData.train_id,
-          data: jsonData,
-          latency: latency,
+        if (indexedDBStorageEnabled.value) {
+          // Also store it to indexDB
+          dataStorage.storeTelemetry({
+            trainId: jsonData.train_id,
+            data: jsonData,
+            latency: latency,
           protocol: 'ws'
-        })
+          })
+        }
 
         break
       }
@@ -310,13 +316,15 @@ export const useTrainStore = defineStore('train', () => {
           const timestamp = Date.now()
           const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-          // Also store it to indexDB
-          dataStorage.storeTelemetry({
-            trainId: jsonData.train_id,
-            data: jsonData,
-            latency: latency,
-            protocol: 'wt'
-          })
+          if (indexedDBStorageEnabled.value) {
+            // Also store it to indexDB
+            dataStorage.storeTelemetry({
+              trainId: jsonData.train_id,
+              data: jsonData,
+              latency: latency,
+              protocol: 'wt'
+            })
+          }
 
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
@@ -408,13 +416,15 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - data.timestamp + averageClockOffset.value
 
-        // Also store it to indexDB
-        dataStorage.storeTelemetry({
-          trainId: trainId,
-          data: data,
-          latency: latency,
-          protocol: 'mqtt'
-        })
+        if (indexedDBStorageEnabled.value) {
+          // Also store it to indexDB
+          dataStorage.storeTelemetry({
+            trainId: trainId,
+            data: data,
+            latency: latency,
+            protocol: 'mqtt'
+          })
+        }
 
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
