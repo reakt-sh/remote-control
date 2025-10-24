@@ -148,7 +148,17 @@ export function useWebRTC(remoteControlId, messageHandler) {
       if (mSections.length === 0) {
         console.error('❌ Offer SDP has no m= sections!')
         console.error('SDP:', offerData.offer.sdp)
-        throw new Error('Invalid offer: no media sections')
+        
+        // Clean up the peer connection before throwing
+        if (peerConnection.value) {
+          peerConnection.value.close()
+          peerConnection.value = null
+        }
+        isRTCConnected.value = false
+        
+        const error = new Error('Invalid offer: no media sections. The server may not have data channels configured properly.')
+        error.code = 'INVALID_OFFER_NO_MEDIA'
+        throw error
       }
       
       // Set remote description (offer from server)
@@ -160,6 +170,16 @@ export function useWebRTC(remoteControlId, messageHandler) {
       } catch (error) {
         console.error('❌ Failed to set remote description:', error)
         console.error('Problematic SDP:', offerData.offer.sdp)
+        
+        // Clean up on failure
+        if (peerConnection.value) {
+          peerConnection.value.close()
+          peerConnection.value = null
+        }
+        isRTCConnected.value = false
+        
+        // Enhance error message
+        error.message = `Failed to set remote description: ${error.message}`
         throw error
       }
 
@@ -192,6 +212,36 @@ export function useWebRTC(remoteControlId, messageHandler) {
     } catch (error) {
       console.error('❌ Error establishing WebRTC connection:', error)
       isRTCConnected.value = false
+      
+      // Clean up any partially created connection
+      if (peerConnection.value) {
+        try {
+          peerConnection.value.close()
+        } catch (closeError) {
+          console.error('❌ Error closing peer connection:', closeError)
+        }
+        peerConnection.value = null
+      }
+      
+      if (videoDataChannel.value) {
+        videoDataChannel.value = null
+      }
+      
+      if (commandsDataChannel.value) {
+        commandsDataChannel.value = null
+      }
+      
+      // Enhance error information based on error type
+      if (error.code === 'INVALID_OFFER_NO_MEDIA') {
+        error.userMessage = 'Failed to connect: The server did not provide valid media channels. Please ensure the train client is properly configured and running.'
+      } else if (error.message.includes('Failed to get offer from server')) {
+        error.userMessage = 'Failed to connect: Could not get connection offer from server. The train client may not be ready.'
+      } else if (error.message.includes('Failed to set remote description')) {
+        error.userMessage = 'Failed to connect: Invalid connection parameters received from server.'
+      } else {
+        error.userMessage = `Failed to establish WebRTC connection: ${error.message}`
+      }
+      
       throw error
     }
   }

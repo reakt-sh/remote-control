@@ -115,8 +115,14 @@ export const useTrainStore = defineStore('train', () => {
   async function connectToServer() {
     await connectWebSocket()
     await connectWebTransport()
-    await connectWebRTC()  // Add WebRTC connection
     await connectMqtt()  // Add MQTT connection
+
+    try {
+      await connectWebRTC()
+      console.log('✅ WebRTC connection initiated')
+    } catch (error) {
+      console.error('❌ WebRTC connection failed:', error)
+    }
     setInterval(sendKeepAliveWebTransport, 10000);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
