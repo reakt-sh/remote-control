@@ -253,14 +253,14 @@ class WebRTCManager:
             # Check buffered amount to prevent overflow (16MB default buffer)
             # Drop frames if buffer is too full to maintain low latency
             max_buffer_size = 4 * 1024 * 1024  # 4MB threshold
-            
+
             if hasattr(channel, 'bufferedAmount') and channel.bufferedAmount > max_buffer_size:
                 logger.warning(f"WebRTC: Buffer full ({channel.bufferedAmount} bytes) for {remote_control_id}, dropping frame")
                 return
-            
+
             channel.send(data)
             self.last_activity[remote_control_id] = time.time()
-            logger.debug(f"WebRTC: Sent {len(data)} bytes of video data to {remote_control_id}")
+
         except Exception as e:
             logger.error(f"WebRTC: Error sending video data to {remote_control_id}: {e}")
 
@@ -298,10 +298,10 @@ class WebRTCManager:
             while remote_control_id in self.peer_connections:
                 try:
                     await asyncio.sleep(5)  # Send keepalive every 5 seconds
-                    
+
                     channel_key = f"{remote_control_id}_commands"
                     channel = self.data_channels.get(channel_key)
-                    
+
                     if channel and channel.readyState == "open":
                         # Send a small keepalive ping
                         keepalive_msg = b'\x00PING'
@@ -309,7 +309,7 @@ class WebRTCManager:
                         logger.debug(f"WebRTC: Sent keepalive to {remote_control_id}")
                     else:
                         logger.warning(f"WebRTC: Commands channel not available for keepalive {remote_control_id}")
-                        
+
                 except asyncio.CancelledError:
                     logger.info(f"WebRTC: Keepalive cancelled for {remote_control_id}")
                     break

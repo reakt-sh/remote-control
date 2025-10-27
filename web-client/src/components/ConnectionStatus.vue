@@ -1,10 +1,7 @@
 <template>
   <div class="connection-status">
     <div class="status-indicator">
-      <div class="status-dot" :class="{ connected: isWSConnected && isWTConnected && isMqttConnected }"></div>
-      <span class="status-text">
-        {{ allConnected ? 'Connected' : 'Disconnected' }}
-      </span>
+      <div class="status-dot" :class="{ connected: isWSConnected && isWTConnected && isRTCConnected && isMqttConnected }"></div>
     </div>
     <div class="connection-details">
       <div class="connection-item">
@@ -12,8 +9,12 @@
         <span :class="{ active: isWSConnected }">WS</span>
       </div>
       <div class="connection-item">
-        <i class="fas fa-wifi"></i>
+        <i class="fas fa-bolt"></i>
         <span :class="{ active: isWTConnected }">WT</span>
+      </div>
+      <div class="connection-item">
+        <i class="fas fa-stream"></i>
+        <span :class="{ active: isRTCConnected }">WRTC</span>
       </div>
       <div class="connection-item">
         <i class="fas fa-share-alt"></i>
@@ -25,14 +26,9 @@
 
 <script setup>
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { isWSConnected, isWTConnected, isMqttConnected } = storeToRefs(useTrainStore())
-
-const allConnected = computed(() => {
-  return isWSConnected.value && isWTConnected.value && isMqttConnected.value
-})
+const { isWSConnected, isWTConnected, isMqttConnected, isRTCConnected } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>

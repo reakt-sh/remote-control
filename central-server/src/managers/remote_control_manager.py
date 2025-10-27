@@ -48,7 +48,7 @@ class RemoteControlManager:
                 logger.info(f"RemoteControl: Recreating peer connection for {remote_control_id} (state: {pc.connectionState})")
                 await self.webrtc_manager.close_peer_connection(remote_control_id)
                 await self.webrtc_manager.create_peer_connection(remote_control_id)
-        
+
         return await self.webrtc_manager.create_offer(remote_control_id)
 
     async def set_webrtc_answer(self, remote_control_id: str, answer: dict):
