@@ -75,6 +75,18 @@ class WebRTCManager:
         if not pc:
             logger.error(f"WebRTC: No peer connection found for {remote_control_id}")
             return None
+        
+        channel_key = f"{remote_control_id}_{channel_name}"
+        
+        # Check if channel already exists and is still valid
+        if channel_key in self.data_channels:
+            existing_channel = self.data_channels[channel_key]
+            if existing_channel.readyState in ['connecting', 'open']:
+                logger.debug(f"WebRTC: Data channel '{channel_name}' already exists for {remote_control_id} (state: {existing_channel.readyState})")
+                return existing_channel
+            else:
+                logger.debug(f"WebRTC: Removing stale data channel '{channel_name}' for {remote_control_id} (state: {existing_channel.readyState})")
+                del self.data_channels[channel_key]
 
         # Create data channel with proper configuration
         # ordered=False and maxRetransmits=0 for low latency
@@ -85,7 +97,6 @@ class WebRTCManager:
             maxRetransmits=0
         )
         
-        channel_key = f"{remote_control_id}_{channel_name}"
         self.data_channels[channel_key] = channel
 
         @channel.on("open")
@@ -116,36 +127,56 @@ class WebRTCManager:
         if not pc:
             logger.error(f"WebRTC: No peer connection found for {remote_control_id}")
             return {"error": "No peer connection found"}
-
-        # Create data channels before creating offer
-        # This ensures the m= sections are properly created in the SDP
-        video_channel = await self.create_data_channel(remote_control_id, "video")
-        commands_channel = await self.create_data_channel(remote_control_id, "commands")
-
-        if not video_channel or not commands_channel:
-            logger.error(f"WebRTC: Failed to create data channels for {remote_control_id}")
-            return {"error": "Failed to create data channels"}
-
-        # Wait a brief moment to ensure channels are initialized
-        await asyncio.sleep(0.1)
-
-        # Create the offer after data channels are set up
-        offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-
-        # Verify the SDP has proper m= sections
-        sdp_lines = pc.localDescription.sdp.split('\n')
-        m_sections = [line for line in sdp_lines if line.startswith('m=')]
-        mid_lines = [line for line in sdp_lines if line.startswith('a=mid:')]
         
-        logger.info(f"WebRTC: Created offer for {remote_control_id}")
-        logger.debug(f"WebRTC: Offer has {len(m_sections)} m= sections and {len(mid_lines)} MID attributes")
-        logger.debug(f"WebRTC: Offer SDP:\n{pc.localDescription.sdp}")
-        
-        return {
-            "type": pc.localDescription.type,
-            "sdp": pc.localDescription.sdp
-        }
+        # Check if peer connection is in a valid state
+        if pc.connectionState in ['closed', 'failed']:
+            logger.error(f"WebRTC: Peer connection for {remote_control_id} is in state: {pc.connectionState}")
+            return {"error": f"Peer connection is {pc.connectionState}"}
+
+        try:
+            # Create data channels before creating offer
+            # This ensures the m= sections are properly created in the SDP
+            video_channel = await self.create_data_channel(remote_control_id, "video")
+            commands_channel = await self.create_data_channel(remote_control_id, "commands")
+
+            if not video_channel or not commands_channel:
+                logger.error(f"WebRTC: Failed to create data channels for {remote_control_id}")
+                return {"error": "Failed to create data channels"}
+
+            # Wait a brief moment to ensure channels are initialized
+            await asyncio.sleep(0.1)
+
+            # Create the offer after data channels are set up
+            offer = await pc.createOffer()
+            await pc.setLocalDescription(offer)
+
+            # Verify the SDP has proper m= sections
+            sdp_lines = pc.localDescription.sdp.split('\n')
+            m_sections = [line for line in sdp_lines if line.startswith('m=')]
+            mid_lines = [line for line in sdp_lines if line.startswith('a=mid:')]
+            
+            logger.info(f"WebRTC: Created offer for {remote_control_id}")
+            logger.debug(f"WebRTC: Offer has {len(m_sections)} m= sections and {len(mid_lines)} MID attributes")
+            logger.debug(f"WebRTC: Offer SDP:\n{pc.localDescription.sdp}")
+            
+            # Validate the offer before returning
+            if not pc.localDescription or not pc.localDescription.sdp or not pc.localDescription.type:
+                logger.error(f"WebRTC: Generated invalid offer for {remote_control_id}")
+                return {"error": "Generated offer is invalid"}
+            
+            if len(m_sections) == 0:
+                logger.error(f"WebRTC: Offer has no media sections for {remote_control_id}")
+                return {"error": "Offer has no media sections"}
+            
+            return {
+                "type": pc.localDescription.type,
+                "sdp": pc.localDescription.sdp
+            }
+        except Exception as e:
+            logger.error(f"WebRTC: Exception creating offer for {remote_control_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": f"Exception: {str(e)}"}
 
     async def set_remote_description(self, remote_control_id: str, sdp: dict):
         """

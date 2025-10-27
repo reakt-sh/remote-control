@@ -128,8 +128,21 @@ export function useWebRTC(remoteControlId, messageHandler) {
       })
 
       const offerData = await offerResponse.json()
+      
+      // Check for error status
+      if (offerData.status === 'error') {
+        const errorMsg = offerData.message || 'Unknown error from server'
+        console.error('❌ Server returned error:', errorMsg)
+        throw new Error(`Server error: ${errorMsg}`)
+      }
+      
       if (offerData.status !== 'success') {
         throw new Error('Failed to get offer from server')
+      }
+      
+      // Check if offer exists
+      if (!offerData.offer) {
+        throw new Error('Server response missing offer')
       }
 
       console.log('📥 Received offer from server')

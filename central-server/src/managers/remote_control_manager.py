@@ -37,6 +37,18 @@ class RemoteControlManager:
 
     async def get_webrtc_offer(self, remote_control_id: str) -> dict:
         """Get WebRTC offer for remote control"""
+        # Ensure peer connection exists before creating offer
+        if remote_control_id not in self.webrtc_manager.peer_connections:
+            logger.info(f"RemoteControl: Creating new peer connection for {remote_control_id}")
+            await self.webrtc_manager.create_peer_connection(remote_control_id)
+        else:
+            # Check if existing connection is closed/failed
+            pc = self.webrtc_manager.peer_connections[remote_control_id]
+            if pc.connectionState in ['closed', 'failed']:
+                logger.info(f"RemoteControl: Recreating peer connection for {remote_control_id} (state: {pc.connectionState})")
+                await self.webrtc_manager.close_peer_connection(remote_control_id)
+                await self.webrtc_manager.create_peer_connection(remote_control_id)
+        
         return await self.webrtc_manager.create_offer(remote_control_id)
 
     async def set_webrtc_answer(self, remote_control_id: str, answer: dict):

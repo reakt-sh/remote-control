@@ -99,12 +99,42 @@ async def webrtc_offer(offer_request: WebRTCOffer):
     Create a WebRTC offer for the remote control client.
     Server acts as the offerer, creating data channels for video streaming.
     """
-    logger.info(f"WebRTC: Creating offer for {offer_request.remote_control_id}")
-    offer = await s_controller.get_webrtc_offer(offer_request.remote_control_id)
-    return {
-        "status": "success",
-        "offer": offer
-    }
+    try:
+        logger.info(f"WebRTC: Creating offer for {offer_request.remote_control_id}")
+        offer = await s_controller.get_webrtc_offer(offer_request.remote_control_id)
+        
+        # Validate the offer
+        if not offer or "error" in offer:
+            error_msg = offer.get("error", "Unknown error") if offer else "No offer generated"
+            logger.error(f"WebRTC: Failed to create offer for {offer_request.remote_control_id}: {error_msg}")
+            return {
+                "status": "error",
+                "message": error_msg,
+                "offer": None
+            }
+        
+        # Verify offer has required fields
+        if not offer.get("sdp") or not offer.get("type"):
+            logger.error(f"WebRTC: Invalid offer for {offer_request.remote_control_id}: missing sdp or type")
+            return {
+                "status": "error",
+                "message": "Invalid offer: missing sdp or type",
+                "offer": None
+            }
+        
+        return {
+            "status": "success",
+            "offer": offer
+        }
+    except Exception as e:
+        logger.error(f"WebRTC: Exception creating offer for {offer_request.remote_control_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": str(e),
+            "offer": None
+        }
 
 @router.post("/api/webrtc/answer")
 async def webrtc_answer(answer_request: WebRTCAnswer):
