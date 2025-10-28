@@ -1,7 +1,7 @@
 import asyncio
 import time
 from typing import Dict, Optional
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCConfiguration, RTCIceServer
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCConfiguration, RTCIceServer, RTCIceCandidate
 from aiortc.contrib.media import MediaRelay
 from utils.app_logger import logger
 
@@ -236,7 +236,6 @@ class WebRTCManager:
             return
 
         try:
-            from aiortc import RTCIceCandidate
             ice_candidate = RTCIceCandidate(
                 component=candidate.get("component", 1),
                 foundation=candidate.get("foundation", ""),
