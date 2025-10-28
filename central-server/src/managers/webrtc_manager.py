@@ -197,9 +197,8 @@ class WebRTCManager:
             # Create data channels before creating offer
             # This ensures the m= sections are properly created in the SDP
             video_channel = await self.create_data_channel(remote_control_id, "video")
-            commands_channel = await self.create_data_channel(remote_control_id, "commands")
 
-            if not video_channel or not commands_channel:
+            if not video_channel:
                 logger.error(f"WebRTC: Failed to create data channels for {remote_control_id}")
                 return {"error": "Failed to create data channels"}
 
@@ -384,53 +383,9 @@ class WebRTCManager:
                 )
                 # Reset counter to avoid integer overflow
                 self.ssl_error_count[remote_control_id] = 50
-            
-            # Don't close connection - just drop this frame and continue
-            
         except Exception as e:
             # Handle other exceptions normally
             logger.error(f"WebRTC: Error sending video data to {remote_control_id}: {e}")
-
-    async def send_command_data(self, remote_control_id: str, data: bytes):
-        """
-        Send command data to the remote control via WebRTC data channel.
-        Handles SSL cipher errors gracefully to maintain long sessions.
-        """
-        channel_key = f"{remote_control_id}_commands"
-        channel = self.data_channels.get(channel_key)
-
-        if not channel:
-            logger.debug(f"WebRTC: No commands channel found for {remote_control_id}")
-            return
-
-        if channel.readyState != "open":
-            logger.debug(f"WebRTC: Commands channel not open for {remote_control_id}, state: {channel.readyState}")
-            return
-
-        try:
-            channel.send(data)
-
-        except ConnectionError as conn_err:
-            # Handle DTLS transport connection errors gracefully
-            error_msg = str(conn_err)
-            logger.warning(
-                f"WebRTC: DTLS connection error sending command to {remote_control_id}. "
-                f"Dropping command but maintaining connection. Error: {error_msg}"
-            )
-            # Don't close connection - just drop this command and continue
-            
-        except OpenSSLError as ssl_err:
-            # Handle OpenSSL cipher operation errors gracefully
-            # Commands are important, so log these errors
-            error_msg = str(ssl_err)
-            logger.warning(
-                f"WebRTC: SSL cipher error sending command to {remote_control_id}. "
-                f"Dropping command but maintaining connection. Error: {error_msg}"
-            )
-            # Don't close connection - just drop this command and continue
-            
-        except Exception as e:
-            logger.error(f"WebRTC: Error sending command data to {remote_control_id}: {e}")
 
     def _start_keepalive(self, remote_control_id: str):
         """
