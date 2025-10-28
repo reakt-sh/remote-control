@@ -292,6 +292,34 @@ class WebRTCManager:
             if remote_control_id in self.ssl_error_count:
                 self.ssl_error_count[remote_control_id] = 0
 
+        except ConnectionError as conn_err:
+            # Handle DTLS transport connection errors gracefully
+            # "Cannot send encrypted data, not connected" can occur during reconnection
+            error_msg = str(conn_err)
+            
+            # Track connection errors for this connection
+            if remote_control_id not in self.ssl_error_count:
+                self.ssl_error_count[remote_control_id] = 0
+            self.ssl_error_count[remote_control_id] += 1
+            
+            # Only log periodically to avoid spam
+            if self.ssl_error_count[remote_control_id] % self.ssl_error_threshold == 1:
+                logger.warning(
+                    f"WebRTC: DTLS connection error for {remote_control_id} (count: {self.ssl_error_count[remote_control_id]}). "
+                    f"Continuing session... Error: {error_msg}"
+                )
+            
+            # If errors persist, it might indicate connection is actually dead
+            if self.ssl_error_count[remote_control_id] > 100:
+                logger.error(
+                    f"WebRTC: Excessive connection errors ({self.ssl_error_count[remote_control_id]}) for {remote_control_id}. "
+                    "Connection may be degraded but maintaining session."
+                )
+                # Reset counter to avoid integer overflow
+                self.ssl_error_count[remote_control_id] = 50
+            
+            # Don't close connection - just drop this frame and continue
+            
         except OpenSSLError as ssl_err:
             # Handle OpenSSL cipher operation errors gracefully
             # These errors can occur during long sessions but don't necessarily mean connection is dead
@@ -343,6 +371,15 @@ class WebRTCManager:
         try:
             channel.send(data)
             
+        except ConnectionError as conn_err:
+            # Handle DTLS transport connection errors gracefully
+            error_msg = str(conn_err)
+            logger.warning(
+                f"WebRTC: DTLS connection error sending command to {remote_control_id}. "
+                f"Dropping command but maintaining connection. Error: {error_msg}"
+            )
+            # Don't close connection - just drop this command and continue
+            
         except OpenSSLError as ssl_err:
             # Handle OpenSSL cipher operation errors gracefully
             # Commands are important, so log these errors
@@ -380,9 +417,9 @@ class WebRTCManager:
                             keepalive_msg = b'\x00PING'
                             channel.send(keepalive_msg)
                             logger.debug(f"WebRTC: Sent keepalive to {remote_control_id}")
-                        except OpenSSLError as ssl_err:
-                            # Handle SSL errors in keepalive gracefully
-                            logger.debug(f"WebRTC: SSL error in keepalive for {remote_control_id}, continuing...")
+                        except (ConnectionError, OpenSSLError) as transport_err:
+                            # Handle SSL/DTLS errors in keepalive gracefully
+                            logger.debug(f"WebRTC: Transport error in keepalive for {remote_control_id}, continuing...")
                         except Exception as e:
                             logger.warning(f"WebRTC: Error sending keepalive to {remote_control_id}: {e}")
                     else:
