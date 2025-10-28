@@ -4,6 +4,9 @@ from typing import Dict, Optional
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCConfiguration, RTCIceServer, RTCIceCandidate
 from aiortc.contrib.media import MediaRelay
 from utils.app_logger import logger
+from server_controller import ServerController
+s_controller = ServerController()
+
 
 # Import OpenSSL to catch SSL errors
 try:
@@ -25,6 +28,21 @@ class WebRTCManager:
         self.last_activity: Dict[str, float] = {}
         self.ssl_error_count: Dict[str, int] = {}  # Track SSL errors per connection
         self.ssl_error_threshold = 10  # Max SSL errors before logging warning
+        self.packet_queue: asyncio.Queue = asyncio.Queue()
+        asyncio.create_task(self.relay_datagram_to_remote_controls())
+
+    async def enqueue_video_packet(self, train_id: str, data: bytes):
+        await self.packet_queue.put((train_id, data))
+
+    async def relay_datagram_to_remote_controls(self):
+        while True:
+            try:
+                train_id, data = await self.packet_queue.get()
+                remote_controls = s_controller.get_remote_control_ids_by_train(train_id)
+                for remote_control_id in remote_controls:
+                    await self.send_video_data(remote_control_id, data)
+            except self.packet_queue.Empty:
+                await asyncio.sleep(0.1)
 
     async def create_peer_connection(self, remote_control_id: str) -> RTCPeerConnection:
         """

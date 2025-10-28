@@ -102,6 +102,14 @@ class ServerController:
             else:
                 logger.warning(f"Remote control ID {remote_control_id} not found in client_to_train_map")
 
+    def get_remote_control_ids_by_train(self, train_id: str) -> list:
+        with self._lock:
+            return list(self.train_to_clients_map.get(train_id, []))
+
+    def get_train_id_by_remote_control(self, remote_control_id: str) -> str:
+        with self._lock:
+            return self.client_to_train_map.get(remote_control_id, "")
+
     async def send_data_to_clients(self, train_id: str, data: bytes) -> None:
         if train_id in self.train_to_clients_map:
             remote_control_ids = self.train_to_clients_map[train_id]
