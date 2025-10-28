@@ -277,17 +277,8 @@ class WebRTCManager:
             return
 
         try:
-            # Check buffered amount to prevent overflow (16MB default buffer)
-            # Drop frames if buffer is too full to maintain low latency
-            max_buffer_size = 4 * 1024 * 1024  # 4MB threshold
-
-            if hasattr(channel, 'bufferedAmount') and channel.bufferedAmount > max_buffer_size:
-                logger.warning(f"WebRTC: Buffer full ({channel.bufferedAmount} bytes) for {remote_control_id}, dropping frame")
-                return
-
             channel.send(data)
             self.last_activity[remote_control_id] = time.time()
-            
             # Reset SSL error count on successful send
             if remote_control_id in self.ssl_error_count:
                 self.ssl_error_count[remote_control_id] = 0
@@ -370,7 +361,7 @@ class WebRTCManager:
 
         try:
             channel.send(data)
-            
+
         except ConnectionError as conn_err:
             # Handle DTLS transport connection errors gracefully
             error_msg = str(conn_err)
