@@ -1,7 +1,7 @@
 import asyncio
 import time
 from typing import Dict, Optional
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCCertificate
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCConfiguration, RTCIceServer
 from aiortc.contrib.media import MediaRelay
 from utils.app_logger import logger
 
@@ -17,10 +17,6 @@ class WebRTCManager:
         self.media_relay = MediaRelay()
         self.keepalive_tasks: Dict[str, asyncio.Task] = {}
         self.last_activity: Dict[str, float] = {}
-        # Generate a persistent DTLS certificate for all connections
-        # This prevents OpenSSL issues and improves connection stability
-        self.dtls_certificate = RTCCertificate.generateCertificate()
-        logger.info(f"WebRTC: Generated DTLS certificate with fingerprint: {self.dtls_certificate.getFingerprints()[0]}")
 
     async def create_peer_connection(self, remote_control_id: str) -> RTCPeerConnection:
         """
@@ -30,23 +26,14 @@ class WebRTCManager:
             logger.warning(f"WebRTC: Peer connection already exists for {remote_control_id}")
             return self.peer_connections[remote_control_id]
 
-        # Create peer connection with configuration for stability
-        from aiortc import RTCConfiguration, RTCIceServer
-        
         config = RTCConfiguration(
             iceServers=[
                 RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
                 RTCIceServer(urls=["stun:stun1.l.google.com:19302"])
             ]
         )
-        
         # Create peer connection with persistent DTLS certificate
-        # This ensures stable DTLS negotiation and prevents OpenSSL errors
-        pc = RTCPeerConnection(
-            configuration=config,
-            certificates=[self.dtls_certificate]
-        )
-        
+        pc = RTCPeerConnection(configuration=config)
         self.peer_connections[remote_control_id] = pc
         self.pending_ice_candidates[remote_control_id] = []
 
