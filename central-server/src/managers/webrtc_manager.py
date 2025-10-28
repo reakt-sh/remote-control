@@ -37,13 +37,13 @@ class WebRTCManager:
             iceServers=[
                 RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
                 RTCIceServer(urls=["stun:stun1.l.google.com:19302"])
-            ]
+            ],
+            certificates=[self.dtls_certificate]  # Add DTLS certificate to configuration
         )
         
         # Create peer connection with persistent DTLS certificate
         # This ensures stable DTLS negotiation and prevents OpenSSL errors
         pc = RTCPeerConnection(configuration=config)
-        pc.configuration.certificates = [self.dtls_certificate]
         
         self.peer_connections[remote_control_id] = pc
         self.pending_ice_candidates[remote_control_id] = []
