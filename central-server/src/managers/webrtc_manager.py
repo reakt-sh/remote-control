@@ -53,8 +53,12 @@ class WebRTCManager:
                     remote_controls = self.server_controller.get_remote_control_ids_by_train(train_id)
                     for remote_control_id in remote_controls:
                         await self.send_video_data(remote_control_id, data)
-            except self.packet_queue.Empty:
-                await asyncio.sleep(0.1)
+                    # Yield control to allow event loop to process network I/O
+                    # This prevents queueing up packets before network has a chance to transmit
+                    await asyncio.sleep(0)
+            except Exception as e:
+                logger.error(f"WebRTC: Error in relay loop: {e}")
+                await asyncio.sleep(0.01)
 
     async def create_peer_connection(self, remote_control_id: str) -> RTCPeerConnection:
         """
@@ -147,6 +151,11 @@ class WebRTCManager:
             ordered=False, 
             maxRetransmits=0
         )
+        
+        # Set a low buffer threshold to get notified when buffer drains
+        # This helps prevent bursty transmission
+        if hasattr(channel, 'bufferedAmountLowThreshold'):
+            channel.bufferedAmountLowThreshold = 64 * 1024  # 64KB threshold
         
         self.data_channels[channel_key] = channel
 
@@ -306,6 +315,16 @@ class WebRTCManager:
             return
 
         try:
+            # CRITICAL FIX: Check buffer before sending to prevent bursty delivery
+            # WebRTC data channels have a buffer limit - if we exceed it, data will be sent in bursts
+            buffered = getattr(channel, 'bufferedAmount', 0)
+            
+            # Drop frames if buffer is too full (prevents bursty transmission)
+            # 256KB threshold - enough for smooth delivery without building up large bursts
+            if buffered > 256 * 1024:
+                logger.debug(f"WebRTC: Dropping frame for {remote_control_id}, buffer: {buffered} bytes")
+                return
+            
             channel.send(data)
             self.last_activity[remote_control_id] = time.time()
             # Reset SSL error count on successful send
