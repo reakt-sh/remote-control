@@ -30,11 +30,17 @@ class WebRTCManager:
         self.ssl_error_count: Dict[str, int] = {}  # Track SSL errors per connection
         self.ssl_error_threshold = 10  # Max SSL errors before logging warning
         self.packet_queue: asyncio.Queue = asyncio.Queue()
-        asyncio.create_task(self.relay_datagram_to_remote_controls())
-    
+        self.relay_task: Optional[asyncio.Task] = None
+
     def set_server_controller(self, server_controller: 'ServerController'):
         """Set the server controller after initialization to avoid circular import"""
         self.server_controller = server_controller
+
+    def start_relay_task(self):
+        """Start the background task for relaying video packets. Must be called after event loop is running."""
+        if self.relay_task is None:
+            self.relay_task = asyncio.create_task(self.relay_datagram_to_remote_controls())
+            logger.info("WebRTC: Started relay task for video packets")
 
     async def enqueue_video_packet(self, train_id: str, data: bytes):
         await self.packet_queue.put((train_id, data))
@@ -507,4 +513,15 @@ class WebRTCManager:
         remote_control_ids = list(self.peer_connections.keys())
         for remote_control_id in remote_control_ids:
             await self.close_peer_connection(remote_control_id)
+        
+        # Cancel relay task
+        if self.relay_task is not None:
+            self.relay_task.cancel()
+            try:
+                await self.relay_task
+            except asyncio.CancelledError:
+                pass
+            self.relay_task = None
+            logger.info("WebRTC: Stopped relay task")
+        
         logger.info("WebRTC: Closed all peer connections")

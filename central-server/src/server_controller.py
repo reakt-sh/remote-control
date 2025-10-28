@@ -35,6 +35,8 @@ class ServerController:
         with self._lock:
             if not self._running:
                 self._running = True
+                # Start WebRTC relay task (must be called after event loop is running)
+                self.remote_control_manager.start_webrtc_relay()
 
     async def stop_server(self) -> None:
         with self._lock:

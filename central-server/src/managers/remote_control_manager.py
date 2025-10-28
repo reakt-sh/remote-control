@@ -17,6 +17,10 @@ class RemoteControlManager:
         """Set the server controller after initialization to avoid circular import"""
         self.webrtc_manager.set_server_controller(server_controller)
 
+    def start_webrtc_relay(self):
+        """Start the WebRTC relay background task. Must be called after event loop is running."""
+        self.webrtc_manager.start_relay_task()
+
     async def add(self, websocket: WebSocket, remote_control_id: str):
         self.active_connections[remote_control_id] = websocket
         # Create WebRTC peer connection for this remote control
