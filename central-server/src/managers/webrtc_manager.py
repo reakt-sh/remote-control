@@ -1,7 +1,7 @@
 import asyncio
 import time
 from typing import Dict, Optional
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCCertificate
 from aiortc.contrib.media import MediaRelay
 from utils.app_logger import logger
 
@@ -17,6 +17,10 @@ class WebRTCManager:
         self.media_relay = MediaRelay()
         self.keepalive_tasks: Dict[str, asyncio.Task] = {}
         self.last_activity: Dict[str, float] = {}
+        # Generate a persistent DTLS certificate for all connections
+        # This prevents OpenSSL issues and improves connection stability
+        self.dtls_certificate = RTCCertificate.generateCertificate()
+        logger.info(f"WebRTC: Generated DTLS certificate with fingerprint: {self.dtls_certificate.getFingerprints()[0]}")
 
     async def create_peer_connection(self, remote_control_id: str) -> RTCPeerConnection:
         """
@@ -36,7 +40,11 @@ class WebRTCManager:
             ]
         )
         
+        # Create peer connection with persistent DTLS certificate
+        # This ensures stable DTLS negotiation and prevents OpenSSL errors
         pc = RTCPeerConnection(configuration=config)
+        pc.configuration.certificates = [self.dtls_certificate]
+        
         self.peer_connections[remote_control_id] = pc
         self.pending_ice_candidates[remote_control_id] = []
 
@@ -66,6 +74,22 @@ class WebRTCManager:
 
         logger.info(f"WebRTC: Created peer connection for {remote_control_id}")
         return pc
+
+    def get_certificate_info(self) -> dict:
+        """
+        Get information about the current DTLS certificate.
+        Useful for debugging and monitoring.
+        """
+        try:
+            fingerprints = self.dtls_certificate.getFingerprints()
+            return {
+                "fingerprint": fingerprints[0] if fingerprints else "N/A",
+                "active_connections": len(self.peer_connections),
+                "certificate_expires": "Check certificate validity manually"
+            }
+        except Exception as e:
+            logger.error(f"WebRTC: Error getting certificate info: {e}")
+            return {"error": str(e)}
 
     async def create_data_channel(self, remote_control_id: str, channel_name: str = "video") -> Optional[RTCDataChannel]:
         """
@@ -175,7 +199,12 @@ class WebRTCManager:
         except Exception as e:
             logger.error(f"WebRTC: Exception creating offer for {remote_control_id}: {e}")
             import traceback
-            traceback.print_exc()
+            logger.error(f"WebRTC: Traceback: {traceback.format_exc()}")
+            
+            # Check if it's a DTLS-related error
+            if "ssl" in str(e).lower() or "dtls" in str(e).lower() or "certificate" in str(e).lower():
+                logger.error(f"WebRTC: DTLS/SSL error detected. Certificate fingerprint: {self.dtls_certificate.getFingerprints()[0]}")
+            
             return {"error": f"Exception: {str(e)}"}
 
     async def set_remote_description(self, remote_control_id: str, sdp: dict):

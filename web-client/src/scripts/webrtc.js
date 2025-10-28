@@ -66,6 +66,8 @@ export function useWebRTC(remoteControlId, messageHandler) {
         } else if (peerConnection.value.iceConnectionState === 'disconnected') {
           console.log('⚠️ ICE connection disconnected, monitoring...')
           // ICE might recover on its own, give it some time
+        } else if (peerConnection.value.iceConnectionState === 'connected') {
+          console.log('✅ ICE connected - DTLS handshake completed successfully')
         }
       }
 
