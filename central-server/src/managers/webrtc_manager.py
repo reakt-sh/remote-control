@@ -5,6 +5,12 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTC
 from aiortc.contrib.media import MediaRelay
 from utils.app_logger import logger
 
+# Import OpenSSL to catch SSL errors
+try:
+    from OpenSSL.SSL import Error as OpenSSLError
+except ImportError:
+    OpenSSLError = Exception  # Fallback if OpenSSL is not available
+
 class WebRTCManager:
     """
     Manages WebRTC peer connections for remote control clients.
@@ -17,6 +23,8 @@ class WebRTCManager:
         self.media_relay = MediaRelay()
         self.keepalive_tasks: Dict[str, asyncio.Task] = {}
         self.last_activity: Dict[str, float] = {}
+        self.ssl_error_count: Dict[str, int] = {}  # Track SSL errors per connection
+        self.ssl_error_threshold = 10  # Max SSL errors before logging warning
 
     async def create_peer_connection(self, remote_control_id: str) -> RTCPeerConnection:
         """
@@ -255,6 +263,7 @@ class WebRTCManager:
         """
         Send video data to the remote control via WebRTC data channel.
         Implements backpressure handling to prevent buffer overflow.
+        Handles SSL cipher errors gracefully to maintain long sessions.
         """
         channel_key = f"{remote_control_id}_video"
         channel = self.data_channels.get(channel_key)
@@ -278,13 +287,47 @@ class WebRTCManager:
 
             channel.send(data)
             self.last_activity[remote_control_id] = time.time()
+            
+            # Reset SSL error count on successful send
+            if remote_control_id in self.ssl_error_count:
+                self.ssl_error_count[remote_control_id] = 0
 
+        except OpenSSLError as ssl_err:
+            # Handle OpenSSL cipher operation errors gracefully
+            # These errors can occur during long sessions but don't necessarily mean connection is dead
+            error_msg = str(ssl_err)
+            
+            # Track SSL errors for this connection
+            if remote_control_id not in self.ssl_error_count:
+                self.ssl_error_count[remote_control_id] = 0
+            self.ssl_error_count[remote_control_id] += 1
+            
+            # Only log periodically to avoid spam
+            if self.ssl_error_count[remote_control_id] % self.ssl_error_threshold == 1:
+                logger.warning(
+                    f"WebRTC: SSL cipher error for {remote_control_id} (count: {self.ssl_error_count[remote_control_id]}). "
+                    f"Continuing session... Error: {error_msg}"
+                )
+            
+            # If errors persist, it might indicate a real problem
+            if self.ssl_error_count[remote_control_id] > 100:
+                logger.error(
+                    f"WebRTC: Excessive SSL errors ({self.ssl_error_count[remote_control_id]}) for {remote_control_id}. "
+                    "Connection may be degraded but maintaining session."
+                )
+                # Reset counter to avoid integer overflow
+                self.ssl_error_count[remote_control_id] = 50
+            
+            # Don't close connection - just drop this frame and continue
+            
         except Exception as e:
+            # Handle other exceptions normally
             logger.error(f"WebRTC: Error sending video data to {remote_control_id}: {e}")
 
     async def send_command_data(self, remote_control_id: str, data: bytes):
         """
         Send command data to the remote control via WebRTC data channel.
+        Handles SSL cipher errors gracefully to maintain long sessions.
         """
         channel_key = f"{remote_control_id}_commands"
         channel = self.data_channels.get(channel_key)
@@ -299,6 +342,17 @@ class WebRTCManager:
 
         try:
             channel.send(data)
+            
+        except OpenSSLError as ssl_err:
+            # Handle OpenSSL cipher operation errors gracefully
+            # Commands are important, so log these errors
+            error_msg = str(ssl_err)
+            logger.warning(
+                f"WebRTC: SSL cipher error sending command to {remote_control_id}. "
+                f"Dropping command but maintaining connection. Error: {error_msg}"
+            )
+            # Don't close connection - just drop this command and continue
+            
         except Exception as e:
             logger.error(f"WebRTC: Error sending command data to {remote_control_id}: {e}")
 
@@ -321,10 +375,16 @@ class WebRTCManager:
                     channel = self.data_channels.get(channel_key)
 
                     if channel and channel.readyState == "open":
-                        # Send a small keepalive ping
-                        keepalive_msg = b'\x00PING'
-                        channel.send(keepalive_msg)
-                        logger.debug(f"WebRTC: Sent keepalive to {remote_control_id}")
+                        try:
+                            # Send a small keepalive ping
+                            keepalive_msg = b'\x00PING'
+                            channel.send(keepalive_msg)
+                            logger.debug(f"WebRTC: Sent keepalive to {remote_control_id}")
+                        except OpenSSLError as ssl_err:
+                            # Handle SSL errors in keepalive gracefully
+                            logger.debug(f"WebRTC: SSL error in keepalive for {remote_control_id}, continuing...")
+                        except Exception as e:
+                            logger.warning(f"WebRTC: Error sending keepalive to {remote_control_id}: {e}")
                     else:
                         logger.warning(f"WebRTC: Commands channel not available for keepalive {remote_control_id}")
 
@@ -351,6 +411,10 @@ class WebRTCManager:
         
         if remote_control_id in self.last_activity:
             del self.last_activity[remote_control_id]
+        
+        # Clean up SSL error tracking
+        if remote_control_id in self.ssl_error_count:
+            del self.ssl_error_count[remote_control_id]
 
     async def close_peer_connection(self, remote_control_id: str):
         """
