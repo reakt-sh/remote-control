@@ -1,12 +1,12 @@
 import asyncio
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel, RTCConfiguration, RTCIceServer, RTCIceCandidate
 from aiortc.contrib.media import MediaRelay
 from utils.app_logger import logger
-from server_controller import ServerController
-s_controller = ServerController()
 
+if TYPE_CHECKING:
+    from server_controller import ServerController
 
 # Import OpenSSL to catch SSL errors
 try:
@@ -19,7 +19,8 @@ class WebRTCManager:
     Manages WebRTC peer connections for remote control clients.
     Server acts as a WebRTC peer for each remote control connection.
     """
-    def __init__(self):
+    def __init__(self, server_controller: Optional['ServerController'] = None):
+        self.server_controller = server_controller
         self.peer_connections: Dict[str, RTCPeerConnection] = {}
         self.data_channels: Dict[str, RTCDataChannel] = {}
         self.pending_ice_candidates: Dict[str, list] = {}
@@ -30,6 +31,10 @@ class WebRTCManager:
         self.ssl_error_threshold = 10  # Max SSL errors before logging warning
         self.packet_queue: asyncio.Queue = asyncio.Queue()
         asyncio.create_task(self.relay_datagram_to_remote_controls())
+    
+    def set_server_controller(self, server_controller: 'ServerController'):
+        """Set the server controller after initialization to avoid circular import"""
+        self.server_controller = server_controller
 
     async def enqueue_video_packet(self, train_id: str, data: bytes):
         await self.packet_queue.put((train_id, data))
@@ -38,9 +43,10 @@ class WebRTCManager:
         while True:
             try:
                 train_id, data = await self.packet_queue.get()
-                remote_controls = s_controller.get_remote_control_ids_by_train(train_id)
-                for remote_control_id in remote_controls:
-                    await self.send_video_data(remote_control_id, data)
+                if self.server_controller:
+                    remote_controls = self.server_controller.get_remote_control_ids_by_train(train_id)
+                    for remote_control_id in remote_controls:
+                        await self.send_video_data(remote_control_id, data)
             except self.packet_queue.Empty:
                 await asyncio.sleep(0.1)
 

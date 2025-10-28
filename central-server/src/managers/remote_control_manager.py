@@ -1,14 +1,21 @@
 import asyncio
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 from fastapi import WebSocket
 
 from utils.app_logger import logger
 from managers.webrtc_manager import WebRTCManager
 
+if TYPE_CHECKING:
+    from server_controller import ServerController
+
 class RemoteControlManager:
-    def __init__(self):
+    def __init__(self, server_controller: Optional['ServerController'] = None):
         self.active_connections: Dict[str, WebSocket] = {}
-        self.webrtc_manager = WebRTCManager()
+        self.webrtc_manager = WebRTCManager(server_controller)
+    
+    def set_server_controller(self, server_controller: 'ServerController'):
+        """Set the server controller after initialization to avoid circular import"""
+        self.webrtc_manager.set_server_controller(server_controller)
 
     async def add(self, websocket: WebSocket, remote_control_id: str):
         self.active_connections[remote_control_id] = websocket

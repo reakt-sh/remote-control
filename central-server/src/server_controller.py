@@ -24,6 +24,8 @@ class ServerController:
 
         self.train_manager = TrainManager()
         self.remote_control_manager = RemoteControlManager()
+        # Set server controller reference to avoid circular import
+        self.remote_control_manager.set_server_controller(self)
         self.write_to_file = True
         self.dump_file = open("dump.h264", 'wb')
         self.train_to_clients_map = {}
