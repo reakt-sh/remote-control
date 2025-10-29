@@ -53,7 +53,7 @@ export const useTrainStore = defineStore('train', () => {
   const upload_speed = ref(0)
   const networkspeed = ref(null)
   const telemetryHistory = ref([])
-  
+
   // RTT measurements for clock offset calibration
   const rttMeasurements = ref([])
   const rttCalibrationInProgress = ref(false)
@@ -66,6 +66,7 @@ export const useTrainStore = defineStore('train', () => {
   const {
     isWSConnected,
     connectWebSocket,
+    sendWsCommand,
   } = useWebSocket(remoteControlId, handleWsMessage)
 
   const {
@@ -248,13 +249,26 @@ export const useTrainStore = defineStore('train', () => {
 
     // Convert command object to JSON and then to Uint8Array
     const jsonBytes = new TextEncoder().encode(JSON.stringify(command))
+    const packet = new Uint8Array(1 + jsonBytes.length)
+    packet[0] = PACKET_TYPE.command
+    packet.set(jsonBytes, 1)
+
     try {
-      const packet = new Uint8Array(1 + jsonBytes.length)
-      packet[0] = PACKET_TYPE.command
-      packet.set(jsonBytes, 1)
-      await sendWtMessage(packet)
+      // Try WebTransport first
+      if (isWTConnected.value) {
+        await sendWtMessage(packet)
+        console.log('✅ Command sent via WebTransport')
+      }
+      // Fallback to WebSocket if WebTransport is not connected
+      else if (isWSConnected.value) {
+        sendWsCommand(packet)
+        console.log('⚠️ Command sent via WebSocket (WebTransport fallback)')
+      } else {
+        console.error('❌ Cannot send command: Neither WebTransport nor WebSocket is connected')
+        throw new Error('No connection available to send command')
+      }
     } catch (error) {
-      console.error('Command send error:', error)
+      console.error('❌ Command send error:', error)
     }
   }
 
