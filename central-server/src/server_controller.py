@@ -4,6 +4,7 @@ from typing import Any
 from managers.train_manager import TrainManager
 from managers.remote_control_manager import RemoteControlManager
 from utils.app_logger import logger
+from utils.connection_tracker import ConnectionTracker
 class ServerController:
     _instance = None
     _lock = threading.Lock()
@@ -30,6 +31,7 @@ class ServerController:
         self.dump_file = open("dump.h264", 'wb')
         self.train_to_clients_map = {}
         self.client_to_train_map = {}
+        self.connection_tracker = ConnectionTracker()
 
     def start_server(self) -> None:
         with self._lock:
@@ -50,9 +52,11 @@ class ServerController:
 
     async def add_remote_controller(self, websocket: Any, remote_control_id: str) -> None:
         await self.remote_control_manager.add(websocket, remote_control_id)
+        self.connection_tracker.update_websocket_status(remote_control_id, True)
 
-    async def remove_remote_controller(self,remote_control_id: str) -> None:
+    async def remove_remote_controller(self, remote_control_id: str) -> None:
         await self.remote_control_manager.remove(remote_control_id)
+        self.connection_tracker.delete_if_exists(remote_control_id)
 
     async def send_to_train(self, command: dict) -> None:
             train_id = command.get("train_id")
@@ -122,15 +126,10 @@ class ServerController:
                 if remote_control_id in self.remote_control_manager.active_connections:
                     websocket = self.remote_control_manager.active_connections[remote_control_id]
                     await websocket.send_bytes(data)
-                
-                # Also send via WebRTC if video data
-                packet_type = data[0] if len(data) > 0 else None
-                if packet_type == 13:  # video packet type
-                    await self.remote_control_manager.send_video_via_webrtc(remote_control_id, data)
 
     async def send_data_to_train(self, remote_control_id: str, data: bytes) -> None:
         train_id = self.client_to_train_map.get(remote_control_id)
-        logger.debug(f"train_id fond = {train_id}")
+        logger.debug(f"train_id found = {train_id}")
         if train_id and train_id in self.train_manager.active_connections:
             logger.debug(f"websocket connection also found for {train_id}")
             websocket = self.train_manager.active_connections[train_id]
@@ -144,13 +143,10 @@ class ServerController:
             await websocket.send_bytes(data)
 
     async def get_webrtc_offer(self, remote_control_id: str) -> dict:
-        """Get WebRTC offer for remote control client"""
         return await self.remote_control_manager.get_webrtc_offer(remote_control_id)
 
     async def set_webrtc_answer(self, remote_control_id: str, answer: dict):
-        """Set WebRTC answer from remote control client"""
         await self.remote_control_manager.set_webrtc_answer(remote_control_id, answer)
 
     async def add_webrtc_ice_candidate(self, remote_control_id: str, candidate: dict):
-        """Add WebRTC ICE candidate from remote control client"""
         await self.remote_control_manager.add_webrtc_ice_candidate(remote_control_id, candidate)

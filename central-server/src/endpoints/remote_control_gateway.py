@@ -211,22 +211,3 @@ async def webrtc_ice_restart(restart_request: WebRTCIceRestart):
             "status": "error",
             "message": str(e)
         }
-
-@router.get("/api/webrtc/certificate-info")
-async def webrtc_certificate_info():
-    """
-    Get information about the current DTLS certificate.
-    Useful for debugging and monitoring WebRTC connections.
-    """
-    try:
-        cert_info = s_controller.remote_control_manager.webrtc_manager.get_certificate_info()
-        return {
-            "status": "success",
-            "certificate": cert_info
-        }
-    except Exception as e:
-        logger.error(f"WebRTC: Failed to get certificate info: {e}")
-        return {
-            "status": "error",
-            "message": str(e)
-        }

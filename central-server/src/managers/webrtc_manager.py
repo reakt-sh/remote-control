@@ -15,10 +15,6 @@ except ImportError:
     OpenSSLError = Exception  # Fallback if OpenSSL is not available
 
 class WebRTCManager:
-    """
-    Manages WebRTC peer connections for remote control clients.
-    Server acts as a WebRTC peer for each remote control connection.
-    """
     def __init__(self, server_controller: Optional['ServerController'] = None):
         self.server_controller = server_controller
         self.peer_connections: Dict[str, RTCPeerConnection] = {}
@@ -27,17 +23,15 @@ class WebRTCManager:
         self.media_relay = MediaRelay()
         self.keepalive_tasks: Dict[str, asyncio.Task] = {}
         self.last_activity: Dict[str, float] = {}
-        self.ssl_error_count: Dict[str, int] = {}  # Track SSL errors per connection
-        self.ssl_error_threshold = 10  # Max SSL errors before logging warning
+        self.ssl_error_count: Dict[str, int] = {}               # Track SSL errors per connection
+        self.ssl_error_threshold = 10                             # Max SSL errors before logging warning
         self.packet_queue: asyncio.Queue = asyncio.Queue()
         self.relay_task: Optional[asyncio.Task] = None
 
     def set_server_controller(self, server_controller: 'ServerController'):
-        """Set the server controller after initialization to avoid circular import"""
         self.server_controller = server_controller
 
     def start_relay_task(self):
-        """Start the background task for relaying video packets. Must be called after event loop is running."""
         if self.relay_task is None:
             self.relay_task = asyncio.create_task(self.relay_datagram_to_remote_controls())
             logger.info("WebRTC: Started relay task for video packets")
@@ -106,22 +100,6 @@ class WebRTCManager:
         logger.info(f"WebRTC: Created peer connection for {remote_control_id}")
         return pc
 
-    def get_certificate_info(self) -> dict:
-        """
-        Get information about the current DTLS certificate.
-        Useful for debugging and monitoring.
-        """
-        try:
-            fingerprints = self.dtls_certificate.getFingerprints()
-            return {
-                "fingerprint": fingerprints[0] if fingerprints else "N/A",
-                "active_connections": len(self.peer_connections),
-                "certificate_expires": "Check certificate validity manually"
-            }
-        except Exception as e:
-            logger.error(f"WebRTC: Error getting certificate info: {e}")
-            return {"error": str(e)}
-
     async def create_data_channel(self, remote_control_id: str, channel_name: str = "video") -> Optional[RTCDataChannel]:
         """
         Create a data channel for sending video data to remote control.
@@ -130,9 +108,9 @@ class WebRTCManager:
         if not pc:
             logger.error(f"WebRTC: No peer connection found for {remote_control_id}")
             return None
-        
+
         channel_key = f"{remote_control_id}_{channel_name}"
-        
+
         # Check if channel already exists and is still valid
         if channel_key in self.data_channels:
             existing_channel = self.data_channels[channel_key]
@@ -147,8 +125,8 @@ class WebRTCManager:
         # ordered=False and maxRetransmits=0 for low latency
         # Set bufferedAmountLowThreshold to prevent buffer overflow
         channel = pc.createDataChannel(
-            channel_name, 
-            ordered=False, 
+            channel_name,
+            ordered=False,
             maxRetransmits=0
         )
 
@@ -192,7 +170,7 @@ class WebRTCManager:
         if not pc:
             logger.error(f"WebRTC: No peer connection found for {remote_control_id}")
             return {"error": "No peer connection found"}
-        
+
         # Check if peer connection is in a valid state
         if pc.connectionState in ['closed', 'failed']:
             logger.error(f"WebRTC: Peer connection for {remote_control_id} is in state: {pc.connectionState}")
@@ -218,20 +196,20 @@ class WebRTCManager:
             sdp_lines = pc.localDescription.sdp.split('\n')
             m_sections = [line for line in sdp_lines if line.startswith('m=')]
             mid_lines = [line for line in sdp_lines if line.startswith('a=mid:')]
-            
+
             logger.info(f"WebRTC: Created offer for {remote_control_id}")
             logger.debug(f"WebRTC: Offer has {len(m_sections)} m= sections and {len(mid_lines)} MID attributes")
             logger.debug(f"WebRTC: Offer SDP:\n{pc.localDescription.sdp}")
-            
+
             # Validate the offer before returning
             if not pc.localDescription or not pc.localDescription.sdp or not pc.localDescription.type:
                 logger.error(f"WebRTC: Generated invalid offer for {remote_control_id}")
                 return {"error": "Generated offer is invalid"}
-            
+
             if len(m_sections) == 0:
                 logger.error(f"WebRTC: Offer has no media sections for {remote_control_id}")
                 return {"error": "Offer has no media sections"}
-            
+
             return {
                 "type": pc.localDescription.type,
                 "sdp": pc.localDescription.sdp
@@ -240,11 +218,11 @@ class WebRTCManager:
             logger.error(f"WebRTC: Exception creating offer for {remote_control_id}: {e}")
             import traceback
             logger.error(f"WebRTC: Traceback: {traceback.format_exc()}")
-            
+
             # Check if it's a DTLS-related error
             if "ssl" in str(e).lower() or "dtls" in str(e).lower() or "certificate" in str(e).lower():
                 logger.error(f"WebRTC: DTLS/SSL error detected. Certificate fingerprint: {self.dtls_certificate.getFingerprints()[0]}")
-            
+
             return {"error": f"Exception: {str(e)}"}
 
     async def set_remote_description(self, remote_control_id: str, sdp: dict):
@@ -322,13 +300,13 @@ class WebRTCManager:
             # CRITICAL FIX: Check buffer before sending to prevent bursty delivery
             # WebRTC data channels have a buffer limit - if we exceed it, data will be sent in bursts
             buffered = getattr(channel, 'bufferedAmount', 0)
-            
+
             # Drop frames if buffer is too full (prevents bursty transmission)
             # 256KB threshold - enough for smooth delivery without building up large bursts
             if buffered > 256 * 1024:
                 logger.debug(f"WebRTC: Dropping frame for {remote_control_id}, buffer: {buffered} bytes")
                 return
-            
+
             channel.send(data)
             self.last_activity[remote_control_id] = time.time()
             # Reset SSL error count on successful send
@@ -339,19 +317,19 @@ class WebRTCManager:
             # Handle DTLS transport connection errors gracefully
             # "Cannot send encrypted data, not connected" can occur during reconnection
             error_msg = str(conn_err)
-            
+
             # Track connection errors for this connection
             if remote_control_id not in self.ssl_error_count:
                 self.ssl_error_count[remote_control_id] = 0
             self.ssl_error_count[remote_control_id] += 1
-            
+
             # Only log periodically to avoid spam
             if self.ssl_error_count[remote_control_id] % self.ssl_error_threshold == 1:
                 logger.warning(
                     f"WebRTC: DTLS connection error for {remote_control_id} (count: {self.ssl_error_count[remote_control_id]}). "
                     f"Continuing session... Error: {error_msg}"
                 )
-            
+
             # If errors persist, it might indicate connection is actually dead
             if self.ssl_error_count[remote_control_id] > 100:
                 logger.error(
@@ -360,26 +338,24 @@ class WebRTCManager:
                 )
                 # Reset counter to avoid integer overflow
                 self.ssl_error_count[remote_control_id] = 50
-            
-            # Don't close connection - just drop this frame and continue
-            
+
         except OpenSSLError as ssl_err:
             # Handle OpenSSL cipher operation errors gracefully
             # These errors can occur during long sessions but don't necessarily mean connection is dead
             error_msg = str(ssl_err)
-            
+
             # Track SSL errors for this connection
             if remote_control_id not in self.ssl_error_count:
                 self.ssl_error_count[remote_control_id] = 0
             self.ssl_error_count[remote_control_id] += 1
-            
+
             # Only log periodically to avoid spam
             if self.ssl_error_count[remote_control_id] % self.ssl_error_threshold == 1:
                 logger.warning(
                     f"WebRTC: SSL cipher error for {remote_control_id} (count: {self.ssl_error_count[remote_control_id]}). "
                     f"Continuing session... Error: {error_msg}"
                 )
-            
+
             # If errors persist, it might indicate a real problem
             if self.ssl_error_count[remote_control_id] > 100:
                 logger.error(
@@ -444,10 +420,10 @@ class WebRTCManager:
             task.cancel()
             del self.keepalive_tasks[remote_control_id]
             logger.info(f"WebRTC: Stopped keepalive for {remote_control_id}")
-        
+
         if remote_control_id in self.last_activity:
             del self.last_activity[remote_control_id]
-        
+
         # Clean up SSL error tracking
         if remote_control_id in self.ssl_error_count:
             del self.ssl_error_count[remote_control_id]
@@ -458,7 +434,7 @@ class WebRTCManager:
         """
         # Stop keepalive
         self._stop_keepalive(remote_control_id)
-        
+
         # Close data channels
         channels_to_remove = [key for key in self.data_channels.keys() if key.startswith(f"{remote_control_id}_")]
         for channel_key in channels_to_remove:
@@ -492,7 +468,7 @@ class WebRTCManager:
         remote_control_ids = list(self.peer_connections.keys())
         for remote_control_id in remote_control_ids:
             await self.close_peer_connection(remote_control_id)
-        
+
         # Cancel relay task
         if self.relay_task is not None:
             self.relay_task.cancel()
@@ -502,5 +478,5 @@ class WebRTCManager:
                 pass
             self.relay_task = None
             logger.info("WebRTC: Stopped relay task")
-        
+
         logger.info("WebRTC: Closed all peer connections")
