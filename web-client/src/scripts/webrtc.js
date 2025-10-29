@@ -289,7 +289,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
     channel.onerror = (error) => {
       console.error(`❌ Data channel '${label}' error:`, error)
     }
-    
+
     channel.onbufferedamountlow = () => {
       console.debug(`📉 Data channel '${label}' buffer cleared`)
     }
@@ -299,21 +299,21 @@ export function useWebRTC(remoteControlId, messageHandler) {
         // Handle binary data (video frames)
         if (event.data instanceof ArrayBuffer) {
           const byteArray = new Uint8Array(event.data)
-          
+
           // Check if this is a keepalive message
           if (byteArray.length === 5 && 
               byteArray[0] === 0 && 
               String.fromCharCode(byteArray[1], byteArray[2], byteArray[3], byteArray[4]) === 'PING') {
             console.debug('💓 Received keepalive ping')
             // Send pong response
-            if (label === 'commands' && channel.readyState === 'open') {
+            if (label === 'video' && channel.readyState === 'open') {
               const pong = new Uint8Array([0, 80, 79, 78, 71])  // '\x00PONG'
               channel.send(pong)
               console.debug('💓 Sent keepalive pong')
             }
             return
           }
-          
+
           messageHandler(byteArray[0], byteArray)
         } else if (event.data instanceof Blob) {
           // Convert Blob to ArrayBuffer

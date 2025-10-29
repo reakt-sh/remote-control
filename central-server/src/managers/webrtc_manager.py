@@ -151,13 +151,18 @@ class WebRTCManager:
             ordered=False, 
             maxRetransmits=0
         )
-        
+
         # Set a low buffer threshold to get notified when buffer drains
         # This helps prevent bursty transmission
         if hasattr(channel, 'bufferedAmountLowThreshold'):
             channel.bufferedAmountLowThreshold = 64 * 1024  # 64KB threshold
-        
+
         self.data_channels[channel_key] = channel
+
+        @channel.on("message")
+        def on_message(message):
+            # Handle incoming messages from web client (video data, etc.)
+            logger.debug(f"WebRTC: Received message on channel '{channel.label}' from {remote_control_id}: {message[:50] if isinstance(message, (bytes, str)) else message}")
 
         @channel.on("open")
         def on_open():
@@ -402,7 +407,7 @@ class WebRTCManager:
                 try:
                     await asyncio.sleep(5)  # Send keepalive every 5 seconds
 
-                    channel_key = f"{remote_control_id}_commands"
+                    channel_key = f"{remote_control_id}_video"
                     channel = self.data_channels.get(channel_key)
 
                     if channel and channel.readyState == "open":
