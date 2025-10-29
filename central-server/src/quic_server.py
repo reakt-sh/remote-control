@@ -133,8 +133,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     # If no train clients are connected, spawn a subprocess to run a simulated train client
                     logger.info(f"Check self.client_manager.train_clients = {self.client_manager.train_clients}")
                     if not self.client_manager.train_clients:
-                        logger.info("No train clients connected. Spawning a simulated train client subprocess.")
-                        self.sim_process.create_simulation_process()
+                        logger.info("No train clients connected. here we can spawn a simulated train client subprocess.")
+                        # Currently simulation process creation is stopped temporarily
+                        # self.sim_process.create_simulation_process()
 
                     # try send Stream hello world message to the remote control
                     hello_message = f"HELLO: {self.remote_control_id}".encode()
