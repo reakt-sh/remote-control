@@ -47,7 +47,6 @@ class WebRTCManager:
                     remote_controls = self.server_controller.get_remote_control_ids_by_train(train_id)
                     for remote_control_id in remote_controls:
                         if not self.server_controller.connection_tracker.is_webtransport_available(remote_control_id):
-                            logger.debug(f"WebRTC: Relaying video packet to {remote_control_id} from train {train_id}, capabilities: {self.server_controller.connection_tracker.get_capabilities(remote_control_id)}")
                             await self.send_video_data(remote_control_id, data)
                     # Yield control to allow event loop to process network I/O
                     # This prevents queueing up packets before network has a chance to transmit
