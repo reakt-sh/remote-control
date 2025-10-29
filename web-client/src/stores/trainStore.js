@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
+import { useWebRTC } from '@/scripts/webrtc'
 import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
@@ -52,7 +53,7 @@ export const useTrainStore = defineStore('train', () => {
   const upload_speed = ref(0)
   const networkspeed = ref(null)
   const telemetryHistory = ref([])
-  
+
   // RTT measurements for clock offset calibration
   const rttMeasurements = ref([])
   const rttCalibrationInProgress = ref(false)
@@ -60,9 +61,12 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
+  const indexedDBStorageEnabled = ref(false)
+
   const {
     isWSConnected,
     connectWebSocket,
+    sendWsCommand,
   } = useWebSocket(remoteControlId, handleWsMessage)
 
   const {
@@ -70,6 +74,11 @@ export const useTrainStore = defineStore('train', () => {
     connectWebTransport,
     sendWtMessage,
   } = useWebTransport(remoteControlId, handleWtMessage)
+
+  const {
+    isRTCConnected,
+    connectWebRTC,
+  } = useWebRTC(remoteControlId, handleRtcMessage)
 
   const {
     isMqttConnected,
@@ -108,6 +117,13 @@ export const useTrainStore = defineStore('train', () => {
     await connectWebSocket()
     await connectWebTransport()
     await connectMqtt()  // Add MQTT connection
+
+    try {
+      await connectWebRTC()
+      console.log('✅ WebRTC connection initiated')
+    } catch (error) {
+      console.error('❌ WebRTC connection failed:', error)
+    }
     setInterval(sendKeepAliveWebTransport, 10000);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
@@ -128,14 +144,16 @@ export const useTrainStore = defineStore('train', () => {
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
           frameRef.value = completedFrame.data
-          // Store the frame data
-          dataStorage.storeFrame({
-            frameId: completedFrame.frameId,
-            data: completedFrame.data,
-            trainId: selectedTrainId.value,
-            createdAt: completedFrame.created_at,
-            latency: completedFrame.latency + averageClockOffset.value
-          })
+          if (indexedDBStorageEnabled.value) {
+            // Store the frame data
+            dataStorage.storeFrame({
+              frameId: completedFrame.frameId,
+              data: completedFrame.data,
+              trainId: selectedTrainId.value,
+              createdAt: completedFrame.created_at,
+              latency: completedFrame.latency + averageClockOffset.value
+            })
+          }
         }
       })
     }
@@ -231,13 +249,26 @@ export const useTrainStore = defineStore('train', () => {
 
     // Convert command object to JSON and then to Uint8Array
     const jsonBytes = new TextEncoder().encode(JSON.stringify(command))
+    const packet = new Uint8Array(1 + jsonBytes.length)
+    packet[0] = PACKET_TYPE.command
+    packet.set(jsonBytes, 1)
+
     try {
-      const packet = new Uint8Array(1 + jsonBytes.length)
-      packet[0] = PACKET_TYPE.command
-      packet.set(jsonBytes, 1)
-      await sendWtMessage(packet)
+      // Try WebTransport first
+      if (isWTConnected.value) {
+        await sendWtMessage(packet)
+        console.log('✅ Command sent via WebTransport')
+      }
+      // Fallback to WebSocket if WebTransport is not connected
+      else if (isWSConnected.value) {
+        sendWsCommand(packet)
+        console.log('⚠️ Command sent via WebSocket (WebTransport fallback)')
+      } else {
+        console.error('❌ Cannot send command: Neither WebTransport nor WebSocket is connected')
+        throw new Error('No connection available to send command')
+      }
     } catch (error) {
-      console.error('Command send error:', error)
+      console.error('❌ Command send error:', error)
     }
   }
 
@@ -265,13 +296,15 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-        // Also store it to indexDB
-        dataStorage.storeTelemetry({
-          trainId: jsonData.train_id,
-          data: jsonData,
-          latency: latency,
+        if (indexedDBStorageEnabled.value) {
+          // Also store it to indexDB
+          dataStorage.storeTelemetry({
+            trainId: jsonData.train_id,
+            data: jsonData,
+            latency: latency,
           protocol: 'ws'
-        })
+          })
+        }
 
         break
       }
@@ -303,13 +336,15 @@ export const useTrainStore = defineStore('train', () => {
           const timestamp = Date.now()
           const latency = timestamp - jsonData.timestamp + averageClockOffset.value
 
-          // Also store it to indexDB
-          dataStorage.storeTelemetry({
-            trainId: jsonData.train_id,
-            data: jsonData,
-            latency: latency,
-            protocol: 'wt'
-          })
+          if (indexedDBStorageEnabled.value) {
+            // Also store it to indexDB
+            dataStorage.storeTelemetry({
+              trainId: jsonData.train_id,
+              data: jsonData,
+              latency: latency,
+              protocol: 'wt'
+            })
+          }
 
           // also update isPoweredOn and direction
           if (jsonData.status === 'running'){
@@ -385,6 +420,12 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
+  // Handler for WebRTC messages - reuses same logic as WebTransport
+  function handleRtcMessage(packetType, payload) {
+    // WebRTC uses the same packet format as WebTransport
+    handleWtMessage(packetType, payload)
+  }
+
   function handleMqttMessage(mqttMessage) {
     const { trainId, messageType, data } = mqttMessage
 
@@ -395,13 +436,15 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
         const latency = timestamp - data.timestamp + averageClockOffset.value
 
-        // Also store it to indexDB
-        dataStorage.storeTelemetry({
-          trainId: trainId,
-          data: data,
-          latency: latency,
-          protocol: 'mqtt'
-        })
+        if (indexedDBStorageEnabled.value) {
+          // Also store it to indexDB
+          dataStorage.storeTelemetry({
+            trainId: trainId,
+            data: data,
+            latency: latency,
+            protocol: 'mqtt'
+          })
+        }
 
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
@@ -479,6 +522,7 @@ export const useTrainStore = defineStore('train', () => {
     direction,
     isWSConnected,
     isWTConnected,
+    isRTCConnected,
     isMqttConnected,
     download_speed,
     upload_speed,

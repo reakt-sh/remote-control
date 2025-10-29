@@ -1,19 +1,17 @@
 <template>
   <div class="connection-status">
-    <div class="status-indicator">
-      <div class="status-dot" :class="{ connected: isWSConnected && isWTConnected && isMqttConnected }"></div>
-      <span class="status-text">
-        {{ allConnected ? 'Connected' : 'Disconnected' }}
-      </span>
-    </div>
     <div class="connection-details">
       <div class="connection-item">
         <i class="fas fa-server"></i>
         <span :class="{ active: isWSConnected }">WS</span>
       </div>
       <div class="connection-item">
-        <i class="fas fa-wifi"></i>
+        <i class="fas fa-bolt"></i>
         <span :class="{ active: isWTConnected }">WT</span>
+      </div>
+      <div class="connection-item">
+        <i class="fas fa-stream"></i>
+        <span :class="{ active: isRTCConnected }">WRTC</span>
       </div>
       <div class="connection-item">
         <i class="fas fa-share-alt"></i>
@@ -25,14 +23,9 @@
 
 <script setup>
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
 import { useTrainStore } from '@/stores/trainStore'
 
-const { isWSConnected, isWTConnected, isMqttConnected } = storeToRefs(useTrainStore())
-
-const allConnected = computed(() => {
-  return isWSConnected.value && isWTConnected.value && isMqttConnected.value
-})
+const { isWSConnected, isWTConnected, isMqttConnected, isRTCConnected } = storeToRefs(useTrainStore())
 </script>
 
 <style scoped>
@@ -45,27 +38,6 @@ const allConnected = computed(() => {
   padding: 12px 20px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: #ff4757;
-  box-shadow: 0 0 12px rgba(255, 71, 87, 0.5);
-  animation: pulse-red 2s infinite;
-}
-
-.status-dot.connected {
-  background-color: #2ed573;
-  box-shadow: 0 0 12px rgba(46, 213, 115, 0.5);
-  animation: pulse-green 2s infinite;
 }
 
 .status-text {

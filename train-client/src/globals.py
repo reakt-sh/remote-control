@@ -57,6 +57,26 @@ MQTT_PORT = 1883
 WEBSOCKET_URL = f"wss://{SERVER}:{WS_PORT}/ws"
 MAX_PACKET_SIZE = 1000
 
+# Protocol options for video transmission
+PROTOCOL_OPTIONS = {
+    "WEBSOCKET": "WebSocket",
+    "QUIC": "QUIC",
+    "WEBRTC": "WebRTC"
+}
+
+# WebRTC Configuration
+WEBRTC_STUN_SERVERS = [
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302",
+    "stun:stun2.l.google.com:19302",
+    "stun:stun3.l.google.com:19302"
+]
+
+# Optional TURN servers for NAT traversal (configure if needed)
+WEBRTC_TURN_SERVERS = [
+    # Example: {"urls": "turn:your-turn-server.com:3478", "username": "user", "credential": "pass"}
+]
+
 STATION_LIST = [
     {"name": "Malente",                     "latitude": 54.1722,        "longitude": 10.5597},
     {"name": "Gremsmühlen",                 "latitude": 53.9036,        "longitude": 10.3111},

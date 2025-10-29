@@ -5,6 +5,10 @@ from aioquic.asyncio.protocol import QuicConnectionProtocol
 import json
 import struct
 from globals import PACKET_TYPE
+from server_controller import ServerController
+
+s_controller = ServerController()
+
 
 class ClientManager:
     def __init__(self):
@@ -42,6 +46,7 @@ class ClientManager:
     async def add_remote_control_client(self, remote_control_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
             self.remote_control_clients[remote_control_id] = protocol
+            s_controller.connection_tracker.update_webtransport_status(remote_control_id, True)
             logger.info(f"QUIC: Remote Control client connected {remote_control_id}, Remote Controls: {self.remote_control_clients.keys()}")
 
     async def remove_remote_control_client(self, remote_control_id: str):
@@ -58,6 +63,7 @@ class ClientManager:
             if remote_control_id in self.remote_control_clients:
                 del self.remote_control_clients[remote_control_id]
                 logger.info(f"QUIC: Remote Control client disconnected: {remote_control_id}")
+            s_controller.connection_tracker.update_webtransport_status(remote_control_id, False)
 
     async def connect_remote_control_to_train(self, remote_control_id: str, train_id: str):
         async with self.lock:

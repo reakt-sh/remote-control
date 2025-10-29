@@ -24,6 +24,9 @@ from managers.client_manager import ClientManager
 from utils.simulation_process import SimulationProcess
 from globals import *
 
+from server_controller import ServerController
+s_controller = ServerController()
+
 class QUICRelayProtocol(QuicConnectionProtocol):
     def __init__(self, *args, client_manager: ClientManager, calculator: Calculator, sim_process: SimulationProcess, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,6 +90,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
             )
+
+            asyncio.create_task(
+                s_controller.remote_control_manager.webrtc_manager.enqueue_video_packet(self.train_id, event.data)
+            )
+
             self.calculator.calculate_bandwidth(len(event.data))
 
             # if a complete video frame is received, then write to a file to check
@@ -125,8 +133,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     # If no train clients are connected, spawn a subprocess to run a simulated train client
                     logger.info(f"Check self.client_manager.train_clients = {self.client_manager.train_clients}")
                     if not self.client_manager.train_clients:
-                        logger.info("No train clients connected. Spawning a simulated train client subprocess.")
-                        self.sim_process.create_simulation_process()
+                        logger.info("No train clients connected. here we can spawn a simulated train client subprocess.")
+                        # Currently simulation process creation is stopped temporarily
+                        # self.sim_process.create_simulation_process()
 
                     # try send Stream hello world message to the remote control
                     hello_message = f"HELLO: {self.remote_control_id}".encode()

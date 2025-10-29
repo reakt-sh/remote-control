@@ -48,8 +48,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.telemetry.start()
         self.imu.start()
 
-        self.protocol_for_media = "QUIC" # or "QUIC"
-
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
 
@@ -146,6 +144,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
 
+    def on_webrtc_connected(self):
+        logger.info("WebRTC connection established")
+
+    def on_webrtc_failed(self, error):
+        logger.error(f"WebRTC connection failed: {error}")
+
+    def on_webrtc_closed(self):
+        logger.info("WebRTC connection closed")
+
+    def on_data_received_webrtc(self, data):
+        logger.debug(f"WebRTC data received: {len(data)} bytes")
+
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
         logger.info(f"Received command: {message}")
@@ -190,7 +200,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.encoder.set_bitrate(HIGH_BITRATE)
             else:
                 logger.warning(f"Unknown video quality: {video_quality}")
-
+        elif message['instruction'] == 'SWITCH_PROTOCOL':
+            protocol = message.get('protocol', '').upper()
+            if protocol in ['WEBSOCKET', 'QUIC', 'WEBRTC']:
+                self.switch_protocol(protocol)
+            else:
+                logger.warning(f"Unknown protocol: {protocol}")
         else:
             logger.warning(f"Unknown instruction: {message['instruction']}")
 
@@ -202,8 +217,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
-            self.network_worker_quic.enqueue_stream_packet(packet)
-            self.network_worker_ws.enqueue_packet(packet)
+            # Send telemetry on all active connections
+            # self.network_worker_quic.enqueue_stream_packet(packet)
+            # self.network_worker_ws.enqueue_packet(packet)
             self.network_worker_mqtt.send_data(packet_data)
 
     def on_imu_data(self, data):
@@ -215,10 +231,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.output_file.flush()
         if self.is_sending:
             # Send the encoded frame over the network
-            if self.protocol_for_media == "WebSocket":
-                self.network_worker_ws.enqueue_frame(frame_id, timestamp, encoded_bytes)
-            else:
-                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+            self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
             self.telemetry.notify_new_frame_processed()
 
     def toggle_capture(self):
