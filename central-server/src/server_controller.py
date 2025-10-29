@@ -56,7 +56,7 @@ class ServerController:
 
     async def remove_remote_controller(self, remote_control_id: str) -> None:
         await self.remote_control_manager.remove(remote_control_id)
-        self.connection_tracker.delete_if_exists(remote_control_id)
+        self.connection_tracker.update_websocket_status(remote_control_id, False)
 
     async def send_to_train(self, command: dict) -> None:
             train_id = command.get("train_id")

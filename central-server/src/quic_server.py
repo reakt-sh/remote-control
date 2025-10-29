@@ -87,9 +87,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
         if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
             # Relay the video frame to all mapped remote controls
-            # asyncio.create_task(
-            #     self.client_manager.enqueue_video_packet(self.train_id, event.data)
-            # )
+            asyncio.create_task(
+                self.client_manager.enqueue_video_packet(self.train_id, event.data)
+            )
 
             asyncio.create_task(
                 s_controller.remote_control_manager.webrtc_manager.enqueue_video_packet(self.train_id, event.data)

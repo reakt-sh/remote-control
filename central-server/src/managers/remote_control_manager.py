@@ -12,7 +12,7 @@ class RemoteControlManager:
     def __init__(self, server_controller: Optional['ServerController'] = None):
         self.active_connections: Dict[str, WebSocket] = {}
         self.webrtc_manager = WebRTCManager(server_controller)
-    
+
     def set_server_controller(self, server_controller: 'ServerController'):
         """Set the server controller after initialization to avoid circular import"""
         self.webrtc_manager.set_server_controller(server_controller)

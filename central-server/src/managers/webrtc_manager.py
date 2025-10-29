@@ -46,7 +46,8 @@ class WebRTCManager:
                 if self.server_controller:
                     remote_controls = self.server_controller.get_remote_control_ids_by_train(train_id)
                     for remote_control_id in remote_controls:
-                        await self.send_video_data(remote_control_id, data)
+                        if not self.server_controller.connection_tracker.is_webtransport_available(remote_control_id):
+                            await self.send_video_data(remote_control_id, data)
                     # Yield control to allow event loop to process network I/O
                     # This prevents queueing up packets before network has a chance to transmit
                     await asyncio.sleep(0)
@@ -76,7 +77,11 @@ class WebRTCManager:
         @pc.on("connectionstatechange")
         async def on_connectionstatechange():
             logger.info(f"WebRTC: Connection state for {remote_control_id}: {pc.connectionState}")
+            if pc.connectionState == "connected":
+                self.server_controller.connection_tracker.update_webrtc_status(remote_control_id, True)
+
             if pc.connectionState == "failed" or pc.connectionState == "closed":
+                self.server_controller.connection_tracker.update_webrtc_status(remote_control_id, False)
                 await self.close_peer_connection(remote_control_id)
 
         @pc.on("iceconnectionstatechange")
