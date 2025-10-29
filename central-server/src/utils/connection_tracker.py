@@ -70,3 +70,6 @@ class ConnectionTracker:
         capability = self.capabilities.get(remote_control_id)
         return capability.websocket_available if capability else False
 
+    def get_capabilities(self, remote_control_id: str) -> Optional[ConnectionCapability]:
+        return self.capabilities.get(remote_control_id)
+
