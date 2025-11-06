@@ -4,6 +4,7 @@ Welcome to the **Remote Control System** by reakt-sh, a robust solution designed
 
 ## Table of Contents
 - [Overview](#overview)
+- [Languages and Frameworks](#languages-and-frameworks)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
@@ -15,6 +16,21 @@ The Remote Control System is designed to facilitate real-time monitoring, contro
 - **Web Client**: Provides a user-friendly interface for operators to monitor and control train operations remotely.
 
 This system ensures reliability, scalability, and security for modern railway management.
+
+## Languages and Frameworks
+
+The Remote Control System is built using a modern, heterogeneous technology stack optimized for real-time communication and performance across distributed components.
+
+### Train Client
+The train client is developed in **Python 3**, leveraging **PyQt5** for the graphical user interface and system event handling. Video processing and encoding are handled through **OpenCV**, **PyAV**, and **FFmpeg**, enabling efficient H.264 video stream encoding from onboard cameras. The client supports multiple communication protocols including **QUIC** (via `aioquic` library), **WebSocket** (`websockets`), and **MQTT** (`paho-mqtt`) for reliable, low-latency data transmission under varying network conditions. **NumPy** is utilized for numerical computations related to sensor data processing.
+
+### Central Server
+The central server is implemented in **Python 3** using the **FastAPI** framework, which provides high-performance asynchronous HTTP and WebSocket capabilities through **Uvicorn** ASGI server. The server architecture supports multiple concurrent communication protocols: **WebRTC** (implemented via `aiortc` and `aioice` libraries) for peer-to-peer video streaming, **QUIC** protocol for low-latency transport, and **MQTT** (using `paho-mqtt`) for message brokering. The server integrates **NanoMQ** (version 0.19.0) as a lightweight MQTT broker, deployed via Docker containers for easy scalability. Video processing capabilities are provided through **OpenCV** and **NumPy**, while **Loguru** handles structured logging. For production deployment, the server utilizes **Gunicorn** with **uvloop** for enhanced event loop performance on Linux systems.
+
+### Web Client
+The web client is a modern single-page application built with **Vue.js 3** and managed through **Vue CLI**. The application uses **Pinia** for state management and **Vue Router** for client-side routing. Real-time communication is achieved through **WebSocket** connections and **MQTT** (via `paho-mqtt` browser library). Video streaming utilizes the **H.264 Live Player** library for efficient decoding and rendering of H.264 video streams directly in the browser. The UI is enhanced with **Font Awesome** icons, and **Axios** handles HTTP requests to the central server. The client employs **Dexie.js** for IndexedDB-based local storage of recorded sessions and telemetry data. Network performance monitoring is integrated using the **Fast Speedtest API**. The build process uses **Babel** for JavaScript transpilation and **ESLint** for code quality enforcement, ensuring cross-browser compatibility and maintainable code.
+
+This multi-layered architecture ensures optimal performance, real-time responsiveness, and maintainability while supporting diverse deployment scenarios from embedded systems to web browsers.
 
 ## Usage
 1. **Train Client**:
