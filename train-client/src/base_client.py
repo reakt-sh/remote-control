@@ -31,6 +31,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.is_sending = False
         self.target_speed = 60
         self._running = True
+        self.connected_remote_control_id = None
 
         # Initialize components
         self.telemetry = Telemetry(self.train_client_id)
@@ -143,6 +144,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
+        packet_type = data[0]
+        payload = data[1:]
+        if packet_type == PACKET_TYPE["map_ack"]:
+            ## Map ACK received: data =  b'{"type": "mapping_acknowledgement", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
+            remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+            self.connected_remote_control_id = remote_control_id
+            logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
+
 
     def on_webrtc_connected(self):
         logger.info("WebRTC connection established")
