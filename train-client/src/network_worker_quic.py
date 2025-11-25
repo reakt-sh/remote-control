@@ -251,6 +251,8 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                     self.network_worker.enqueue_stream_packet(
                         struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
                     )
+                elif packet_type == PACKET_TYPE["rtt_train"]:
+                    self.network_worker.data_received.emit(event.data)
                 else:
                     logger.warning(f"Invalid process command with packet type = {packet_type}")
             except Exception as e:

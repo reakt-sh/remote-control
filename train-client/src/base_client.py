@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import asyncio
 import datetime
 import os
 import uuid
@@ -151,7 +152,29 @@ class BaseClient(ABC, metaclass=QABCMeta):
             remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
             self.connected_remote_control_id = remote_control_id
             logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
+            self.send_rtt_packets()
 
+        elif packet_type == PACKET_TYPE["rtt_train"]:
+            jsonString = payload.decode('utf-8')
+            jsonData = json.loads(jsonString)
+            jsonData["remote_control_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)
+            logger.info(f"TheKing --> Received rtt_train_packet: {jsonData}")
+        else:
+            logger.warning(f"Unknown QUIC packet type received: {packet_type}")
+
+
+
+    def send_rtt_packets(self, count=1):
+        for _ in range(count):
+            rtt_train_Packet = {
+                "type": "rtt_train",
+                "remote_control_timestamp": 0,
+                "train_timestamp": int(datetime.datetime.now().timestamp() * 1000)
+            }
+
+            rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
+            rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
+            self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
 
     def on_webrtc_connected(self):
         logger.info("WebRTC connection established")

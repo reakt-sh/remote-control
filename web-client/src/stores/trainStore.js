@@ -32,6 +32,8 @@ const PACKET_TYPE = {
   uploading: 26,
   upload_end: 27,
   rtt: 28,
+  map_ack: 29,
+  rtt_train: 30,
 }
 
 
@@ -415,6 +417,15 @@ export const useTrainStore = defineStore('train', () => {
           calculateAverageClockOffset()
         }
 
+        break
+      }
+      case PACKET_TYPE.rtt_train: {
+        // Currently not used in the client
+        jsonString = new TextDecoder().decode(payload)
+        jsonData = JSON.parse(jsonString)
+        jsonData["remote_control_timestamp"] = Date.now()
+        console.log("TheKing --> Received rtt_train_packet: ", jsonData)
+        sendWtMessage(jsonData)
         break
       }
     }
