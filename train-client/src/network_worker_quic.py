@@ -241,6 +241,8 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
+                elif packet_type == PACKET_TYPE["map_ack"]:
+                    print("Map ACK received: data = ", payload)
                 elif packet_type == PACKET_TYPE["rtt"]:
                     # just modify event data with current timestamp
                     rtt_data = json.loads(payload.decode('utf-8'))

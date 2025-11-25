@@ -1,4 +1,5 @@
 import asyncio
+import struct
 from typing import Dict, Optional
 import json, os
 
@@ -167,6 +168,17 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     remote_control_id, train_id = parts
                     asyncio.create_task(
                         self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
+                    )
+                    # also send a message to the train client to acknowledge the mapping
+                    data = {
+                        "type": "mapping_acknowledgement",
+                        "remote_control_id": remote_control_id,
+                    }
+                    packet_data = json.dumps(data).encode('utf-8')
+                    packet = struct.pack("B", PACKET_TYPE["map_ack"]) + packet_data
+
+                    asyncio.create_task(
+                        self.client_manager.relay_stream_to_train(remote_control_id, packet)
                     )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
