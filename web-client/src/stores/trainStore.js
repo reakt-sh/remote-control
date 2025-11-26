@@ -32,6 +32,8 @@ const PACKET_TYPE = {
   uploading: 26,
   upload_end: 27,
   rtt: 28,
+  map_ack: 29,
+  rtt_train: 30,
 }
 
 
@@ -62,6 +64,7 @@ export const useTrainStore = defineStore('train', () => {
   const averageClockOffset = ref(0)
 
   const indexedDBStorageEnabled = ref(false)
+  const commandCounter = ref(0)
 
   const {
     isWSConnected,
@@ -190,6 +193,8 @@ export const useTrainStore = defineStore('train', () => {
 
     // Send multiple RTT messages to calibrate clock offset
     await performRTTCalibration()
+
+    commandCounter.value = 0
   }
 
   async function performRTTCalibration() {
@@ -241,6 +246,10 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function sendCommand(command) {
+    commandCounter.value += 1
+    command["command_id"] = commandCounter.value
+    command["remote_control_timestamp"] = Date.now()
+
     switch (command.instruction) {
       case "POWER_ON": isPoweredOn.value = true; break
       case "POWER_OFF": isPoweredOn.value = false; break
@@ -262,7 +271,7 @@ export const useTrainStore = defineStore('train', () => {
       // Fallback to WebSocket if WebTransport is not connected
       else if (isWSConnected.value) {
         sendWsCommand(packet)
-        console.log('⚠️ Command sent via WebSocket (WebTransport fallback)')
+        console.log('⚠️ Command sent via WebSocket (fallback)')
       } else {
         console.error('❌ Cannot send command: Neither WebTransport nor WebSocket is connected')
         throw new Error('No connection available to send command')
@@ -285,6 +294,24 @@ export const useTrainStore = defineStore('train', () => {
     packet.set(packetData, 1);
 
     await sendWtMessage(packet)
+  }
+
+  async function sendRTT_Train(rttPacket) {
+    console.log('📤 Sending RTT_Train packet:', rttPacket)
+    const packetData = new TextEncoder().encode(JSON.stringify(rttPacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.rtt_train; // Set the first byte as PACKET_TYPE.rtt_train
+    packet.set(packetData, 1);
+
+    console.log('📤 RTT_Train packet size:', packet.length, 'bytes')
+    console.log('📤 RTT_Train packet type byte:', packet[0])
+    
+    try {
+      await sendWtMessage(packet)
+      console.log('✅ RTT_Train packet sent successfully')
+    } catch (error) {
+      console.error('❌ Failed to send RTT_Train packet:', error)
+    }
   }
 
   async function handleWsMessage(packetType, payload) {
@@ -323,11 +350,11 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function handleWtMessage(packetType, payload) {
+  async function handleWtMessage(packetType, payload) {
     let jsonString = ""
     let jsonData = {}
     switch (packetType) {
-      case PACKET_TYPE.telemetry:
+      case PACKET_TYPE.telemetry: {
         try {
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
@@ -359,11 +386,11 @@ export const useTrainStore = defineStore('train', () => {
             direction.value = 'BACKWARD'
           }
 
-          break;
         } catch (error) {
           console.error('❌ Error parsing telemetry data:', error)
-          break;
         }
+        break;
+      }
       case PACKET_TYPE.video:
         videoDatagramAssembler.value.processPacket(payload)
         break
@@ -385,36 +412,58 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
       case PACKET_TYPE.rtt: {
-        jsonString = new TextDecoder().decode(payload)
-        jsonData = JSON.parse(jsonString)
+        try {
+          jsonString = new TextDecoder().decode(payload)
+          // Find the end of the first JSON object to handle cases where there might be trailing data
+          const firstBraceEnd = jsonString.indexOf('}')
+          if (firstBraceEnd !== -1) {
+            jsonString = jsonString.substring(0, firstBraceEnd + 1)
+          }
+          jsonData = JSON.parse(jsonString)
 
-        // get system timestamp
-        const currentTime = Date.now()
-        const round_trip_time = currentTime - jsonData.remote_control_timestamp
-        const one_way_latency = round_trip_time / 2
-        const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
-        const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
+          // get system timestamp
+          const currentTime = Date.now()
+          const round_trip_time = currentTime - jsonData.remote_control_timestamp
+          const one_way_latency = round_trip_time / 2
+          const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
+          const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
 
-        // Store this RTT measurement
-        rttMeasurements.value.push({
-          roundTripTime: round_trip_time,
-          oneWayLatency: one_way_latency,
-          clockOffset: clock_offset,
-          remoteSentTime: jsonData.remote_control_timestamp,
-          trainProcessedTime: jsonData.train_timestamp,
-          remoteReceivedTime: currentTime
-        })
+          // Store this RTT measurement
+          rttMeasurements.value.push({
+            roundTripTime: round_trip_time,
+            oneWayLatency: one_way_latency,
+            clockOffset: clock_offset,
+            remoteSentTime: jsonData.remote_control_timestamp,
+            trainProcessedTime: jsonData.train_timestamp,
+            remoteReceivedTime: currentTime
+          })
 
-        console.log(`📊 RTT Measurement ${rttMeasurements.value.length}/${rttCalibrationCount.value}:`)
-        console.log(`   Round trip time: ${round_trip_time} ms`)
-        console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
-        console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
+          console.log(`📊 RTT Measurement ${rttMeasurements.value.length}/${rttCalibrationCount.value}:`)
+          console.log(`   Round trip time: ${round_trip_time} ms`)
+          console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
+          console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
+        } catch (error) {
+          console.error('❌ Error parsing RTT data:', error)
+          console.error('   Raw payload length:', payload.length)
+          console.error('   Decoded string:', jsonString.substring(0, 200)) // Log first 200 chars
+        }
 
         // If we've collected enough measurements, calculate the average
         if (rttMeasurements.value.length >= rttCalibrationCount.value) {
           calculateAverageClockOffset()
         }
 
+        break
+      }
+      case PACKET_TYPE.rtt_train: {
+        // Currently not used in the client
+        console.log('📥 Received rtt_train packet from server')
+        jsonString = new TextDecoder().decode(payload)
+        jsonData = JSON.parse(jsonString)
+        console.log('📥 Parsed rtt_train data:', jsonData)
+        jsonData["remote_control_timestamp"] = Date.now()
+        console.log('📥 Updated rtt_train data with timestamp:', jsonData)
+        await sendRTT_Train(jsonData)
         break
       }
     }

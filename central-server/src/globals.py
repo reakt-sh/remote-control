@@ -18,7 +18,9 @@ PACKET_TYPE = {
     "upload_start": 25,
     "uploading": 26,
     "upload_end": 27,
-    "rtt": 28,  # Round Trip Time
+    "rtt": 28,
+    "map_ack": 29,
+    "rtt_train": 30,
 }
 
 HOST = "0.0.0.0"

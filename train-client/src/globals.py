@@ -13,6 +13,7 @@ FRAME_RATE = 60
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This file's directory
 H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', 'dump')
 ASSET_DIR = os.path.join(BASE_DIR, '..', 'asset')
+LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', 'latency')
 
 PIXEL_FORMAT = "yuv420p"
 
@@ -33,7 +34,9 @@ PACKET_TYPE = {
     "upload_start": 25,
     "uploading": 26,
     "upload_end": 27,
-    "rtt": 28,  # Round Trip Time
+    "rtt": 28,
+    "map_ack": 29,
+    "rtt_train": 30,
 }
 
 TRAIN_STATUS = {

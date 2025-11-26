@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import asyncio
 import datetime
 import os
 import uuid
@@ -31,6 +32,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.is_sending = False
         self.target_speed = 60
         self._running = True
+        self.connected_remote_control_id = None
+        self.clock_offset = 0  # Clock offset between train and remote control (ms)
+        self.rtt_packets_sent = {}  # Track sent RTT packets: {train_timestamp: sent_time}
+        self.create_dump_file_for_latency()
 
         # Initialize components
         self.telemetry = Telemetry(self.train_client_id)
@@ -102,6 +107,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
         output_filename = f"{H264_DUMP}_{timestamp}.h264"
         self.output_file = open(output_filename, 'wb')
 
+    def create_dump_file_for_latency(self):
+        dump_dir = os.path.dirname(LATENCY_DUMP)
+        if dump_dir and not os.path.exists(dump_dir):
+            os.makedirs(dump_dir, exist_ok=True)
+        output_filename = f"{LATENCY_DUMP}.log"
+        self.latency_output_file = open(output_filename, 'w')
+
     def init_network(self):
         # WebSocket
         self.network_worker_ws = NetworkWorkerWS(self.train_client_id)
@@ -143,6 +155,65 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
+        packet_type = data[0]
+        payload = data[1:]
+        if packet_type == PACKET_TYPE["map_ack"]:
+            ## Map ACK received: data =  b'{"type": "mapping_acknowledgement", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
+            remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+            self.connected_remote_control_id = remote_control_id
+            logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
+            self.send_rtt_packets()
+
+        elif packet_type == PACKET_TYPE["rtt_train"]:
+            jsonString = payload.decode('utf-8')
+            jsonData = json.loads(jsonString)
+
+            # Extract timestamps
+            remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
+            train_timestamp_sent = jsonData.get('train_timestamp', 0)
+            current_time = int(datetime.datetime.now().timestamp() * 1000)
+
+            # Calculate RTT (Round Trip Time)
+            rtt = current_time - train_timestamp_sent
+
+            # Calculate clock offset
+            # Clock offset = remote_time - local_time (at the midpoint of RTT)
+            # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
+            self.clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
+
+            logger.info(
+                f"RTT packet received - "
+                f"RTT: {rtt}ms, "
+                f"Clock Offset: {self.clock_offset:.2f}ms, "
+                f"Remote timestamp: {remote_control_timestamp}, "
+                f"Train timestamp sent: {train_timestamp_sent}, "
+                f"Current time: {current_time}"
+            )
+
+        else:
+            logger.warning(f"Unknown QUIC packet type received: {packet_type}")
+
+
+
+    def send_rtt_packets(self, count=1):
+        for _ in range(count):
+            rtt_train_Packet = {
+                "type": "rtt_train",
+                "remote_control_timestamp": 0,
+                "train_timestamp": int(datetime.datetime.now().timestamp() * 1000)
+            }
+
+            rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
+            rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
+            self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
+
+    def calculate_latency(self, remote_timestamp):
+        current_time = int(datetime.datetime.now().timestamp() * 1000)
+        # Adjust remote timestamp using clock offset
+        adjusted_remote_time = remote_timestamp + self.clock_offset
+        # Latency = current_time - adjusted_remote_time
+        latency = current_time - adjusted_remote_time
+        return latency
 
     def on_webrtc_connected(self):
         logger.info("WebRTC connection established")
@@ -158,7 +229,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
-        logger.info(f"Received command: {message}")
+        latency = self.calculate_latency(message.get('remote_control_timestamp', 0))
+        logger.info(f"Received command: {message} with latency: {latency}ms")
+        latency_log_entry = {
+            "remote_control_id": self.connected_remote_control_id,
+            "command_id": message.get("command_id"),
+            "instruction": message['instruction'],
+            "latency_ms": latency,
+            "timestamp": int(datetime.datetime.now().timestamp() * 1000)
+        }
+        self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
+        self.latency_output_file.flush()
+
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
             self.update_speed(self.target_speed)

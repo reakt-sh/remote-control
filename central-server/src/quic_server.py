@@ -1,4 +1,5 @@
 import asyncio
+import struct
 from typing import Dict, Optional
 import json, os
 
@@ -153,7 +154,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
-        elif self.client_type == "TRAIN" and event.data and (event.data[0] == PACKET_TYPE["telemetry"] or event.data[0] == PACKET_TYPE["rtt"]):
+        elif self.client_type == "TRAIN" and event.data and (event.data[0] == PACKET_TYPE["telemetry"] or event.data[0] == PACKET_TYPE["rtt"] or event.data[0] == PACKET_TYPE["rtt_train"]):
             asyncio.create_task(
                 self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
             )
@@ -168,9 +169,21 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     asyncio.create_task(
                         self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
                     )
+                    # also send a message to the train client to acknowledge the mapping
+                    data = {
+                        "type": "mapping_acknowledgement",
+                        "remote_control_id": remote_control_id,
+                    }
+                    packet_data = json.dumps(data).encode('utf-8')
+                    packet = struct.pack("B", PACKET_TYPE["map_ack"]) + packet_data
+
+                    asyncio.create_task(
+                        self.client_manager.relay_stream_to_train(remote_control_id, packet)
+                    )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
-            elif event.data[0] == PACKET_TYPE["command"] or event.data[0] == PACKET_TYPE["rtt"]:
+            elif event.data[0] == PACKET_TYPE["command"] or event.data[0] == PACKET_TYPE["rtt"] or event.data[0] == PACKET_TYPE["rtt_train"]:
+                logger.info(f"QUIC: Relaying stream data to train from remote control {self.remote_control_id}: data = {event.data}")
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
                 )
