@@ -414,11 +414,28 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.rtt: {
         try {
           jsonString = new TextDecoder().decode(payload)
-          // Find the end of the first JSON object to handle cases where there might be trailing data
-          const firstBraceEnd = jsonString.indexOf('}')
-          if (firstBraceEnd !== -1) {
-            jsonString = jsonString.substring(0, firstBraceEnd + 1)
+          
+          // Remove any trailing null bytes or whitespace
+          jsonString = jsonString.replace(/\0+$/, '').trim()
+          
+          // Try to find a complete JSON object by counting braces
+          let braceCount = 0
+          let jsonEndIndex = -1
+          for (let i = 0; i < jsonString.length; i++) {
+            if (jsonString[i] === '{') braceCount++
+            else if (jsonString[i] === '}') {
+              braceCount--
+              if (braceCount === 0) {
+                jsonEndIndex = i + 1
+                break
+              }
+            }
           }
+          
+          if (jsonEndIndex !== -1 && jsonEndIndex < jsonString.length) {
+            jsonString = jsonString.substring(0, jsonEndIndex)
+          }
+          
           jsonData = JSON.parse(jsonString)
 
           // get system timestamp
@@ -445,7 +462,11 @@ export const useTrainStore = defineStore('train', () => {
         } catch (error) {
           console.error('❌ Error parsing RTT data:', error)
           console.error('   Raw payload length:', payload.length)
-          console.error('   Decoded string:', jsonString.substring(0, 200)) // Log first 200 chars
+          console.error('   Decoded string (first 200 chars):', jsonString ? jsonString.substring(0, 200) : 'N/A')
+          console.error('   Full decoded string:', jsonString)
+          // Log byte values for debugging
+          const bytes = new Uint8Array(payload.slice(0, Math.min(100, payload.length)))
+          console.error('   First bytes (hex):', Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' '))
         }
 
         // If we've collected enough measurements, calculate the average
