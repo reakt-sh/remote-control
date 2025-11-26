@@ -35,6 +35,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.connected_remote_control_id = None
         self.clock_offset = 0  # Clock offset between train and remote control (ms)
         self.rtt_packets_sent = {}  # Track sent RTT packets: {train_timestamp: sent_time}
+        self.create_dump_file_for_latency()
 
         # Initialize components
         self.telemetry = Telemetry(self.train_client_id)
@@ -105,6 +106,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
             os.makedirs(dump_dir, exist_ok=True)
         output_filename = f"{H264_DUMP}_{timestamp}.h264"
         self.output_file = open(output_filename, 'wb')
+
+    def create_dump_file_for_latency(self):
+        dump_dir = os.path.dirname(LATENCY_DUMP)
+        if dump_dir and not os.path.exists(dump_dir):
+            os.makedirs(dump_dir, exist_ok=True)
+        output_filename = f"{LATENCY_DUMP}.log"
+        self.latency_output_file = open(output_filename, 'w')
 
     def init_network(self):
         # WebSocket
@@ -200,14 +208,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
 
     def calculate_latency(self, remote_timestamp):
-        """Calculate one-way latency from remote control to train client.
-        
-        Args:
-            remote_timestamp: Timestamp from remote control (in milliseconds)
-            
-        Returns:
-            Latency in milliseconds (float)
-        """
         current_time = int(datetime.datetime.now().timestamp() * 1000)
         # Adjust remote timestamp using clock offset
         adjusted_remote_time = remote_timestamp + self.clock_offset
@@ -231,6 +231,16 @@ class BaseClient(ABC, metaclass=QABCMeta):
         message = json.loads(payload.decode('utf-8'))
         latency = self.calculate_latency(message.get('remote_control_timestamp', 0))
         logger.info(f"Received command: {message} with latency: {latency}ms")
+        latency_log_entry = {
+            "remote_control_id": self.connected_remote_control_id,
+            "command_id": message.get("command_id"),
+            "instruction": message['instruction'],
+            "latency_ms": latency,
+            "timestamp": int(datetime.datetime.now().timestamp() * 1000)
+        }
+        self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
+        self.latency_output_file.flush()
+
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
             self.update_speed(self.target_speed)
