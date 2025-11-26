@@ -182,7 +182,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
-            elif event.data[0] == PACKET_TYPE["command"] or event.data[0] == PACKET_TYPE["rtt"]:
+            elif event.data[0] == PACKET_TYPE["command"] or event.data[0] == PACKET_TYPE["rtt"] or event.data[0] == PACKET_TYPE["rtt_train"]:
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, event.data)
                 )

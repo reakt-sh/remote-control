@@ -425,7 +425,14 @@ export const useTrainStore = defineStore('train', () => {
         jsonData = JSON.parse(jsonString)
         jsonData["remote_control_timestamp"] = Date.now()
         console.log("TheKing --> Received rtt_train_packet: ", jsonData)
-        sendWtMessage(jsonData)
+
+
+        const packetData = new TextEncoder().encode(JSON.stringify(jsonData));
+        const packet = new Uint8Array(1 + packetData.length);
+        packet[0] = PACKET_TYPE.rtt_train
+        packet.set(packetData, 1)
+
+        sendWtMessage(packet)
         break
       }
     }
