@@ -113,8 +113,9 @@ export function useWebTransport(remoteControlId, messageHandler) {
 
   async function send(message) {
     if (!isWTConnected.value || !bidistream.value) {
-      console.log('❌ WebTransport not connected')
-      return
+      const error = 'WebTransport not connected'
+      console.log('❌', error)
+      throw new Error(error)
     }
 
     try {
@@ -138,6 +139,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
           attemptReconnect()
         }
       }
+      throw error // Re-throw the error so callers know it failed
     }
   }
 

@@ -264,7 +264,7 @@ export const useTrainStore = defineStore('train', () => {
       // Fallback to WebSocket if WebTransport is not connected
       else if (isWSConnected.value) {
         sendWsCommand(packet)
-        console.log('⚠️ Command sent via WebSocket (WebTransport fallback)')
+        console.log('⚠️ Command sent via WebSocket (fallback)')
       } else {
         console.error('❌ Cannot send command: Neither WebTransport nor WebSocket is connected')
         throw new Error('No connection available to send command')
@@ -287,6 +287,24 @@ export const useTrainStore = defineStore('train', () => {
     packet.set(packetData, 1);
 
     await sendWtMessage(packet)
+  }
+
+  async function sendRTT_Train(rttPacket) {
+    console.log('📤 Sending RTT_Train packet:', rttPacket)
+    const packetData = new TextEncoder().encode(JSON.stringify(rttPacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.rtt_train; // Set the first byte as PACKET_TYPE.rtt_train
+    packet.set(packetData, 1);
+
+    console.log('📤 RTT_Train packet size:', packet.length, 'bytes')
+    console.log('📤 RTT_Train packet type byte:', packet[0])
+    
+    try {
+      await sendWtMessage(packet)
+      console.log('✅ RTT_Train packet sent successfully')
+    } catch (error) {
+      console.error('❌ Failed to send RTT_Train packet:', error)
+    }
   }
 
   async function handleWsMessage(packetType, payload) {
@@ -325,11 +343,11 @@ export const useTrainStore = defineStore('train', () => {
     }
   }
 
-  function handleWtMessage(packetType, payload) {
+  async function handleWtMessage(packetType, payload) {
     let jsonString = ""
     let jsonData = {}
     switch (packetType) {
-      case PACKET_TYPE.telemetry:
+      case PACKET_TYPE.telemetry: {
         try {
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
@@ -361,11 +379,11 @@ export const useTrainStore = defineStore('train', () => {
             direction.value = 'BACKWARD'
           }
 
-          break;
         } catch (error) {
           console.error('❌ Error parsing telemetry data:', error)
-          break;
         }
+        break;
+      }
       case PACKET_TYPE.video:
         videoDatagramAssembler.value.processPacket(payload)
         break
@@ -421,18 +439,13 @@ export const useTrainStore = defineStore('train', () => {
       }
       case PACKET_TYPE.rtt_train: {
         // Currently not used in the client
+        console.log('📥 Received rtt_train packet from server')
         jsonString = new TextDecoder().decode(payload)
         jsonData = JSON.parse(jsonString)
+        console.log('📥 Parsed rtt_train data:', jsonData)
         jsonData["remote_control_timestamp"] = Date.now()
-        console.log("TheKing --> Received rtt_train_packet: ", jsonData)
-
-
-        const packetData = new TextEncoder().encode(JSON.stringify(jsonData));
-        const packet = new Uint8Array(1 + packetData.length);
-        packet[0] = PACKET_TYPE.rtt_train
-        packet.set(packetData, 1)
-
-        sendWtMessage(packet)
+        console.log('📥 Updated rtt_train data with timestamp:', jsonData)
+        await sendRTT_Train(jsonData)
         break
       }
     }

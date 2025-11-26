@@ -154,13 +154,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 logger.warning("Could not decode client identification message")
                 return
 
-        elif self.client_type == "TRAIN" and event.data and (event.data[0] == PACKET_TYPE["telemetry"] or event.data[0] == PACKET_TYPE["rtt"]) or event.data[0] == PACKET_TYPE["rtt_train"]:
+        elif self.client_type == "TRAIN" and event.data and (event.data[0] == PACKET_TYPE["telemetry"] or event.data[0] == PACKET_TYPE["rtt"] or event.data[0] == PACKET_TYPE["rtt_train"]):
             asyncio.create_task(
                 self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
             )
         elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["keepalive"]:
             self.decode_keepalive_packet(event.data)
         elif self.client_type == "REMOTE_CONTROL":
+            logger.debug(f"TheKing--------------->: Received stream data from remote control {self.remote_control_id}: {event.data}")
             message = event.data.decode()
             if message.startswith("MAP_CONNECTION:"):
                 parts = message[15:].split(":")
