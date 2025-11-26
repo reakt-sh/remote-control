@@ -139,10 +139,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_network_speed_calculated(self, data):
         logger.info(
-            f"Network speed calculated - Download: {data["download_speed"]:.2f} Mbps, "
-            f"Upload: {data["upload_speed"]:.2f} Mbps"
+            f"Network speed calculated - Download: {data['download_speed']:.2f} Mbps, "
+            f"Upload: {data['upload_speed']:.2f} Mbps"
         )
-        self.telemetry.set_network_speed(data["download_speed"], data["upload_speed"], data["jitter"], data["ping"])
+        self.telemetry.set_network_speed(data['download_speed'], data['upload_speed'], data['jitter'], data['ping'])
 
     def on_quic_connected(self):
         logger.info("QUIC connection established")
