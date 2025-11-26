@@ -209,8 +209,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def calculate_latency(self, remote_timestamp):
         current_time = int(datetime.datetime.now().timestamp() * 1000)
-        # Adjust remote timestamp using clock offset
-        adjusted_remote_time = remote_timestamp + self.clock_offset
+        # Adjust remote timestamp to local time by subtracting clock offset
+        # Clock offset = remote_time - local_time, so local_time = remote_time - clock_offset
+        adjusted_remote_time = remote_timestamp - self.clock_offset
         # Latency = current_time - adjusted_remote_time
         latency = current_time - adjusted_remote_time
         return latency
