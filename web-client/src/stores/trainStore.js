@@ -64,6 +64,7 @@ export const useTrainStore = defineStore('train', () => {
   const averageClockOffset = ref(0)
 
   const indexedDBStorageEnabled = ref(false)
+  const commandCounter = ref(0)
 
   const {
     isWSConnected,
@@ -192,6 +193,8 @@ export const useTrainStore = defineStore('train', () => {
 
     // Send multiple RTT messages to calibrate clock offset
     await performRTTCalibration()
+
+    commandCounter.value = 0
   }
 
   async function performRTTCalibration() {
@@ -243,6 +246,10 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function sendCommand(command) {
+    commandCounter.value += 1
+    command["command_id"] = commandCounter.value
+    command["remote_control_timestamp"] = Date.now()
+
     switch (command.instruction) {
       case "POWER_ON": isPoweredOn.value = true; break
       case "POWER_OFF": isPoweredOn.value = false; break

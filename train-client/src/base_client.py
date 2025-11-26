@@ -229,7 +229,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
-        logger.info(f"Received command: {message}")
+        latency = self.calculate_latency(message.get('remote_control_timestamp', 0))
+        logger.info(f"Received command: {message} with latency: {latency}ms")
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
             self.update_speed(self.target_speed)
