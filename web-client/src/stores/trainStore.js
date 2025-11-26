@@ -405,30 +405,41 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
       case PACKET_TYPE.rtt: {
-        jsonString = new TextDecoder().decode(payload)
-        jsonData = JSON.parse(jsonString)
+        try {
+          jsonString = new TextDecoder().decode(payload)
+          // Find the end of the first JSON object to handle cases where there might be trailing data
+          const firstBraceEnd = jsonString.indexOf('}')
+          if (firstBraceEnd !== -1) {
+            jsonString = jsonString.substring(0, firstBraceEnd + 1)
+          }
+          jsonData = JSON.parse(jsonString)
 
-        // get system timestamp
-        const currentTime = Date.now()
-        const round_trip_time = currentTime - jsonData.remote_control_timestamp
-        const one_way_latency = round_trip_time / 2
-        const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
-        const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
+          // get system timestamp
+          const currentTime = Date.now()
+          const round_trip_time = currentTime - jsonData.remote_control_timestamp
+          const one_way_latency = round_trip_time / 2
+          const expected_train_receive_time = jsonData.remote_control_timestamp + one_way_latency
+          const clock_offset = jsonData.train_timestamp - expected_train_receive_time + 30 // Adjust for processing time
 
-        // Store this RTT measurement
-        rttMeasurements.value.push({
-          roundTripTime: round_trip_time,
-          oneWayLatency: one_way_latency,
-          clockOffset: clock_offset,
-          remoteSentTime: jsonData.remote_control_timestamp,
-          trainProcessedTime: jsonData.train_timestamp,
-          remoteReceivedTime: currentTime
-        })
+          // Store this RTT measurement
+          rttMeasurements.value.push({
+            roundTripTime: round_trip_time,
+            oneWayLatency: one_way_latency,
+            clockOffset: clock_offset,
+            remoteSentTime: jsonData.remote_control_timestamp,
+            trainProcessedTime: jsonData.train_timestamp,
+            remoteReceivedTime: currentTime
+          })
 
-        console.log(`📊 RTT Measurement ${rttMeasurements.value.length}/${rttCalibrationCount.value}:`)
-        console.log(`   Round trip time: ${round_trip_time} ms`)
-        console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
-        console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
+          console.log(`📊 RTT Measurement ${rttMeasurements.value.length}/${rttCalibrationCount.value}:`)
+          console.log(`   Round trip time: ${round_trip_time} ms`)
+          console.log(`   One-way latency: ${one_way_latency.toFixed(1)} ms`)
+          console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
+        } catch (error) {
+          console.error('❌ Error parsing RTT data:', error)
+          console.error('   Raw payload length:', payload.length)
+          console.error('   Decoded string:', jsonString.substring(0, 200)) // Log first 200 chars
+        }
 
         // If we've collected enough measurements, calculate the average
         if (rttMeasurements.value.length >= rttCalibrationCount.value) {

@@ -33,6 +33,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.target_speed = 60
         self._running = True
         self.connected_remote_control_id = None
+        self.clock_offset = 0  # Clock offset between train and remote control (ms)
+        self.rtt_packets_sent = {}  # Track sent RTT packets: {train_timestamp: sent_time}
 
         # Initialize components
         self.telemetry = Telemetry(self.train_client_id)
@@ -157,8 +159,29 @@ class BaseClient(ABC, metaclass=QABCMeta):
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')
             jsonData = json.loads(jsonString)
-            jsonData["remote_control_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)
-            logger.info(f"TheKing --> Received rtt_train_packet: {jsonData}")
+
+            # Extract timestamps
+            remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
+            train_timestamp_sent = jsonData.get('train_timestamp', 0)
+            current_time = int(datetime.datetime.now().timestamp() * 1000)
+
+            # Calculate RTT (Round Trip Time)
+            rtt = current_time - train_timestamp_sent
+
+            # Calculate clock offset
+            # Clock offset = remote_time - local_time (at the midpoint of RTT)
+            # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
+            self.clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
+
+            logger.info(
+                f"RTT packet received - "
+                f"RTT: {rtt}ms, "
+                f"Clock Offset: {self.clock_offset:.2f}ms, "
+                f"Remote timestamp: {remote_control_timestamp}, "
+                f"Train timestamp sent: {train_timestamp_sent}, "
+                f"Current time: {current_time}"
+            )
+
         else:
             logger.warning(f"Unknown QUIC packet type received: {packet_type}")
 
@@ -175,6 +198,22 @@ class BaseClient(ABC, metaclass=QABCMeta):
             rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
             rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
+
+    def calculate_latency(self, remote_timestamp):
+        """Calculate one-way latency from remote control to train client.
+        
+        Args:
+            remote_timestamp: Timestamp from remote control (in milliseconds)
+            
+        Returns:
+            Latency in milliseconds (float)
+        """
+        current_time = int(datetime.datetime.now().timestamp() * 1000)
+        # Adjust remote timestamp using clock offset
+        adjusted_remote_time = remote_timestamp + self.clock_offset
+        # Latency = current_time - adjusted_remote_time
+        latency = current_time - adjusted_remote_time
+        return latency
 
     def on_webrtc_connected(self):
         logger.info("WebRTC connection established")
