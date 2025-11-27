@@ -249,6 +249,7 @@ export const useTrainStore = defineStore('train', () => {
     commandCounter.value += 1
     command["command_id"] = commandCounter.value
     command["remote_control_timestamp"] = Date.now()
+    command["remote_control_id"] = remoteControlId.value
 
     switch (command.instruction) {
       case "POWER_ON": isPoweredOn.value = true; break
@@ -414,11 +415,6 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.rtt: {
         try {
           jsonString = new TextDecoder().decode(payload)
-          // Find the end of the first JSON object to handle cases where there might be trailing data
-          const firstBraceEnd = jsonString.indexOf('}')
-          if (firstBraceEnd !== -1) {
-            jsonString = jsonString.substring(0, firstBraceEnd + 1)
-          }
           jsonData = JSON.parse(jsonString)
 
           // get system timestamp
@@ -444,8 +440,6 @@ export const useTrainStore = defineStore('train', () => {
           console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
         } catch (error) {
           console.error('❌ Error parsing RTT data:', error)
-          console.error('   Raw payload length:', payload.length)
-          console.error('   Decoded string:', jsonString.substring(0, 200)) // Log first 200 chars
         }
 
         // If we've collected enough measurements, calculate the average
@@ -456,14 +450,19 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
       case PACKET_TYPE.rtt_train: {
-        // Currently not used in the client
-        console.log('📥 Received rtt_train packet from server')
-        jsonString = new TextDecoder().decode(payload)
-        jsonData = JSON.parse(jsonString)
-        console.log('📥 Parsed rtt_train data:', jsonData)
-        jsonData["remote_control_timestamp"] = Date.now()
-        console.log('📥 Updated rtt_train data with timestamp:', jsonData)
-        await sendRTT_Train(jsonData)
+        try {
+          // Currently not used in the client
+          console.log('📥 Received rtt_train packet from server: ', payload)
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+          console.log('📥 Parsed rtt_train data:', jsonData)
+          jsonData["remote_control_timestamp"] = Date.now()
+          jsonData["remote_control_id"] = remoteControlId.value
+          console.log('📥 Updated rtt_train data with timestamp:', jsonData)
+          await sendRTT_Train(jsonData)
+        } catch (error) {
+          console.error('❌ Error handling rtt_train packet:', error)
+        }
         break
       }
     }
