@@ -111,7 +111,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if dump_dir and not os.path.exists(dump_dir):
             os.makedirs(dump_dir, exist_ok=True)
         output_filename = f"{LATENCY_DUMP}.log"
-        self.latency_output_file = open(output_filename, 'w')
+
+        # create a new file only if it doesn't exist
+        if not os.path.exists(output_filename):
+            self.latency_output_file = open(output_filename, 'w')
+        else:
+            self.latency_output_file = open(output_filename, 'a')
 
     def init_network(self):
         # WebSocket
