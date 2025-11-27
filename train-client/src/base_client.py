@@ -232,10 +232,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_new_command(self, payload):
         message = json.loads(payload.decode('utf-8'))
-        latency = self.calculate_latency(message.get('remote_control_timestamp', 0))
+        remote_control_id = message.get('remote_control_id', 0)
+        latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
         logger.info(f"Received command: {message} with latency: {latency}ms")
         latency_log_entry = {
-            "remote_control_id": self.connected_remote_control_id,
+            "remote_control_id": remote_control_id,
             "command_id": message.get("command_id"),
             "instruction": message['instruction'],
             "latency_ms": latency,
