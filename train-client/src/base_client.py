@@ -211,9 +211,15 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def calculate_latency(self, remote_control_id, remote_timestamp):
         current_time = int(datetime.datetime.now().timestamp() * 1000)
+
+        # Check if clock offset has been calculated for this remote control
+        if remote_control_id not in self.clock_offsets:
+            logger.warning(f"Clock offset not available for remote_control_id: {remote_control_id}. Cannot calculate accurate latency. Clock offsets: {self.clock_offsets}")
+            return None
+
         # Adjust remote timestamp to local time by subtracting clock offset
         # Clock offset = remote_time - local_time, so local_time = remote_time - clock_offset
-        adjusted_remote_time = remote_timestamp - self.clock_offsets.get(remote_control_id, 0)
+        adjusted_remote_time = remote_timestamp - self.clock_offsets[remote_control_id]
         # Latency = current_time - adjusted_remote_time
         latency = current_time - adjusted_remote_time
         return latency
@@ -234,16 +240,20 @@ class BaseClient(ABC, metaclass=QABCMeta):
         message = json.loads(payload.decode('utf-8'))
         remote_control_id = message.get('remote_control_id', 0)
         latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
-        logger.info(f"Received command: {message} with latency: {latency}ms")
-        latency_log_entry = {
-            "remote_control_id": remote_control_id,
-            "command_id": message.get("command_id"),
-            "instruction": message['instruction'],
-            "latency_ms": latency,
-            "timestamp": int(datetime.datetime.now().timestamp() * 1000)
-        }
-        self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
-        self.latency_output_file.flush()
+
+        if latency is not None:
+            logger.info(f"Received command: {message} with latency: {latency}ms")
+            latency_log_entry = {
+                "remote_control_id": remote_control_id,
+                "command_id": message.get("command_id"),
+                "instruction": message['instruction'],
+                "latency_ms": latency,
+                "timestamp": int(datetime.datetime.now().timestamp() * 1000)
+            }
+            self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
+            self.latency_output_file.flush()
+        else:
+            logger.info(f"Received command: {message} (latency not available - clock not synchronized)")
 
         if message['instruction'] == 'CHANGE_TARGET_SPEED':
             self.target_speed = message['target_speed']
