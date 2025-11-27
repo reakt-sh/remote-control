@@ -249,6 +249,7 @@ export const useTrainStore = defineStore('train', () => {
     commandCounter.value += 1
     command["command_id"] = commandCounter.value
     command["remote_control_timestamp"] = Date.now()
+    command["remote_control_id"] = remoteControlId.value
 
     switch (command.instruction) {
       case "POWER_ON": isPoweredOn.value = true; break
@@ -456,6 +457,7 @@ export const useTrainStore = defineStore('train', () => {
           jsonData = JSON.parse(jsonString)
           console.log('📥 Parsed rtt_train data:', jsonData)
           jsonData["remote_control_timestamp"] = Date.now()
+          jsonData["remote_control_id"] = remoteControlId.value
           console.log('📥 Updated rtt_train data with timestamp:', jsonData)
           await sendRTT_Train(jsonData)
         } catch (error) {

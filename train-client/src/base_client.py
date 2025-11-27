@@ -32,9 +32,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.is_sending = False
         self.target_speed = 60
         self._running = True
-        self.connected_remote_control_id = None
-        self.clock_offset = 0  # Clock offset between train and remote control (ms)
-        self.rtt_packets_sent = {}  # Track sent RTT packets: {train_timestamp: sent_time}
+        self.connected_remote_control_ids = set()
+        self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
         self.create_dump_file_for_latency()
 
         # Initialize components
@@ -160,7 +159,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if packet_type == PACKET_TYPE["map_ack"]:
             ## Map ACK received: data =  b'{"type": "mapping_acknowledgement", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
             remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
-            self.connected_remote_control_id = remote_control_id
+            self.connected_remote_control_ids.add(remote_control_id)
             logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
             self.send_rtt_packets()
 
@@ -172,6 +171,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
             train_timestamp_sent = jsonData.get('train_timestamp', 0)
             current_time = int(datetime.datetime.now().timestamp() * 1000)
+            remote_control_id = jsonData.get('remote_control_id')
 
             # Calculate RTT (Round Trip Time)
             rtt = current_time - train_timestamp_sent
@@ -179,12 +179,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Calculate clock offset
             # Clock offset = remote_time - local_time (at the midpoint of RTT)
             # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
-            self.clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
+            clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
+            self.clock_offsets[remote_control_id] = clock_offset
 
             logger.info(
                 f"RTT packet received - "
                 f"RTT: {rtt}ms, "
-                f"Clock Offset: {self.clock_offset:.2f}ms, "
+                f"Clock Offset: {self.clock_offsets[remote_control_id]:.2f}ms, "
                 f"Remote timestamp: {remote_control_timestamp}, "
                 f"Train timestamp sent: {train_timestamp_sent}, "
                 f"Current time: {current_time}"
@@ -200,6 +201,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             rtt_train_Packet = {
                 "type": "rtt_train",
                 "remote_control_timestamp": 0,
+                "remote_control_id": 0,
                 "train_timestamp": int(datetime.datetime.now().timestamp() * 1000)
             }
 
@@ -207,11 +209,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
             rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
 
-    def calculate_latency(self, remote_timestamp):
+    def calculate_latency(self, remote_control_id, remote_timestamp):
         current_time = int(datetime.datetime.now().timestamp() * 1000)
         # Adjust remote timestamp to local time by subtracting clock offset
         # Clock offset = remote_time - local_time, so local_time = remote_time - clock_offset
-        adjusted_remote_time = remote_timestamp - self.clock_offset
+        adjusted_remote_time = remote_timestamp - self.clock_offsets.get(remote_control_id, 0)
         # Latency = current_time - adjusted_remote_time
         latency = current_time - adjusted_remote_time
         return latency

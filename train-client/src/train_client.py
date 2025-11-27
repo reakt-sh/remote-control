@@ -217,7 +217,7 @@ class TrainClient(BaseClient, QMainWindow):
         self.update_speed(0)
 
     def on_change_direction(self, direction):
-        self.video_source.set_direction(DIRECTION[direction])
+        self.video_source.set_direction(direction)
 
     def closeEvent(self, event):
         self.close()
