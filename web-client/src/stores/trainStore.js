@@ -451,7 +451,7 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.rtt_train: {
         try {
           // Currently not used in the client
-          console.log('📥 Received rtt_train packet from server')
+          console.log('📥 Received rtt_train packet from server: ', payload)
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
           console.log('📥 Parsed rtt_train data:', jsonData)
