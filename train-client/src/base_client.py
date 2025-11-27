@@ -195,7 +195,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
 
 
-    def send_rtt_packets(self, count=1):
+    def send_rtt_packets(self, count=5):
         for _ in range(count):
             rtt_train_Packet = {
                 "type": "rtt_train",
