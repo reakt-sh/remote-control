@@ -414,28 +414,6 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.rtt: {
         try {
           jsonString = new TextDecoder().decode(payload)
-          
-          // Remove any trailing null bytes or whitespace
-          jsonString = jsonString.replace(/\0+$/, '').trim()
-          
-          // Try to find a complete JSON object by counting braces
-          let braceCount = 0
-          let jsonEndIndex = -1
-          for (let i = 0; i < jsonString.length; i++) {
-            if (jsonString[i] === '{') braceCount++
-            else if (jsonString[i] === '}') {
-              braceCount--
-              if (braceCount === 0) {
-                jsonEndIndex = i + 1
-                break
-              }
-            }
-          }
-          
-          if (jsonEndIndex !== -1 && jsonEndIndex < jsonString.length) {
-            jsonString = jsonString.substring(0, jsonEndIndex)
-          }
-          
           jsonData = JSON.parse(jsonString)
 
           // get system timestamp
@@ -461,12 +439,6 @@ export const useTrainStore = defineStore('train', () => {
           console.log(`   Clock offset: ${clock_offset.toFixed(1)} ms`)
         } catch (error) {
           console.error('❌ Error parsing RTT data:', error)
-          console.error('   Raw payload length:', payload.length)
-          console.error('   Decoded string (first 200 chars):', jsonString ? jsonString.substring(0, 200) : 'N/A')
-          console.error('   Full decoded string:', jsonString)
-          // Log byte values for debugging
-          const bytes = new Uint8Array(payload.slice(0, Math.min(100, payload.length)))
-          console.error('   First bytes (hex):', Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' '))
         }
 
         // If we've collected enough measurements, calculate the average
@@ -477,14 +449,18 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
       case PACKET_TYPE.rtt_train: {
-        // Currently not used in the client
-        console.log('📥 Received rtt_train packet from server')
-        jsonString = new TextDecoder().decode(payload)
-        jsonData = JSON.parse(jsonString)
-        console.log('📥 Parsed rtt_train data:', jsonData)
-        jsonData["remote_control_timestamp"] = Date.now()
-        console.log('📥 Updated rtt_train data with timestamp:', jsonData)
-        await sendRTT_Train(jsonData)
+        try {
+          // Currently not used in the client
+          console.log('📥 Received rtt_train packet from server')
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+          console.log('📥 Parsed rtt_train data:', jsonData)
+          jsonData["remote_control_timestamp"] = Date.now()
+          console.log('📥 Updated rtt_train data with timestamp:', jsonData)
+          await sendRTT_Train(jsonData)
+        } catch (error) {
+          console.error('❌ Error handling rtt_train packet:', error)
+        }
         break
       }
     }
