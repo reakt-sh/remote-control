@@ -7,7 +7,8 @@ export function useVideoPanel(canvasRef, options = {}) {
   const {
     videoWidth = 1280,
     videoHeight = 720,
-    maxQueueSize = 60
+    maxQueueSize = 60,
+    latencyRef = null
   } = options
 
   const isFullScreen = ref(false)
@@ -57,6 +58,27 @@ export function useVideoPanel(canvasRef, options = {}) {
       scaledWidth,
       scaledHeight
     )
+
+    // Draw latency overlay if latencyRef is provided
+    if (latencyRef && latencyRef.value > 0) {
+      const latency = latencyRef.value.toFixed(1)
+      ctx.font = 'bold 20px Arial'
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+      const text = `Average Latency (last 30 frames): ${latency} ms`
+      const textMetrics = ctx.measureText(text)
+      const padding = 12
+      const boxWidth = textMetrics.width + padding * 2
+      const boxHeight = 32
+      const boxX = 10
+      const boxY = canvasRef.value.height - boxHeight - 10
+
+      // Draw background box
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
+
+      // Draw text
+      ctx.fillStyle = '#00ff00'
+      ctx.fillText(text, boxX + padding, boxY + boxHeight - 8)
+    }
   }
 
   async function updateCanvasSize() {

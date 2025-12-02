@@ -170,7 +170,6 @@ export const useTrainStore = defineStore('train', () => {
           last30_latencyHistory.value.push(completedFrame.latency + averageClockOffset.value)
           const sumLatency = last30_latencyHistory.value.reduce((a, b) => a + b, 0)
           last30_framesAverageLatency.value = sumLatency / last30_latencyHistory.value.length
-          console.log(`📺 Average latency of last ${last30_latencyHistory.value.length} frames: ${last30_framesAverageLatency.value.toFixed(1)} ms`)
         }
       })
     }
@@ -593,6 +592,7 @@ export const useTrainStore = defineStore('train', () => {
     rttCalibrationInProgress,
     rttMeasurements,
     rttCalibrationCount,
+    last30_framesAverageLatency,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
