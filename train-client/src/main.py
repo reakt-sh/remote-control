@@ -32,13 +32,27 @@ def run_train_client():
     sys.exit(app.exec_())
 
 def run_reaktor_client():
+    import asyncio
     from PyQt5.QtWidgets import QApplication
     from reaktor_client import ReaktorClient
-
-    app = QApplication(sys.argv)
-    client = ReaktorClient()
-    client.show()
-    sys.exit(app.exec_())
+    try:
+        import qasync
+        app = QApplication(sys.argv)
+        loop = qasync.QEventLoop(app)
+        asyncio.set_event_loop(loop)
+        
+        client = ReaktorClient()
+        client.show()
+        
+        with loop:
+            loop.run_forever()
+    except ImportError:
+        # Fallback without qasync
+        print("qasync not installed. Installing...")
+        import subprocess
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "qasync"])
+        print("Please run the script again.")
+        sys.exit(1)
 
 def run_cli_client():
     from PyQt5.QtCore import QCoreApplication

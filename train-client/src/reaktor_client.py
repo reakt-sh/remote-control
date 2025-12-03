@@ -30,7 +30,9 @@ class ReaktorClient(BaseClient, QMainWindow):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
         self.init_ui()
-        asyncio.create_task(self.setup_connection())
+        self.connection = None
+        # Schedule the async setup after the event loop starts
+        asyncio.ensure_future(self.setup_connection())
 
     async def setup_connection(self):
         # Open connection
