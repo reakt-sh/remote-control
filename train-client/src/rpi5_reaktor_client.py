@@ -9,7 +9,7 @@ from PyQt5.QtCore import QThread
 # Connector related imports
 from connector.test.context import Connection, Status, Control, Mode
 
-TARGET_SPEED = 1000  # Target speed in RPM
+TARGET_SPEED = 3  # Target speed in m/s
 
 # Status handling
 status = None

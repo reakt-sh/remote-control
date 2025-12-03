@@ -7,7 +7,7 @@ import asyncio
 import logging
 from context import Connection, Status, Control, Mode
 
-TARGET_SPEED = 1000  # Target speed in RPM
+TARGET_SPEED = 3  # Target speed in m/s
 
 # Status handling
 status = None
@@ -42,14 +42,14 @@ async def main():
         # Set speed
         control = Control(
             mode = Mode.FORWARD,
-            target_rpm = TARGET_SPEED
+            target_speed = TARGET_SPEED
         )
-        print("Sending new RPM:", control.target_rpm)
+        print("Sending new speed:", control.target_speed, "m/s")
         connection.send_control(control)
 
         # Wait until speed reached
-        while status.motor_rpm < TARGET_SPEED * 0.95:
-            print("Waiting for motor to reach target speed. Current RPM:", status.motor_rpm)
+        while status.motor_speed < TARGET_SPEED * 0.95:
+            print("Waiting for motor to reach target speed. Current speed:", round(status.motor_speed,2), "m/s")
             await asyncio.sleep(.5)
     except KeyboardInterrupt:
         print("Exiting...")
@@ -57,7 +57,7 @@ async def main():
         print("Stopping motor...")
         control = Control(
             mode = Mode.NEUTRAL,
-            target_rpm = 0
+            target_speed = 0
         )
         connection.send_control(control)
         await asyncio.sleep(1)

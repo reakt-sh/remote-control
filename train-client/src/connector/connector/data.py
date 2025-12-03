@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import IntEnum, unique
-from typing import Optional, List
-from pydantic import BaseModel, PositiveFloat
+from typing import Annotated, Optional, List
+from pydantic import BaseModel, Field
 from .generated.communication_bp import Mode as MessageMode, ErrorState
 
 @unique
@@ -13,10 +13,12 @@ class Mode(IntEnum):
     PARKING = MessageMode.DRIVE_MODE_PARKING
     EMERGENCY_STOP = MessageMode.DRIVE_MODE_EMERGENCY_STOP
 
+type SpeedType = Annotated[float, Field(ge=0, allow_inf_nan=False, description="Speed in m/s")]
+
 class Control(BaseModel):
     """Control command for the vehicle."""
     mode: Mode
-    target_speed: PositiveFloat = 0 # in m/s
+    target_speed: SpeedType = 0 # in m/s
 
 class InternalState(BaseModel):
     """Internal state of the driver."""
