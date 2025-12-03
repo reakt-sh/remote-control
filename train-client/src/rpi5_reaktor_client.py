@@ -1,4 +1,5 @@
 import asyncio
+import qasync
 from loguru import logger
 from sensor.camera import Camera
 from motor_actuator import MotorActuator
@@ -24,9 +25,10 @@ class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
         super().__init__(video_source=Camera(), has_motor=True)
         self.connection = None
-        self.task = None
-        loop = asyncio.get_event_loop()
-        self.task = loop.create_task(self.setup_connection())
+        self.setup_task = None
+        loop = qasync.QEventLoop(self)
+        task = loop.create_task(self.setup_connection())
+        loop.run_until_complete(task)
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
