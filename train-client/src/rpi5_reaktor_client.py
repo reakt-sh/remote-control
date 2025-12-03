@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
@@ -10,21 +10,26 @@ from PyQt5.QtCore import QThread
 from connector.test.context import Connection, Status, Control, Mode
 
 TARGET_SPEED = 3  # Target speed in m/s
+MAX_SPEED = 6  # Maximum speed in m/s
 
 # Status handling
 status = None
 def set_status(s: Status):
     global status
     status = s
-    logging.info("New status: %s", s)
+    logger.info(f"New status: {s}")
 
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
         super().__init__(video_source=CameraRPi5(), has_motor=True)
-        asyncio.create_task(self.setup_connection())
+        self.connection = None
+        self.task = None
+        loop = asyncio.get_event_loop()
+        self.task = loop.create_task(self.setup_connection())
 
     async def setup_connection(self):
+        logger.info("Setting up connection...")
         # Open connection
         self.connection = Connection()
         self.connection.add_status_listener(set_status)
@@ -32,40 +37,45 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
         # Test if connection is ready
         if not self.connection.is_ready():
-            print("Warning: Connection not yet ready. Check connection.")
+            logger.warning("Warning: Connection not yet ready. Check connection.")
         while not status:
-            print("Waiting for initial status...")
+            logger.warning("Waiting for initial status...")
             await asyncio.sleep(.1)
 
     def update_speed(self, speed):
+
+        scaled_speed = speed / 20.0
+        if scaled_speed > MAX_SPEED:
+            logger.warning(f"Requested speed {scaled_speed} m/s exceeds MAX_SPEED {MAX_SPEED} m/s. Capping to MAX_SPEED.")
+            scaled_speed = MAX_SPEED
         # Set speed
         control = Control(
             mode = Mode.FORWARD,
-            target_rpm = speed
+            target_speed = scaled_speed
         )
-        logging.info("Sending new RPM: %d", control.target_rpm)
+        logger.info(f"Sending new target speed: {control.target_speed}")
         self.connection.send_control(control)
 
     def on_power_on(self):
         # Set initial speed
         control = Control(
             mode = Mode.FORWARD,
-            target_rpm = TARGET_SPEED
+            target_speed = TARGET_SPEED
         )
-        logging.info("Powering on motor with RPM: %d", control.target_rpm)
+        logger.info(f"Powering on motor with target speed: {control.target_speed}")
         self.connection.send_control(control)
 
     def on_power_off(self):
         # Stop motor
         control = Control(
             mode = Mode.NEUTRAL,
-            target_rpm = 0
+            target_speed = 0
         )
-        logging.info("Powering off motor.")
+        logger.info("Powering off motor.")
         self.connection.send_control(control)
 
     def on_change_direction(self, direction):
         if direction == DIRECTION["FORWARD"]:
-            logging.info("Changing direction command received to FORWARD.")
+            logger.info("Changing direction command received to FORWARD.")
         elif direction == DIRECTION["BACKWARD"]:
-            logging.info("Changing direction command received to BACKWARD.")
+            logger.info("Changing direction command received to BACKWARD.")
