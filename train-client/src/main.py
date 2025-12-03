@@ -31,6 +31,15 @@ def run_train_client():
     client.show()
     sys.exit(app.exec_())
 
+def run_reaktor_client():
+    from PyQt5.QtWidgets import QApplication
+    from reaktor_client import ReaktorClient
+
+    app = QApplication(sys.argv)
+    client = ReaktorClient()
+    client.show()
+    sys.exit(app.exec_())
+
 def run_cli_client():
     from PyQt5.QtCore import QCoreApplication
     from cli_client import CLIClient
@@ -44,7 +53,9 @@ def run_cli_client():
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "cli":
         run_cli_client()
-    elif len(sys.argv) > 1 and sys.argv[1] == "reaktor":
+    elif (len(sys.argv) > 1 and sys.argv[1] == "reaktor"):
+        run_reaktor_client()
+    elif len(sys.argv) > 1 and sys.argv[1] == "rpi5_reaktor":
         run_rpi5_reaktor_client()
     elif "rpi" in platform.uname().release.lower():
         run_rpi5_client()
