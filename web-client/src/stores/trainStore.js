@@ -66,6 +66,11 @@ export const useTrainStore = defineStore('train', () => {
   const indexedDBStorageEnabled = ref(false)
   const commandCounter = ref(0)
 
+  // Variables to calculate latency of last 30 frames
+  const last30_latencyHistory = ref([])
+  const last30_framesAverageLatency = ref(0)
+
+
   const {
     isWSConnected,
     connectWebSocket,
@@ -157,6 +162,14 @@ export const useTrainStore = defineStore('train', () => {
               latency: completedFrame.latency + averageClockOffset.value
             })
           }
+
+          // Calculate average latency of last 30 frames
+          if (last30_latencyHistory.value.length >= 30) {
+            last30_latencyHistory.value.shift()
+          }
+          last30_latencyHistory.value.push(completedFrame.latency + averageClockOffset.value)
+          const sumLatency = last30_latencyHistory.value.reduce((a, b) => a + b, 0)
+          last30_framesAverageLatency.value = sumLatency / last30_latencyHistory.value.length
         }
       })
     }
@@ -579,6 +592,7 @@ export const useTrainStore = defineStore('train', () => {
     rttCalibrationInProgress,
     rttMeasurements,
     rttCalibrationCount,
+    last30_framesAverageLatency,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
