@@ -1,6 +1,6 @@
 import asyncio
 from loguru import logger
-from sensor.camera_rpi_5 import CameraRPi5
+from sensor.camera import Camera
 from motor_actuator import MotorActuator
 from base_client import BaseClient
 from globals import DIRECTION
@@ -22,7 +22,7 @@ def set_status(s: Status):
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
-        super().__init__(video_source=CameraRPi5(), has_motor=True)
+        super().__init__(video_source=Camera(), has_motor=True)
         self.connection = None
         self.task = None
         loop = asyncio.get_event_loop()
