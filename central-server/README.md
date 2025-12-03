@@ -199,6 +199,19 @@ docker run -d \
   emqx/nanomq:latest-full \
   nanomq start --conf /etc/nanomq.conf
 ```
+### Setup Venv
+```
+# Setup venv
+sudo apt update
+sudo apt install python3-venv -y
+python3 -m venv rc_venv
+
+# Activation
+source /home/reaktor/Python_venv/rc_venv/bin/activate
+
+# Deactivation
+deactivate
+```
 
 ### Run Central Server
 ```
