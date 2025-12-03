@@ -2,6 +2,16 @@
 import sys
 import platform
 
+def run_rpi5_reaktor_client():
+    from PyQt5.QtCore import QCoreApplication
+    from rpi5_reaktor_client import RPi5ReaktorClient
+
+    # Create and start the client
+    app = QCoreApplication(sys.argv)
+    client = RPi5ReaktorClient()
+    client.start()
+    sys.exit(app.exec_())
+
 def run_rpi5_client():
     from PyQt5.QtCore import QCoreApplication
     from rpi5_client import RPi5Client
@@ -33,11 +43,10 @@ def run_cli_client():
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "cli":
-        # run CLI client
         run_cli_client()
+    elif len(sys.argv) > 1 and sys.argv[1] == "reaktor":
+        run_rpi5_reaktor_client()
     elif "rpi" in platform.uname().release.lower():
-        # run Raspberri Pi 5 client
         run_rpi5_client()
     else:
-        # run Desktop Train client
         run_train_client()
