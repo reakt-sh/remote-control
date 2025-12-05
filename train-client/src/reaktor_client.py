@@ -15,8 +15,8 @@ import asyncio
 # Connector related imports
 from connector.test.context import Connection, Status, Control, Mode
 
-TARGET_SPEED = 3  # Target speed in m/s
-MAX_SPEED = 6  # Maximum speed in m/s
+INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
+MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
 # Status handling
 status = None
@@ -242,15 +242,15 @@ class ReaktorClient(BaseClient, QMainWindow):
         self.console_log.setTextCursor(cursor)
 
     def update_speed(self, speed):
-
-        scaled_speed = speed / 20.0
-        if scaled_speed > MAX_SPEED:
-            logger.warning(f"Requested speed {scaled_speed} m/s exceeds MAX_SPEED {MAX_SPEED} m/s. Capping to MAX_SPEED.")
-            scaled_speed = MAX_SPEED
+        # convert to m/s
+        converted_speed = speed / 3.6
+        if converted_speed > MAX_SPEED_REAKTOR:
+            logger.warning(f"Requested speed {converted_speed} m/s exceeds MAX_SPEED {MAX_SPEED_REAKTOR} m/s. Capping to MAX_SPEED.")
+            converted_speed = MAX_SPEED_REAKTOR
         # Set speed
         control = Control(
             mode = Mode.FORWARD,
-            target_speed = scaled_speed
+            target_speed = converted_speed
         )
         logger.info(f"Sending new target speed: {control.target_speed}")
         self.connection.send_control(control)
@@ -259,7 +259,7 @@ class ReaktorClient(BaseClient, QMainWindow):
         # Set initial speed
         control = Control(
             mode = Mode.FORWARD,
-            target_speed = TARGET_SPEED
+            target_speed = INITIAL_SPEED_REAKTOR
         )
         logger.info(f"Powering on motor with target speed: {control.target_speed}")
         self.connection.send_control(control)

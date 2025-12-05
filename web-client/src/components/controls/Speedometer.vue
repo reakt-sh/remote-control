@@ -26,7 +26,7 @@
           <input
             type="range"
             min="0"
-            :max="props.maxSpeed"
+            max="20"
             :value="tempTargetSpeed"
             @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value))}"
             @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value))}"
@@ -61,7 +61,7 @@ const props = defineProps({
   },
   maxSpeed: {
     type: Number,
-    default: 60
+    default: 20
   }
 });
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
@@ -131,7 +131,7 @@ function toggleInputMode() {
 
 function changeTargetSpeed(delta) {
   let newSpeed = tempTargetSpeed.value + delta;
-  newSpeed = Math.max(0, Math.min(props.maxSpeed, newSpeed));
+  newSpeed = Math.max(0, Math.min(20, newSpeed));
   tempTargetSpeed.value = newSpeed;
 }
 

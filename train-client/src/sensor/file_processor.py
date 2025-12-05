@@ -4,7 +4,7 @@ from datetime import datetime
 import random
 import os
 from loguru import logger
-from globals import ASSET_DIR
+from globals import ASSET_DIR, MAX_SPEED
 
 class FileProcessor(QObject):
     frame_ready = pyqtSignal(object, object, int, int)  # Emits (frame_count, frame)
@@ -29,12 +29,12 @@ class FileProcessor(QObject):
         self.width = 0
         self.height = 0
         self.original_fps = 60
-        self.current_fps = 30
-        self.set_speed(self.current_fps)
+        self.current_fps = 20
+        self.set_speed(MAX_SPEED)
 
         self.direction = 1  # 1 for forward, -1 for backward
 
-    def init_capture(self, speed_kmh=60):
+    def init_capture(self, speed_kmh=MAX_SPEED):
         self.cap = cv2.VideoCapture(self.video_path)
         if not self.cap.isOpened():
             raise RuntimeError("Could not open video file")
