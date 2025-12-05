@@ -17,8 +17,8 @@ class Telemetry(QObject):
         self.train_id = train_id
         self.status = TRAIN_STATUS["POWER_ON"]
         self.direction = DIRECTION["FORWARD"]
-        self.speed = 60
-        self.max_speed = 60
+        self.speed = MAX_SPEED
+        self.max_speed = MAX_SPEED
         self.brake_status = "released"
         self.location_index = random.randint(0, len(STATION_LIST) - 1)
         self.next_station_index = self.get_next_station(self.location_index)

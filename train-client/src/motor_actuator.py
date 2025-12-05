@@ -1,13 +1,16 @@
 import RPi.GPIO as GPIO
+from globals import MAX_SPEED, SCALE_FACTOR_PWM
 
 class MotorActuator:
     def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000):
-        self.input1_pin = input1_pin    # GPIO pin for IN1, used for forward direction
-        self.input2_pin = input2_pin    # GPIO pin for IN2, used for backward direction
-        self.enable_pin = enable_pin    # GPIO pin for EN, used for PWM control
-        self.pwm_freq = pwm_freq        # Frequency for PWM control
-        self.direction = 1              # 1 for forward, 0 for backward
-        self.speed = 25                 # Default speed (duty cycle for P
+        self.input1_pin = input1_pin                # GPIO pin for IN1, used for forward direction
+        self.input2_pin = input2_pin                # GPIO pin for IN2, used for backward direction
+        self.enable_pin = enable_pin                # GPIO pin for EN, used for PWM control
+        self.pwm_freq = pwm_freq                    # Frequency for PWM control
+        self.direction = 1                          # 1 for forward, 0 for backward
+        self.scale_factor = SCALE_FACTOR_PWM        # Scale factor to convert speed to PWM duty cycle
+        self.max_speed = MAX_SPEED * self.scale_factor
+        self.current_speed = 0
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.input1_pin, GPIO.OUT)
@@ -19,8 +22,8 @@ class MotorActuator:
         self.pwm.start(self.speed)  # Default to low speed
 
     def start_motor(self):
-        self.speed = max(self.speed, 25) # Ensure minimum speed
-        self.set_speed(self.speed)
+        self.current_speed = max(self.current_speed, self.max_speed)
+        self.set_speed(self.current_speed)
         if self.direction == 1:
             GPIO.output(self.input1_pin, GPIO.HIGH)
             GPIO.output(self.input2_pin, GPIO.LOW)
@@ -41,14 +44,16 @@ class MotorActuator:
         self.start_motor()
 
     def set_speed(self, speed):
-        self.speed = int(speed * 1.25) # Scale speed to match PWM range
-        self.speed = max(0, min(75, speed))
-        self.pwm.ChangeDutyCycle(self.speed)
+        self.current_speed = int(speed * self.scale_factor) # Scale speed to match PWM range
+
+        # clamp speed to [0, max_speed]
+        self.current_speed = max(0, min(self.current_speed, self.max_speed))
+        self.pwm.ChangeDutyCycle(self.current_speed)
 
     def get_speed(self):
-        return int(self.speed / 1.25)  # Convert back to original speed scale
+        return int(self.current_speed / self.scale_factor)  # Convert back to original speed scale
 
     def cleanup(self):
-        self.stop()
+        self.stop_motor()
         self.pwm.stop()
         GPIO.cleanup([self.input1_pin, self.input2_pin, self.enable_pin])
