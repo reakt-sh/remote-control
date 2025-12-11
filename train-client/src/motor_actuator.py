@@ -19,7 +19,7 @@ class MotorActuator:
         GPIO.output(self.input1_pin, GPIO.LOW)
         GPIO.output(self.input2_pin, GPIO.LOW)
         self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
-        self.pwm.start(self.speed)  # Default to low speed
+        self.pwm.start(self.max_speed)  # Default to max speed
 
     def start_motor(self):
         self.current_speed = max(self.current_speed, self.max_speed)
