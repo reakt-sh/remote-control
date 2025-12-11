@@ -63,7 +63,7 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
-  const indexedDBStorageEnabled = ref(false)
+  const indexedDBStorageEnabled = ref(true)
   const commandCounter = ref(0)
 
   // Variables to calculate latency of last 30 frames
