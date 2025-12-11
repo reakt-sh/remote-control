@@ -271,7 +271,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.toggle_sending()
         elif message['instruction'] == 'POWER_ON':
             self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
-            self.target_speed = max(self.target_speed, 30)
+            self.target_speed = max(self.target_speed, MAX_SPEED)
             self.on_power_on()
         elif message['instruction'] == 'POWER_OFF':
             self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
