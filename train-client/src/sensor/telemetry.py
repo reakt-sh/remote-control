@@ -59,7 +59,7 @@ class Telemetry(QObject):
             else:
                 self.brake_status = "released"
         else:
-            raise ValueError(f"Speed must be between 0 and {self.max_speed}")
+            raise ValueError(f"Speed must be between 0 and {self.max_speed}, received: {speed}")
 
     def set_status(self, status: str):
         self.status = status
