@@ -81,4 +81,3 @@
 {"remote_control_id": "22f2b983-d69e-4810-8f6c-3d2014ee6ec1", "command_id": 81, "instruction": "POWER_ON", "latency_ms": 42.5, "timestamp": 1750243827304}
 {"remote_control_id": "22f2b983-d69e-4810-8f6c-3d2014ee6ec1", "command_id": 82, "instruction": "CHANGE_TARGET_SPEED", "latency_ms": 69.5, "timestamp": 1750243828572}
 {"remote_control_id": "22f2b983-d69e-4810-8f6c-3d2014ee6ec1", "command_id": 83, "instruction": "CHANGE_TARGET_SPEED", "latency_ms": 46.5, "timestamp": 1750243830672}
-
