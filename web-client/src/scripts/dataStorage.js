@@ -879,14 +879,14 @@ class DataStorage {
       }
 
       const frames = await query.toArray()
-      
+
       // Create a combined H.264 stream
       let totalSize = 0
       frames.forEach(frame => totalSize += frame.data.byteLength)
-      
+
       const combinedData = new Uint8Array(totalSize)
       let offset = 0
-      
+
       frames.forEach(frame => {
         combinedData.set(frame.data, offset)
         offset += frame.data.byteLength
@@ -894,7 +894,7 @@ class DataStorage {
 
       const blob = new Blob([combinedData], { type: 'video/h264' })
       const url = URL.createObjectURL(blob)
-      
+
       // Download the file
       const link = document.createElement('a')
       link.href = url
@@ -936,7 +936,7 @@ class DataStorage {
       }
 
       const telemetryData = await query.toArray()
-      
+
       const exportData = {
         trainId,
         exportTimestamp: Date.now(),
@@ -948,7 +948,7 @@ class DataStorage {
       const jsonString = JSON.stringify(exportData, null, 2)
       const blob = new Blob([jsonString], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
-      
+
       // Download the file
       const link = document.createElement('a')
       link.href = url
@@ -995,7 +995,7 @@ class DataStorage {
       }
 
       const sensorData = await query.toArray()
-      
+
       const exportData = {
         trainId,
         sensorType: sensorType || 'all',
@@ -1008,7 +1008,7 @@ class DataStorage {
       const jsonString = JSON.stringify(exportData, null, 2)
       const blob = new Blob([jsonString], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
-      
+
       // Download the file
       const link = document.createElement('a')
       link.href = url
@@ -1039,7 +1039,7 @@ class DataStorage {
       }
 
       const db = await this.getTrainDatabase(trainId)
-      
+
       // Get video frame latency data
       let videoQuery = db.frames.orderBy('timestamp')
       if (startTime && endTime) {
@@ -1049,9 +1049,9 @@ class DataStorage {
       } else if (endTime) {
         videoQuery = db.frames.where('timestamp').belowOrEqual(endTime)
       }
-      
+
       const videoFrames = await videoQuery.toArray()
-      
+
       // Get telemetry data with latency information
       let telemetryQuery = db.telemetry.orderBy('timestamp')
       if (startTime && endTime) {
@@ -1061,7 +1061,7 @@ class DataStorage {
       } else if (endTime) {
         telemetryQuery = db.telemetry.where('timestamp').belowOrEqual(endTime)
       }
-      
+
       const telemetryRecords = await telemetryQuery.toArray()
 
       // Process video latency data
@@ -1071,6 +1071,7 @@ class DataStorage {
           frameId: frame.frameId,
           latency: frame.latency,
           data_size: frame.size,
+          stored_at : frame.timestamp,
           created_at: frame.createdAt || frame.timestamp
         }))
 
