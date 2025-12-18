@@ -1070,6 +1070,7 @@ class DataStorage {
         .map(frame => ({
           frameId: frame.frameId,
           latency: frame.latency,
+          data_size: frame.size,
           created_at: frame.createdAt || frame.timestamp
         }))
 
@@ -1086,17 +1087,17 @@ class DataStorage {
       // Calculate statistics
       const calculateStats = (latencies, field = null) => {
         if (latencies.length === 0) return { count: 0, avg: 0, min: 0, max: 0 }
-        
+
         const values = field ? latencies.map(item => item[field]).filter(val => val !== null && val !== undefined) 
                             : latencies.map(item => item.latency || item).filter(val => val !== null && val !== undefined)
-        
+
         if (values.length === 0) return { count: 0, avg: 0, min: 0, max: 0 }
-        
+
         const count = values.length
         const avg = values.reduce((sum, val) => sum + val, 0) / count
         const min = Math.min(...values)
         const max = Math.max(...values)
-        
+
         return { count, avg, min, max }
       }
 
@@ -1123,7 +1124,7 @@ class DataStorage {
       const jsonString = JSON.stringify(exportData, null, 2)
       const blob = new Blob([jsonString], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
-      
+
       // Download the file
       const link = document.createElement('a')
       link.href = url
