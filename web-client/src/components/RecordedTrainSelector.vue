@@ -4,28 +4,23 @@
       <h2 class="recorded-train-selector-title">Recorded Train Data</h2>
 
       <div class="header-actions">
-        <button class="refresh-btn" @click="loadRecordedTrains" :disabled="loading">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="{ 'spinning': loading }">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
-          Refresh
-        </button>
-
         <div v-if="recordedTrains.length" class="selection-toolbar">
-          <button class="toggle-select-btn" @click="toggleSelectionMode" :class="{ active: selectionMode }">
-            <svg v-if="!selectionMode" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H6v-2h4v2zm8 0h-6v-2h6v2zm0-4H6V7h12v6z"/>
-            </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 17h18v2H3zm0-7h18v2H3zm0-7h18v2H3z"/>
-            </svg>
-            <span>{{ selectionMode ? 'Done' : 'Select' }}</span>
+          <button class="toggle-select-btn" @click="toggleSelectionMode" :class="{ active: selectionMode }" :title="selectionMode ? 'Cancel' : 'Multi-Select'">
+            <template v-if="!selectionMode">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H6v-2h4v2zm8 0h-6v-2h6v2zm0-4H6V7h12v6z"/>
+              </svg>
+              <span>Multi-Select</span>
+            </template>
+            <template v-else>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626" aria-label="Cancel">
+                <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              </svg>
+            </template>
           </button>
 
           <div v-if="selectionMode" class="bulk-actions">
             <span class="selected-count">Selected: {{ selectedCount }}</span>
-            <button class="small-btn" @click="selectAll" :disabled="allSelected || !recordedTrains.length">Select All</button>
-            <button class="small-btn" @click="clearSelection" :disabled="selectedCount === 0">Clear</button>
             <button class="bulk-delete-btn" @click="openBulkDeleteDialog" :disabled="selectedCount === 0">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -34,6 +29,13 @@
             </button>
           </div>
         </div>
+
+        <button class="refresh-btn" @click="loadRecordedTrains" :disabled="loading">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="{ 'spinning': loading }">
+            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+          </svg>
+          Refresh
+        </button>
       </div>
     </div>
 
@@ -105,12 +107,6 @@
                 <span class="stat-value">{{ formatRelativeTime(train.lastUpdated) }}</span>
               </div>
             </div>
-          </div>
-          <div class="select-train-btn">
-            <span>View Records</span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-            </svg>
           </div>
             </div>
           </div>
@@ -214,7 +210,6 @@ const selectedTrainIds = ref([])
 const deleteTargets = ref([])
 const bulkDeleting = ref(false)
 const selectedCount = computed(() => selectedTrainIds.value.length)
-const allSelected = computed(() => recordedTrains.value.length > 0 && selectedTrainIds.value.length === recordedTrains.value.length)
 const isBulkDelete = computed(() => deleteTargets.value.length > 0 && !trainToDelete.value)
 const previewDeleteLimit = 6
 const previewDeleteIds = computed(() => deleteTargets.value.slice(0, previewDeleteLimit))
@@ -316,13 +311,7 @@ const onCardClick = (trainId) => {
   }
 }
 
-const selectAll = () => {
-  selectedTrainIds.value = recordedTrains.value.map(t => t.trainId)
-}
-
-const clearSelection = () => {
-  selectedTrainIds.value = []
-}
+// selection clearing is handled by exiting selection mode
 
 // Delete methods
 const confirmDeleteTrain = (trainId) => {
@@ -677,15 +666,6 @@ onUnmounted(() => {
   margin-bottom: 1rem;
 }
 
-.train-id {
-  font-size: 0.75rem;
-  color: #8e9aaf;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .train-id-value {
   font-size: 1rem;
   font-weight: 700;
@@ -717,49 +697,13 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.stat-label {
-  color: #8e9aaf;
-  font-weight: 500;
-  font-size: 0.75rem;
-}
-
 .stat-value {
   color: #4a5568;
   font-weight: 600;
   font-size: 0.8rem;
 }
 
-.select-train-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.6rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.select-train-btn:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.select-train-btn svg {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.3s ease;
-}
-
-.train-card:hover .select-train-btn svg {
-  transform: translateX(3px);
-}
+/* removed .select-train-btn as card click navigates */
 
 .no-trains-message {
   display: flex;
@@ -1012,25 +956,7 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.small-btn {
-  padding: 0.5rem 0.8rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.small-btn:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.small-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* removed unused .small-btn styles */
 
 .bulk-delete-btn {
   display: flex;
@@ -1307,11 +1233,7 @@ onUnmounted(() => {
   .stat-item {
     font-size: 0.75rem;
   }
-  
-  .select-train-btn {
-    padding: 0.5rem 0.8rem;
-    font-size: 0.75rem;
-  }
+
 
   .card-actions {
     padding: 0.5rem;
