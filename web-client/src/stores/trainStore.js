@@ -70,6 +70,9 @@ export const useTrainStore = defineStore('train', () => {
   const last30_latencyHistory = ref([])
   const last30_framesAverageLatency = ref(0)
 
+  // Variables to calculate FPS of last 1 second
+  const last1s_frameTimestamps = ref([])
+  const last1s_framesFPS = ref(0)
 
   const {
     isWSConnected,
@@ -170,6 +173,16 @@ export const useTrainStore = defineStore('train', () => {
           last30_latencyHistory.value.push(completedFrame.latency + averageClockOffset.value)
           const sumLatency = last30_latencyHistory.value.reduce((a, b) => a + b, 0)
           last30_framesAverageLatency.value = sumLatency / last30_latencyHistory.value.length
+
+          // Calculate FPS over the last 1 second
+          const currentTime = performance.now()
+          last1s_frameTimestamps.value.push(currentTime)
+
+          while (last1s_frameTimestamps.value.length > 0 && currentTime - last1s_frameTimestamps.value[0] > 1000) {
+            last1s_frameTimestamps.value.shift()
+          }
+          last1s_framesFPS.value = last1s_frameTimestamps.value.length
+
         }
       })
     }
@@ -593,6 +606,7 @@ export const useTrainStore = defineStore('train', () => {
     rttMeasurements,
     rttCalibrationCount,
     last30_framesAverageLatency,
+    last1s_framesFPS,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,

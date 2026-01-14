@@ -8,7 +8,8 @@ export function useVideoPanel(canvasRef, options = {}) {
     videoWidth = 1280,
     videoHeight = 720,
     maxQueueSize = 60,
-    latencyRef = null
+    latencyRef = null,
+    fpsRef = null
   } = options
 
   const isFullScreen = ref(false)
@@ -59,25 +60,41 @@ export function useVideoPanel(canvasRef, options = {}) {
       scaledHeight
     )
 
-    // Draw latency overlay if latencyRef is provided
-    if (latencyRef && latencyRef.value > 0) {
-      const latency = latencyRef.value.toFixed(1)
+    // Helper to stack overlays bottom-left, one after another (upwards)
+    const drawOverlayBL = (text) => {
       ctx.font = 'bold 20px Arial'
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-      const text = `Average Latency (last 30 frames): ${latency} ms`
-      const textMetrics = ctx.measureText(text)
       const padding = 12
+      const textMetrics = ctx.measureText(text)
       const boxWidth = textMetrics.width + padding * 2
       const boxHeight = 32
       const boxX = 10
-      const boxY = canvasRef.value.height - boxHeight - 10
+      // use a persistent y that moves upward as we draw additional rows
+      if (typeof drawOverlayBL.nextY !== 'number') {
+        drawOverlayBL.nextY = canvasRef.value.height - 10
+      }
+      const boxY = drawOverlayBL.nextY - boxHeight
 
-      // Draw background box
+      // background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
       ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
 
-      // Draw text
+      // text
       ctx.fillStyle = '#00ff00'
       ctx.fillText(text, boxX + padding, boxY + boxHeight - 8)
+
+      // move up for next overlay (with small gap)
+      drawOverlayBL.nextY = boxY - 6
+    }
+
+    // Draw overlays in bottom-left: latency then FPS stacked above
+    if (latencyRef && latencyRef.value > 0) {
+      const latency = latencyRef.value.toFixed(1)
+      drawOverlayBL(`Average Latency (last 30 frames): ${latency} ms`)
+    }
+
+    if (fpsRef && fpsRef.value > 0) {
+      const fps = fpsRef.value.toFixed(1)
+      drawOverlayBL(`FPS (last 1s): ${fps}`)
     }
   }
 
