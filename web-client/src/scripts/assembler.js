@@ -180,7 +180,8 @@ export class useAssembler {
         frameId: frameState.frameId,
         data: frameData,
         latency: frameLatency,
-        created_at: frameState.createdAt
+        created_at: frameState.createdAt,
+        received_at: currentTime,
       })
     }
   }

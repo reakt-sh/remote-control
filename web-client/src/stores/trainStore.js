@@ -166,6 +166,7 @@ export const useTrainStore = defineStore('train', () => {
               data: completedFrame.data,
               trainId: selectedTrainId.value,
               createdAt: completedFrame.created_at,
+              receivedAt: completedFrame.received_at,
               latency: completedFrame.latency + averageClockOffset.value
             })
           }
@@ -269,6 +270,7 @@ export const useTrainStore = defineStore('train', () => {
     // Calculate average clock offset from all measurements
     const totalClockOffset = rttMeasurements.value.reduce((sum, measurement) => sum + measurement.clockOffset, 0)
     averageClockOffset.value = totalClockOffset / rttMeasurements.value.length
+    averageClockOffset.value = Math.round(averageClockOffset.value)
 
     // Calculate statistics for analysis
     const roundTripTimes = rttMeasurements.value.map(m => m.roundTripTime)
