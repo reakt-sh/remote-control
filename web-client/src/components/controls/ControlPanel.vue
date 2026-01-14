@@ -45,7 +45,7 @@ const { telemetryData, direction } = storeToRefs(trainStore)
 const maxSpeed = ref(20)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
-const videoQuality = ref('medium')
+const videoQuality = ref('high')
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
