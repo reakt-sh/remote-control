@@ -6,7 +6,7 @@ from loguru import logger
 class CameraWorker(QThread):
     """Worker thread for camera frame capture to avoid blocking UI thread."""
     frame_captured = pyqtSignal(int, object, int, int)  # frame_count, frame, width, height
-    
+
     def __init__(self, index: int = 0):
         super().__init__()
         self.index = index
@@ -28,22 +28,22 @@ class CameraWorker(QThread):
             (800, 600),    # SVGA
             (640, 480),    # VGA (fallback)
         ]
-        
+
         logger.info("Attempting to set camera to maximum resolution...")
-        
+
         for width, height in high_quality_resolutions:
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-            
+
             actual_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             actual_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            
+
             if actual_width == width and actual_height == height:
                 logger.info(f"Successfully set camera resolution to {width}x{height}")
                 break
             else:
                 logger.debug(f"Camera doesn't support {width}x{height}, got {actual_width}x{actual_height}")
-        
+
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         self.cap.set(cv2.CAP_PROP_FPS, 30)
 
@@ -51,10 +51,10 @@ class CameraWorker(QThread):
         """Get and log camera capabilities for debugging."""
         if not self.cap:
             return
-        
+
         backend = self.cap.getBackendName()
         logger.info(f"Camera device: Index {self.index}, Backend: {backend}")
-        
+
         capabilities = {
             'Width': self.cap.get(cv2.CAP_PROP_FRAME_WIDTH),
             'Height': self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
@@ -66,11 +66,11 @@ class CameraWorker(QThread):
             'Gain': self.cap.get(cv2.CAP_PROP_GAIN),
             'Exposure': self.cap.get(cv2.CAP_PROP_EXPOSURE),
         }
-        
+
         logger.info("Camera capabilities:")
         for prop, value in capabilities.items():
             logger.info(f"  {prop}: {value}")
-        
+
         return capabilities
 
     def initialize_camera(self):
@@ -78,15 +78,15 @@ class CameraWorker(QThread):
         self.cap = cv2.VideoCapture(self.index)
         if not self.cap.isOpened():
             raise RuntimeError("Could not open camera")
-        
+
         self._set_maximum_resolution()
-        
+
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
-        
+
         logger.info(f"Camera initialized with resolution: {self.width}x{self.height}")
         self.get_camera_capabilities()
-        
+
         fps = self.cap.get(cv2.CAP_PROP_FPS)
         if fps and fps > 1:
             self.base_fps = fps
@@ -98,26 +98,25 @@ class CameraWorker(QThread):
         """Main worker thread loop."""
         self._running = True
         self.initialize_camera()
-        
+
         frame_interval = 1.0 / max(self.current_fps, 1)
-        
+
         while self._running:
             if not self.cap:
                 break
-                
+
             start_capture = cv2.getTickCount()
-            
+
             ret, frame = self.cap.read()
             if not ret:
                 continue
-                
+
             self.frame_count += 1
             elapsed_time = (cv2.getTickCount() - self.start_time) / cv2.getTickFrequency()
             current_fps = self.frame_count / elapsed_time if elapsed_time > 0 else 0
 
             # Add overlay text
             text_res = f"Resolution: {self.width}x{self.height}"
-            text_fps = f"FPS: {current_fps:.1f}"
             text_frame_id = f"Frame ID: {self.frame_count}"
             now = datetime.now()
             text_date = now.strftime("Date: %y:%m:%d")
@@ -131,10 +130,9 @@ class CameraWorker(QThread):
             opacity = 0.6
             positions = [
                 (10, 30, text_res),
-                (10, 60, text_fps),
-                (10, 90, text_frame_id),
-                (10, 120, text_date),
-                (10, 150, text_time),
+                (10, 60, text_frame_id),
+                (10, 90, text_date),
+                (10, 120, text_time),
             ]
             for x, y, text in positions:
                 (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, thickness)
@@ -150,13 +148,13 @@ class CameraWorker(QThread):
                 self.frame_captured.emit(self.frame_count, frame, self.width, self.height)
             except Exception as e:
                 logger.error(f"Error emitting frame_captured signal: {e}")
-            
+
             # Frame rate limiting
             capture_time = (cv2.getTickCount() - start_capture) / cv2.getTickFrequency()
             sleep_time = frame_interval - capture_time
             if sleep_time > 0:
                 self.msleep(int(sleep_time * 1000))
-        
+
         self.cleanup()
 
     def cleanup(self):
@@ -187,7 +185,7 @@ class Camera(QObject):
         if self.worker and self.worker.isRunning():
             self.worker.stop_capture()
             self.worker.wait()
-        
+
         self.worker = CameraWorker(self.index)
         self.worker.frame_captured.connect(self._on_frame_captured)
         self.worker.start()

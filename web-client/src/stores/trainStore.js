@@ -74,6 +74,10 @@ export const useTrainStore = defineStore('train', () => {
   const last1s_frameTimestamps = ref([])
   const last1s_framesFPS = ref(0)
 
+  // Variables to calculate bandwidth used last 1 second
+  const last1s_bytesHistory = ref([])
+  const last1s_bandwidthMbps = ref(0)
+
   const {
     isWSConnected,
     connectWebSocket,
@@ -182,6 +186,18 @@ export const useTrainStore = defineStore('train', () => {
             last1s_frameTimestamps.value.shift()
           }
           last1s_framesFPS.value = last1s_frameTimestamps.value.length
+
+          // Calculate bandwidth used over the last 1 second
+          const frameSizeBytes = completedFrame.data.length
+          last1s_bytesHistory.value.push({ timestamp: currentTime, size: frameSizeBytes })
+
+          // Remove entries older than 1 second
+          while (last1s_bytesHistory.value.length > 0 && currentTime - last1s_bytesHistory.value[0].timestamp > 1000) {
+            last1s_bytesHistory.value.shift()
+          }
+
+          let totalBytes = last1s_bytesHistory.value.reduce((sum, entry) => sum + entry.size, 0)
+          last1s_bandwidthMbps.value = (totalBytes * 8) / (1024 * 1024) // Convert to Mbps
 
         }
       })
@@ -607,6 +623,7 @@ export const useTrainStore = defineStore('train', () => {
     rttCalibrationCount,
     last30_framesAverageLatency,
     last1s_framesFPS,
+    last1s_bandwidthMbps,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,

@@ -9,7 +9,8 @@ export function useVideoPanel(canvasRef, options = {}) {
     videoHeight = 720,
     maxQueueSize = 60,
     latencyRef = null,
-    fpsRef = null
+    fpsRef = null,
+    bandwidthRef = null
   } = options
 
   const isFullScreen = ref(false)
@@ -94,7 +95,12 @@ export function useVideoPanel(canvasRef, options = {}) {
 
     if (fpsRef && fpsRef.value > 0) {
       const fps = fpsRef.value.toFixed(1)
-      drawOverlayBL(`FPS (last 1s): ${fps}`)
+      drawOverlayBL(`Current FPS : ${fps}`)
+    }
+
+    if (bandwidthRef && bandwidthRef.value > 0) {
+      const bandwidth = bandwidthRef.value.toFixed(2)
+      drawOverlayBL(`Current Bandwidth : ${bandwidth} Mbps`)
     }
   }
 
