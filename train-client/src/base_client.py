@@ -34,6 +34,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self._running = True
         self.connected_remote_control_ids = set()
         self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
+        self.number_of_rtt_packets = 5
+        self.clock_offset_samples = {}
         self.create_dump_file_for_latency()
 
         # Initialize components
@@ -166,7 +168,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
             remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
             self.connected_remote_control_ids.add(remote_control_id)
             logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
-            self.send_rtt_packets()
+            # Reset samples for this remote and start RTT measurement
+            self.clock_offset_samples[remote_control_id] = []
+            self.send_rtt_packets(remote_control_id)
 
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')
@@ -185,28 +189,43 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Clock offset = remote_time - local_time (at the midpoint of RTT)
             # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
             clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
-            self.clock_offsets[remote_control_id] = clock_offset
+
+            # Collect offset samples per remote and compute average after N samples
+            samples = self.clock_offset_samples.setdefault(remote_control_id, [])
+            samples.append(clock_offset)
 
             logger.info(
                 f"RTT packet received - "
                 f"RTT: {rtt}ms, "
-                f"Clock Offset: {self.clock_offsets[remote_control_id]:.2f}ms, "
+                f"Clock Offset sample: {clock_offset:.2f}ms, "
+                f"Sample count for {remote_control_id}: {len(samples)}/{self.number_of_rtt_packets}, "
                 f"Remote timestamp: {remote_control_timestamp}, "
                 f"Train timestamp sent: {train_timestamp_sent}, "
                 f"Current time: {current_time}"
             )
+
+            if len(samples) >= self.number_of_rtt_packets:
+                avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
+                avg_offset = round(avg_offset)
+                self.clock_offsets[remote_control_id] = avg_offset
+                logger.info(
+                    f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
+                    f"(averaged over {self.number_of_rtt_packets} RTT samples)"
+                )
+                # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
+                self.clock_offset_samples[remote_control_id] = []
 
         else:
             logger.warning(f"Unknown QUIC packet type received: {packet_type}")
 
 
 
-    def send_rtt_packets(self, count=5):
-        for _ in range(count):
+    def send_rtt_packets(self, remote_control_id):
+        for _ in range(self.number_of_rtt_packets):
             rtt_train_Packet = {
                 "type": "rtt_train",
                 "remote_control_timestamp": 0,
-                "remote_control_id": 0,
+                "remote_control_id": remote_control_id,
                 "train_timestamp": int(datetime.datetime.now().timestamp() * 1000)
             }
 
