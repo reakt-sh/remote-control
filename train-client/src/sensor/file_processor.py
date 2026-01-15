@@ -103,7 +103,7 @@ class FileProcessor(QObject):
             text_res = f"Resolution: {self.width}x{self.height}"
             text_frame_id = f"Frame ID: {self.frame_count}"
             now = datetime.now()
-            text_date = now.strftime("Date: %y:%m:%d")
+            text_date = now.strftime("Date: %d-%B-%Y")
             text_time = now.strftime("Time: %H:%M:%S:%f")[:-3]
 
             font = cv2.FONT_HERSHEY_SIMPLEX

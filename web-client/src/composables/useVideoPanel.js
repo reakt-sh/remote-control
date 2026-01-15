@@ -95,12 +95,12 @@ export function useVideoPanel(canvasRef, options = {}) {
 
     if (fpsRef && fpsRef.value > 0) {
       const fps = fpsRef.value.toFixed(1)
-      drawOverlayBL(`Current FPS : ${fps}`)
+      drawOverlayBL(`Live FPS: ${fps}`)
     }
 
     if (bandwidthRef && bandwidthRef.value > 0) {
       const bandwidth = bandwidthRef.value.toFixed(2)
-      drawOverlayBL(`Current Bandwidth : ${bandwidth} Mbps`)
+      drawOverlayBL(`Bandwidth Usage: ${bandwidth} Mbps`)
     }
   }
 
