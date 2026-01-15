@@ -167,41 +167,41 @@ class TrainClient(BaseClient, QMainWindow):
     def on_new_frame(self, frame_id, frame, width, height):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
-        
+
         # Get the fixed size of the image label
         label_width = self.image_label.width()
         label_height = self.image_label.height()
-        
+
         # Calculate scaling to fit within label while maintaining aspect ratio
         scale_w = label_width / w
         scale_h = label_height / h
         scale = min(scale_w, scale_h)  # Use smaller scale to ensure it fits
-        
+
         # Calculate new dimensions
         new_width = int(w * scale)
         new_height = int(h * scale)
-        
+
         # Resize the frame
         resized_image = cv2.resize(rgb_image, (new_width, new_height))
-        
+
         # Create a black background image with the label dimensions
         background = np.zeros((label_height, label_width, 3), dtype=np.uint8)
-        
+
         # Calculate position to center the resized video
         x_offset = (label_width - new_width) // 2
         y_offset = (label_height - new_height) // 2
-        
+
         # Place the resized video on the black background
         background[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized_image
-        
+
         # Convert to QImage
         bytes_per_line = 3 * label_width
         qt_image = QImage(background.data, label_width, label_height, bytes_per_line, QImage.Format_RGB888)
-        
+
         # Create pixmap and set it to the label
         pixmap = QPixmap.fromImage(qt_image)
         self.image_label.setPixmap(pixmap)
-        
+
         super().on_new_frame(frame_id, frame, width, height)
 
     def toggle_capture(self):
