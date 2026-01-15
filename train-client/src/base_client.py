@@ -271,8 +271,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 "remote_control_id": remote_control_id,
                 "command_id": message.get("command_id"),
                 "instruction": message['instruction'],
-                "latency_ms": latency,
-                "timestamp": int(datetime.datetime.now().timestamp() * 1000)
+                "latency": latency,
+                "created_at": message.get('remote_control_timestamp', 0),
+                "received_at": int(datetime.datetime.now().timestamp() * 1000),
+                "size" : len(payload),
+                "target_speed": message.get('target_speed', None),
+                "direction": message.get('direction', None),
+                "quality": message.get('quality', None),
             }
             self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
             self.latency_output_file.flush()
