@@ -102,10 +102,9 @@ class CameraRPi5(QObject):
 
                 positions = [
                     (10, start_y + vertical_space * 0, text_res),
-                    (10, start_y + vertical_space * 1, text_fps),
-                    (10, start_y + vertical_space * 2, text_frame_id),
-                    (10, start_y + vertical_space * 3, text_date),
-                    (10, start_y + vertical_space * 4, text_time),
+                    (10, start_y + vertical_space * 1, text_frame_id),
+                    (10, start_y + vertical_space * 2, text_date),
+                    (10, start_y + vertical_space * 3, text_time),
                 ]
 
                 for pos in positions:
