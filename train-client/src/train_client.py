@@ -1,9 +1,11 @@
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor
-from PyQt5.QtCore import Qt, QSize, QDateTime
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer
 import os
 import cv2
 import numpy as np
+import psutil
+import time
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
 from base_client import BaseClient
@@ -31,6 +33,21 @@ class TrainClient(BaseClient, QMainWindow):
         self.image_label.setFixedSize(video_display_width, video_display_height)
         self.image_label.setStyleSheet("border: 1px solid #444; background-color: #2a2a2a;")
         self.image_label.setScaledContents(True)  # Enable scaling
+
+        # Hardware info label under buttons (plain text)
+        self.hw_info_label = QLabel()
+        self.hw_info_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.hw_info_label.setWordWrap(True)
+        self.hw_info_label.setMinimumHeight(60)
+        self.hw_info_label.setStyleSheet(
+            """
+            QLabel {
+                color: green;
+                font-family: Consolas, Courier New, monospace;
+                font-size: 10pt;
+            }
+            """
+        )
 
         self.console_log = QTextEdit()
         self.console_log.setReadOnly(True)
@@ -129,9 +146,17 @@ class TrainClient(BaseClient, QMainWindow):
         layout = QGridLayout()
         layout.addWidget(self.image_label, 0, 0)
         layout.addLayout(button_layout, 0, 1)
-        layout.addWidget(self.console_log, 1, 0, 1, 2)
+        layout.addWidget(self.hw_info_label, 1, 1)
+        layout.addWidget(self.console_log, 2, 0, 1, 2)
 
         self.central_widget.setLayout(layout)
+
+        self._prev_disk_read = None
+        self._prev_disk_write = None
+        self._prev_time = None
+        self.hw_timer = QTimer(self)
+        self.hw_timer.timeout.connect(self.update_hw_info)
+        self.hw_timer.start(1000)
 
     def on_new_frame(self, frame_id, frame, width, height):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -205,6 +230,44 @@ class TrainClient(BaseClient, QMainWindow):
         cursor = self.console_log.textCursor()
         cursor.movePosition(QTextCursor.End)
         self.console_log.setTextCursor(cursor)
+
+    def update_hw_info(self):
+        cpu = psutil.cpu_percent(interval=None)
+        freq_info = psutil.cpu_freq()
+        freq = int(freq_info.current) if freq_info else 0
+        temps = psutil.sensors_temperatures() if hasattr(psutil, "sensors_temperatures") else {}
+        temp_val = None
+        if temps:
+            for entries in temps.values():
+                if entries:
+                    cur = entries[0].current if hasattr(entries[0], "current") else None
+                    if cur is not None:
+                        temp_val = cur
+                        break
+        mem = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        disk = psutil.disk_usage('/')
+        io = psutil.disk_io_counters() if hasattr(psutil, "disk_io_counters") else None
+        now = time.time()
+        read_mb_s = 0.0
+        write_mb_s = 0.0
+        if io:
+            if self._prev_disk_read is not None and self._prev_disk_write is not None and self._prev_time is not None:
+                dt = max(now - self._prev_time, 1e-6)
+                read_mb_s = (io.read_bytes - self._prev_disk_read) / dt / (1024 * 1024)
+                write_mb_s = (io.write_bytes - self._prev_disk_write) / dt / (1024 * 1024)
+            self._prev_disk_read = io.read_bytes
+            self._prev_disk_write = io.write_bytes
+            self._prev_time = now
+        used_mb = int(mem.used / (1024 * 1024))
+        total_gb = mem.total / (1024 * 1024 * 1024)
+        swap_mb = int(swap.used / (1024 * 1024))
+        ghz = freq / 1000.0 if freq else 0.0
+        temp_str = f"{int(temp_val)}°C" if temp_val is not None else "—"
+        line1 = f"CPU {int(cpu)}% | {temp_str} | {ghz:.1f} GHz"
+        line2 = f"RAM {int(mem.percent)}% | Swap {swap_mb}MB"
+        line3 = f"Disk {int(disk.percent)}% | R/W {read_mb_s:.1f}/{write_mb_s:.1f} MB/s"
+        self.hw_info_label.setText(f"{line1}\n{line2}\n{line3}")
 
     def update_speed(self, speed):
         self.video_source.set_speed(speed)
