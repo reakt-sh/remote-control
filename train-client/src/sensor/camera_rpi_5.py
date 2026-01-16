@@ -1,15 +1,26 @@
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal
-from datetime import datetime
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
-from picamera2.outputs import CircularOutput
+from picamera2.outputs import FileOutput
 from libcamera import controls
 import libcamera
 import cv2
 import numpy as np
 from loguru import logger
 import io
+import threading
+import time
 from globals import *
+
+class StreamingOutput(io.BufferedIOBase):
+    def __init__(self):
+        self.frame = None
+        self.condition = threading.Condition()
+
+    def write(self, buf):
+        with self.condition:
+            self.frame = buf
+            self.condition.notify_all()
 
 class CameraRPi5(QObject):
     frame_ready = pyqtSignal(object, object, int, int)  # Emits frame_count, encoded_data, width, height
@@ -36,10 +47,10 @@ class CameraRPi5(QObject):
             self.picam2.configure(video_config)
 
             # Setup H.264 encoder
-            self.encoder = H264Encoder(bitrate=MEDIUM_BITRATE)  # Set initial bitrate
-            self.output = CircularOutput()
+            self.encoder = H264Encoder(bitrate=MEDIUM_BITRATE)
+            self.output = StreamingOutput()
 
-            self.picam2.start_recording(self.encoder, self.output)
+            self.picam2.start_recording(self.encoder, FileOutput(self.output))
 
             # Get camera properties
             main_stream = self.picam2.stream_configuration("main")
@@ -50,7 +61,7 @@ class CameraRPi5(QObject):
             print(f"Camera FPS: {self.fps}")
 
             self.frame_count = 0
-            self.start_time = datetime.now().timestamp()
+            self.start_time = int(time.time() * 1000)
             self.timer.start(int(1000 / self.fps))
 
         except Exception as e:
@@ -69,7 +80,7 @@ class CameraRPi5(QObject):
     def capture_frame(self):
         if self.picam2 and self.output:
             try:
-                # Get H.264 encoded data from circular buffer
+                # Get H.264 encoded data from streaming output
                 with self.output.condition:
                     self.output.condition.wait()
                     encoded_data = self.output.frame
