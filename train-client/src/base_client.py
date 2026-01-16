@@ -5,7 +5,7 @@ import os
 import uuid
 import json
 import struct
-from PyQt5.QtCore import QThread, QDateTime
+from PyQt5.QtCore import QThread, QDateTime, QTimer
 from loguru import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
@@ -16,6 +16,7 @@ from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
 from PyQt5.QtCore import QObject
+from hw_info import HWInfo
 
 # Fix for metaclass conflict with QObject
 class QABCMeta(type(QObject), type(ABC)):
@@ -44,6 +45,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.encoder = Encoder()
         self.init_network()
         self.create_dump_file()
+        self.hw_info = HWInfo()
+        self.hw_info_generator_timer = QTimer()
+        self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
+        self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
         # Connect signals
         self.video_source.frame_ready.connect(self.on_new_frame)
@@ -53,6 +58,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.video_source.init_capture()
         self.telemetry.start()
         self.imu.start()
+
+    def generate_hw_info(self):
+        self.hw_info.get_hw_info(write_to_file=True)
 
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
@@ -171,6 +179,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Reset samples for this remote and start RTT measurement
             self.clock_offset_samples[remote_control_id] = []
             self.send_rtt_packets(remote_control_id)
+            self.hw_info.notify_new_remote_control_connected(remote_control_id)
 
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')

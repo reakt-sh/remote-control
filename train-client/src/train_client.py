@@ -8,14 +8,12 @@ import time
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
 from base_client import BaseClient
-from hw_info import HWInfo
 from globals import *
 
 class TrainClient(BaseClient, QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
-        self.hw_info = HWInfo()
         self.init_ui()
 
     def init_ui(self):
