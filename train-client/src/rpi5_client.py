@@ -8,7 +8,7 @@ from utils.app_logger import logger
 
 class RPi5Client(BaseClient, QThread):
     def __init__(self):
-        super().__init__(video_source=Camera(), has_motor=True)
+        super().__init__(video_source=CameraRPi5(), has_motor=True)
         self.motor_actuator = MotorActuator()
         self.motor_actuator.start_motor()
         self.target_speed = MAX_SPEED
