@@ -1,7 +1,7 @@
 <template>
   <div class="scenario-panel">
     <div class="panel-header">
-      <h3>Automatic Scenario Test</h3>
+      <h3>Automatic Test Scenario Panel</h3>
       <div :class="['status-indicator', isRunning ? 'running' : 'idle']">
         {{ isRunning ? 'RUNNING' : 'IDLE' }}
       </div>
@@ -54,17 +54,19 @@
       <div class="history-timer-container">
         <!-- Command History -->
         <div class="command-history">
-          <div class="history-label">Command History</div>
-          <div 
-            v-for="(cmd, index) in commandHistory" 
-            :key="index"
-            :class="['history-item', { 'current': index === commandHistory.length - 1 && isRunning }]"
-          >
-            <span class="history-bullet">{{ index === commandHistory.length - 1 && isRunning ? '▶' : '✓' }}</span>
-            <span class="history-text">{{ formatCommand(cmd) }}</span>
-          </div>
-          <div v-if="commandHistory.length === 0" class="history-empty">
-            No commands executed yet
+          <div class="history-label">Commands from Test Scenario</div>
+          <div class="history-scroll-container" ref="historyScrollContainer">
+            <div 
+              v-for="(cmd, index) in commandHistory" 
+              :key="index"
+              :class="['history-item', { 'current': index === commandHistory.length - 1 && isRunning }]"
+            >
+              <span class="history-bullet">{{ index === commandHistory.length - 1 && isRunning ? '▶' : '✓' }}</span>
+              <span class="history-text">{{ formatCommand(cmd) }}</span>
+            </div>
+            <div v-if="commandHistory.length === 0" class="history-empty">
+              No commands executed yet
+            </div>
           </div>
         </div>
         
@@ -97,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import scenarios from '@/scripts/scenario.js'
@@ -115,6 +117,7 @@ const totalSteps = ref(0)
 const currentCommand = ref(null)
 const commandHistory = ref([])
 const remainingWaitTime = ref(0)
+const historyScrollContainer = ref(null)
 let executionTimeout = null
 let countdownInterval = null
 
@@ -204,12 +207,9 @@ async function executeScenario(commands) {
     
     const [type, value] = command
     
-    // Add to history (keep only last 3, exclude wait commands)
+    // Add to history (exclude wait commands)
     if (type !== 'wait') {
       commandHistory.value.push(command)
-      if (commandHistory.value.length > 3) {
-        commandHistory.value.shift()
-      }
     }
     
     // Execute the command
@@ -288,6 +288,14 @@ watch(trainId, (newId, oldId) => {
     stopScenario()
   }
 })
+
+watch(commandHistory, async () => {
+  // Auto-scroll to bottom when new command is added
+  await nextTick()
+  if (historyScrollContainer.value) {
+    historyScrollContainer.value.scrollTop = historyScrollContainer.value.scrollHeight
+  }
+}, { deep: true })
 
 // Cleanup on unmount
 import { onUnmounted } from 'vue'
@@ -567,15 +575,42 @@ onUnmounted(() => {
   margin-bottom: 4px;
 }
 
+.history-scroll-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 105px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.history-scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.history-scroll-container::-webkit-scrollbar-thumb {
+  background: #bdc3c7;
+  border-radius: 2px;
+}
+
+.history-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #95a5a6;
+}
+
 .history-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 6px 8px;
   background-color: white;
-  border-radius: 6px;
-  border-left: 3px solid #95a5a6;
-  font-size: 13px;
+  border-radius: 4px;
+  border-left: 2px solid #95a5a6;
+  font-size: 12px;
   color: #2c3e50;
   transition: all 0.3s ease;
 }
