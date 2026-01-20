@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 from globals import MAX_SPEED, SCALE_FACTOR_PWM
+from loguru import logger
 
 class MotorActuator:
     def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000):
@@ -20,6 +21,7 @@ class MotorActuator:
         GPIO.output(self.input2_pin, GPIO.LOW)
         self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
         self.pwm.start(self.max_speed)  # Default to max speed
+        logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
 
     def start_motor(self):
         self.current_speed = max(self.current_speed, self.max_speed)
