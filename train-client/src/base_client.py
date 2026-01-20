@@ -120,7 +120,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         dump_dir = os.path.dirname(LATENCY_DUMP)
         if dump_dir and not os.path.exists(dump_dir):
             os.makedirs(dump_dir, exist_ok=True)
-        output_filename = f"{LATENCY_DUMP}.log"
+
+        time_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"{LATENCY_DUMP}_{time_suffix}.log"
+
 
         # create a new file only if it doesn't exist
         if not os.path.exists(output_filename):

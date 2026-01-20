@@ -14,7 +14,9 @@ class HWInfo:
         dump_dir = os.path.dirname(HW_USAGE_DUMP)
         if dump_dir and not os.path.exists(dump_dir):
             os.makedirs(dump_dir, exist_ok=True)
-        output_filename = f"{HW_USAGE_DUMP}.log"
+
+        time_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"{HW_USAGE_DUMP}_{time_suffix}.log"
 
         # create a new file only if it doesn't exist
         if not os.path.exists(output_filename):
