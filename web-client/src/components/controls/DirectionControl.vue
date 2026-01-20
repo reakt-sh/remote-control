@@ -5,6 +5,7 @@
       <button
         class="direction-button forward"
         :class="{ active: direction === 'FORWARD' }"
+        :disabled="disabled"
         @click="setDirection('FORWARD')"
       >
         <span class="icon">↑</span>
@@ -13,6 +14,7 @@
       <button
         class="direction-button reverse"
         :class="{ active: direction === 'BACKWARD' }"
+        :disabled="disabled"
         @click="setDirection('BACKWARD')"
       >
         <span class="icon">↓</span>
@@ -31,6 +33,10 @@ const props = defineProps({
     type: String,
     default: 'FORWARD',
     validator: (value) => ['FORWARD', 'BACKWARD'].includes(value)
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -41,7 +47,7 @@ watch(() => props.direction, (newVal) => {
 })
 
 function setDirection(newDirection) {
-  if (newDirection !== direction.value) {
+  if (newDirection !== direction.value && !props.disabled) {
     direction.value = newDirection
     emit('change', newDirection)
   }

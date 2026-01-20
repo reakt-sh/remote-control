@@ -19,7 +19,7 @@
       </div>
       <div class="target-speed">
         <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
-        <button class="toggle-input-btn" @click="toggleInputMode" :title="showSlider ? 'Switch to button input' : 'Switch to slider input'">
+        <button class="toggle-input-btn" @click="toggleInputMode" :disabled="disabled" :title="showSlider ? 'Switch to button input' : 'Switch to slider input'">
           <i :class="showSlider ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"></i>
         </button>
         <div v-if="showSlider" class="slider-container">
@@ -28,6 +28,7 @@
             min="0"
             max="20"
             :value="tempTargetSpeed"
+            :disabled="disabled"
             @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value))}"
             @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value))}"
             class="target-slider"
@@ -35,12 +36,12 @@
         </div>
         <div v-else class="target-speed-buttons">
           <div class="button-row">
-            <button class="change-speed-button" @click="changeTargetSpeed(-10)">-10</button>
-            <button class="change-speed-button" @click="changeTargetSpeed(-1)">-1</button>
-            <button class="change-speed-button" @click="changeTargetSpeed(1)">+1</button>
-            <button class="change-speed-button" @click="changeTargetSpeed(10)">+10</button>
+            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(-10)">-10</button>
+            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(-1)">-1</button>
+            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(1)">+1</button>
+            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(10)">+10</button>
           </div>
-          <button class="done-btn" @click="doneTargetSpeed">Apply</button>
+          <button class="done-btn" :disabled="disabled" @click="doneTargetSpeed">Apply</button>
         </div>
       </div>
     </div>
@@ -62,6 +63,10 @@ const props = defineProps({
   maxSpeed: {
     type: Number,
     default: 20
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 });
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);

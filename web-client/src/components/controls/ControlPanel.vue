@@ -2,11 +2,13 @@
   <div class="driver-console">
     <div class="primary-controls">
       <PowerControls
+        :disabled="isScenarioRunning"
         @start="handleStart"
         @stop="handleStop"
       />
       <DirectionControl
         :direction="direction"
+        :disabled="isScenarioRunning"
         @change="handleDirectionChange"
       />
     </div>
@@ -16,13 +18,20 @@
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
         :target-speed="targetSpeed"
+        :disabled="isScenarioRunning"
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
       <VideoQuality
         v-model="videoQuality"
-        :disabled="!telemetryData?.train_id"
+        :disabled="!telemetryData?.train_id || isScenarioRunning"
         @change="handleQualityChange"
+      />
+    </div>
+
+    <div class="scenario-controls">
+      <ScenarioTestPanel 
+        @scenarioStateChange="handleScenarioStateChange"
       />
     </div>
   </div>
@@ -37,6 +46,7 @@ import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
 import VideoQuality from './VideoQuality.vue'
+import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
 const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
@@ -46,6 +56,7 @@ const maxSpeed = ref(20)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
 const videoQuality = ref('high')
+const isScenarioRunning = ref(false)
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
@@ -95,6 +106,10 @@ function handleQualityChange(quality) {
   })
 }
 
+function handleScenarioStateChange(running) {
+  isScenarioRunning.value = running
+}
+
 // Watchers
 watch(
   () => telemetryData.value?.train_id,
@@ -119,6 +134,8 @@ watch(
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .primary-controls {
@@ -131,12 +148,26 @@ watch(
   flex: 1 1 0;
 }
 
+.scenario-controls {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 100%;
+  min-width: 300px;
+  max-width: 100%;
+}
+
 @media (min-width: 700px) {
   .primary-controls {
     min-width: 320px;
     width: 100%;
     max-width: 480px;
     flex: 1 1 0;
+  }
+
+  .scenario-controls {
+    flex: 1 1 auto;
+    min-width: 320px;
+    max-width: 600px;
   }
 }
 
