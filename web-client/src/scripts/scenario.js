@@ -1,4 +1,24 @@
 const scenarios = {
+    demo: [
+        ['status', 'POWER_ON'],
+        ['direction', 'FORWARD'],
+        ['set_speed', 8],
+        ['wait', 10],
+        ['set_speed', 15],
+        ['wait', 10],
+        ['set_speed', 0],
+        ['status', 'POWER_OFF'],
+        ['wait', 10],
+        ['status', 'POWER_ON'],
+        ['direction', 'BACKWARD'],
+        ['set_speed', 8],
+        ['wait', 10],
+        ['set_speed', 15],
+        ['wait', 10],
+        ['set_speed', 0],
+        ['status', 'POWER_OFF'],
+        ['wait', 10]
+    ],
     scenario_1: [
         ['status', 'POWER_ON'],
         ['direction', 'FORWARD'],
