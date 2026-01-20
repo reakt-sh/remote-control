@@ -30,7 +30,7 @@ const trainStore = useTrainStore()
 const { isPoweredOn } = storeToRefs(trainStore)
 const emit = defineEmits(['start', 'stop'])
 
-const props = defineProps({
+defineProps({
   disabled: {
     type: Boolean,
     default: false

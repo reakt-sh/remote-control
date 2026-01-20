@@ -49,8 +49,44 @@
         <span>Step {{ currentStep }} / {{ totalSteps }}</span>
         <span>{{ progress.toFixed(0) }}%</span>
       </div>
-      <div v-if="currentCommand" class="current-command">
-        <strong>Current:</strong> {{ formatCommand(currentCommand) }}
+      
+      <!-- Command History and Timer Container -->
+      <div class="history-timer-container">
+        <!-- Command History -->
+        <div class="command-history">
+          <div class="history-label">Command History</div>
+          <div 
+            v-for="(cmd, index) in commandHistory" 
+            :key="index"
+            :class="['history-item', { 'current': index === commandHistory.length - 1 && isRunning }]"
+          >
+            <span class="history-bullet">{{ index === commandHistory.length - 1 && isRunning ? '▶' : '✓' }}</span>
+            <span class="history-text">{{ formatCommand(cmd) }}</span>
+          </div>
+          <div v-if="commandHistory.length === 0" class="history-empty">
+            No commands executed yet
+          </div>
+        </div>
+        
+        <!-- Stopwatch Timer for Wait Commands -->
+        <div v-if="currentCommand && currentCommand[0] === 'wait' && remainingWaitTime > 0" class="timer-display">
+          <div class="timer-label">Waiting</div>
+          <div class="timer-circle">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+              <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
+              <circle 
+                class="timer-progress" 
+                cx="50" 
+                cy="50" 
+                r="45"
+                :style="{
+                  strokeDashoffset: 283 - (283 * remainingWaitTime / currentCommand[1])
+                }"
+              ></circle>
+            </svg>
+            <div class="timer-value">{{ remainingWaitTime }}s</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -77,7 +113,10 @@ const isRunning = ref(false)
 const currentStep = ref(0)
 const totalSteps = ref(0)
 const currentCommand = ref(null)
+const commandHistory = ref([])
+const remainingWaitTime = ref(0)
 let executionTimeout = null
+let countdownInterval = null
 
 // Computed
 const trainId = computed(() => telemetryData.value?.train_id)
@@ -103,7 +142,7 @@ function formatCommand(command) {
     case 'set_speed':
       return `Set Speed: ${value}`
     case 'wait':
-      return `Waiting ${value} seconds...`
+      return `Waiting ${remainingWaitTime.value > 0 ? remainingWaitTime.value : value} seconds...`
     default:
       return command.join(': ')
   }
@@ -152,6 +191,7 @@ async function executeCommand(command) {
 async function executeScenario(commands) {
   totalSteps.value = commands.length
   currentStep.value = 0
+  commandHistory.value = []
   
   for (let i = 0; i < commands.length; i++) {
     if (!isRunning.value) {
@@ -164,13 +204,39 @@ async function executeScenario(commands) {
     
     const [type, value] = command
     
+    // Add to history (keep only last 3, exclude wait commands)
+    if (type !== 'wait') {
+      commandHistory.value.push(command)
+      if (commandHistory.value.length > 3) {
+        commandHistory.value.shift()
+      }
+    }
+    
     // Execute the command
     await executeCommand(command)
     
     // If it's a wait command, delay before next command
     if (type === 'wait') {
+      remainingWaitTime.value = value
+      
+      // Set up countdown interval
+      countdownInterval = setInterval(() => {
+        remainingWaitTime.value -= 1
+        if (remainingWaitTime.value <= 0) {
+          clearInterval(countdownInterval)
+          countdownInterval = null
+        }
+      }, 1000)
+      
       await new Promise(resolve => {
-        executionTimeout = setTimeout(resolve, value * 1000)
+        executionTimeout = setTimeout(() => {
+          if (countdownInterval) {
+            clearInterval(countdownInterval)
+            countdownInterval = null
+          }
+          remainingWaitTime.value = 0
+          resolve()
+        }, value * 1000)
       })
     } else {
       // Small delay between commands for stability
@@ -200,10 +266,16 @@ function startScenario() {
 function stopScenario() {
   isRunning.value = false
   currentCommand.value = null
+  remainingWaitTime.value = 0
   
   if (executionTimeout) {
     clearTimeout(executionTimeout)
     executionTimeout = null
+  }
+  
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
   }
   
   emit('scenarioStateChange', false)
@@ -222,6 +294,9 @@ import { onUnmounted } from 'vue'
 onUnmounted(() => {
   if (executionTimeout) {
     clearTimeout(executionTimeout)
+  }
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
   }
 })
 </script>
@@ -406,6 +481,158 @@ onUnmounted(() => {
 
 .current-command strong {
   color: #3498db;
+}
+
+.history-timer-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+  min-width: 80px;
+}
+
+.timer-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timer-circle {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 6;
+}
+
+.timer-progress {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+}
+
+.timer-value {
+  position: relative;
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.command-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.history-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background-color: white;
+  border-radius: 6px;
+  border-left: 3px solid #95a5a6;
+  font-size: 13px;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+}
+
+.history-item.current {
+  border-left-color: #3498db;
+  background: linear-gradient(90deg, #ebf5fb 0%, white 100%);
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.history-bullet {
+  font-size: 10px;
+  color: #95a5a6;
+  min-width: 16px;
+  text-align: center;
+}
+
+.history-item.current .history-bullet {
+  color: #3498db;
+  animation: pulse-bullet 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-bullet {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.history-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.history-item.current .history-text {
+  font-weight: 600;
+  color: #2980b9;
+}
+
+.history-empty {
+  padding: 12px;
+  text-align: center;
+  color: #95a5a6;
+  font-size: 12px;
+  font-style: italic;
+  background-color: rgba(149, 165, 166, 0.1);
+  border-radius: 6px;
 }
 
 .warning-message {

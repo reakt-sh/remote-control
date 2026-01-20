@@ -167,7 +167,6 @@ watch(
   .scenario-controls {
     flex: 1 1 auto;
     min-width: 320px;
-    max-width: 600px;
   }
 }
 
