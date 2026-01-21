@@ -22,7 +22,6 @@ class RPi5Client(BaseClient, QThread):
     def on_power_on(self):
         logger.info("Powering on the motor.")
         self.motor_actuator.start_motor()
-        self.update_speed(self.target_speed)
 
     def on_power_off(self):
         logger.info("Powering off the motor.")
@@ -35,4 +34,3 @@ class RPi5Client(BaseClient, QThread):
             self.motor_actuator.move_forward()
         elif direction == DIRECTION["BACKWARD"]:
             self.motor_actuator.move_backward()
-        self.update_speed(self.motor_actuator.get_speed())
