@@ -39,7 +39,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 const props = defineProps({
   modelValue: {
     type: String,
-    default: 'high'
+    default: 'medium'
   },
   disabled: {
     type: Boolean,
