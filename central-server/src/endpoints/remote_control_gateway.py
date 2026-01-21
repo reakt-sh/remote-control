@@ -37,15 +37,6 @@ async def remote_control_interface(websocket: WebSocket, remote_control_id: str)
         while True:
             data = await websocket.receive_bytes()
             await s_controller.send_data_to_train(remote_control_id, data)
-            packet_type = data[0]
-            payload = data[1:]
-            if packet_type == PACKET_TYPE["command"]:
-                message = json.loads(payload.decode('utf-8'))
-                train_id = message['train_id']
-                logger.debug(f"WebSocket: {train_id} : {message}")
-            else:
-                logger.debug("WebSocket: Unknown message type")
-            #s_controller.send_to_train(command, remote_control_id)
     except WebSocketDisconnect:
         await s_controller.remove_remote_controller(remote_control_id)
         s_controller.unmap_client_from_train(remote_control_id)
