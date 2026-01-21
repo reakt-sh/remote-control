@@ -1,0 +1,24 @@
+
+RPi5 and Latitude 5440
+Scenario 1:
+Train_Client: 20260116_165308
+Web_Client: Train ID: ab4aeb30-c956-48fa-aca6-8bf7bc355a4b
+
+Scenario 2:
+Train_Client: 20260116_170320
+Web_Client: Train ID: 49504b0e-558b-478a-a6a9-e4ccf397addc
+
+
+
+
+
+RPi5 and Samsung s23 Ultra
+
+Scenario 1:
+Train_Client: 20260116_171827
+Web_Client: Train ID: b07bcb8c-3a35-4d20-88db-d7a9dc06c0e6
+
+
+Scenario 2:
+Train_Client: 20260116_172945
+Web_Client: Train ID: 7c36e005-b676-449f-9d9d-1fa92506430d
