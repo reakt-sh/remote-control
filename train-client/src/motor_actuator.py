@@ -20,12 +20,10 @@ class MotorActuator:
         GPIO.output(self.input1_pin, GPIO.LOW)
         GPIO.output(self.input2_pin, GPIO.LOW)
         self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
-        self.pwm.start(self.max_speed)  # Default to max speed
+        self.pwm.start(0)  # Default to speed 0
         logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
 
     def start_motor(self):
-        self.current_speed = max(self.current_speed, self.max_speed)
-        self.set_speed(self.current_speed)
         if self.direction == 1:
             GPIO.output(self.input1_pin, GPIO.HIGH)
             GPIO.output(self.input2_pin, GPIO.LOW)
@@ -47,8 +45,6 @@ class MotorActuator:
 
     def set_speed(self, speed):
         self.current_speed = int(speed * self.scale_factor) # Scale speed to match PWM range
-
-        # clamp speed to [0, max_speed]
         self.current_speed = max(0, min(self.current_speed, self.max_speed))
         self.pwm.ChangeDutyCycle(self.current_speed)
 
