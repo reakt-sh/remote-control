@@ -1,7 +1,7 @@
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import DIRECTION, MAX_SPEED
+from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS
 from PyQt5.QtCore import QThread
 from loguru import logger
 
@@ -33,3 +33,4 @@ class RPi5Client(BaseClient, QThread):
             self.motor_actuator.move_forward()
         elif direction == DIRECTION["BACKWARD"]:
             self.motor_actuator.move_backward()
+        self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
