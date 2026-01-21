@@ -26,7 +26,6 @@ class RPi5Client(BaseClient, QThread):
     def on_power_off(self):
         logger.info("Powering off the motor.")
         self.motor_actuator.stop_motor()
-        self.update_speed(0)
 
     def on_change_direction(self, direction):
         logger.info(f"Changing direction to: {direction}")
