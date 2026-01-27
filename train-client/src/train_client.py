@@ -162,7 +162,7 @@ class TrainClient(BaseClient, QMainWindow):
         )
         self.hw_info_label.setText(hw_text)
 
-    def on_new_frame(self, frame_id, frame, width, height):
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
 
@@ -200,7 +200,7 @@ class TrainClient(BaseClient, QMainWindow):
         pixmap = QPixmap.fromImage(qt_image)
         self.image_label.setPixmap(pixmap)
 
-        super().on_new_frame(frame_id, frame, width, height)
+        super().on_new_frame(frame_id, frame, width, height, is_encoded)
 
     def toggle_capture(self):
         super().toggle_capture()

@@ -169,7 +169,7 @@ class CameraWorker(QThread):
 
 
 class Camera(QObject):
-    frame_ready = pyqtSignal(object, object, int, int)
+    frame_ready = pyqtSignal(object, object, int, int, bool)
 
     def __init__(self, parent=None, index: int = 0):
         super().__init__(parent)
@@ -196,7 +196,7 @@ class Camera(QObject):
         self.width = width
         self.height = height
         try:
-            self.frame_ready.emit(frame_count, frame, width, height)
+            self.frame_ready.emit(frame_count, frame, width, height, False)
         except Exception as e:
             logger.error(f"Error emitting frame_ready signal: {e}")
 

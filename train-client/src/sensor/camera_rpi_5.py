@@ -23,7 +23,7 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class CameraRPi5(QObject):
-    frame_ready = pyqtSignal(object, object, int, int)  # Emits frame_count, encoded_data, width, height
+    frame_ready = pyqtSignal(object, object, int, int, bool)  # Emits frame_count, encoded_data, width, height
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -84,11 +84,11 @@ class CameraRPi5(QObject):
                 with self.output.condition:
                     self.output.condition.wait()
                     encoded_data = self.output.frame
-                
+
                 self.frame_count += 1
-                
+
                 # Emit encoded H.264 data directly
-                self.frame_ready.emit(self.frame_count, encoded_data, self.width, self.height)
+                self.frame_ready.emit(self.frame_count, encoded_data, self.width, self.height, True)
 
             except Exception as e:
                 logger.error(f"Error capturing frame: {str(e)}")
