@@ -59,6 +59,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.telemetry.start()
         self.imu.start()
 
+        # FPS calculation variables
+        self.last_few_frame_ids = []
+        self.show_fps_log = True
+
+
     def generate_hw_info(self):
         self.hw_info.get_hw_info(write_to_file=True)
 
@@ -347,6 +352,19 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_new_frame(self, frame_id, frame, width, height):
         self.encoder.encode_frame(frame_id, frame, width, height, self.log_message)
+
+        # calculate continuous FPS
+        self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
+        while True:
+            first_frame_time = self.last_few_frame_ids[0][1]
+            last_frame_time = self.last_few_frame_ids[-1][1]
+            if last_frame_time - first_frame_time > 1000:
+                self.last_few_frame_ids.pop(0)
+            else:
+                break
+        current_fps = len(self.last_few_frame_ids)
+        if self.show_fps_log:
+            logger.debug(f"Current FPS: {current_fps}")
 
     def on_telemetry_data(self, data):
         self.log_message(f"Telemetry data: {data}")
