@@ -351,7 +351,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.warning(f"Unknown instruction: {message['instruction']}")
 
     def on_new_frame(self, frame_id, frame, width, height):
-        self.encoder.encode_frame(frame_id, frame, width, height, self.log_message)
+        # self.encoder.encode_frame(frame_id, frame, width, height, self.log_message)
+
+        self.on_encoded_frame(frame_id, int(datetime.datetime.now().timestamp() * 1000), frame)  # Placeholder for encoded bytes
 
         # calculate continuous FPS
         self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
