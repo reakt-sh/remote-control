@@ -42,7 +42,8 @@ class CameraRPi5(QObject):
             frame_duration = int(1e6 / VIDEO_FPS)  # in microseconds
 
             # Determine transform based on IS_CAMERA_UPSIDE_DOWN_ENABLED
-            transform = Transform.ROT180 if IS_CAMERA_UPSIDE_DOWN_ENABLED else Transform.IDENTITY
+            # 180-degree rotation is achieved by flipping both horizontally and vertically
+            transform = Transform(hflip=1, vflip=1) if IS_CAMERA_UPSIDE_DOWN_ENABLED else Transform()
 
             # Configure for H.264 encoding
             video_config = self.picam2.create_video_configuration(
