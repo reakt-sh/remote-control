@@ -158,6 +158,15 @@ export const useTrainStore = defineStore('train', () => {
       videoDatagramAssembler.value = new useAssembler({
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
+          // Calculate latency with clock offset
+          const frameLatency = completedFrame.latency + averageClockOffset.value
+
+          // Stop processing if latency exceeds 30 seconds (30000 ms)
+          if (frameLatency > 30000) {
+            console.warn(`⚠️ Frame ${completedFrame.frameId} skipped - latency too high: ${frameLatency.toFixed(0)} ms`)
+            return
+          }
+
           frameRef.value = completedFrame.data
           if (indexedDBStorageEnabled.value) {
             // Store the frame data
@@ -167,7 +176,7 @@ export const useTrainStore = defineStore('train', () => {
               trainId: selectedTrainId.value,
               createdAt: completedFrame.created_at,
               receivedAt: completedFrame.received_at,
-              latency: completedFrame.latency + averageClockOffset.value
+              latency: frameLatency
             })
           }
 
@@ -175,7 +184,7 @@ export const useTrainStore = defineStore('train', () => {
           if (last30_latencyHistory.value.length >= 30) {
             last30_latencyHistory.value.shift()
           }
-          last30_latencyHistory.value.push(completedFrame.latency + averageClockOffset.value)
+          last30_latencyHistory.value.push(frameLatency)
           const sumLatency = last30_latencyHistory.value.reduce((a, b) => a + b, 0)
           last30_framesAverageLatency.value = sumLatency / last30_latencyHistory.value.length
 
