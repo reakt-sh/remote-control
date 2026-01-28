@@ -50,8 +50,15 @@ google-chrome --ignore-certificate-errors-spki-list=5Q5Qbo1MT9UH92OkjjOkb89GlAiR
 
 ### Generate certificate to access publicly
 ```
+// Easy renewal
+sudo systemctl stop nginx
 sudo certbot renew --force-renewal
+sudo systemctl start nginx
+
+// Or Create new certificates
 sudo certbot certonly --standalone -d rtsys-lab.de -d www.rtsys-lab.de -d speedtest.rtsys-lab.de -d wt.rtsys-lab.de
+
+// Check the expiry dates
 sudo openssl x509 -in ./fullchain.pem -noout -dates
 ```
 
@@ -189,9 +196,9 @@ docker run -d \
   -p 8083:8083 \
   -p 8084:8084 \
   -p 8883:8883 \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain2.pem:/etc/fullchain1.pem \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/chain2.pem:/etc/chain1.pem \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey2.pem:/etc/privkey1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain3.pem:/etc/fullchain1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/chain3.pem:/etc/chain1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey3.pem:/etc/privkey1.pem \
   -v /home/rcd/Desktop/Workspace/remote-control/central-server/NanoMQ/nanomq.conf:/etc/nanomq.conf \
   --cpus=0.5 \
   --memory=100m \

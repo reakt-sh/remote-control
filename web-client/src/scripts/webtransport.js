@@ -115,7 +115,7 @@ export function useWebTransport(remoteControlId, messageHandler) {
     if (!isWTConnected.value || !bidistream.value) {
       const error = 'WebTransport not connected'
       console.log('❌', error)
-      throw new Error(error)
+      return
     }
 
     try {

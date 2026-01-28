@@ -1,5 +1,6 @@
 import sys
 import platform
+import datetime
 import os
 # some configuration for components
 
@@ -10,10 +11,16 @@ WINDOW_HEIGHT = 720
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 FRAME_RATE = 60
+
+# make a statid timestamp when the system starts
+SYSTEM_START_TIME = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This file's directory
-H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', 'dump')
 ASSET_DIR = os.path.join(BASE_DIR, '..', 'asset')
-LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', 'latency')
+
+H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'dump')
+LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency')
+HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
 
 PIXEL_FORMAT = "yuv420p"
 
@@ -109,7 +116,7 @@ LOW_BITRATE = 1000000  # 1 Mbps
 MEDIUM_BITRATE = 2000000  # 2 Mbps
 HIGH_BITRATE = 5000000  # 5 Mbps
 MAX_SPEED = 20 # KM/H
-SCALE_FACTOR_PWM = 1.25  # Scale factor to convert speed to PWM duty cycle
+SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
 
 
 TEXT_FIELD_HEIGHT = 23

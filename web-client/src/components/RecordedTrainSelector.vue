@@ -2,12 +2,41 @@
   <div class="recorded-train-selector-container">
     <div class="recorded-train-selector-header">
       <h2 class="recorded-train-selector-title">Recorded Train Data</h2>
-      <button class="refresh-btn" @click="loadRecordedTrains" :disabled="loading">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="{ 'spinning': loading }">
-          <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-        </svg>
-        Refresh
-      </button>
+
+      <div class="header-actions">
+        <div v-if="recordedTrains.length" class="selection-toolbar">
+          <button class="toggle-select-btn" @click="toggleSelectionMode" :class="{ active: selectionMode }" :title="selectionMode ? 'Cancel' : 'Multi-Select'">
+            <template v-if="!selectionMode">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H6v-2h4v2zm8 0h-6v-2h6v2zm0-4H6V7h12v6z"/>
+              </svg>
+              <span>Multi-Select</span>
+            </template>
+            <template v-else>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626" aria-label="Cancel">
+                <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              </svg>
+            </template>
+          </button>
+
+          <div v-if="selectionMode" class="bulk-actions">
+            <span class="selected-count">Selected: {{ selectedCount }}</span>
+            <button class="bulk-delete-btn" @click="openBulkDeleteDialog" :disabled="selectedCount === 0">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              Delete Selected
+            </button>
+          </div>
+        </div>
+
+        <button class="refresh-btn" @click="loadRecordedTrains" :disabled="loading">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="{ 'spinning': loading }">
+            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
     </div>
 
     <transition name="fade" mode="out-in">
@@ -33,7 +62,8 @@
               v-for="train in recordedTrains"
               :key="train.trainId"
               class="train-card"
-              @click="selectRecordedTrain(train.trainId)"
+              :class="{ selected: isSelected(train.trainId) && selectionMode }"
+              @click="onCardClick(train.trainId)"
             >
           <div class="train-card-gradient"></div>
           <div class="card-actions">
@@ -77,12 +107,6 @@
                 <span class="stat-value">{{ formatRelativeTime(train.lastUpdated) }}</span>
               </div>
             </div>
-          </div>
-          <div class="select-train-btn">
-            <span>View Records</span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-            </svg>
           </div>
             </div>
           </div>
@@ -133,17 +157,27 @@
           </button>
         </div>
         <div class="delete-dialog-body">
-          <p>Are you sure you want to delete all recorded data for <strong>{{ trainToDelete }}</strong>?</p>
-          <p class="delete-warning">This action cannot be undone and will permanently remove all frames, telemetry, and sensor data.</p>
+          <template v-if="isBulkDelete">
+            <p>Are you sure you want to delete <strong>{{ deleteTargets.length }}</strong> selected records?</p>
+            <div class="ids-preview" v-if="deleteTargets.length">
+              <div class="id-chip" v-for="id in previewDeleteIds" :key="id">{{ formatTrainId(id) }}</div>
+              <div class="id-chip more" v-if="deleteTargets.length > previewDeleteLimit">+{{ deleteTargets.length - previewDeleteLimit }}</div>
+            </div>
+            <p class="delete-warning">This action cannot be undone and will permanently remove frames, telemetry, and data for all selected records.</p>
+          </template>
+          <template v-else>
+            <p>Are you sure you want to delete all recorded data for <strong>{{ trainToDelete }}</strong>?</p>
+            <p class="delete-warning">This action cannot be undone and will permanently remove all frames, telemetry, and sensor data.</p>
+          </template>
         </div>
         <div class="delete-dialog-actions">
           <button class="cancel-btn" @click="cancelDelete">Cancel</button>
-          <button class="confirm-delete-btn" @click="confirmDelete" :disabled="deletingTrainId">
-            <svg v-if="!deletingTrainId" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <button class="confirm-delete-btn" @click="confirmDelete" :disabled="deletingTrainId || bulkDeleting">
+            <svg v-if="!deletingTrainId && !bulkDeleting" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
             </svg>
             <div v-else class="delete-spinner"></div>
-            <span>{{ deletingTrainId ? 'Deleting...' : 'Delete' }}</span>
+            <span>{{ (deletingTrainId || bulkDeleting) ? 'Deleting...' : 'Delete' }}</span>
           </button>
         </div>
       </div>
@@ -169,6 +203,16 @@ const visibleCards = ref(4) // Number of cards visible at once
 const showDeleteDialog = ref(false)
 const trainToDelete = ref('')
 const deletingTrainId = ref(null)
+
+// Bulk selection state
+const selectionMode = ref(false)
+const selectedTrainIds = ref([])
+const deleteTargets = ref([])
+const bulkDeleting = ref(false)
+const selectedCount = computed(() => selectedTrainIds.value.length)
+const isBulkDelete = computed(() => deleteTargets.value.length > 0 && !trainToDelete.value)
+const previewDeleteLimit = 6
+const previewDeleteIds = computed(() => deleteTargets.value.slice(0, previewDeleteLimit))
 
 // Computed properties for navigation
 const canScrollLeft = computed(() => scrollPosition.value > 0)
@@ -228,6 +272,9 @@ const loadRecordedTrains = async () => {
     recordedTrains.value = metadata
     await nextTick()
     updateVisibleCards()
+    // Reset selection if list changes
+    selectedTrainIds.value = []
+    selectionMode.value = false
   } catch (error) {
     console.error('Failed to load recorded trains:', error)
   } finally {
@@ -239,8 +286,36 @@ const selectRecordedTrain = (trainId) => {
   router.push(`/${trainId}/record`)
 }
 
+const toggleSelectionMode = () => {
+  selectionMode.value = !selectionMode.value
+  if (!selectionMode.value) {
+    selectedTrainIds.value = []
+  }
+}
+
+const isSelected = (trainId) => selectedTrainIds.value.includes(trainId)
+
+const toggleSelectTrain = (trainId) => {
+  if (isSelected(trainId)) {
+    selectedTrainIds.value = selectedTrainIds.value.filter(id => id !== trainId)
+  } else {
+    selectedTrainIds.value = [...selectedTrainIds.value, trainId]
+  }
+}
+
+const onCardClick = (trainId) => {
+  if (selectionMode.value) {
+    toggleSelectTrain(trainId)
+  } else {
+    selectRecordedTrain(trainId)
+  }
+}
+
+// selection clearing is handled by exiting selection mode
+
 // Delete methods
 const confirmDeleteTrain = (trainId) => {
+  deleteTargets.value = []
   trainToDelete.value = trainId
   showDeleteDialog.value = true
 }
@@ -249,35 +324,62 @@ const cancelDelete = () => {
   showDeleteDialog.value = false
   trainToDelete.value = ''
   deletingTrainId.value = null
+  deleteTargets.value = []
+  bulkDeleting.value = false
 }
 
 const confirmDelete = async () => {
+  // Bulk delete path
+  if (isBulkDelete.value) {
+    bulkDeleting.value = true
+    try {
+      for (const id of deleteTargets.value) {
+        await dataStorage.deleteTrainDatabase(id)
+      }
+
+      // Update local list
+      const toDeleteSet = new Set(deleteTargets.value)
+      recordedTrains.value = recordedTrains.value.filter(train => !toDeleteSet.has(train.trainId))
+      console.log(`✅ Successfully deleted ${deleteTargets.value.length} selected records`)
+
+      // Reset selection
+      selectedTrainIds.value = []
+      selectionMode.value = false
+
+      // Close dialog and refresh
+      showDeleteDialog.value = false
+      deleteTargets.value = []
+      await loadRecordedTrains()
+    } catch (error) {
+      console.error('❌ Failed to delete selected records:', error)
+    } finally {
+      bulkDeleting.value = false
+    }
+    return
+  }
+
+  // Single delete path
   if (!trainToDelete.value) return
-  
   deletingTrainId.value = trainToDelete.value
-  
   try {
     await dataStorage.deleteTrainDatabase(trainToDelete.value)
-    
-    // Remove the train from the local list
-    recordedTrains.value = recordedTrains.value.filter(
-      train => train.trainId !== trainToDelete.value
-    )
-    
+    recordedTrains.value = recordedTrains.value.filter(train => train.trainId !== trainToDelete.value)
     console.log(`✅ Successfully deleted train data: ${trainToDelete.value}`)
-    
-    // Close dialog
     showDeleteDialog.value = false
     trainToDelete.value = ''
-    
-    // Optionally refresh the list to ensure consistency
     await loadRecordedTrains()
   } catch (error) {
     console.error('❌ Failed to delete train data:', error)
-    // You could add a toast notification here for error feedback
   } finally {
     deletingTrainId.value = null
   }
+}
+
+const openBulkDeleteDialog = () => {
+  if (selectedTrainIds.value.length === 0) return
+  trainToDelete.value = ''
+  deleteTargets.value = [...selectedTrainIds.value]
+  showDeleteDialog.value = true
 }
 
 const formatNumber = (num) => {
@@ -372,6 +474,12 @@ onUnmounted(() => {
   font-weight: 700;
   color: #1a237e;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .refresh-btn {
@@ -514,6 +622,12 @@ onUnmounted(() => {
   border-color: #1976d2;
 }
 
+.train-card.selected {
+  background: #fef2f2;
+  border-color: #fecaca;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15), 0 10px 30px rgba(239, 68, 68, 0.2);
+}
+
 .train-card-gradient {
   position: absolute;
   top: 0;
@@ -552,15 +666,6 @@ onUnmounted(() => {
   margin-bottom: 1rem;
 }
 
-.train-id {
-  font-size: 0.75rem;
-  color: #8e9aaf;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .train-id-value {
   font-size: 1rem;
   font-weight: 700;
@@ -592,49 +697,13 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.stat-label {
-  color: #8e9aaf;
-  font-weight: 500;
-  font-size: 0.75rem;
-}
-
 .stat-value {
   color: #4a5568;
   font-weight: 600;
   font-size: 0.8rem;
 }
 
-.select-train-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.6rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.select-train-btn:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.select-train-btn svg {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.3s ease;
-}
-
-.train-card:hover .select-train-btn svg {
-  transform: translateX(3px);
-}
+/* removed .select-train-btn as card click navigates */
 
 .no-trains-message {
   display: flex;
@@ -840,6 +909,81 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(4px);
 }
 
+/* Selection Toolbar */
+.selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-select-btn.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.toggle-select-btn:hover {
+  background: #f9fafb;
+}
+
+.toggle-select-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selected-count {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* removed unused .small-btn styles */
+
+.bulk-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bulk-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.bulk-delete-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Card selection visual handled by .train-card.selected */
+
 /* Delete Dialog Styles */
 .delete-dialog-overlay {
   position: fixed;
@@ -947,6 +1091,28 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
+.ids-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0.75rem 0;
+}
+
+.id-chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.id-chip.more {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
 .delete-dialog-body p:last-child {
   margin-bottom: 0;
 }
@@ -1043,6 +1209,12 @@ onUnmounted(() => {
     gap: 1rem;
     align-items: stretch;
   }
+
+  .header-actions {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
   
   .train-icon {
     width: 32px;
@@ -1061,11 +1233,7 @@ onUnmounted(() => {
   .stat-item {
     font-size: 0.75rem;
   }
-  
-  .select-train-btn {
-    padding: 0.5rem 0.8rem;
-    font-size: 0.75rem;
-  }
+
 
   .card-actions {
     padding: 0.5rem;

@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor
-from PyQt5.QtCore import Qt, QSize, QDateTime
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer
 import os
 import cv2
 import numpy as np
+import time
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
 from base_client import BaseClient
@@ -31,6 +32,21 @@ class TrainClient(BaseClient, QMainWindow):
         self.image_label.setFixedSize(video_display_width, video_display_height)
         self.image_label.setStyleSheet("border: 1px solid #444; background-color: #2a2a2a;")
         self.image_label.setScaledContents(True)  # Enable scaling
+
+        # Hardware info label under buttons (plain text)
+        self.hw_info_label = QLabel()
+        self.hw_info_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.hw_info_label.setWordWrap(True)
+        self.hw_info_label.setMinimumHeight(60)
+        self.hw_info_label.setStyleSheet(
+            """
+            QLabel {
+                color: green;
+                font-family: Consolas, Courier New, monospace;
+                font-size: 10pt;
+            }
+            """
+        )
 
         self.console_log = QTextEdit()
         self.console_log.setReadOnly(True)
@@ -129,49 +145,62 @@ class TrainClient(BaseClient, QMainWindow):
         layout = QGridLayout()
         layout.addWidget(self.image_label, 0, 0)
         layout.addLayout(button_layout, 0, 1)
-        layout.addWidget(self.console_log, 1, 0, 1, 2)
+        layout.addWidget(self.hw_info_label, 1, 1)
+        layout.addWidget(self.console_log, 2, 0, 1, 2)
 
         self.central_widget.setLayout(layout)
 
-    def on_new_frame(self, frame_id, frame, width, height):
+        self.hw_timer = QTimer(self)
+        self.hw_timer.timeout.connect(self.update_hw_info)
+        self.hw_timer.start(1000)
+    def update_hw_info(self):
+        info = self.hw_info.get_hw_info()
+        hw_text = (
+            f"CPU: {info['cpu_usage_percent']}% | {info['cpu_temperature_celsius']} °C\n"
+            f"RAM: {info['ram_usage_percent']}%\n"
+            f"Disk: {info['disk_usage_percent']}%\n"
+        )
+        self.hw_info_label.setText(hw_text)
+
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
-        
+
         # Get the fixed size of the image label
         label_width = self.image_label.width()
         label_height = self.image_label.height()
-        
+
         # Calculate scaling to fit within label while maintaining aspect ratio
         scale_w = label_width / w
         scale_h = label_height / h
         scale = min(scale_w, scale_h)  # Use smaller scale to ensure it fits
-        
+
         # Calculate new dimensions
         new_width = int(w * scale)
         new_height = int(h * scale)
-        
+
         # Resize the frame
         resized_image = cv2.resize(rgb_image, (new_width, new_height))
-        
+
         # Create a black background image with the label dimensions
         background = np.zeros((label_height, label_width, 3), dtype=np.uint8)
-        
+
         # Calculate position to center the resized video
         x_offset = (label_width - new_width) // 2
         y_offset = (label_height - new_height) // 2
-        
+
         # Place the resized video on the black background
         background[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized_image
-        
+
         # Convert to QImage
         bytes_per_line = 3 * label_width
         qt_image = QImage(background.data, label_width, label_height, bytes_per_line, QImage.Format_RGB888)
-        
+
         # Create pixmap and set it to the label
         pixmap = QPixmap.fromImage(qt_image)
         self.image_label.setPixmap(pixmap)
-        
-        super().on_new_frame(frame_id, frame, width, height)
+
+        super().on_new_frame(frame_id, frame, width, height, is_encoded)
 
     def toggle_capture(self):
         super().toggle_capture()

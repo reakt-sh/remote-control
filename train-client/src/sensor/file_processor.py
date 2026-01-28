@@ -7,7 +7,7 @@ from loguru import logger
 from globals import ASSET_DIR, MAX_SPEED
 
 class FileProcessor(QObject):
-    frame_ready = pyqtSignal(object, object, int, int)  # Emits (frame_count, frame)
+    frame_ready = pyqtSignal(object, object, int, int, bool)  # Emits (frame_count, frame)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -103,7 +103,7 @@ class FileProcessor(QObject):
             text_res = f"Resolution: {self.width}x{self.height}"
             text_frame_id = f"Frame ID: {self.frame_count}"
             now = datetime.now()
-            text_date = now.strftime("Date: %y:%m:%d")
+            text_date = now.strftime("Date: %d-%B-%Y")
             text_time = now.strftime("Time: %H:%M:%S:%f")[:-3]
 
             font = cv2.FONT_HERSHEY_SIMPLEX
@@ -143,6 +143,6 @@ class FileProcessor(QObject):
                 )
             # add a try catch here
             try:
-                self.frame_ready.emit(self.frame_count, frame, self.width, self.height)
+                self.frame_ready.emit(self.frame_count, frame, self.width, self.height, False)
             except Exception as e:
                 logger.error(f"Error emitting frame_ready signal, call back is not connected: {e}")

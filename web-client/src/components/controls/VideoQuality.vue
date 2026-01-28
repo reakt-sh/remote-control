@@ -72,7 +72,7 @@ const options = [
 ]
 
 const selectedOption = computed(() => {
-  return options.find(option => option.value === props.modelValue) || options[1]
+  return options.find(option => option.value === props.modelValue) || options[2]
 })
 
 async function toggleDropdown() {

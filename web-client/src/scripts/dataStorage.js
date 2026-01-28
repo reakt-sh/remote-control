@@ -153,6 +153,7 @@ class DataStorage {
    * @param {Uint8Array} frameData.data - Raw H.264 frame data
    * @param {string} frameData.trainId - Train identifier
    * @param {number} frameData.createdAt - Creation timestamp
+   * @param {number} frameData.receivedAt - Reception timestamp
    * @param {number} frameData.latency - Frame latency
    * @param {Object} frameData.metadata - Additional frame metadata
    */
@@ -166,11 +167,12 @@ class DataStorage {
 
       const frame = {
         frameId: frameData.frameId,
-        timestamp: Date.now(),
         size: frameData.data.byteLength,
         data: frameData.data, // Dexie handles Uint8Array automatically
-        createdAt: frameData.createdAt || Date.now(),
-        latency: frameData.latency || 0,
+        createdAt: frameData.createdAt,
+        receivedAt: frameData.receivedAt,
+        timestamp: Date.now(),
+        latency: frameData.latency,
         metadata: frameData.metadata || {}
       }
 
@@ -1071,8 +1073,9 @@ class DataStorage {
           frameId: frame.frameId,
           latency: frame.latency,
           data_size: frame.size,
+          created_at: frame.createdAt,
+          received_at: frame.receivedAt,
           stored_at : frame.timestamp,
-          created_at: frame.createdAt || frame.timestamp
         }))
 
       // Process telemetry latency data

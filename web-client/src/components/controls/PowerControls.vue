@@ -4,7 +4,7 @@
       class="control-button start-button"
       :class="{ active: !isPoweredOn }"
       @click="handleStart"
-      :disabled="isPoweredOn"
+      :disabled="isPoweredOn || disabled"
     >
       <span class="icon">▶</span>
       <span class="label">START</span>
@@ -14,7 +14,7 @@
       class="control-button stop-button"
       :class="{ active: isPoweredOn }"
       @click="handleStop"
-      :disabled="!isPoweredOn"
+      :disabled="!isPoweredOn || disabled"
     >
       <span class="icon">■</span>
       <span class="label">STOP</span>
@@ -30,6 +30,12 @@ const trainStore = useTrainStore()
 const { isPoweredOn } = storeToRefs(trainStore)
 const emit = defineEmits(['start', 'stop'])
 
+defineProps({
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+})
 
 function handleStart() {
     emit('start')

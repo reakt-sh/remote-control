@@ -70,6 +70,13 @@ export const useTrainStore = defineStore('train', () => {
   const last30_latencyHistory = ref([])
   const last30_framesAverageLatency = ref(0)
 
+  // Variables to calculate FPS of last 1 second
+  const last1s_frameTimestamps = ref([])
+  const last1s_framesFPS = ref(0)
+
+  // Variables to calculate bandwidth used last 1 second
+  const last1s_bytesHistory = ref([])
+  const last1s_bandwidthMbps = ref(0)
 
   const {
     isWSConnected,
@@ -151,6 +158,15 @@ export const useTrainStore = defineStore('train', () => {
       videoDatagramAssembler.value = new useAssembler({
         maxFrames: 30,
         onFrameComplete: (completedFrame) => {
+          // Calculate latency with clock offset
+          const frameLatency = completedFrame.latency + averageClockOffset.value
+
+          // Stop processing if latency exceeds 30 seconds (30000 ms)
+          if (frameLatency > 30000) {
+            console.warn(`⚠️ Frame ${completedFrame.frameId} skipped - latency too high: ${frameLatency.toFixed(0)} ms`)
+            return
+          }
+
           frameRef.value = completedFrame.data
           if (indexedDBStorageEnabled.value) {
             // Store the frame data
@@ -159,7 +175,8 @@ export const useTrainStore = defineStore('train', () => {
               data: completedFrame.data,
               trainId: selectedTrainId.value,
               createdAt: completedFrame.created_at,
-              latency: completedFrame.latency + averageClockOffset.value
+              receivedAt: completedFrame.received_at,
+              latency: frameLatency
             })
           }
 
@@ -167,9 +184,31 @@ export const useTrainStore = defineStore('train', () => {
           if (last30_latencyHistory.value.length >= 30) {
             last30_latencyHistory.value.shift()
           }
-          last30_latencyHistory.value.push(completedFrame.latency + averageClockOffset.value)
+          last30_latencyHistory.value.push(frameLatency)
           const sumLatency = last30_latencyHistory.value.reduce((a, b) => a + b, 0)
           last30_framesAverageLatency.value = sumLatency / last30_latencyHistory.value.length
+
+          // Calculate FPS over the last 1 second
+          const currentTime = performance.now()
+          last1s_frameTimestamps.value.push(currentTime)
+
+          while (last1s_frameTimestamps.value.length > 0 && currentTime - last1s_frameTimestamps.value[0] > 1000) {
+            last1s_frameTimestamps.value.shift()
+          }
+          last1s_framesFPS.value = last1s_frameTimestamps.value.length
+
+          // Calculate bandwidth used over the last 1 second
+          const frameSizeBytes = completedFrame.data.length
+          last1s_bytesHistory.value.push({ timestamp: currentTime, size: frameSizeBytes })
+
+          // Remove entries older than 1 second
+          while (last1s_bytesHistory.value.length > 0 && currentTime - last1s_bytesHistory.value[0].timestamp > 1000) {
+            last1s_bytesHistory.value.shift()
+          }
+
+          let totalBytes = last1s_bytesHistory.value.reduce((sum, entry) => sum + entry.size, 0)
+          last1s_bandwidthMbps.value = (totalBytes * 8) / (1024 * 1024) // Convert to Mbps
+
         }
       })
     }
@@ -240,6 +279,7 @@ export const useTrainStore = defineStore('train', () => {
     // Calculate average clock offset from all measurements
     const totalClockOffset = rttMeasurements.value.reduce((sum, measurement) => sum + measurement.clockOffset, 0)
     averageClockOffset.value = totalClockOffset / rttMeasurements.value.length
+    averageClockOffset.value = Math.round(averageClockOffset.value)
 
     // Calculate statistics for analysis
     const roundTripTimes = rttMeasurements.value.map(m => m.roundTripTime)
@@ -593,6 +633,8 @@ export const useTrainStore = defineStore('train', () => {
     rttMeasurements,
     rttCalibrationCount,
     last30_framesAverageLatency,
+    last1s_framesFPS,
+    last1s_bandwidthMbps,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
