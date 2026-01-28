@@ -25,9 +25,10 @@ def set_status(s: Status):
     # I want put log in each 300ms only to avoid flooding the log
     global last_log_time
     current_time = datetime.datetime.now().timestamp() * 1000
-    if current_time - last_log_time > 300:
+    if current_time - last_log_time > 1000:
         last_log_time = current_time
-        logger.info(f"New status: {s}")
+        # logger.info(f"New status: {s}")
+
 
 
 class RPi5ReaktorClient(BaseClient, QThread):

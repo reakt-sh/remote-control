@@ -89,7 +89,7 @@ class MessageHandler:
                 self._status_callback(new_status)
 
                  # Add a sleep here to throttle the loop speed if the hardware sends too fast
-                await asyncio.sleep(0.1) # Sleep for 100ms
+                await asyncio.sleep(0.2) # Sleep for 200ms
         except asyncio.CancelledError:
             logger.info("Decoder loop stopped")
         except asyncio.QueueShutDown:
