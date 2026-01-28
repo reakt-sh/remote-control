@@ -54,7 +54,7 @@ class NetworkWorkerQUIC(QThread):
 
         self.server_host = SERVER
         self.server_port = QUIC_PORT
-        self.frame_queue = queue.Queue()  # Use asyncio.Queue
+        self.frame_queue = queue.Queue(maxsize=30)  # Use asyncio.Queue
         self.stream_packet_queue = queue.Queue()  # Use asyncio.Queue
         self._running = False
         self._client: Optional[QuicConnection] = None
