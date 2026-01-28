@@ -23,9 +23,9 @@ class CameraWorker(QThread):
     def _set_maximum_resolution(self):
         """Try to set the camera to its maximum supported resolution."""
         high_quality_resolutions = [
-            (1280, 720),   # 720p
-            (1024, 768),   # XGA
-            (800, 600),    # SVGA
+            # (1280, 720),   # 720p
+            # (1024, 768),   # XGA
+            # (800, 600),    # SVGA
             (640, 480),    # VGA (fallback)
         ]
 
