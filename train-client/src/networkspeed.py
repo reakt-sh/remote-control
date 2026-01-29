@@ -3,7 +3,7 @@ import json
 import statistics
 from typing import Dict, Optional, Tuple, List
 from PyQt5.QtCore import pyqtSignal, QThread, QTimer
-from loguru import logger
+from utils.app_logger import logger
 from globals import SERVER
 import asyncio
 import re

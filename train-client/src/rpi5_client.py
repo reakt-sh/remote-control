@@ -4,7 +4,7 @@ from motor_actuator import MotorActuator
 from base_client import BaseClient
 from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS
 from PyQt5.QtCore import QThread
-from loguru import logger
+from utils.app_logger import logger
 
 class RPi5Client(BaseClient, QThread):
     def __init__(self):

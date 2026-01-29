@@ -2,7 +2,7 @@ import av
 import datetime
 from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
-from loguru import logger
+from utils.app_logger import logger
 
 from globals import *
 class Encoder(QObject):

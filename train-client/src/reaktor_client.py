@@ -8,7 +8,7 @@ from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
 from base_client import BaseClient
 from globals import *
-from loguru import logger
+from utils.app_logger import logger
 import asyncio
 
 

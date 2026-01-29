@@ -1,7 +1,7 @@
 import cv2
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QThread
 from datetime import datetime
-from loguru import logger
+from utils.app_logger import logger
 
 class CameraWorker(QThread):
     """Worker thread for camera frame capture to avoid blocking UI thread."""

@@ -6,7 +6,7 @@ import uuid
 import json
 import struct
 from PyQt5.QtCore import QThread, QDateTime, QTimer
-from loguru import logger
+from utils.app_logger import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC

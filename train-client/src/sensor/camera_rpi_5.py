@@ -6,7 +6,7 @@ from libcamera import controls
 import libcamera
 import cv2
 import numpy as np
-from loguru import logger
+from utils.app_logger import logger
 import io
 import threading
 import time

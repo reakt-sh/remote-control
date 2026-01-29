@@ -1,6 +1,6 @@
 import asyncio
 import qasync
-from loguru import logger
+from utils.app_logger import logger
 from sensor.camera import Camera
 from motor_actuator import MotorActuator
 from base_client import BaseClient
@@ -18,7 +18,7 @@ status = None
 def set_status(s: Status):
     global status
     status = s
-    # logger.info(f"New status: {s}")
+    logger.info(f"New status: {s}")
 
 
 class RPi5ReaktorClient(BaseClient, QThread):
