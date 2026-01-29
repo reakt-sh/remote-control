@@ -115,7 +115,7 @@ STATION_LIST = [
 LOW_BITRATE = 1000000  # 1 Mbps
 MEDIUM_BITRATE = 2000000  # 2 Mbps
 HIGH_BITRATE = 5000000  # 5 Mbps
-MAX_SPEED = 20 # KM/H
+MAX_SPEED = 13 # KM/H
 SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
 
 
