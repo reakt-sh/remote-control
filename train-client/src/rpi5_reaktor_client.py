@@ -27,6 +27,8 @@ class RPi5ReaktorClient(BaseClient, QThread):
         self.connection = None
         self.setup_task = None
         loop = qasync.QEventLoop(self)
+        self.current_mode = Mode.FORWARD
+        self.current_speed = 0
         task = loop.create_task(self.setup_connection())
         loop.run_until_complete(task)
 
@@ -44,35 +46,36 @@ class RPi5ReaktorClient(BaseClient, QThread):
             logger.warning("Waiting for initial status...")
             await asyncio.sleep(.1)
 
-    # speed here in KM/H
-    def update_speed(self, speed):
-        # convert to m/s
-        converted_speed = speed / 3.6
+    def update_speed(self, speed): # speed here in KM/H
+
+        converted_speed = speed / 3.6 # convert to m/s
 
         if converted_speed > MAX_SPEED_REAKTOR:
             logger.warning(f"Requested speed {converted_speed} m/s exceeds MAX_SPEED {MAX_SPEED_REAKTOR} m/s. Capping to MAX_SPEED.")
             converted_speed = MAX_SPEED_REAKTOR
-        # Set speed
+
+        self.current_speed = converted_speed
+
         control = Control(
-            mode = Mode.FORWARD,
-            target_speed = converted_speed
+            mode = self.current_mode,
+            target_speed = self.current_speed
         )
         logger.info(f"Sending new target speed: {control.target_speed}")
         self.connection.send_control(control)
 
     def on_power_on(self):
-        # Set initial speed
+        # Start Command
         control = Control(
-            mode = Mode.FORWARD,
-            target_speed = INITIAL_SPEED_REAKTOR
+            mode = self.current_mode,
+            target_speed = self.current_speed
         )
         logger.info(f"Powering on motor with target speed: {control.target_speed}")
         self.connection.send_control(control)
 
     def on_power_off(self):
-        # Stop motor
+        # Stop Command
         control = Control(
-            mode = Mode.NEUTRAL,
+            mode = self.current_mode,
             target_speed = 0
         )
         logger.info("Powering off motor.")
@@ -80,6 +83,8 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     def on_change_direction(self, direction):
         if direction == DIRECTION["FORWARD"]:
+            self.current_mode = Mode.FORWARD
             logger.info("Changing direction command received to FORWARD.")
         elif direction == DIRECTION["BACKWARD"]:
+            self.current_mode = Mode.REVERSE
             logger.info("Changing direction command received to BACKWARD.")
