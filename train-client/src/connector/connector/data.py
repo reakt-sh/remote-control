@@ -13,7 +13,7 @@ class Mode(IntEnum):
     PARKING = MessageMode.DRIVE_MODE_PARKING
     EMERGENCY_STOP = MessageMode.DRIVE_MODE_EMERGENCY_STOP
 
-SpeedType = Annotated[float, Field(ge=0, allow_inf_nan=False, description="Speed in m/s")]
+type SpeedType = Annotated[float, Field(ge=0, allow_inf_nan=False, description="Speed in m/s")]
 
 class Control(BaseModel):
     """Control command for the vehicle."""

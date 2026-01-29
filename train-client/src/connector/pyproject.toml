@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reaktor-driver-connector"
+authors = [
+    {name = "Alexander Schulz-Rosengarten", email = "als@informatik.uni-kiel.de"},
+]
+description = "Connection to the REAKTOR driver."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["version"]
+
