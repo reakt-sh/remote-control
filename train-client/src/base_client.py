@@ -278,77 +278,86 @@ class BaseClient(ABC, metaclass=QABCMeta):
         logger.debug(f"WebRTC data received: {len(data)} bytes")
 
     def on_new_command(self, payload):
-        message = json.loads(payload.decode('utf-8'))
-        remote_control_id = message.get('remote_control_id', 0)
-        latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
+        try:
+            message = json.loads(payload.decode('utf-8'))
+            remote_control_id = message.get('remote_control_id', 0)
+            latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
 
-        if latency is not None:
-            logger.info(f"Received command: {message} with latency: {latency}ms")
-            latency_log_entry = {
-                "remote_control_id": remote_control_id,
-                "command_id": message.get("command_id"),
-                "instruction": message['instruction'],
-                "latency": latency,
-                "created_at": message.get('remote_control_timestamp', 0),
-                "received_at": int(datetime.datetime.now().timestamp() * 1000),
-                "size" : len(payload),
-                "target_speed": message.get('target_speed', None),
-                "direction": message.get('direction', None),
-                "quality": message.get('quality', None),
-            }
-            self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
-            self.latency_output_file.flush()
-        else:
-            logger.info(f"Received command: {message} (latency not available - clock not synchronized)")
+            if latency is not None:
+                logger.info(f"Received command: {message} with latency: {latency}ms")
+                latency_log_entry = {
+                    "remote_control_id": remote_control_id,
+                    "command_id": message.get("command_id"),
+                    "instruction": message['instruction'],
+                    "latency": latency,
+                    "created_at": message.get('remote_control_timestamp', 0),
+                    "received_at": int(datetime.datetime.now().timestamp() * 1000),
+                    "size" : len(payload),
+                    "target_speed": message.get('target_speed', None),
+                    "direction": message.get('direction', None),
+                    "quality": message.get('quality', None),
+                }
+                self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
+                self.latency_output_file.flush()
+            else:
+                logger.info(f"Received command: {message} (latency not available - clock not synchronized)")
 
-        if message['instruction'] == 'CHANGE_TARGET_SPEED':
-            self.target_speed = message['target_speed']
-            self.update_speed(self.target_speed)
-        elif message['instruction'] == 'STOP_SENDING_DATA':
-            if self.is_sending:
-                self.toggle_sending()
-        elif message['instruction'] == 'START_SENDING_DATA':
-            if not self.is_sending:
-                self.toggle_sending()
-        elif message['instruction'] == 'POWER_ON':
-            self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
-            self.target_speed = max(self.target_speed, MAX_SPEED)
-            self.on_power_on()
-        elif message['instruction'] == 'POWER_OFF':
-            self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
-            self.target_speed = 0
-            self.on_power_off()
-        elif message['instruction'] == 'CHANGE_DIRECTION':
-            direction = message.get('direction')
-            if direction in ("FORWARD", "BACKWARD"):
-                self.telemetry.set_direction(DIRECTION[direction])
-                self.on_change_direction(DIRECTION[direction])
+            if message['instruction'] == 'CHANGE_TARGET_SPEED':
+                self.target_speed = message['target_speed']
+                self.update_speed(self.target_speed)
+            elif message['instruction'] == 'STOP_SENDING_DATA':
+                if self.is_sending:
+                    self.toggle_sending()
+            elif message['instruction'] == 'START_SENDING_DATA':
+                if not self.is_sending:
+                    self.toggle_sending()
+            elif message['instruction'] == 'POWER_ON':
+                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+                self.target_speed = max(self.target_speed, MAX_SPEED)
+                self.on_power_on()
+            elif message['instruction'] == 'POWER_OFF':
+                self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
+                self.target_speed = 0
+                self.on_power_off()
+            elif message['instruction'] == 'CHANGE_DIRECTION':
+                direction = message.get('direction')
+                if direction in ("FORWARD", "BACKWARD"):
+                    self.telemetry.set_direction(DIRECTION[direction])
+                    self.on_change_direction(DIRECTION[direction])
+                else:
+                    logger.warning(f"Unknown direction: {direction}")
+            elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
+                self.networkspeed.start()
+            elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
+                video_quality = message.get('quality')
+                logger.info(f"Video quality is changing to {video_quality}")
+                if video_quality ==  "low":
+                    logger.info(f"Setting encoder bitrate to LOW_BITRATE: {LOW_BITRATE}")
+                    self.encoder.set_bitrate(LOW_BITRATE)
+                elif video_quality == "medium":
+                    logger.info(f"Setting encoder bitrate to MEDIUM_BITRATE: {MEDIUM_BITRATE}")
+                    self.encoder.set_bitrate(MEDIUM_BITRATE)
+                elif video_quality == "high":
+                    logger.info(f"Setting encoder bitrate to HIGH_BITRATE: {HIGH_BITRATE}")
+                    self.encoder.set_bitrate(HIGH_BITRATE)
+                else:
+                    logger.warning(f"Unknown video quality: {video_quality}")
+            elif message['instruction'] == 'SWITCH_PROTOCOL':
+                protocol = message.get('protocol', '').upper()
+                if protocol in ['WEBSOCKET', 'QUIC', 'WEBRTC']:
+                    self.switch_protocol(protocol)
+                else:
+                    logger.warning(f"Unknown protocol: {protocol}")
             else:
-                logger.warning(f"Unknown direction: {direction}")
-        elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
-            self.networkspeed.start()
-        elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
-            video_quality = message.get('quality')
-            logger.info(f"Video quality is changing to {video_quality}")
-            if video_quality ==  "low":
-                logger.info(f"Setting encoder bitrate to LOW_BITRATE: {LOW_BITRATE}")
-                self.encoder.set_bitrate(LOW_BITRATE)
-            elif video_quality == "medium":
-                logger.info(f"Setting encoder bitrate to MEDIUM_BITRATE: {MEDIUM_BITRATE}")
-                self.encoder.set_bitrate(MEDIUM_BITRATE)
-            elif video_quality == "high":
-                logger.info(f"Setting encoder bitrate to HIGH_BITRATE: {HIGH_BITRATE}")
-                self.encoder.set_bitrate(HIGH_BITRATE)
-            else:
-                logger.warning(f"Unknown video quality: {video_quality}")
-        elif message['instruction'] == 'SWITCH_PROTOCOL':
-            protocol = message.get('protocol', '').upper()
-            if protocol in ['WEBSOCKET', 'QUIC', 'WEBRTC']:
-                self.switch_protocol(protocol)
-            else:
-                logger.warning(f"Unknown protocol: {protocol}")
-        else:
-            logger.warning(f"Unknown instruction: {message['instruction']}")
+                logger.warning(f"Unknown instruction: {message['instruction']}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode command message: {e}. Payload: {payload}")
+        except UnicodeDecodeError as e:
+            logger.error(f"Failed to decode payload as UTF-8: {e}. Payload: {payload}")
+        except KeyError as e:
+            logger.error(f"Missing required field in command message: {e}. Message: {message if 'message' in locals() else 'N/A'}")
+        except Exception as e:
+            logger.error(f"Unexpected error processing command: {e}. Payload: {payload}")
 
     def on_new_frame(self, frame_id, frame, width, height, is_encoded):
         if is_encoded:
