@@ -1,7 +1,6 @@
 opencv-python
-pyav
+av
 ffmpeg-python
-pyqt5
 qasync
 zmq
 numpy
