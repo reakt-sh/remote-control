@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import qasync
 from utils.app_logger import logger
 from sensor.camera import Camera
@@ -15,10 +16,17 @@ MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
 # Status handling
 status = None
+last_log_time = 0
 def set_status(s: Status):
     global status
     status = s
-    logger.info(f"New status: {s}")
+
+    # I want put log in each 300ms only to avoid flooding the log
+    global last_log_time
+    current_time = datetime.datetime.now().timestamp() * 1000
+    if current_time - last_log_time > 300:
+        last_log_time = current_time
+        logger.info(f"New status: {s}")
 
 
 class RPi5ReaktorClient(BaseClient, QThread):
