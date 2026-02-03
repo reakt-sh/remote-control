@@ -49,7 +49,7 @@ class CameraRPi5(QObject):
             self.picam2.configure(video_config)
 
             # Setup H.264 encoder
-            self.encoder = H264Encoder(bitrate=MEDIUM_BITRATE)
+            self.encoder = H264Encoder(bitrate=VIDEO_BITRATE)
             self.output = StreamingOutput()
 
             self.picam2.start_recording(self.encoder, FileOutput(self.output))

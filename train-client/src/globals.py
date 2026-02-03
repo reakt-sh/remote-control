@@ -108,9 +108,16 @@ STATION_LIST = [
     {"name": "Lütjenburg",                  "latitude": 54.2941,        "longitude": 10.5868}
 ]
 
+# Bitrates
 LOW_BITRATE = 1000000  # 1 Mbps
 MEDIUM_BITRATE = 2000000  # 2 Mbps
 HIGH_BITRATE = 5000000  # 5 Mbps
+
+#FPS
+FPS_LOW = 15
+FPS_MEDIUM = 30
+FPS_HIGH = 60
+
 MAX_SPEED = 13 # KM/H
 SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
 
@@ -119,7 +126,8 @@ SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
 VIDEO_RESOLUTION = RESOLUTION_WIDESCREEN_HD        # (1280, 720)
 VIDEO_FORMAT_FFMPEG = VIDEO_FORMAT_YUV420["ffmpeg"]
 VIDEO_FORMAT_PICAMERA = VIDEO_FORMAT_RGB888["picamera"]
-VIDEO_FPS = 30
+VIDEO_FPS = FPS_MEDIUM
+VIDEO_BITRATE = MEDIUM_BITRATE  # Default video bitrate
 
 
 TEXT_FIELD_HEIGHT = 23

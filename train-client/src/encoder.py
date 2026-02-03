@@ -12,7 +12,7 @@ class Encoder(QObject):
         self.frame_rate = VIDEO_FPS
         self.pixel_format = VIDEO_FORMAT_FFMPEG
         self.h264_dump_path = H264_DUMP
-        self.current_bitrate = MEDIUM_BITRATE
+        self.current_bitrate = VIDEO_BITRATE
         self.min_bitrate = LOW_BITRATE
         self.max_bitrate = HIGH_BITRATE
         self.output_container = None
