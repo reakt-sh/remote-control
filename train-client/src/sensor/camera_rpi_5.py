@@ -57,7 +57,7 @@ class CameraRPi5(QObject):
             # Get camera properties
             main_stream = self.picam2.stream_configuration("main")
             self.width, self.height = main_stream["size"]
-            self.fps = 30
+            self.fps = VIDEO_FPS
 
             print(f"Camera Resolution: {self.width}x{self.height}")
             print(f"Camera FPS: {self.fps}")

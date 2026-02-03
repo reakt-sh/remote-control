@@ -61,7 +61,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
         # FPS calculation variables
         self.last_few_frame_ids = []
-        self.show_fps_log = True
+        self.show_capture_frame_log = True
 
 
     def generate_hw_info(self):
@@ -375,8 +375,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
             else:
                 break
         current_fps = len(self.last_few_frame_ids)
-        if self.show_fps_log:
-            logger.debug(f"Current FPS: {current_fps}")
+        if self.show_capture_frame_log:
+            logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}")
 
     def on_telemetry_data(self, data):
         self.log_message(f"Telemetry data: {data}")
