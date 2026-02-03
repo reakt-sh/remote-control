@@ -9,8 +9,8 @@ class Encoder(QObject):
     encode_ready = pyqtSignal(int, object, object)  # Emits frame_id, timestamp (as object to handle 64-bit), encoded_bytes
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.frame_rate = FRAME_RATE
-        self.pixel_format = PIXEL_FORMAT
+        self.frame_rate = VIDEO_FPS
+        self.pixel_format = VIDEO_FORMAT_FFMPEG
         self.h264_dump_path = H264_DUMP
         self.current_bitrate = MEDIUM_BITRATE
         self.min_bitrate = LOW_BITRATE

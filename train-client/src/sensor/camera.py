@@ -2,6 +2,7 @@ import cv2
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QThread
 from datetime import datetime
 from utils.app_logger import logger
+from globals import *
 
 class CameraWorker(QThread):
     """Worker thread for camera frame capture to avoid blocking UI thread."""
@@ -15,8 +16,8 @@ class CameraWorker(QThread):
         self.height = 0
         self.frame_count = 0
         self.start_time = None
-        self.base_fps = 30
-        self.current_fps = 30
+        self.base_fps = VIDEO_FPS
+        self.current_fps = VIDEO_FPS
         self._running = False
         self._mutex_running = False
 
@@ -45,7 +46,16 @@ class CameraWorker(QThread):
                 logger.debug(f"Camera doesn't support {width}x{height}, got {actual_width}x{actual_height}")
 
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-        self.cap.set(cv2.CAP_PROP_FPS, 30)
+
+    def _set_resolution(self):
+        resolution = VIDEO_RESOLUTION
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+
+    def _set_fps(self):
+        self.cap.set(cv2.CAP_PROP_FPS, self.current_fps)
+
 
     def get_camera_capabilities(self):
         """Get and log camera capabilities for debugging."""
@@ -79,10 +89,11 @@ class CameraWorker(QThread):
         if not self.cap.isOpened():
             raise RuntimeError("Could not open camera")
 
-        self._set_maximum_resolution()
+        self._set_resolution()
+        self._set_fps()
 
-        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
-        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
+        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         logger.info(f"Camera initialized with resolution: {self.width}x{self.height}")
         self.get_camera_capabilities()
@@ -118,7 +129,7 @@ class CameraWorker(QThread):
             # Add overlay text
             text_res = f"Resolution: {self.width}x{self.height}"
             text_frame_id = f"Frame ID: {self.frame_count}"
-            now = datetime.now()
+            now = datetime.datetime.now()
             text_date = now.strftime("Date: %d-%B-%Y")
             text_time = now.strftime("Time: %H:%M:%S:%f")[:-3]
 

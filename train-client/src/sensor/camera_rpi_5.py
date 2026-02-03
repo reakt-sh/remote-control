@@ -39,10 +39,12 @@ class CameraRPi5(QObject):
         try:
             self.picam2 = Picamera2()
 
+            frame_duration = int(1e6 / VIDEO_FPS)  # in microseconds
+
             # Configure for H.264 encoding
             video_config = self.picam2.create_video_configuration(
-                main={"size": (1280, 720), "format": "RGB888"},
-                controls={"FrameDurationLimits": (33333, 33333)}  # 30 FPS
+                main={"size": VIDEO_RESOLUTION, "format": VIDEO_FORMAT_PICAMERA},
+                controls={"FrameDurationLimits": (frame_duration, frame_duration)}
             )
             self.picam2.configure(video_config)
 
