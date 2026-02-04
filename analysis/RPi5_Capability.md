@@ -1,11 +1,13 @@
 
-# Raspberry Pi 5 Camera Capture Capability Analysis using PiCam
+# Raspberry Pi 5 Video Capture Capability Analysis using different Camera
 
 ## Overview
 
 This document presents the performance analysis of Raspberry Pi 5's hardware video encoding capabilities across various configurations. The tests measure CPU and GPU usage under different combinations of resolution, frame rate, and bitrate settings.
 
 ## Test Results
+Camera: OmniVision ov5647
+
 
 | Resolution | FPS | Bitrate | CPU Usage | GPU Usage | Notes |
 |------------|-----|---------|-----------|-----------|-------|
@@ -26,28 +28,17 @@ This document presents the performance analysis of Raspberry Pi 5's hardware vid
 | 1920×1080 | 30 | 5 Mbps | 27% | 100% | ✗ Mostly Overflow |
 | 1920×1080 | 60 | 2 Mbps | N/A | N/A | ✗ Not Supported |
 
-## Key Findings
-
-### Performance Tiers
-
-- **640×480 (VGA)**: Excellent performance across all tested frame rates (15-60 FPS) with low resource usage
-- **1280×720 (HD)**: Good performance at 15-30 FPS with moderate GPU usage (79-84%)
-- **1920×1080 (Full HD)**: Limited performance; stable only at 15 FPS with occasional overflow issues
-
-### Resource Utilization
-
-- **CPU Usage**: Remains relatively low (6-25%) across all configurations, indicating efficient hardware encoding
-- **GPU Usage**: Primary bottleneck, reaching 90-100% at higher resolutions
-- **Bitrate Impact**: Minimal impact on resource usage when comparing 2 Mbps vs 5 Mbps at the same resolution/FPS
-
-## Recommendations
-
-1. **For Reliable Operation**: Use 1280×720 at 30 FPS or lower
-2. **For Maximum Quality**: 1920×1080 at 15 FPS (monitor for overflow)
-3. **For High Frame Rate**: 640×480 at 60 FPS provides smooth performance
-4. **Optimal Balance**: 1280×720 at 30 FPS with 2-5 Mbps bitrate
 
 
+Camera: Dell Webcam WB3023
 
+| Resolution | FPS (Static) | FPS (Moving) | CPU Usage | GPU Usage | Notes |
+|------------|--------------|--------------|-----------|-----------|-------|
+| 640×480 | 15 | 15 | 21% | 79% | ✓ Stable |
+| 640×480 | 30 | 30 | 38% | 91% | ✓ Stable |
+| 640×480 | 60 | - | N/A | N/A | ✗ Not Supported |
+| 1280×720 | 15 | 15 | 45% | 100% | ⚠️ GPU Overflow |
+| 1280×720 | 30 | 18 | 72% | 100% | ⚠️ GPU Overflow, significate frame drops |
+| 1280×720 | 60 | - | N/A | N/A | ✗ Not Supported |
 
 
