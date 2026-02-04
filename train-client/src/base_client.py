@@ -181,13 +181,16 @@ class BaseClient(ABC, metaclass=QABCMeta):
         payload = data[1:]
         if packet_type == PACKET_TYPE["map_ack"]:
             ## Map ACK received: data =  b'{"type": "mapping_acknowledgement", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
-            remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
-            self.connected_remote_control_ids.add(remote_control_id)
-            logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
-            # Reset samples for this remote and start RTT measurement
-            self.clock_offset_samples[remote_control_id] = []
-            self.send_rtt_packets(remote_control_id)
-            self.hw_info.notify_new_remote_control_connected(remote_control_id)
+            try:
+                remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+                self.connected_remote_control_ids.add(remote_control_id)
+                logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
+                # Reset samples for this remote and start RTT measurement
+                self.clock_offset_samples[remote_control_id] = []
+                self.send_rtt_packets(remote_control_id)
+                self.hw_info.notify_new_remote_control_connected(remote_control_id)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse map_ack JSON: {e}")
 
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')
