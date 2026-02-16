@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 from globals import MAX_SPEED, SCALE_FACTOR_PWM
-from loguru import logger
+from utils.app_logger import logger
 
 class MotorActuator:
     def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000):

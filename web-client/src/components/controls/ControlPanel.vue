@@ -52,7 +52,7 @@ const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
 
 // State
-const maxSpeed = ref(20)
+const maxSpeed = ref(13)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
 const videoQuality = ref('medium')

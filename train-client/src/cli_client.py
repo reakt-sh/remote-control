@@ -1,11 +1,11 @@
 from sensor.file_processor import FileProcessor
 from PyQt5.QtCore import QThread
 from base_client import BaseClient
-from globals import LOW_BITRATE, MEDIUM_BITRATE, HIGH_BITRATE
+from globals import VIDEO_BITRATE
 class CLIClient(BaseClient, QThread):
     def __init__(self):
         super().__init__(video_source=FileProcessor(), has_motor=False)
-        self.encoder.set_bitrate(HIGH_BITRATE) # Set initial bitrate to high
+        self.encoder.set_bitrate(VIDEO_BITRATE) # Set initial bitrate to high
 
     def update_speed(self, speed):
         self.video_source.set_speed(speed)

@@ -7,7 +7,7 @@ import datetime
 from typing import Optional
 
 
-from loguru import logger
+from utils.app_logger import logger
 from PyQt5.QtCore import QThread, pyqtSignal
 from aioquic.asyncio import connect
 from aioquic.quic.configuration import QuicConfiguration

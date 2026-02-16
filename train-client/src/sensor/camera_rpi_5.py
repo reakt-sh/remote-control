@@ -6,7 +6,7 @@ from libcamera import controls
 import libcamera
 import cv2
 import numpy as np
-from loguru import logger
+from utils.app_logger import logger
 import io
 import threading
 import time
@@ -39,15 +39,17 @@ class CameraRPi5(QObject):
         try:
             self.picam2 = Picamera2()
 
+            frame_duration = int(1e6 / VIDEO_FPS)  # in microseconds
+
             # Configure for H.264 encoding
             video_config = self.picam2.create_video_configuration(
-                main={"size": (1280, 720), "format": "RGB888"},
-                controls={"FrameDurationLimits": (33333, 33333)}  # 30 FPS
+                main={"size": VIDEO_RESOLUTION, "format": VIDEO_FORMAT_PICAMERA},
+                controls={"FrameDurationLimits": (frame_duration, frame_duration)}
             )
             self.picam2.configure(video_config)
 
             # Setup H.264 encoder
-            self.encoder = H264Encoder(bitrate=MEDIUM_BITRATE)
+            self.encoder = H264Encoder(bitrate=VIDEO_BITRATE)
             self.output = StreamingOutput()
 
             self.picam2.start_recording(self.encoder, FileOutput(self.output))
@@ -55,7 +57,7 @@ class CameraRPi5(QObject):
             # Get camera properties
             main_stream = self.picam2.stream_configuration("main")
             self.width, self.height = main_stream["size"]
-            self.fps = 30
+            self.fps = VIDEO_FPS
 
             print(f"Camera Resolution: {self.width}x{self.height}")
             print(f"Camera FPS: {self.fps}")

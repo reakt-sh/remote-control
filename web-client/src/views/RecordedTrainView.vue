@@ -214,6 +214,24 @@
 
             <div class="export-card">
               <div class="export-info">
+                <h4>Video Frames + Metadata</h4>
+                <p>Export frames with metadata as JSON</p>
+                <div class="export-stats">
+                  {{ getFrameCountInRange() }} frames
+                </div>
+              </div>
+              <button 
+                class="export-btn"
+                @click="exportVideoMetadata"
+                :disabled="exporting.videoMetadata"
+              >
+                <span v-if="exporting.videoMetadata">Exporting...</span>
+                <span v-else>Export Metadata</span>
+              </button>
+            </div>
+
+            <div class="export-card">
+              <div class="export-info">
                 <h4>Telemetry Data</h4>
                 <p>Export telemetry as JSON</p>
                 <div class="export-stats">
@@ -316,6 +334,7 @@ const confirmDelete = ref(false)
 
 const exporting = ref({
   video: false,
+  videoMetadata: false,
   telemetry: false,
   sensor: false,
   latency: false
@@ -723,6 +742,22 @@ const exportVideo = async () => {
     alert('Failed to export video data. Please try again.')
   } finally {
     exporting.value.video = false
+  }
+}
+
+const exportVideoMetadata = async () => {
+  exporting.value.videoMetadata = true
+  try {
+    await dataStorage.exportVideoFramesWithMetadata(
+      trainId.value,
+      selectedTimeRange.value.start,
+      selectedTimeRange.value.end
+    )
+  } catch (error) {
+    console.error('Failed to export video frames with metadata:', error)
+    alert('Failed to export video frames with metadata. Please try again.')
+  } finally {
+    exporting.value.videoMetadata = false
   }
 }
 

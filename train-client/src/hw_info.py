@@ -1,7 +1,9 @@
 import psutil
 import datetime
 import os
+import subprocess
 from globals import HW_USAGE_DUMP
+
 class HWInfo:
     def __init__(self):
         self._prev_disk_read = None
@@ -29,6 +31,34 @@ class HWInfo:
             self.hw_usage_output_file.write(f"New remote control connected: {remote_control_id}\n")
             self.hw_usage_output_file.flush()
 
+    def get_rpi_gpu_info(self):
+        """Get Raspberry Pi GPU information using vcgencmd"""
+        try:
+            # GPU memory allocation
+            gpu_mem = subprocess.check_output(['vcgencmd', 'get_mem', 'gpu'], timeout=1).decode().strip()
+            gpu_mem_mb = int(gpu_mem.split('=')[1].replace('M', '')) if 'gpu=' in gpu_mem else None
+
+            # GPU core clock frequency
+            gpu_freq = subprocess.check_output(['vcgencmd', 'measure_clock', 'core'], timeout=1).decode().strip()
+            gpu_freq_mhz = int(gpu_freq.split('=')[1]) / 1000000 if 'frequency' in gpu_freq else None
+
+            # Estimate GPU usage from frequency (RPi5 max core freq is ~910 MHz)
+            gpu_usage_percent = None
+            if gpu_freq_mhz:
+                MAX_GPU_FREQ_MHZ = 910  # RPi5 typical max
+                gpu_usage_percent = min(100, int((gpu_freq_mhz / MAX_GPU_FREQ_MHZ) * 100))
+
+            return {
+                "gpu_memory_mb": gpu_mem_mb,
+                "gpu_frequency_mhz": gpu_freq_mhz,
+                "gpu_usage_percent": gpu_usage_percent
+            }
+        except Exception as e:
+            return {
+                "gpu_memory_mb": None,
+                "gpu_frequency_mhz": None,
+                "gpu_usage_percent": None
+            }
 
     def get_hw_info(self, write_to_file = False):
         cpu = psutil.cpu_percent(interval=None)
@@ -63,6 +93,9 @@ class HWInfo:
         swap_mb = int(swap.used / (1024 * 1024))
         ghz = freq / 1000.0 if freq else 0.0
 
+        # Get GPU info
+        gpu_info = self.get_rpi_gpu_info()
+
         hw_usage_log_entry = {
             "created_at": now,
             "cpu_usage_percent": int(cpu),
@@ -75,6 +108,9 @@ class HWInfo:
             "disk_usage_percent": int(disk.percent),
             "disk_read_mb_s": read_mb_s,
             "disk_write_mb_s": write_mb_s,
+            "gpu_memory_mb": gpu_info["gpu_memory_mb"],
+            "gpu_frequency_mhz": gpu_info["gpu_frequency_mhz"],
+            "gpu_usage_percent": gpu_info["gpu_usage_percent"]
         }
 
         if write_to_file and self.hw_usage_output_file:

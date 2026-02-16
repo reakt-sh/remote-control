@@ -2,15 +2,13 @@ import sys
 import platform
 import datetime
 import os
+from video_config import *
 # some configuration for components
 
 START_X = 100
 START_Y = 100
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
-FRAME_WIDTH = 640
-FRAME_HEIGHT = 480
-FRAME_RATE = 60
 
 # make a statid timestamp when the system starts
 SYSTEM_START_TIME = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -21,8 +19,6 @@ ASSET_DIR = os.path.join(BASE_DIR, '..', 'asset')
 H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'dump')
 LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency')
 HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
-
-PIXEL_FORMAT = "yuv420p"
 
 # Packet Types
 PACKET_TYPE = {
@@ -112,11 +108,27 @@ STATION_LIST = [
     {"name": "Lütjenburg",                  "latitude": 54.2941,        "longitude": 10.5868}
 ]
 
+# Bitrates
 LOW_BITRATE = 1000000  # 1 Mbps
 MEDIUM_BITRATE = 2000000  # 2 Mbps
 HIGH_BITRATE = 5000000  # 5 Mbps
-MAX_SPEED = 20 # KM/H
+
+#FPS
+LOW_FPS = 15
+MEDIUM_FPS = 30
+HIGH_FPS = 60
+
+MAX_SPEED = 13 # KM/H
 SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
+
+# Camera Configuration for video capture
+# VIDEO_RESOLUTION = RESOLUTION_STANDARD_VGA        # (640, 480)
+VIDEO_RESOLUTION = RESOLUTION_WIDESCREEN_HD        # (1280, 720)
+# VIDEO_RESOLUTION = RESOLUTION_WIDESCREEN_FHD        # (1920, 1080)
+VIDEO_FORMAT_FFMPEG = VIDEO_FORMAT_YUV420["ffmpeg"]
+VIDEO_FORMAT_PICAMERA = VIDEO_FORMAT_RGB888["picamera"]
+VIDEO_FPS = MEDIUM_FPS
+VIDEO_BITRATE = MEDIUM_BITRATE  # Default video bitrate
 
 
 TEXT_FIELD_HEIGHT = 23

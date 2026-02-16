@@ -3,7 +3,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
 import random
 import os
-from loguru import logger
+from utils.app_logger import logger
 from globals import ASSET_DIR, MAX_SPEED
 
 class FileProcessor(QObject):

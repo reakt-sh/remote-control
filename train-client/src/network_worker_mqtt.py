@@ -1,5 +1,5 @@
 import paho.mqtt.client as mqtt
-from loguru import logger
+from utils.app_logger import logger
 from globals import *
 
 class NetworkWorkerMqtt:

@@ -915,6 +915,86 @@ class DataStorage {
   }
 
   /**
+   * Export video frames with metadata as JSON within time range
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp (optional)
+   * @param {number} endTime - End timestamp (optional)
+   */
+  async exportVideoFramesWithMetadata(trainId, startTime = null, endTime = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      let query = db.frames.orderBy('timestamp')
+
+      if (startTime && endTime) {
+        query = db.frames.where('timestamp').between(startTime, endTime, true, true)
+      } else if (startTime) {
+        query = db.frames.where('timestamp').aboveOrEqual(startTime)
+      } else if (endTime) {
+        query = db.frames.where('timestamp').belowOrEqual(endTime)
+      }
+
+      const frames = await query.toArray()
+
+      // Convert binary data to base64 for JSON serialization
+      const framesWithMetadata = frames.map(frame => {
+        // Safe conversion of large binary data to string for base64
+        let binary = ''
+        const bytes = frame.data instanceof Uint8Array ? frame.data : new Uint8Array(frame.data)
+        const len = bytes.byteLength
+        const chunkSize = 32768 // 32KB
+
+        for (let i = 0; i < len; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, len))
+          binary += String.fromCharCode.apply(null, chunk)
+        }
+
+        return {
+          id: frame.id,
+          frameId: frame.frameId,
+          timestamp: frame.timestamp,
+          createdAt: frame.createdAt,
+          receivedAt: frame.receivedAt,
+          size: frame.size,
+          latency: frame.latency,
+          // Convert Uint8Array to base64 string for JSON serialization
+          data: btoa(binary)
+        }
+      })
+
+      const exportData = {
+        trainId,
+        exportTimestamp: Date.now(),
+        timeRange: { startTime, endTime },
+        frameCount: framesWithMetadata.length,
+        frames: framesWithMetadata
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+
+      // Download the file
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `train_${trainId}_frames_metadata_${startTime || 'all'}_${endTime || 'all'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log(`📹 Exported ${framesWithMetadata.length} video frames with metadata for train ${trainId}`)
+      return { frameCount: framesWithMetadata.length }
+    } catch (error) {
+      console.error('❌ Failed to export video frames with metadata:', error)
+      throw error
+    }
+  }
+
+  /**
    * Export telemetry data as JSON within time range
    * @param {string} trainId - Train identifier
    * @param {number} startTime - Start timestamp (optional)
@@ -1205,6 +1285,7 @@ export function useDataStorage(baseDbName, version) {
     // New metadata and export operations
     getRecordedTrainsMetadata: () => dataStorage.getRecordedTrainsMetadata(),
     exportVideoFrames: (trainId, startTime, endTime) => dataStorage.exportVideoFrames(trainId, startTime, endTime),
+    exportVideoFramesWithMetadata: (trainId, startTime, endTime) => dataStorage.exportVideoFramesWithMetadata(trainId, startTime, endTime),
     exportTelemetryData: (trainId, startTime, endTime) => dataStorage.exportTelemetryData(trainId, startTime, endTime),
     exportSensorData: (trainId, startTime, endTime, sensorType) => dataStorage.exportSensorData(trainId, startTime, endTime, sensorType),
     exportLatencyData: (trainId, startTime, endTime) => dataStorage.exportLatencyData(trainId, startTime, endTime)
