@@ -940,17 +940,30 @@ class DataStorage {
       const frames = await query.toArray()
 
       // Convert binary data to base64 for JSON serialization
-      const framesWithMetadata = frames.map(frame => ({
-        id: frame.id,
-        frameId: frame.frameId,
-        timestamp: frame.timestamp,
-        createdAt: frame.createdAt,
-        receivedAt: frame.receivedAt,
-        size: frame.size,
-        latency: frame.latency,
-        // Convert Uint8Array to base64 string for JSON serialization
-        data: btoa(String.fromCharCode.apply(null, frame.data))
-      }))
+      const framesWithMetadata = frames.map(frame => {
+        // Safe conversion of large binary data to string for base64
+        let binary = ''
+        const bytes = frame.data instanceof Uint8Array ? frame.data : new Uint8Array(frame.data)
+        const len = bytes.byteLength
+        const chunkSize = 32768 // 32KB
+
+        for (let i = 0; i < len; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, len))
+          binary += String.fromCharCode.apply(null, chunk)
+        }
+
+        return {
+          id: frame.id,
+          frameId: frame.frameId,
+          timestamp: frame.timestamp,
+          createdAt: frame.createdAt,
+          receivedAt: frame.receivedAt,
+          size: frame.size,
+          latency: frame.latency,
+          // Convert Uint8Array to base64 string for JSON serialization
+          data: btoa(binary)
+        }
+      })
 
       const exportData = {
         trainId,
