@@ -33,11 +33,11 @@ def set_status(s: Status):
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
         super().__init__(video_source=CameraRPi5(), has_motor=True)
-        loop = qasync.QEventLoop(self)
         self.current_mode = Mode.FORWARD
         self.current_speed = 0
 
         if IS_REAKTOR_DRIVER_ENABLED:
+            loop = qasync.QEventLoop(self)
             logger.info("Reaktor driver enabled. Initializing connection.")
             self.connection = None
             task = loop.create_task(self.setup_connection())
@@ -109,4 +109,4 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 self.current_mode = Mode.REVERSE
                 logger.info("Changing direction command received to BACKWARD.")
         except Exception as e:
-            logger.error(f"Error changing direction: {e}")  
+            logger.error(f"Error changing direction: {e}")

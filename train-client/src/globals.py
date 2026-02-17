@@ -132,7 +132,8 @@ VIDEO_BITRATE = MEDIUM_BITRATE  # Default video bitrate
 
 
 # Reaktor-Driver related constants
-IS_REAKTOR_DRIVER_ENABLED = True
+IS_REAKTOR_DRIVER_ENABLED = False
+IS_CAMERA_UPSIDE_DOWN_ENABLED = True
 
 
 TEXT_FIELD_HEIGHT = 23

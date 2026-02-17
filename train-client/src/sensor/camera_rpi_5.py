@@ -2,7 +2,7 @@ from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FileOutput
-from libcamera import controls
+from libcamera import controls, Transform
 import libcamera
 import cv2
 import numpy as np
@@ -41,10 +41,14 @@ class CameraRPi5(QObject):
 
             frame_duration = int(1e6 / VIDEO_FPS)  # in microseconds
 
+            # Determine transform based on IS_CAMERA_UPSIDE_DOWN_ENABLED
+            transform = Transform.ROT180 if IS_CAMERA_UPSIDE_DOWN_ENABLED else Transform.IDENTITY
+
             # Configure for H.264 encoding
             video_config = self.picam2.create_video_configuration(
                 main={"size": VIDEO_RESOLUTION, "format": VIDEO_FORMAT_PICAMERA},
-                controls={"FrameDurationLimits": (frame_duration, frame_duration)}
+                controls={"FrameDurationLimits": (frame_duration, frame_duration)},
+                transform=transform
             )
             self.picam2.configure(video_config)
 
