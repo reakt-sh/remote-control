@@ -558,9 +558,8 @@ const loadTrainData = async () => {
   loading.value = true
   try {
     await dataStorage.init()
-    const metadata = await dataStorage.getRecordedTrainsMetadata()
-    trainMetadata.value = metadata.find(train => train.trainId === trainId.value)
-    
+    const metadata = await dataStorage.getRecordedTrainMetadataByID(trainId.value)
+    trainMetadata.value = metadata
     if (trainMetadata.value) {
       // Set default time range to full dataset
       resetTimeRange()

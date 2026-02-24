@@ -105,34 +105,18 @@ class DataStorage {
           // Get first and last timestamps
           const firstFrame = await db.frames.orderBy('timestamp').first()
           const lastFrame = await db.frames.orderBy('timestamp').last()
-          const firstTelemetry = await db.telemetry.orderBy('timestamp').first()
-          const lastTelemetry = await db.telemetry.orderBy('timestamp').last()
 
           // Calculate data range
-          const startTime = Math.min(
-            firstFrame?.timestamp || Infinity,
-            firstTelemetry?.timestamp || Infinity
-          )
-          const endTime = Math.max(
-            lastFrame?.timestamp || 0,
-            lastTelemetry?.timestamp || 0
-          )
-
-          // Calculate total size
-          const frames = await db.frames.toArray()
-          const totalSize = frames.reduce((total, frame) => total + frame.size, 0)
+          const startTime = firstFrame?.timestamp
+          const endTime = lastFrame?.timestamp
 
           metadata.push({
             trainId,
             frameCount,
             telemetryCount,
             sensorCount,
-            totalSize,
-            totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
-            startTime: startTime === Infinity ? null : startTime,
-            endTime: endTime === 0 ? null : endTime,
             duration: (startTime !== Infinity && endTime !== 0) ? endTime - startTime : 0,
-            lastUpdated: Math.max(lastFrame?.timestamp || 0, lastTelemetry?.timestamp || 0)
+            lastUpdated: endTime
           })
         } catch (error) {
           console.warn(`⚠️ Failed to get metadata for train ${trainId}:`, error)
@@ -143,6 +127,55 @@ class DataStorage {
     } catch (error) {
       console.error('❌ Failed to get recorded trains metadata:', error)
       return []
+    }
+  }
+
+  /**
+   * Get detailed metadata for specific recorded trains
+   */
+  async getRecordedTrainMetadataByID(trainId) {
+    try {
+      const db = await this.getTrainDatabase(trainId)
+      const frameCount = await db.frames.count()
+      const telemetryCount = await db.telemetry.count()
+      const sensorCount = await db.sensorData.count()
+
+      // Get first and last timestamps
+      const firstFrame = await db.frames.orderBy('timestamp').first()
+      const lastFrame = await db.frames.orderBy('timestamp').last()
+      const firstTelemetry = await db.telemetry.orderBy('timestamp').first()
+      const lastTelemetry = await db.telemetry.orderBy('timestamp').last()
+
+      // Calculate data range
+      const startTime = Math.min(
+        firstFrame?.timestamp || Infinity,
+        firstTelemetry?.timestamp || Infinity
+      )
+      const endTime = Math.max(
+        lastFrame?.timestamp || 0,
+        lastTelemetry?.timestamp || 0
+      )
+
+      // Calculate total size
+      const frames = await db.frames.toArray()
+      const totalSize = frames.reduce((total, frame) => total + frame.size, 0)
+
+      const metadata = {
+        trainId,
+        frameCount,
+        telemetryCount,
+        sensorCount,
+        totalSize,
+        totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+        startTime: startTime === Infinity ? null : startTime,
+        endTime: endTime === 0 ? null : endTime,
+        duration: (startTime !== Infinity && endTime !== 0) ? endTime - startTime : 0,
+        lastUpdated: Math.max(lastFrame?.timestamp || 0, lastTelemetry?.timestamp || 0)
+      }
+
+      return metadata
+    } catch (error) {
+      console.warn(`⚠️ Failed to get metadata for train ${trainId}:`, error)
     }
   }
 
@@ -1283,6 +1316,7 @@ export function useDataStorage(baseDbName, version) {
     storage: dataStorage,
 
     // New metadata and export operations
+    getRecordedTrainMetadataByID : (trainId) => dataStorage.getRecordedTrainMetadataByID(trainId),
     getRecordedTrainsMetadata: () => dataStorage.getRecordedTrainsMetadata(),
     exportVideoFrames: (trainId, startTime, endTime) => dataStorage.exportVideoFrames(trainId, startTime, endTime),
     exportVideoFramesWithMetadata: (trainId, startTime, endTime) => dataStorage.exportVideoFramesWithMetadata(trainId, startTime, endTime),
