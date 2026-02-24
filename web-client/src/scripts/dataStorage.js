@@ -102,20 +102,20 @@ class DataStorage {
           const telemetryCount = await db.telemetry.count()
           const sensorCount = await db.sensorData.count()
 
-          // Get first and last timestamps
-          const firstFrame = await db.frames.orderBy('timestamp').first()
-          const lastFrame = await db.frames.orderBy('timestamp').last()
+          // Use limit(1) instead of first/last with orderBy
+          const oldestFrame = await db.frames.where('timestamp').above(0).limit(1).first()
+          const newestFrame = await db.frames.where('timestamp').below(Infinity).reverse().limit(1).first()
 
           // Calculate data range
-          const startTime = firstFrame?.timestamp
-          const endTime = lastFrame?.timestamp
+          const startTime = oldestFrame?.timestamp
+          const endTime = newestFrame?.timestamp
 
           metadata.push({
             trainId,
             frameCount,
             telemetryCount,
             sensorCount,
-            duration: (startTime !== Infinity && endTime !== 0) ? endTime - startTime : 0,
+            duration: (startTime && endTime) ? endTime - startTime : 0,
             lastUpdated: endTime
           })
         } catch (error) {
@@ -140,20 +140,20 @@ class DataStorage {
       const telemetryCount = await db.telemetry.count()
       const sensorCount = await db.sensorData.count()
 
-      // Get first and last timestamps
-      const firstFrame = await db.frames.orderBy('timestamp').first()
-      const lastFrame = await db.frames.orderBy('timestamp').last()
-      const firstTelemetry = await db.telemetry.orderBy('timestamp').first()
-      const lastTelemetry = await db.telemetry.orderBy('timestamp').last()
+      // Use reverse() with limit(1) for efficient min/max queries
+      const oldestFrame = await db.frames.where('timestamp').above(0).limit(1).first()
+      const newestFrame = await db.frames.where('timestamp').below(Infinity).reverse().limit(1).first()
+      const oldestTelemetry = await db.telemetry.where('timestamp').above(0).limit(1).first()
+      const newestTelemetry = await db.telemetry.where('timestamp').below(Infinity).reverse().limit(1).first()
 
       // Calculate data range
       const startTime = Math.min(
-        firstFrame?.timestamp || Infinity,
-        firstTelemetry?.timestamp || Infinity
+        oldestFrame?.timestamp || Infinity,
+        oldestTelemetry?.timestamp || Infinity
       )
       const endTime = Math.max(
-        lastFrame?.timestamp || 0,
-        lastTelemetry?.timestamp || 0
+        newestFrame?.timestamp || 0,
+        newestTelemetry?.timestamp || 0
       )
 
       // Calculate total size
@@ -170,7 +170,7 @@ class DataStorage {
         startTime: startTime === Infinity ? null : startTime,
         endTime: endTime === 0 ? null : endTime,
         duration: (startTime !== Infinity && endTime !== 0) ? endTime - startTime : 0,
-        lastUpdated: Math.max(lastFrame?.timestamp || 0, lastTelemetry?.timestamp || 0)
+        lastUpdated: Math.max(newestFrame?.timestamp || 0, newestTelemetry?.timestamp || 0)
       }
 
       return metadata
