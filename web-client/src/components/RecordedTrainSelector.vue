@@ -7,33 +7,25 @@
         <div v-if="recordedTrains.length" class="selection-toolbar">
           <button class="toggle-select-btn" @click="toggleSelectionMode" :class="{ active: selectionMode }" :title="selectionMode ? 'Cancel' : 'Multi-Select'">
             <template v-if="!selectionMode">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H6v-2h4v2zm8 0h-6v-2h6v2zm0-4H6V7h12v6z"/>
-              </svg>
+              <i class="fas fa-list-check"></i>
               <span>Multi-Select</span>
             </template>
             <template v-else>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626" aria-label="Cancel">
-                <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-              </svg>
+              <i class="fas fa-xmark" style="color: #dc2626;" aria-label="Cancel"></i>
             </template>
           </button>
 
           <div v-if="selectionMode" class="bulk-actions">
             <span class="selected-count">Selected: {{ selectedCount }}</span>
             <button class="bulk-delete-btn" @click="openBulkDeleteDialog" :disabled="selectedCount === 0">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-              </svg>
+              <i class="fas fa-trash-can"></i>
               Delete Selected
             </button>
           </div>
         </div>
 
         <button class="refresh-btn" @click="loadRecordedTrains" :disabled="loading">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="{ 'spinning': loading }">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
+          <i class="fas fa-rotate" :class="{ 'spinning': loading }"></i>
           Refresh
         </button>
       </div>
@@ -51,9 +43,7 @@
           :disabled="!canScrollLeft"
           v-show="recordedTrains.length > visibleCards"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-          </svg>
+          <i class="fas fa-chevron-left"></i>
         </button>
         
         <div class="train-carousel" ref="trainCarousel" @scroll="updateScrollPosition">
@@ -74,18 +64,14 @@
               :title="`Delete ${train.trainId} recorded data`"
             >
               <div class="delete-btn-content">
-                <svg v-if="deletingTrainId !== train.trainId" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                </svg>
+                <i v-if="deletingTrainId !== train.trainId" class="fas fa-trash-can"></i>
                 <div v-else class="delete-spinner"></div>
                 <span class="delete-tooltip">Delete</span>
               </div>
             </button>
           </div>
           <div class="train-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm8 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-4H6V7h12v6z"/>
-            </svg>
+            <i class="fas fa-train"></i>
           </div>
           <div class="train-info">
             <div class="train-id-value">{{ formatTrainId(train.trainId) }}</div>
@@ -118,23 +104,17 @@
           :disabled="!canScrollRight"
           v-show="recordedTrains.length > visibleCards"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-          </svg>
+          <i class="fas fa-chevron-right"></i>
         </button>
       </div>
       <div v-else class="no-trains-message">
         <div class="no-trains-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-          </svg>
+          <i class="fas fa-circle-info"></i>
         </div>
         <h3>No Recorded Data</h3>
         <p>No recorded train sessions found in local storage</p>
         <button class="retry-btn" @click="loadRecordedTrains">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
+          <i class="fas fa-rotate"></i>
           Check Again
         </button>
       </div>
@@ -145,15 +125,11 @@
       <div class="delete-dialog" @click.stop>
         <div class="delete-dialog-header">
           <div class="delete-dialog-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z"/>
-            </svg>
+            <i class="fas fa-circle-exclamation"></i>
           </div>
           <h3>Delete Recorded Data</h3>
           <button class="dialog-close-btn" @click="cancelDelete">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
+            <i class="fas fa-xmark"></i>
           </button>
         </div>
         <div class="delete-dialog-body">
@@ -173,9 +149,7 @@
         <div class="delete-dialog-actions">
           <button class="cancel-btn" @click="cancelDelete">Cancel</button>
           <button class="confirm-delete-btn" @click="confirmDelete" :disabled="deletingTrainId || bulkDeleting">
-            <svg v-if="!deletingTrainId && !bulkDeleting" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-            </svg>
+            <i v-if="!deletingTrainId && !bulkDeleting" class="fas fa-trash-can"></i>
             <div v-else class="delete-spinner"></div>
             <span>{{ (deletingTrainId || bulkDeleting) ? 'Deleting...' : 'Delete' }}</span>
           </button>
@@ -506,13 +480,12 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.refresh-btn svg {
-  width: 16px;
-  height: 16px;
+.refresh-btn i {
+  font-size: 16px;
   transition: transform 0.5s ease;
 }
 
-.refresh-btn svg.spinning {
+.refresh-btn i.spinning {
   animation: spin 1s linear infinite;
 }
 
@@ -577,9 +550,8 @@ onUnmounted(() => {
   transform: none;
 }
 
-.carousel-nav-btn svg {
-  width: 20px;
-  height: 20px;
+.carousel-nav-btn i {
+  font-size: 20px;
 }
 
 .train-carousel {
@@ -656,9 +628,8 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.train-icon svg {
-  width: 20px;
-  height: 20px;
+.train-icon i {
+  font-size: 20px;
   color: white;
 }
 
@@ -725,9 +696,8 @@ onUnmounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.no-trains-icon svg {
-  width: 40px;
-  height: 40px;
+.no-trains-icon i {
+  font-size: 40px;
   color: #bbb;
 }
 
@@ -763,9 +733,8 @@ onUnmounted(() => {
   transform: translateY(-2px);
 }
 
-.retry-btn svg {
-  width: 18px;
-  height: 18px;
+.retry-btn i {
+  font-size: 18px;
 }
 
 .fade-enter-active,
@@ -854,14 +823,13 @@ onUnmounted(() => {
   height: 24px;
 }
 
-.delete-btn svg {
-  width: 16px;
-  height: 16px;
+.delete-btn i {
+  font-size: 16px;
   color: #64748b;
   transition: color 0.3s ease;
 }
 
-.delete-btn:hover:not(:disabled) svg {
+.delete-btn:hover:not(:disabled) i {
   color: #dc2626;
 }
 
@@ -940,9 +908,8 @@ onUnmounted(() => {
   background: #f9fafb;
 }
 
-.toggle-select-btn svg {
-  width: 16px;
-  height: 16px;
+.toggle-select-btn i {
+  font-size: 16px;
 }
 
 .bulk-actions {
@@ -977,9 +944,8 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.bulk-delete-btn svg {
-  width: 16px;
-  height: 16px;
+.bulk-delete-btn i {
+  font-size: 16px;
 }
 
 /* Card selection visual handled by .train-card.selected */
@@ -1041,9 +1007,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.delete-dialog-icon svg {
-  width: 24px;
-  height: 24px;
+.delete-dialog-icon i {
+  font-size: 24px;
   color: white;
 }
 
@@ -1075,9 +1040,8 @@ onUnmounted(() => {
   background: #e2e8f0;
 }
 
-.dialog-close-btn svg {
-  width: 16px;
-  height: 16px;
+.dialog-close-btn i {
+  font-size: 16px;
   color: #64748b;
 }
 
@@ -1174,9 +1138,8 @@ onUnmounted(() => {
   transform: none;
 }
 
-.confirm-delete-btn svg {
-  width: 16px;
-  height: 16px;
+.confirm-delete-btn i {
+  font-size: 16px;
 }
 
 @media (max-width: 768px) {
@@ -1189,9 +1152,8 @@ onUnmounted(() => {
     height: 32px;
   }
   
-  .carousel-nav-btn svg {
-    width: 16px;
-    height: 16px;
+  .carousel-nav-btn i {
+    font-size: 16px;
   }
   
   .train-grid {
@@ -1221,9 +1183,8 @@ onUnmounted(() => {
     height: 32px;
   }
   
-  .train-icon svg {
-    width: 16px;
-    height: 16px;
+  .train-icon i {
+    font-size: 16px;
   }
   
   .train-id-value {
@@ -1249,9 +1210,8 @@ onUnmounted(() => {
     height: 20px;
   }
 
-  .delete-btn svg {
-    width: 14px;
-    height: 14px;
+  .delete-btn i {
+    font-size: 14px;
   }
 
   .delete-tooltip {
