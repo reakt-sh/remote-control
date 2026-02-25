@@ -135,15 +135,18 @@ export function useWebRTC(remoteControlId, messageHandler) {
       if (offerData.status === 'error') {
         const errorMsg = offerData.message || 'Unknown error from server'
         console.error('❌ Server returned error:', errorMsg)
+        return
       }
 
       if (offerData.status !== 'success') {
         console.error('❌ Failed to get offer from server. Status:', offerData.status, 'Message:', offerData.message)
+        return
       }
 
       // Check if offer exists
       if (!offerData.offer) {
         console.error('❌ No offer received from server. Response:', offerData)
+        return
       }
 
       console.log('📥 Received offer from server')
@@ -153,6 +156,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
       // Verify the offer has required components
       if (!offerData.offer.sdp || !offerData.offer.type) {
         console.error('❌ Invalid offer format received from server:', offerData.offer)
+        return
       }
 
       // Check for m= sections in the SDP
@@ -168,6 +172,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
           peerConnection.value = null
         }
         isRTCConnected.value = false
+        return
       }
 
       // Set remote description (offer from server)
@@ -186,8 +191,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
           peerConnection.value = null
         }
         isRTCConnected.value = false
-
-        console.error('❌ WebRTC connection failed due to invalid offer SDP. This may be caused by a misconfiguration in the train client or an issue with the server generating the offer.')
+        return
       }
 
       // Create answer
@@ -236,17 +240,6 @@ export function useWebRTC(remoteControlId, messageHandler) {
 
       if (commandsDataChannel.value) {
         commandsDataChannel.value = null
-      }
-
-      // Enhance error information based on error type
-      if (error.code === 'INVALID_OFFER_NO_MEDIA') {
-        error.userMessage = 'Failed to connect: The server did not provide valid media channels. Please ensure the train client is properly configured and running.'
-      } else if (error.message.includes('Failed to get offer from server')) {
-        error.userMessage = 'Failed to connect: Could not get connection offer from server. The train client may not be ready.'
-      } else if (error.message.includes('Failed to set remote description')) {
-        error.userMessage = 'Failed to connect: Invalid connection parameters received from server.'
-      } else {
-        error.userMessage = `Failed to establish WebRTC connection: ${error.message}`
       }
     }
   }
