@@ -256,7 +256,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
         # Send packets with delays using QTimer
         for i in range(self.number_of_rtt_packets):
-            QTimer.singleShot(i * 500, lambda idx=i: send_packet(idx))
+            after_ms = 5000
+            QTimer.singleShot(after_ms + i * 500, lambda idx=i: send_packet(idx))
 
 
     def calculate_latency(self, remote_control_id, remote_timestamp):
