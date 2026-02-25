@@ -239,9 +239,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.warning(f"Unknown QUIC packet type received: {packet_type}")
 
 
-
     def send_rtt_packets(self, remote_control_id):
-        for _ in range(self.number_of_rtt_packets):
+        """Send RTT packets with delays using QTimer to avoid blocking."""
+        def send_packet(packet_index):
             rtt_train_Packet = {
                 "type": "rtt_train",
                 "remote_control_timestamp": 0,
@@ -252,6 +252,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
             rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
             rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
+            logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
+
+        # Send packets with delays using QTimer
+        for i in range(self.number_of_rtt_packets):
+            QTimer.singleShot(i * 500, lambda idx=i: send_packet(idx))
+
 
     def calculate_latency(self, remote_control_id, remote_timestamp):
         current_time = int(datetime.datetime.now().timestamp() * 1000)
