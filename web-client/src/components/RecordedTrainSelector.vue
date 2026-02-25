@@ -241,7 +241,6 @@ const updateVisibleCards = () => {
 const loadRecordedTrains = async () => {
   loading.value = true
   try {
-    await dataStorage.init()
     const metadata = await dataStorage.getRecordedTrainsMetadata()
     recordedTrains.value = metadata
     await nextTick()

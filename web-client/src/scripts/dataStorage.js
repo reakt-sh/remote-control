@@ -47,9 +47,10 @@ class DataStorage {
     })
 
     try {
+      const existed_before = await Dexie.exists(dbName)
       await db.open()
       this.trainDatabases.set(trainId, db)
-      console.log(`✅ Train database initialized for ${trainId}: ${dbName}`)
+      console.log('Train database opened:', dbName, 'Existed before:', existed_before)
       return db
     } catch (error) {
       console.error(`❌ Failed to initialize database for train ${trainId}:`, error)

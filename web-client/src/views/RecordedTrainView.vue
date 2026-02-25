@@ -553,7 +553,7 @@ const formatPlaybackTime = (timestamp) => {
 const loadTrainData = async () => {
   loading.value = true
   try {
-    await dataStorage.init()
+    // Directly fetch metadata for this specific train without initializing all trains
     const metadata = await dataStorage.getRecordedTrainMetadataByID(trainId.value)
     trainMetadata.value = metadata
     if (trainMetadata.value) {
