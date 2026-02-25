@@ -102,9 +102,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
         timestamp: Date.now()
       })
     }
-
-    // Subscribe to default topics after connection
-    // subscribeToTrainTelemetry()
   }
 
   /**
@@ -186,19 +183,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
       subscriptions.value.clear()
       console.log('🔌 MQTT client disconnected')
     }
-  }
-
-  /**
-   * Subscribe to train telemetry topics
-   */
-  function subscribeToTrainTelemetry() {
-    const topics = [
-      'train/+/telemetry',    // All train telemetry
-      'train/+/status',       // All train status updates
-      'train/+/heartbeat'     // All train heartbeats
-    ]
-
-    topics.forEach(topic => subscribe(topic))
   }
 
   /**
@@ -348,7 +332,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     unsubscribe,
     subscribeToTrain,
     unsubscribeFromTrain,
-    subscribeToTrainTelemetry,
 
     // Publishing methods
     publish,
@@ -358,24 +341,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     getConnectionInfo,
     isConnected
   }
-}
-
-/**
- * MQTT Topic utilities
- */
-export const MqttTopics = {
-  // Telemetry topics
-  TRAIN_TELEMETRY: (trainId) => `train/${trainId}/telemetry`,
-  TRAIN_STATUS: (trainId) => `train/${trainId}/status`,
-  TRAIN_HEARTBEAT: (trainId) => `train/${trainId}/heartbeat`,
-
-  // Command topics
-  TRAIN_COMMANDS: (trainId) => `commands/${trainId}/control`,
-
-  // Wildcard topics
-  ALL_TRAIN_TELEMETRY: 'train/+/telemetry',
-  ALL_TRAIN_STATUS: 'train/+/status',
-  ALL_TRAIN_HEARTBEAT: 'train/+/heartbeat',
 }
 
 export default useMqttClient

@@ -32,12 +32,9 @@ class MqttBridge:
 
         # Topic patterns
         self.telemetry_topic_pattern = "train/+/telemetry"
-        self.status_topic_pattern = "train/+/status"
-        self.heartbeat_topic_pattern = "train/+/heartbeat"
 
         # Callback handlers
         self.telemetry_handlers: Dict[str, Callable] = {}
-        self.status_handlers: Dict[str, Callable] = {}
 
         # Threading for async integration
         self.loop: Optional[asyncio.AbstractEventLoop] = None
@@ -137,10 +134,6 @@ class MqttBridge:
                 # Route message based on type
                 if message_type == "telemetry":
                     self._handle_telemetry_message(train_id, payload)
-                elif message_type == "status":
-                    self._handle_status_message(train_id, payload)
-                elif message_type == "heartbeat":
-                    self._handle_heartbeat_message(train_id, payload)
                 else:
                     logger.warning(f"Unknown message type: {message_type} from train {train_id}")
             else:
@@ -152,9 +145,7 @@ class MqttBridge:
     def _subscribe_to_topics(self):
         """Subscribe to all relevant MQTT topics"""
         topics = [
-            (self.telemetry_topic_pattern, 1),  # (topic, qos)
-            (self.status_topic_pattern, 1),
-            (self.heartbeat_topic_pattern, 0)   # Heartbeat can use QoS 0
+            (self.telemetry_topic_pattern, 1)  # (topic, qos)
         ]
 
         for topic, qos in topics:
@@ -202,62 +193,16 @@ class MqttBridge:
         except Exception as e:
             logger.error(f"Error processing telemetry from train {train_id}: {e}")
 
-    def _handle_status_message(self, train_id: str, payload: str):
-        """Handle status updates from trains"""
-        try:
-            status_data = json.loads(payload)
-            logger.info(f"Status update from train {train_id}: {status_data}")
-
-            # Call registered status handlers
-            for handler_name, handler in self.status_handlers.items():
-                try:
-                    if asyncio.iscoroutinefunction(handler):
-                        # Handle async functions
-                        if self.loop and self.loop.is_running():
-                            asyncio.run_coroutine_threadsafe(
-                                handler(train_id, status_data), self.loop
-                            )
-                    else:
-                        # Handle sync functions
-                        handler(train_id, status_data)
-                except Exception as e:
-                    logger.error(f"Error in status handler {handler_name}: {e}")
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in status message from train {train_id}: {e}")
-        except Exception as e:
-            logger.error(f"Error processing status from train {train_id}: {e}")
-
-    def _handle_heartbeat_message(self, train_id: str, payload: str):
-        """Handle heartbeat messages from trains"""
-        try:
-            heartbeat_data = json.loads(payload)
-            timestamp = heartbeat_data.get('timestamp', 'N/A')
-            logger.debug(f"Heartbeat from train {train_id} at {timestamp}")
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in heartbeat from train {train_id}: {e}")
-        except Exception as e:
-            logger.error(f"Error processing heartbeat from train {train_id}: {e}")
-
     def register_telemetry_handler(self, name: str, handler: Callable):
         """Register a callback function for telemetry data"""
         self.telemetry_handlers[name] = handler
         logger.info(f"Registered telemetry handler: {name}")
 
-    def register_status_handler(self, name: str, handler: Callable):
-        """Register a callback function for status updates"""
-        self.status_handlers[name] = handler
-        logger.info(f"Registered status handler: {name}")
-
-    def unregister_handler(self, handler_type: str, name: str):
-        """Unregister a callback function"""
-        if handler_type == "telemetry" and name in self.telemetry_handlers:
+    def unregister_handler(self, name: str):
+        """Unregister a telemetry callback function"""
+        if name in self.telemetry_handlers:
             del self.telemetry_handlers[name]
             logger.info(f"Unregistered telemetry handler: {name}")
-        elif handler_type == "status" and name in self.status_handlers:
-            del self.status_handlers[name]
-            logger.info(f"Unregistered status handler: {name}")
 
     def publish_command(self, train_id: str, command: Dict):
         """Publish command to a specific train"""
@@ -294,9 +239,7 @@ class MqttBridge:
             "broker": f"{self.broker_host}:{self.broker_port}",
             "client_id": self.client_id,
             "subscribed_topics": [
-                self.telemetry_topic_pattern,
-                self.status_topic_pattern,
-                self.heartbeat_topic_pattern
+                self.telemetry_topic_pattern
             ]
         }
 
