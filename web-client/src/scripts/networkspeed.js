@@ -9,7 +9,10 @@ export class useNetworkSpeed {
   async testDownload() {
     const startTime = performance.now();
     const response = await fetch(`${this.serverUrl}/api/speedtest/download`);
-    if (!response.ok) throw new Error('Download failed');
+    if (!response.ok){
+      console.error('❌ Download test failed. Server responded with:', response.status)
+      return { speed: 0, bytesTransferred: 0 }
+    }
 
     // Measure actual download time
     const blob = await response.blob();
@@ -30,7 +33,10 @@ export class useNetworkSpeed {
       body: testData,
     });
 
-    if (!response.ok) throw new Error('Upload failed');
+    if (!response.ok){
+      console.error('❌ Upload test failed. Server responded with:', response.status)
+      return { speed: 0, bytesTransferred: 0 }
+    }
     const duration = (performance.now() - startTime) / 1000; // seconds
     const speedMbps = (testData.length * 8) / (1024 * 1024) / duration;
 

@@ -185,17 +185,15 @@ export function useWebRTC(remoteControlId, messageHandler) {
       } catch (error) {
         console.error('❌ Failed to set remote description:', error)
         console.error('Problematic SDP:', offerData.offer.sdp)
-        
+
         // Clean up on failure
         if (peerConnection.value) {
           peerConnection.value.close()
           peerConnection.value = null
         }
         isRTCConnected.value = false
-        
-        // Enhance error message
-        error.message = `Failed to set remote description: ${error.message}`
-        throw error
+
+        console.error('❌ WebRTC connection failed due to invalid offer SDP. This may be caused by a misconfiguration in the train client or an issue with the server generating the offer.')
       }
 
       // Create answer
@@ -227,7 +225,7 @@ export function useWebRTC(remoteControlId, messageHandler) {
     } catch (error) {
       console.error('❌ Error establishing WebRTC connection:', error)
       isRTCConnected.value = false
-      
+
       // Clean up any partially created connection
       if (peerConnection.value) {
         try {
@@ -237,15 +235,15 @@ export function useWebRTC(remoteControlId, messageHandler) {
         }
         peerConnection.value = null
       }
-      
+
       if (videoDataChannel.value) {
         videoDataChannel.value = null
       }
-      
+
       if (commandsDataChannel.value) {
         commandsDataChannel.value = null
       }
-      
+
       // Enhance error information based on error type
       if (error.code === 'INVALID_OFFER_NO_MEDIA') {
         error.userMessage = 'Failed to connect: The server did not provide valid media channels. Please ensure the train client is properly configured and running.'
@@ -256,8 +254,6 @@ export function useWebRTC(remoteControlId, messageHandler) {
       } else {
         error.userMessage = `Failed to establish WebRTC connection: ${error.message}`
       }
-      
-      throw error
     }
   }
 
@@ -440,7 +436,8 @@ export function useWebRTC(remoteControlId, messageHandler) {
       } else if (message instanceof Uint8Array) {
         data = message
       } else {
-        throw new Error('Unsupported message type')
+        console.error('❌ Unsupported message type for WebRTC command:', typeof message)
+        return false
       }
 
       commandsDataChannel.value.send(data)

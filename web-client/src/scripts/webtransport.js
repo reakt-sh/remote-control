@@ -87,28 +87,32 @@ export function useWebTransport(remoteControlId, messageHandler) {
       if (shouldReconnect && !isReconnecting && !isReconnectAttempt) {
         attemptReconnect()
       }
-      throw error // Re-throw for reconnection attempts to handle properly
     }
   }
 
   async function disconnect() {
-    // Stop auto-reconnection
-    shouldReconnect = false
-    
-    // Cancel any pending reconnection attempts
-    if (reconnectTimeout) {
-      clearTimeout(reconnectTimeout)
-      reconnectTimeout = null
+    try {
+      // Stop auto-reconnection
+      shouldReconnect = false
+
+      // Cancel any pending reconnection attempts
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+        reconnectTimeout = null
+      }
+
+      // Reset state
+      isReconnecting = false
+      retryCount = 0
+
+      if (transport.value) {
+        await transport.value.close()
+        isWTConnected.value = false
+      }
+    } catch (error) {
+      console.error('❌ Error during WebTransport disconnection:', error)
     }
-    
-    // Reset state
-    isReconnecting = false
-    retryCount = 0
-    
-    if (transport.value) {
-      await transport.value.close()
-      isWTConnected.value = false
-    }
+
   }
 
   async function send(message) {
@@ -126,7 +130,8 @@ export function useWebTransport(remoteControlId, messageHandler) {
       } else if (message instanceof Uint8Array) {
         data = message;
       } else {
-        throw new Error('Unsupported message type');
+        console.error('❌ Unsupported message type for WebTransport:', typeof message);
+        return;
       }
       await writer.write(data);
       writer.releaseLock();
@@ -139,7 +144,6 @@ export function useWebTransport(remoteControlId, messageHandler) {
           attemptReconnect()
         }
       }
-      throw error // Re-throw the error so callers know it failed
     }
   }
 

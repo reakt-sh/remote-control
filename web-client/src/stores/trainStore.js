@@ -226,7 +226,7 @@ export const useTrainStore = defineStore('train', () => {
         })
 
         if (!response.ok) {
-          throw new Error(`Failed to assign train. Status: ${response.status}`)
+          console.error('❌ Failed to assign train. Server responded with:', response.status)
         }
 
         await response.json()
@@ -328,7 +328,6 @@ export const useTrainStore = defineStore('train', () => {
         console.log('⚠️ Command sent via WebSocket (fallback)')
       } else {
         console.error('❌ Cannot send command: Neither WebTransport nor WebSocket is connected')
-        throw new Error('No connection available to send command')
       }
     } catch (error) {
       console.error('❌ Command send error:', error)
