@@ -393,6 +393,7 @@ export const useTrainStore = defineStore('train', () => {
         const notification = JSON.parse(new TextDecoder().decode(payload))
         if (notification.train_id === selectedTrainId.value && notification.event === 'disconnected') {
           router.push('/')
+          unsubscribeFromTrain(selectedTrainId.value)
         }
         fetchAvailableTrains()
         break
@@ -566,15 +567,15 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
 
-      case 'status':
-        console.log(`🔄 Train ${trainId} status update:`, data)
-        // Handle status updates
+      case 'CAU-8388': {
+        console.log('Received CAU-8388 message:', data)
+          // Also store it to indexDB
+          dataStorage.storeWANData({
+            trainId: selectedTrainId.value,
+            data: data,
+          })
         break
-
-      case 'heartbeat':
-        console.log(`💓 Train ${trainId} heartbeat:`, data)
-        // Handle heartbeat messages
-        break
+      }
 
       case 'onConnect':
         if (selectedTrainId.value) {

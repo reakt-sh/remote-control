@@ -102,9 +102,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
         timestamp: Date.now()
       })
     }
-
-    // Subscribe to default topics after connection
-    // subscribeToTrainTelemetry()
   }
 
   /**
@@ -150,10 +147,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function handleMqttMessage(topic, payload) {
     // Parse topic to extract train_id and message type
     const topicParts = topic.split('/')
-    if (topicParts.length >= 3) {
-      const trainId = topicParts[1]
-      const messageType = topicParts[2]
-
+    try {
       // Parse JSON payload
       let data
       try {
@@ -162,6 +156,23 @@ export function useMqttClient(remoteControlId, messageHandler) {
         console.error('Failed to parse MQTT payload:', e)
         return
       }
+
+      if (topicParts[0] == "captnfoerdeareal")
+      {
+        const messageType = topicParts[2]
+        if (messageHandler) {
+          messageHandler({
+            topic,
+            trainId: '',
+            messageType,
+            data,
+            timestamp: Date.now()
+          })
+        }
+        return
+      }
+      const trainId = topicParts[1]
+      const messageType = topicParts[2]
 
       // Call the message handler with structured data
       if (messageHandler) {
@@ -173,6 +184,8 @@ export function useMqttClient(remoteControlId, messageHandler) {
           timestamp: Date.now()
         })
       }
+    } catch (error) {
+      console.error('Error handling MQTT message:', error)
     }
   }
 
@@ -180,25 +193,17 @@ export function useMqttClient(remoteControlId, messageHandler) {
    * Disconnect from MQTT broker
    */
   function disconnect() {
-    if (mqttClient.value && isMqttConnected.value) {
-      mqttClient.value.disconnect()
-      isMqttConnected.value = false
-      subscriptions.value.clear()
-      console.log('🔌 MQTT client disconnected')
+    try {
+      if (mqttClient.value && isMqttConnected.value)
+      {
+        mqttClient.value.disconnect()
+        isMqttConnected.value = false
+        subscriptions.value.clear()
+        console.log('🔌 MQTT client disconnected')
+      }
+    } catch (error) {
+      console.error('❌ Failed to disconnect MQTT client:', error)
     }
-  }
-
-  /**
-   * Subscribe to train telemetry topics
-   */
-  function subscribeToTrainTelemetry() {
-    const topics = [
-      'train/+/telemetry',    // All train telemetry
-      'train/+/status',       // All train status updates
-      'train/+/heartbeat'     // All train heartbeats
-    ]
-
-    topics.forEach(topic => subscribe(topic))
   }
 
   /**
@@ -260,8 +265,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function subscribeToTrain(trainId) {
     const topics = [
       `train/${trainId}/telemetry`,
-      `train/${trainId}/status`,
-      `train/${trainId}/heartbeat`
+      "captnfoerdeareal/wan/CAU-8388"
     ]
 
     topics.forEach(topic => subscribe(topic))
@@ -273,8 +277,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function unsubscribeFromTrain(trainId) {
     const topics = [
       `train/${trainId}/telemetry`,
-      `train/${trainId}/status`,
-      `train/${trainId}/heartbeat`
+      `captnfoerdeareal/wan/CAU-8388`
     ]
 
     topics.forEach(topic => unsubscribe(topic))
@@ -348,7 +351,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     unsubscribe,
     subscribeToTrain,
     unsubscribeFromTrain,
-    subscribeToTrainTelemetry,
 
     // Publishing methods
     publish,
@@ -358,24 +360,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     getConnectionInfo,
     isConnected
   }
-}
-
-/**
- * MQTT Topic utilities
- */
-export const MqttTopics = {
-  // Telemetry topics
-  TRAIN_TELEMETRY: (trainId) => `train/${trainId}/telemetry`,
-  TRAIN_STATUS: (trainId) => `train/${trainId}/status`,
-  TRAIN_HEARTBEAT: (trainId) => `train/${trainId}/heartbeat`,
-
-  // Command topics
-  TRAIN_COMMANDS: (trainId) => `commands/${trainId}/control`,
-
-  // Wildcard topics
-  ALL_TRAIN_TELEMETRY: 'train/+/telemetry',
-  ALL_TRAIN_STATUS: 'train/+/status',
-  ALL_TRAIN_HEARTBEAT: 'train/+/heartbeat',
 }
 
 export default useMqttClient
