@@ -558,12 +558,29 @@ onUnmounted(() => {
   overflow-x: auto;
   overflow-y: hidden;
   scroll-behavior: smooth;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #1976d2 #e3f2fd; /* Firefox */
+  padding-bottom: 0.5rem;
 }
 
+/* Custom scrollbar for WebKit browsers (Chrome, Safari, Edge) */
 .train-carousel::-webkit-scrollbar {
-  display: none; /* WebKit */
+  height: 8px;
+}
+
+.train-carousel::-webkit-scrollbar-track {
+  background: #e3f2fd;
+  border-radius: 10px;
+}
+
+.train-carousel::-webkit-scrollbar-thumb {
+  background: #1976d2;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.train-carousel::-webkit-scrollbar-thumb:hover {
+  background: #1565c0;
 }
 
 .train-grid {
