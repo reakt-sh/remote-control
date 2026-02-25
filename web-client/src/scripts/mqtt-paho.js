@@ -148,23 +148,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     // Parse topic to extract train_id and message type
     const topicParts = topic.split('/')
     try {
-      if (topicParts[0] == "captnfoerdeareal")
-      {
-        const messageType = topicParts[2]
-        if (messageHandler) {
-          messageHandler({
-            topic,
-            trainId: '',
-            messageType,
-            data: payload,
-            timestamp: Date.now()
-          })
-        }
-        return
-      }
-      const trainId = topicParts[1]
-      const messageType = topicParts[2]
-
       // Parse JSON payload
       let data
       try {
@@ -173,6 +156,23 @@ export function useMqttClient(remoteControlId, messageHandler) {
         console.error('Failed to parse MQTT payload:', e)
         return
       }
+
+      if (topicParts[0] == "captnfoerdeareal")
+      {
+        const messageType = topicParts[2]
+        if (messageHandler) {
+          messageHandler({
+            topic,
+            trainId: '',
+            messageType,
+            data,
+            timestamp: Date.now()
+          })
+        }
+        return
+      }
+      const trainId = topicParts[1]
+      const messageType = topicParts[2]
 
       // Call the message handler with structured data
       if (messageHandler) {
