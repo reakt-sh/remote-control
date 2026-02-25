@@ -63,7 +63,7 @@ export class VideoDecoderWrapper {
         data: frameData,
       }))
     } catch (error) {
-      console.error('Error decoding frame:', error)
+      console.log('Failed decoding frame, waiting for next IDR frame', error)
       this.onError(error)
 
       // re-initialize decoder while getting un-expected decode error
