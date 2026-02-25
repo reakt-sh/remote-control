@@ -130,52 +130,46 @@ export function useWebRTC(remoteControlId, messageHandler) {
       })
 
       const offerData = await offerResponse.json()
-      
+
       // Check for error status
       if (offerData.status === 'error') {
         const errorMsg = offerData.message || 'Unknown error from server'
         console.error('❌ Server returned error:', errorMsg)
-        throw new Error(`Server error: ${errorMsg}`)
       }
-      
+
       if (offerData.status !== 'success') {
-        throw new Error('Failed to get offer from server')
+        console.error('❌ Failed to get offer from server. Status:', offerData.status, 'Message:', offerData.message)
       }
-      
+
       // Check if offer exists
       if (!offerData.offer) {
-        throw new Error('Server response missing offer')
+        console.error('❌ No offer received from server. Response:', offerData)
       }
 
       console.log('📥 Received offer from server')
       console.log('📋 Offer type:', offerData.offer.type)
       console.log('📋 Offer SDP length:', offerData.offer.sdp?.length || 0)
-      
+
       // Verify the offer has required components
       if (!offerData.offer.sdp || !offerData.offer.type) {
-        throw new Error('Invalid offer received: missing sdp or type')
+        console.error('❌ Invalid offer format received from server:', offerData.offer)
       }
 
       // Check for m= sections in the SDP
       const mSections = offerData.offer.sdp.split('\n').filter(line => line.startsWith('m='))
       console.log('📋 Offer has', mSections.length, 'm= sections')
-      
+
       if (mSections.length === 0) {
         console.error('❌ Offer SDP has no m= sections!')
         console.error('SDP:', offerData.offer.sdp)
-        
-        // Clean up the peer connection before throwing
+
         if (peerConnection.value) {
           peerConnection.value.close()
           peerConnection.value = null
         }
         isRTCConnected.value = false
-        
-        const error = new Error('Invalid offer: no media sections. The server may not have data channels configured properly.')
-        error.code = 'INVALID_OFFER_NO_MEDIA'
-        throw error
       }
-      
+
       // Set remote description (offer from server)
       try {
         await peerConnection.value.setRemoteDescription(
