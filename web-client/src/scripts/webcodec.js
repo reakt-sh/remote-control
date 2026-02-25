@@ -15,7 +15,6 @@ export class VideoDecoderWrapper {
     this.videoDecoder = new VideoDecoder({
       output: (frame) => this.handleDecodedFrame(frame),
       error: (error) => {
-        console.error('VideoDecoder error:', error)
         this.onError(error)
       }
     })
@@ -63,8 +62,8 @@ export class VideoDecoderWrapper {
         data: frameData,
       }))
     } catch (error) {
-      console.log('Failed decoding frame, waiting for next IDR frame', error)
-      this.onError(error)
+      console.error('Failed decoding frame ==> Waiting for next IDR frame')
+      // this.onError(error)
 
       // re-initialize decoder while getting un-expected decode error
       this.initializeDecoder()
