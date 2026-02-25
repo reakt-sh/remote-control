@@ -193,11 +193,16 @@ export function useMqttClient(remoteControlId, messageHandler) {
    * Disconnect from MQTT broker
    */
   function disconnect() {
-    if (mqttClient.value && isMqttConnected.value) {
-      mqttClient.value.disconnect()
-      isMqttConnected.value = false
-      subscriptions.value.clear()
-      console.log('🔌 MQTT client disconnected')
+    try {
+      if (mqttClient.value && isMqttConnected.value)
+      {
+        mqttClient.value.disconnect()
+        isMqttConnected.value = false
+        subscriptions.value.clear()
+        console.log('🔌 MQTT client disconnected')
+      }
+    } catch (error) {
+      console.error('❌ Failed to disconnect MQTT client:', error)
     }
   }
 
