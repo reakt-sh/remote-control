@@ -147,7 +147,21 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function handleMqttMessage(topic, payload) {
     // Parse topic to extract train_id and message type
     const topicParts = topic.split('/')
-    if (topicParts.length >= 3) {
+    try {
+      if (topicParts[0] == "captnfoerdeareal")
+      {
+        const messageType = topicParts[2]
+        if (messageHandler) {
+          messageHandler({
+            topic,
+            trainId: '',
+            messageType,
+            data: payload,
+            timestamp: Date.now()
+          })
+        }
+        return
+      }
       const trainId = topicParts[1]
       const messageType = topicParts[2]
 
@@ -170,6 +184,8 @@ export function useMqttClient(remoteControlId, messageHandler) {
           timestamp: Date.now()
         })
       }
+    } catch (error) {
+      console.error('Error handling MQTT message:', error)
     }
   }
 
@@ -244,8 +260,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function subscribeToTrain(trainId) {
     const topics = [
       `train/${trainId}/telemetry`,
-      `train/${trainId}/status`,
-      `train/${trainId}/heartbeat`
+      "captnfoerdeareal/wan/CAU-8388"
     ]
 
     topics.forEach(topic => subscribe(topic))
@@ -257,8 +272,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function unsubscribeFromTrain(trainId) {
     const topics = [
       `train/${trainId}/telemetry`,
-      `train/${trainId}/status`,
-      `train/${trainId}/heartbeat`
+      `captnfoerdeareal/wan/CAU-8388`
     ]
 
     topics.forEach(topic => unsubscribe(topic))

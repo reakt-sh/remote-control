@@ -42,7 +42,8 @@ class DataStorage {
     db.version(this.version).stores({
       frames: '++id, frameId, timestamp, size, data, metadata, createdAt, latency',
       telemetry: '++id, timestamp, sequence_number, data, metadata',
-      sensorData: '++id, sensorType, timestamp, data, metadata'
+      sensorData: '++id, sensorType, timestamp, data, metadata',
+      wanData: '++id, timestamp, data, metadata'
     })
 
     try {
@@ -101,6 +102,7 @@ class DataStorage {
           const frameCount = await db.frames.count()
           const telemetryCount = await db.telemetry.count()
           const sensorCount = await db.sensorData.count()
+          const wanDataCount = await db.wanData.count()
 
           // Use limit(1) instead of first/last with orderBy
           const oldestFrame = await db.frames.where('timestamp').above(0).limit(1).first()
@@ -115,6 +117,7 @@ class DataStorage {
             frameCount,
             telemetryCount,
             sensorCount,
+            wanDataCount,
             duration: (startTime && endTime) ? endTime - startTime : 0,
             lastUpdated: endTime
           })
@@ -139,6 +142,7 @@ class DataStorage {
       const frameCount = await db.frames.count()
       const telemetryCount = await db.telemetry.count()
       const sensorCount = await db.sensorData.count()
+      const wanDataCount = await db.wanData.count()
 
       // Use reverse() with limit(1) for efficient min/max queries
       const oldestFrame = await db.frames.where('timestamp').above(0).limit(1).first()
@@ -165,6 +169,7 @@ class DataStorage {
         frameCount,
         telemetryCount,
         sensorCount,
+        wanDataCount,
         totalSize,
         totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
         startTime: startTime === Infinity ? null : startTime,
@@ -303,6 +308,36 @@ class DataStorage {
       throw error
     }
   }
+
+  /**
+   * Store WAN data
+   * @param {Object} wanDataObj - WAN data object
+   * @param {string} wanDataObj.trainId - Train identifier
+   * @param {Object} wanDataObj.data - WAN data
+   * @param {Object} wanDataObj.metadata - Additional metadata
+   */
+  async storeWANData(wanDataObj) {
+    try {
+      if (!wanDataObj.trainId) {
+        throw new Error('Train ID is required for storing WAN data')
+      }
+
+      const db = await this.getTrainDatabase(wanDataObj.trainId)
+
+      const wanData = {
+        timestamp: Date.now(),
+        data: wanDataObj.data,
+        metadata: wanDataObj.metadata || {}
+      }
+
+      const id = await db.wanData.add(wanData)
+      console.log(`📡 WAN data stored for train ${wanDataObj.trainId}: ID=${id}`)
+      return id
+    } catch (error) {
+      console.error('❌ Failed to store WAN data:', error)
+      throw error
+    }
+  }
   /**
    * Retrieve a frame by its ID
    * @param {string} trainId - Train identifier
@@ -368,6 +403,29 @@ class DataStorage {
       return sensorData
     } catch (error) {
       console.error('❌ Failed to retrieve sensor data:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve WAN data by ID
+   * @param {string} trainId - Train identifier
+   * @param {number} id - Database ID of the WAN data
+   */
+  async getWANData(trainId, id) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required for retrieving WAN data')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const wanData = await db.wanData.get(id)
+      if (wanData) {
+        console.log(`📡 WAN data retrieved for train ${trainId}: ID=${id}`)
+      }
+      return wanData
+    } catch (error) {
+      console.error('❌ Failed to retrieve WAN data:', error)
       throw error
     }
   }
@@ -555,6 +613,80 @@ class DataStorage {
       throw error
     }
   }
+
+  /**
+   * Retrieve WAN data by train ID
+   * @param {string} trainId - Train identifier
+   * @param {number} limit - Maximum number of records to retrieve (default: 100)
+   */
+  async getWANDataByTrain(trainId, limit = 100) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const wanData = await db.wanData
+        .orderBy('timestamp')
+        .limit(limit)
+        .toArray()
+
+      console.log(`📡 Retrieved ${wanData.length} WAN data records for train ${trainId}`)
+      return wanData
+    } catch (error) {
+      console.error('❌ Failed to retrieve WAN data by train:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve all WAN data by train ID (no limit)
+   * @param {string} trainId - Train identifier
+   */
+  async getAllWANDataByTrain(trainId) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const wanData = await db.wanData
+        .orderBy('timestamp')
+        .toArray()
+
+      console.log(`📡 Retrieved all ${wanData.length} WAN data records for train ${trainId}`)
+      return wanData
+    } catch (error) {
+      console.error('❌ Failed to retrieve all WAN data by train:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve WAN data by time range for a specific train
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp
+   * @param {number} endTime - End timestamp
+   */
+  async getWANDataByTimeRange(trainId, startTime, endTime) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const wanData = await db.wanData
+        .where('timestamp')
+        .between(startTime, endTime, true, true)
+        .toArray()
+
+      console.log(`📡 Retrieved ${wanData.length} WAN data records in time range for train ${trainId}`)
+      return wanData
+    } catch (error) {
+      console.error('❌ Failed to retrieve WAN data by time range:', error)
+      throw error
+    }
+  }
   /**
    * Retrieve frames by time range for a specific train
    * @param {string} trainId - Train identifier
@@ -653,7 +785,7 @@ class DataStorage {
   }
 
   /**
-   * Delete all data for a specific train (frames, telemetry, sensor data)
+   * Delete all data for a specific train (frames, telemetry, sensor data, WAN data)
    * @param {string} trainId - Train identifier
    */
   async deleteAllDataByTrain(trainId) {
@@ -666,14 +798,16 @@ class DataStorage {
       const frameCount = await db.frames.count()
       const telemetryCount = await db.telemetry.count()
       const sensorCount = await db.sensorData.count()
+      const wanDataCount = await db.wanData.count()
 
       await db.frames.clear()
       await db.telemetry.clear()
       await db.sensorData.clear()
+      await db.wanData.clear()
 
-      console.log(`🗑️ Deleted all data for train ${trainId}: ${frameCount} frames, ${telemetryCount} telemetry, ${sensorCount} sensor records`)
+      console.log(`🗑️ Deleted all data for train ${trainId}: ${frameCount} frames, ${telemetryCount} telemetry, ${sensorCount} sensor records, ${wanDataCount} WAN records`)
       await this.updateStats()
-      return { frameCount, telemetryCount, sensorCount }
+      return { frameCount, telemetryCount, sensorCount, wanDataCount }
     } catch (error) {
       console.error('❌ Failed to delete all data by train:', error)
       throw error
@@ -728,6 +862,26 @@ class DataStorage {
       throw error
     }
   }
+
+  /**
+   * Delete WAN data for a specific train
+   * @param {string} trainId - Train identifier
+   */
+  async deleteWANDataByTrain(trainId) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+      const count = await db.wanData.clear()
+      console.log(`🗑️ Deleted all WAN data records for train ${trainId}`)
+      return count
+    } catch (error) {
+      console.error('❌ Failed to delete WAN data by train:', error)
+      throw error
+    }
+  }
   /**
    * Clean up old data (older than specified hours) for a specific train
    * @param {string} trainId - Train identifier
@@ -745,9 +899,10 @@ class DataStorage {
       const frameCount = await db.frames.where('timestamp').below(cutoffTime).delete()
       const telemetryCount = await db.telemetry.where('timestamp').below(cutoffTime).delete()
       const sensorCount = await db.sensorData.where('timestamp').below(cutoffTime).delete()
+      const wanDataCount = await db.wanData.where('timestamp').below(cutoffTime).delete()
 
-      console.log(`🧹 Cleaned up old data for train ${trainId} (older than ${hoursOld} hours): ${frameCount} frames, ${telemetryCount} telemetry, ${sensorCount} sensor records`)
-      return { frameCount, telemetryCount, sensorCount }
+      console.log(`🧹 Cleaned up old data for train ${trainId} (older than ${hoursOld} hours): ${frameCount} frames, ${telemetryCount} telemetry, ${sensorCount} sensor records, ${wanDataCount} WAN records`)
+      return { frameCount, telemetryCount, sensorCount, wanDataCount }
     } catch (error) {
       console.error('❌ Failed to cleanup old data by train:', error)
       throw error
@@ -764,18 +919,20 @@ class DataStorage {
       let totalFrameCount = 0
       let totalTelemetryCount = 0
       let totalSensorCount = 0
+      let totalWANDataCount = 0
 
       for (const trainId of trainIds) {
         const result = await this.cleanupOldDataByTrain(trainId, hoursOld)
         totalFrameCount += result.frameCount
         totalTelemetryCount += result.telemetryCount
         totalSensorCount += result.sensorCount
+        totalWANDataCount += result.wanDataCount
       }
 
-      console.log(`🧹 Cleaned up old data across all trains (older than ${hoursOld} hours): ${totalFrameCount} frames, ${totalTelemetryCount} telemetry, ${totalSensorCount} sensor records`)
+      console.log(`🧹 Cleaned up old data across all trains (older than ${hoursOld} hours): ${totalFrameCount} frames, ${totalTelemetryCount} telemetry, ${totalSensorCount} sensor records, ${totalWANDataCount} WAN records`)
       await this.updateStats()
       this.stats.lastCleanup = Date.now()
-      return { frameCount: totalFrameCount, telemetryCount: totalTelemetryCount, sensorCount: totalSensorCount }
+      return { frameCount: totalFrameCount, telemetryCount: totalTelemetryCount, sensorCount: totalSensorCount, wanDataCount: totalWANDataCount }
     } catch (error) {
       console.error('❌ Failed to cleanup old data:', error)
       throw error
@@ -807,6 +964,7 @@ class DataStorage {
       const frameCount = await db.frames.count()
       const telemetryCount = await db.telemetry.count()
       const sensorCount = await db.sensorData.count()
+      const wanDataCount = await db.wanData.count()
 
       // Calculate total size for this train
       const frames = await db.frames.toArray()
@@ -817,6 +975,7 @@ class DataStorage {
         frameCount,
         telemetryCount,
         sensorCount,
+        wanDataCount,
         totalSize,
         totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
       }
@@ -1262,6 +1421,66 @@ class DataStorage {
       throw error
     }
   }
+
+  /**
+   * Export WAN data as JSON
+   * @param {string} trainId - Train identifier
+   * @param {number} startTime - Start timestamp (optional)
+   * @param {number} endTime - End timestamp (optional)
+   */
+  async exportWanData(trainId, startTime = null, endTime = null) {
+    try {
+      if (!trainId) {
+        throw new Error('Train ID is required')
+      }
+
+      const db = await this.getTrainDatabase(trainId)
+
+      // Get WAN data within time range
+      let wanQuery = db.wanData.orderBy('timestamp')
+      if (startTime && endTime) {
+        wanQuery = db.wanData.where('timestamp').between(startTime, endTime, true, true)
+      } else if (startTime) {
+        wanQuery = db.wanData.where('timestamp').aboveOrEqual(startTime)
+      } else if (endTime) {
+        wanQuery = db.wanData.where('timestamp').belowOrEqual(endTime)
+      }
+
+      const wanDataRecords = await wanQuery.toArray()
+
+      const exportData = {
+        trainId,
+        exportTime: new Date().toISOString(),
+        timeRange: {
+          start: startTime,
+          end: endTime
+        },
+        recordCount: wanDataRecords.length,
+        wanData: wanDataRecords
+      }
+
+      const jsonString = JSON.stringify(exportData, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+
+      // Download the file
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `train_${trainId}_wan_data_${startTime || 'all'}_${endTime || 'all'}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log(`📡 Exported WAN data for train ${trainId}: ${wanDataRecords.length} records`)
+      return { 
+        recordCount: wanDataRecords.length
+      }
+    } catch (error) {
+      console.error('❌ Failed to export WAN data:', error)
+      throw error
+    }
+  }
 }
 
 // Export a composable function for Vue 3
@@ -1298,6 +1517,12 @@ export function useDataStorage(baseDbName, version) {
     getSensorDataByTimeRange: (trainId, start, end, sensorType) => dataStorage.getSensorDataByTimeRange(trainId, start, end, sensorType),
     deleteSensorDataByTrain: (trainId, sensorType) => dataStorage.deleteSensorDataByTrain(trainId, sensorType),
 
+    // WAN data operations
+    storeWANData: (wanData) => dataStorage.storeWANData(wanData),
+    getWANData: (trainId, id) => dataStorage.getWANData(trainId, id),
+    getWANDataByTrain: (trainId, limit) => dataStorage.getWANDataByTrain(trainId, limit),
+    getWANDataByTimeRange: (trainId, start, end) => dataStorage.getWANDataByTimeRange(trainId, start, end),
+
     // Train-specific management operations
     deleteAllDataByTrain: (trainId) => dataStorage.deleteAllDataByTrain(trainId),
     deleteTrainDatabase: (trainId) => dataStorage.deleteTrainDatabase(trainId),
@@ -1322,7 +1547,8 @@ export function useDataStorage(baseDbName, version) {
     exportVideoFramesWithMetadata: (trainId, startTime, endTime) => dataStorage.exportVideoFramesWithMetadata(trainId, startTime, endTime),
     exportTelemetryData: (trainId, startTime, endTime) => dataStorage.exportTelemetryData(trainId, startTime, endTime),
     exportSensorData: (trainId, startTime, endTime, sensorType) => dataStorage.exportSensorData(trainId, startTime, endTime, sensorType),
-    exportLatencyData: (trainId, startTime, endTime) => dataStorage.exportLatencyData(trainId, startTime, endTime)
+    exportLatencyData: (trainId, startTime, endTime) => dataStorage.exportLatencyData(trainId, startTime, endTime),
+    exportWanData: (trainId, startTime, endTime) => dataStorage.exportWanData(trainId, startTime, endTime)
   }
 }
 

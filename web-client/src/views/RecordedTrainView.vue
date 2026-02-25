@@ -6,9 +6,7 @@
       <div class="recorded-train-header">
         <div class="header-info">
           <button class="back-btn" @click="goBack">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-            </svg>
+            <i class="fa-solid fa-arrow-left"></i>
             Back to Home
           </button>
           <div class="train-title">
@@ -26,9 +24,7 @@
         </div>
         <div class="header-actions">
           <button class="refresh-btn" @click="loadTrainData" :disabled="loading">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="{ 'spinning': loading }">
-              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-            </svg>
+            <i class="fa-solid fa-rotate" :class="{ 'spinning': loading }"></i>
             Refresh
           </button>
         </div>
@@ -41,9 +37,7 @@
 
       <div v-else-if="!trainMetadata" class="error-state">
         <div class="error-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-          </svg>
+          <i class="fa-solid fa-circle-exclamation"></i>
         </div>
         <h3>Train Data Not Found</h3>
         <p>No recorded data found for train {{ trainId }}</p>
@@ -102,16 +96,11 @@
                 @click="toggleFullScreen"
                 :title="isFullScreen ? 'Exit Full Screen' : 'Full Screen'"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path v-if="!isFullScreen" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                  <path v-else d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
-                </svg>
+                <i class="fa-solid" :class="isFullScreen ? 'fa-compress' : 'fa-expand'"></i>
               </button>
               <div v-if="!isPlaying && !loadingVideo" class="play-overlay">
                 <button class="play-btn" @click="startPlayback">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
+                  <i class="fa-solid fa-play"></i>
                   Play Recorded Video
                 </button>
               </div>
@@ -127,10 +116,7 @@
                   @click="togglePlayback"
                   :disabled="!videoFrames.length"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path v-if="!isPlaying" d="M8 5v14l11-7z"/>
-                    <path v-else d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                  </svg>
+                  <i class="fa-solid" :class="isPlaying ? 'fa-pause' : 'fa-play'"></i>
                   {{ isPlaying ? 'Pause' : 'Play' }}
                 </button>
                 <button 
@@ -138,9 +124,7 @@
                   @click="stopPlayback"
                   :disabled="!videoFrames.length"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6 6h12v12H6z"/>
-                  </svg>
+                  <i class="fa-solid fa-stop"></i>
                   Stop
                 </button>
                 <div class="frame-info">
@@ -197,7 +181,6 @@
             <div class="export-card">
               <div class="export-info">
                 <h4>Video Frames</h4>
-                <p>Export H.264 video data</p>
                 <div class="export-stats">
                   {{ getFrameCountInRange() }} frames
                 </div>
@@ -215,7 +198,6 @@
             <div class="export-card">
               <div class="export-info">
                 <h4>Video Frames + Metadata</h4>
-                <p>Export frames with metadata as JSON</p>
                 <div class="export-stats">
                   {{ getFrameCountInRange() }} frames
                 </div>
@@ -233,7 +215,6 @@
             <div class="export-card">
               <div class="export-info">
                 <h4>Telemetry Data</h4>
-                <p>Export telemetry as JSON</p>
                 <div class="export-stats">
                   {{ getTelemetryCountInRange() }} records
                 </div>
@@ -251,7 +232,6 @@
             <div class="export-card">
               <div class="export-info">
                 <h4>Sensor Data</h4>
-                <p>Export sensor data as JSON</p>
                 <div class="export-stats">
                   {{ getSensorCountInRange() }} records
                 </div>
@@ -269,7 +249,6 @@
             <div class="export-card">
               <div class="export-info">
                 <h4>Latency Data</h4>
-                <p>Export latency statistics as JSON</p>
                 <div class="export-stats">
                   Video & Telemetry latencies
                 </div>
@@ -283,6 +262,23 @@
                 <span v-else>Export Latency</span>
               </button>
             </div>
+
+            <div class="export-card">
+              <div class="export-info">
+                <h4>WAN Data</h4>
+                <div class="export-stats">
+                  {{ getWanCountInRange() }} records
+                </div>
+              </div>
+              <button 
+                class="export-btn"
+                @click="exportWanData"
+                :disabled="exporting.wan"
+              >
+                <span v-if="exporting.wan">Exporting...</span>
+                <span v-else>Export WAN</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -291,9 +287,7 @@
           <h3>Data Management</h3>
           <div class="management-actions">
             <button class="danger-btn" @click="confirmDelete = true">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-              </svg>
+              <i class="fa-solid fa-trash"></i>
               Delete Train Data
             </button>
           </div>
@@ -337,12 +331,14 @@ const exporting = ref({
   videoMetadata: false,
   telemetry: false,
   sensor: false,
-  latency: false
+  latency: false,
+  wan: false
 })
 
 const frameCountInRange = ref(0)
 const telemetryCountInRange = ref(0)
 const sensorCountInRange = ref(0)
+const wanCountInRange = ref(0)
 
 const selectedTimeRange = ref({
   start: null,
@@ -639,6 +635,7 @@ const updateCountsInRange = async () => {
       frameCountInRange.value = 0
       telemetryCountInRange.value = 0
       sensorCountInRange.value = 0
+      wanCountInRange.value = 0
       return
     }
 
@@ -647,6 +644,7 @@ const updateCountsInRange = async () => {
       frameCountInRange.value = trainMetadata.value?.frameCount || 0
       telemetryCountInRange.value = trainMetadata.value?.telemetryCount || 0
       sensorCountInRange.value = trainMetadata.value?.sensorCount || 0
+      wanCountInRange.value = trainMetadata.value?.wanDataCount || 0
       return
     }
 
@@ -667,11 +665,12 @@ const updateCountsInRange = async () => {
       frameCountInRange.value = trainMetadata.value?.frameCount || 0
       telemetryCountInRange.value = trainMetadata.value?.telemetryCount || 0
       sensorCountInRange.value = trainMetadata.value?.sensorCount || 0
+      wanCountInRange.value = trainMetadata.value?.wanDataCount || 0
       return
     }
 
     // Get counts for the selected time range
-    const [frames, telemetry, sensorData] = await Promise.all([
+    const [frames, telemetry, sensorData, wanData] = await Promise.all([
       dataStorage.getFramesByTimeRange(
         trainId.value,
         selectedTimeRange.value.start,
@@ -695,24 +694,35 @@ const updateCountsInRange = async () => {
       ).catch(error => {
         console.error('Error getting sensor data:', error)
         return []
+      }),
+      dataStorage.getWANDataByTimeRange(
+        trainId.value,
+        selectedTimeRange.value.start,
+        selectedTimeRange.value.end
+      ).catch(error => {
+        console.error('Error getting WAN data:', error)
+        return []
       })
     ])
     
     console.log('📊 Query results:', {
       frames: frames.length,
       telemetry: telemetry.length,
-      sensorData: sensorData.length
+      sensorData: sensorData.length,
+      wanData: wanData.length
     })
     
     frameCountInRange.value = frames.length
     telemetryCountInRange.value = telemetry.length
     sensorCountInRange.value = sensorData.length
+    wanCountInRange.value = wanData.length
   } catch (error) {
     console.error('Failed to update counts in range:', error)
     // Fallback to total counts if there's an error
     frameCountInRange.value = trainMetadata.value?.frameCount || 0
     telemetryCountInRange.value = trainMetadata.value?.telemetryCount || 0
     sensorCountInRange.value = trainMetadata.value?.sensorCount || 0
+    wanCountInRange.value = trainMetadata.value?.wanDataCount || 0
   }
 }
 
@@ -726,6 +736,10 @@ const getTelemetryCountInRange = () => {
 
 const getSensorCountInRange = () => {
   return sensorCountInRange.value
+}
+
+const getWanCountInRange = () => {
+  return wanCountInRange.value
 }
 
 const exportVideo = async () => {
@@ -805,6 +819,22 @@ const exportLatency = async () => {
     alert('Failed to export latency data. Please try again.')
   } finally {
     exporting.value.latency = false
+  }
+}
+
+const exportWanData = async () => {
+  exporting.value.wan = true
+  try {
+    await dataStorage.exportWanData(
+      trainId.value,
+      selectedTimeRange.value.start,
+      selectedTimeRange.value.end
+    )
+  } catch (error) {
+    console.error('Failed to export WAN data:', error)
+    alert('Failed to export WAN data. Please try again.')
+  } finally {
+    exporting.value.wan = false
   }
 }
 
@@ -940,9 +970,8 @@ onUnmounted(() => {
   color: white;
 }
 
-.back-btn svg {
-  width: 16px;
-  height: 16px;
+.back-btn i {
+  font-size: 14px;
 }
 
 .train-title h1 {
@@ -991,13 +1020,12 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.refresh-btn svg {
-  width: 16px;
-  height: 16px;
+.refresh-btn i {
+  font-size: 14px;
   transition: transform 0.5s ease;
 }
 
-.refresh-btn svg.spinning {
+.refresh-btn i.spinning {
   animation: spin 1s linear infinite;
 }
 
@@ -1043,9 +1071,8 @@ onUnmounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.error-icon svg {
-  width: 40px;
-  height: 40px;
+.error-icon i {
+  font-size: 40px;
   color: #f44336;
 }
 
@@ -1194,9 +1221,8 @@ onUnmounted(() => {
   background: rgba(60, 60, 60, 0.85);
 }
 
-.fullscreen-btn svg {
-  width: 20px;
-  height: 20px;
+.fullscreen-btn i {
+  font-size: 16px;
   pointer-events: none;
 }
 
@@ -1234,9 +1260,8 @@ onUnmounted(() => {
   box-shadow: 0 6px 16px rgba(25, 118, 210, 0.4);
 }
 
-.play-btn svg {
-  width: 24px;
-  height: 24px;
+.play-btn i {
+  font-size: 20px;
 }
 
 .loading-overlay {
@@ -1306,9 +1331,8 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.control-btn svg {
-  width: 16px;
-  height: 16px;
+.control-btn i {
+  font-size: 14px;
 }
 
 .frame-info {
@@ -1470,9 +1494,8 @@ onUnmounted(() => {
   background: #d32f2f;
 }
 
-.danger-btn svg {
-  width: 16px;
-  height: 16px;
+.danger-btn i {
+  font-size: 14px;
 }
 
 .modal-overlay {
