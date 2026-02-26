@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor
 from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer
-import os
+import qtawesome as qta
 import cv2
 import numpy as np
 import time
@@ -86,7 +86,6 @@ class TrainClient(BaseClient, QMainWindow):
             }
         """
 
-        icon_dir = os.path.join(os.path.dirname(__file__), "icons")
 
         # Capture button (blue)
         self.capture_button = QPushButton("  Stop Capture")
@@ -95,7 +94,7 @@ class TrainClient(BaseClient, QMainWindow):
         self.capture_button_style = self.button_style
         self.capture_button_style_red = self.button_style.replace("#2d89ef", "#f44336").replace("#1b5fa7", "#f44335").replace("#174c88", "#b71c1c")
         self.capture_button.setStyleSheet(self.capture_button_style_red)
-        self.capture_button.setIcon(QIcon(os.path.join(icon_dir, "video-solid.png")))
+        self.capture_button.setIcon(qta.icon('fa5s.video', color='white'))
         self.capture_button.setIconSize(QSize(24, 24))
         self.capture_button.clicked.connect(self.toggle_capture)
 
@@ -106,7 +105,7 @@ class TrainClient(BaseClient, QMainWindow):
         self.sending_button_style = self.button_style.replace("#2d89ef", "#43b581").replace("#1b5fa7", "#2e8c5a").replace("#174c88", "#256b45")
         self.sending_button_style_red = self.button_style.replace("#2d89ef", "#f44336").replace("#1b5fa7", "#f44335").replace("#174c88", "#b71c1c")
         self.sending_button.setStyleSheet(self.sending_button_style)
-        self.sending_button.setIcon(QIcon(os.path.join(icon_dir, "paper-plane-solid.png")))
+        self.sending_button.setIcon(qta.icon('fa5s.paper-plane', color='white'))
         self.sending_button.setIconSize(QSize(24, 24))
         self.sending_button.clicked.connect(self.toggle_sending)
 
@@ -117,7 +116,7 @@ class TrainClient(BaseClient, QMainWindow):
         self.write_button_style = self.button_style.replace("#2d89ef", "#ff9800").replace("#1b5fa7", "#e68900").replace("#174c88", "#b36b00")
         self.write_button_style_red = self.button_style.replace("#2d89ef", "#f44336").replace("#1b5fa7", "#f44335").replace("#174c88", "#b71c1c")
         self.write_button.setStyleSheet(self.write_button_style)
-        self.write_button.setIcon(QIcon(os.path.join(icon_dir, "file-arrow-down-solid.png")))
+        self.write_button.setIcon(qta.icon('fa5s.file-download', color='white'))
         self.write_button.setIconSize(QSize(24, 24))
         self.write_button.clicked.connect(self.toggle_write_to_file)
 
@@ -127,9 +126,7 @@ class TrainClient(BaseClient, QMainWindow):
         self.source_button.setMaximumWidth(BUTTON_WIDTH)
         self.source_button_style = self.button_style.replace("#2d89ef", "#9c27b0").replace("#1b5fa7", "#6d1b7b").replace("#174c88", "#4a0d52")
         self.source_button.setStyleSheet(self.source_button_style)
-        camera_icon_path = os.path.join(icon_dir, "camera-solid.png")
-        if os.path.exists(camera_icon_path):
-            self.source_button.setIcon(QIcon(camera_icon_path))
+        self.source_button.setIcon(qta.icon('fa5s.camera', color='white'))
         self.source_button.setIconSize(QSize(24, 24))
         self.source_button.clicked.connect(self.toggle_video_source)
         self.using_file_source = True
