@@ -350,15 +350,11 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   async function sendRTT_Train(rttPacket) {
-    console.log('📤 Sending RTT_Train packet:', rttPacket)
     const packetData = new TextEncoder().encode(JSON.stringify(rttPacket));
     const packet = new Uint8Array(1 + packetData.length);
     packet[0] = PACKET_TYPE.rtt_train; // Set the first byte as PACKET_TYPE.rtt_train
     packet.set(packetData, 1);
 
-    console.log('📤 RTT_Train packet size:', packet.length, 'bytes')
-    console.log('📤 RTT_Train packet type byte:', packet[0])
-    
     try {
       await sendWtMessage(packet)
       console.log('✅ RTT_Train packet sent successfully')
@@ -505,16 +501,13 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.rtt_train: {
         try {
           // Currently not used in the client
-          console.log('📥 Received rtt_train packet from server: ', payload)
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
-          console.log('📥 Parsed rtt_train data:', jsonData)
           jsonData["remote_control_timestamp"] = Date.now()
           jsonData["remote_control_id"] = remoteControlId.value
-          console.log('📥 Updated rtt_train data with timestamp:', jsonData)
           await sendRTT_Train(jsonData)
         } catch (error) {
-          console.error('❌ Error handling rtt_train packet:', error)
+          console.error('❌ Error handling rtt_train packet:', error, payload)
         }
         break
       }
@@ -567,7 +560,6 @@ export const useTrainStore = defineStore('train', () => {
       }
 
       case 'CAU-8388': {
-        console.log('Received CAU-8388 message:', data)
           // Also store it to indexDB
           dataStorage.storeWANData({
             trainId: selectedTrainId.value,

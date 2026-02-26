@@ -219,7 +219,7 @@ class DataStorage {
       this.stats.totalFrames++
       this.stats.totalSize += frame.size
 
-      console.log(`📦 Frame stored for train ${frameData.trainId}: ID=${id}, Size=${frame.size} bytes`)
+      // console.log(`📦 Frame stored for train ${frameData.trainId}: ID=${id}, Size=${frame.size} bytes`)
       return id
     } catch (error) {
       console.error('❌ Failed to store frame:', error)
@@ -270,7 +270,7 @@ class DataStorage {
       telemetry[telemetryData.protocol] = telemetryData.latency
 
       const id = await db.telemetry.add(telemetry)
-      console.log(`📊 Telemetry stored for train ${telemetryData.trainId}: ID=${id}`)
+      // console.log(`📊 Telemetry stored for train ${telemetryData.trainId}: ID=${id}`)
       return id
     } catch (error) {
       console.error('❌ Failed to store telemetry:', error)
@@ -302,7 +302,7 @@ class DataStorage {
       }
 
       const id = await db.sensorData.add(sensor)
-      console.log(`🔬 Sensor data stored for train ${sensorData.trainId}: ID=${id}, Type=${sensor.sensorType}`)
+      // console.log(`🔬 Sensor data stored for train ${sensorData.trainId}: ID=${id}, Type=${sensor.sensorType}`)
       return id
     } catch (error) {
       console.error('❌ Failed to store sensor data:', error)
@@ -332,7 +332,7 @@ class DataStorage {
       }
 
       const id = await db.wanData.add(wanData)
-      console.log(`📡 WAN data stored for train ${wanDataObj.trainId}: ID=${id}`)
+      // console.log(`📡 WAN data stored for train ${wanDataObj.trainId}: ID=${id}`)
       return id
     } catch (error) {
       console.error('❌ Failed to store WAN data:', error)
