@@ -88,7 +88,7 @@ function doneTargetSpeed() {
 .speedometer {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 6px;
+  padding: 4px; /* reduced for height */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -108,12 +108,12 @@ function doneTargetSpeed() {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 3px; /* reduced for height */
+  margin-bottom: 3px; /* reduced for height */
 }
 
 .current-speed {
-  font-size: 0.8rem;
+  font-size: 0.7rem; /* reduced for height */
   font-weight: bold;
   font-family: 'Segment7', monospace;
   color: #2c3e50;
@@ -121,7 +121,7 @@ function doneTargetSpeed() {
 }
 
 .speed-unit {
-  font-size: 0.6rem;
+  font-size: 0.5rem; /* reduced for height */
   color: #7f8c8d;
   margin-bottom: 0;
 }
@@ -129,7 +129,7 @@ function doneTargetSpeed() {
 .target-speed {
   position: relative;
   background: #f8f9fa;
-  padding: 6px;
+  padding: 4px; /* reduced for height */
   border-radius: 6px;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid #e0e4e7;
@@ -140,19 +140,19 @@ function doneTargetSpeed() {
   background: #2c3e50;
   color: white;
   font-weight: 500;
-  padding: 3px 8px;
+  padding: 2px 6px; /* reduced for height */
   border-radius: 12px;
-  font-size: 0.6em;
-  margin-bottom: 6px;
+  font-size: 0.55em; /* reduced for height */
+  margin-bottom: 4px; /* reduced for height */
   margin-right: 16px;
 }
 
 .toggle-input-btn {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
+  top: 3px; /* reduced for height */
+  right: 3px; /* reduced for height */
+  width: 12px; /* reduced for height */
+  height: 12px; /* reduced for height */
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -173,25 +173,25 @@ function doneTargetSpeed() {
 
 .slider-container {
   width: 100%;
-  padding: 4px 0;
+  padding: 3px 0; /* reduced for height */
 }
 
 .target-slider {
   width: 100%;
-  height: 4px;
+  height: 3px; /* reduced for height */
   -webkit-appearance: none;
   appearance: none;
   background: #e0e4e7;
   border-radius: 2px;
   outline: none;
-  margin: 4px 0;
+  margin: 3px 0; /* reduced for height */
 }
 
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 10px;
-  height: 10px;
+  width: 8px; /* reduced for height */
+  height: 8px; /* reduced for height */
   background: #2c3e50;
   border-radius: 50%;
   cursor: pointer;
@@ -205,7 +205,7 @@ function doneTargetSpeed() {
 
 .target-speed-buttons {
   flex-direction: column;
-  gap: 4px;
+  gap: 3px; /* reduced for height */
 }
 
 .button-row {
@@ -218,8 +218,8 @@ function doneTargetSpeed() {
 
 .change-speed-button {
   max-width: 22px;
-  font-size: 0.6em;
-  padding: 2px 4px;
+  font-size: 0.55em; /* reduced for height */
+  padding: 1px 3px; /* reduced for height */
   border-radius: 4px;
   border: 1px solid #d6dbdf;
   background: #f8f9fa;
@@ -229,12 +229,12 @@ function doneTargetSpeed() {
 }
 
 .done-btn {
-  font-size: 0.6em;
-  padding: 3px 8px;
+  font-size: 0.55em; /* reduced for height */
+  padding: 2px 6px; /* reduced for height */
   background: #27ae60;
   color: white;
   border-color: #219955;
-  margin-top: 4px;
+  margin-top: 3px; /* reduced for height */
 }
 
 button:hover {
@@ -250,31 +250,31 @@ button:active {
 @media (min-width: 430px) {
   .speedometer {
     max-width: 140px;
-    padding: 10px;
-  }
-  
-  .current-speed {
-    font-size: 1rem;
-  }
-  
-  .speed-unit {
-    font-size: 0.65rem;
-  }
-  
-  .target-speed {
     padding: 6px;
   }
   
+  .current-speed {
+    font-size: 0.85rem;
+  }
+  
+  .speed-unit {
+    font-size: 0.6rem;
+  }
+  
+  .target-speed {
+    padding: 5px;
+  }
+  
   .target-speed-value {
-    padding: 3px 8px;
+    padding: 2px 6px;
   }
   
   .toggle-input-btn {
-    width: 16px;
-    height: 16px;
-    top: 5px;
-    right: 5px;
-    font-size: 0.7em;
+    width: 14px;
+    height: 14px;
+    top: 4px;
+    right: 4px;
+    font-size: 0.65em;
   }
   
   .button-row {
@@ -283,13 +283,13 @@ button:active {
   
   .change-speed-button {
     max-width: 26px;
-    font-size: 0.65em;
-    padding: 3px 5px;
+    font-size: 0.6em;
+    padding: 2px 4px;
   }
   
   .done-btn {
-    font-size: 0.65em;
-    padding: 3px 8px;
+    font-size: 0.6em;
+    padding: 2px 6px;
   }
 }
 
@@ -297,71 +297,71 @@ button:active {
   .speedometer {
     max-width: 300px;
     width: 300px;
-    padding: 12px;
+    padding: 8px; /* reduced for height */
   }
   
   .current-speed {
-    font-size: 1.8rem;
+    font-size: 1.5rem; /* reduced for height */
   }
   
   .speed-unit {
-    font-size: 1.3rem;
+    font-size: 1.1rem; /* reduced for height */
   }
   
   .speed-row {
-    gap: 16px;
-    margin-bottom: 8px;
+    gap: 12px; /* reduced for height */
+    margin-bottom: 6px; /* reduced for height */
   }
   
   .target-speed {
-    padding: 10px;
-    border-radius: 14px;
+    padding: 8px; /* reduced for height */
+    border-radius: 12px; /* reduced for height */
   }
   
   .target-speed-value {
-    font-size: 1.1em;
-    padding: 12px 24px;
-    border-radius: 20px;
-    margin-bottom: 14px;
-    margin-right: 28px;
+    font-size: 0.95em; /* reduced for height */
+    padding: 8px 18px; /* reduced for height */
+    border-radius: 18px; /* reduced for height */
+    margin-bottom: 10px; /* reduced for height */
+    margin-right: 24px; /* reduced for height */
   }
   
   .toggle-input-btn {
-    width: 40px;
-    height: 40px;
-    top: 12px;
-    right: 12px;
-    font-size: 1.6em;
+    width: 32px; /* reduced for height */
+    height: 32px; /* reduced for height */
+    top: 10px; /* reduced for height */
+    right: 10px; /* reduced for height */
+    font-size: 1.4em; /* reduced for height */
   }
   
   .target-slider {
-    height: 9px;
-    border-radius: 4px;
-    margin: 11px 0;
+    height: 7px; /* reduced for height */
+    border-radius: 3px; /* reduced for height */
+    margin: 8px 0; /* reduced for height */
   }
   
   .target-slider::-webkit-slider-thumb {
-    width: 26px;
-    height: 26px;
+    width: 20px; /* reduced for height */
+    height: 20px; /* reduced for height */
   }
   
   .button-row {
-    gap: 8px;
-    margin-bottom: 6px;
+    gap: 6px; /* reduced for height */
+    margin-bottom: 4px; /* reduced for height */
   }
   
   .change-speed-button {
     max-width: 100px;
     min-width: 45px;
-    font-size: 1.1em;
-    padding: 5px 16px;
-    border-radius: 10px;
+    font-size: 0.95em; /* reduced for height */
+    padding: 4px 12px; /* reduced for height */
+    border-radius: 8px; /* reduced for height */
   }
   
   .done-btn {
-    font-size: 1.2em;
-    padding: 10px 22px;
-    border-radius: 10px;
+    font-size: 1.05em; /* reduced for height */
+    padding: 7px 18px; /* reduced for height */
+    border-radius: 8px; /* reduced for height */
   }
 }
 </style>

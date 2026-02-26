@@ -54,7 +54,6 @@
       <div class="history-timer-container">
         <!-- Command History -->
         <div class="command-history">
-          <div class="history-label">Commands from Test Scenario</div>
           <div class="history-scroll-container" ref="historyScrollContainer">
             <div 
               v-for="(cmd, index) in commandHistory" 
