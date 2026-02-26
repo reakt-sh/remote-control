@@ -1,6 +1,6 @@
 <template>
   <div class="driver-console">
-    <div class="primary-controls power-direction-controls">
+    <div class="primary-controls">
       <PowerControls
         :disabled="isScenarioRunning"
         @start="handleStart"
@@ -11,9 +11,6 @@
         :disabled="isScenarioRunning"
         @change="handleDirectionChange"
       />
-    </div>
-
-    <div class="primary-controls speed-controls">
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
@@ -125,6 +122,7 @@ watch(
 .driver-console {
   display: flex;
   flex-direction: row; /* Always side by side */
+  align-items: flex-start;
   height: 100%;
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   color: #34495e;
@@ -144,8 +142,8 @@ watch(
   gap: 8px;
   padding: 5px;
   min-width: 150px;
-  width: 150px;
-  flex: 1 1 0;
+  width: 100%;
+  flex: 0 1 auto;
 }
 
 .scenario-controls {
@@ -158,14 +156,13 @@ watch(
 
 @media (min-width: 700px) {
   .primary-controls {
-    min-width: 320px;
-    width: 100%;
-    max-width: 480px;
-    flex: 1 1 0;
-  }
-
-  .power-direction-controls {
     flex-direction: row;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    gap: 16px;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
   }
 
   .scenario-controls {
