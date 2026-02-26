@@ -458,7 +458,11 @@ class WebRTCManager:
                 await pc.close()
             except Exception as e:
                 logger.error(f"WebRTC: Error closing peer connection for {remote_control_id}: {e}")
-            del self.peer_connections[remote_control_id]
+
+            try:
+                del self.peer_connections[remote_control_id]
+            except KeyError:
+                logger.error(f"WebRTC: Peer connection for {remote_control_id} already removed")
 
         # Clean up pending ICE candidates
         if remote_control_id in self.pending_ice_candidates:

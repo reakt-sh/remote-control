@@ -125,10 +125,11 @@ class NetworkWorkerQUIC(QThread):
                 result = self._client.transmit()
                 if result is not None:
                     await result
-                await asyncio.sleep(0.010)  # 10ms delay
+                await asyncio.sleep(0.1)  # 100ms delay
             except queue.Empty:
                 await asyncio.sleep(0.1)
                 continue
+
 
     async def send_datagram_unreliable(self):
         while self._running:

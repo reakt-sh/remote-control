@@ -11,9 +11,6 @@
         :disabled="isScenarioRunning"
         @change="handleDirectionChange"
       />
-    </div>
-
-    <div class="primary-controls">
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
@@ -22,11 +19,11 @@
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
-      <VideoQuality
+      <!-- <VideoQuality
         v-model="videoQuality"
         :disabled="!telemetryData?.train_id || isScenarioRunning"
         @change="handleQualityChange"
-      />
+      /> -->
     </div>
 
     <div class="scenario-controls">
@@ -45,7 +42,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
-import VideoQuality from './VideoQuality.vue'
+// import VideoQuality from './VideoQuality.vue'
 import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
 const trainStore = useTrainStore()
@@ -55,7 +52,7 @@ const { telemetryData, direction } = storeToRefs(trainStore)
 const maxSpeed = ref(13)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
-const videoQuality = ref('medium')
+// const videoQuality = ref('medium')
 const isScenarioRunning = ref(false)
 
 // Computed
@@ -98,13 +95,13 @@ function onTargetSpeedCommit(val) {
   })
 }
 
-function handleQualityChange(quality) {
-  trainStore.sendCommand({
-    "instruction": "CHANGE_VIDEO_QUALITY",
-    "train_id": telemetryData.value.train_id,
-    "quality": quality
-  })
-}
+// function handleQualityChange(quality) {
+//   trainStore.sendCommand({
+//     "instruction": "CHANGE_VIDEO_QUALITY",
+//     "train_id": telemetryData.value.train_id,
+//     "quality": quality
+//   })
+// }
 
 function handleScenarioStateChange(running) {
   isScenarioRunning.value = running
@@ -125,6 +122,7 @@ watch(
 .driver-console {
   display: flex;
   flex-direction: row; /* Always side by side */
+  align-items: flex-start;
   height: 100%;
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   color: #34495e;
@@ -144,8 +142,8 @@ watch(
   gap: 8px;
   padding: 5px;
   min-width: 150px;
-  width: 150px;
-  flex: 1 1 0;
+  width: 100%;
+  flex: 0 1 auto;
 }
 
 .scenario-controls {
@@ -158,10 +156,13 @@ watch(
 
 @media (min-width: 700px) {
   .primary-controls {
-    min-width: 320px;
-    width: 100%;
-    max-width: 480px;
-    flex: 1 1 0;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    gap: 16px;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
   }
 
   .scenario-controls {

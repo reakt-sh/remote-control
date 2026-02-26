@@ -50,7 +50,7 @@ function handleStop() {
 .power-controls {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 14px; /* increased */
+  padding: 8px; /* reduced for height */
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -58,12 +58,12 @@ function handleStop() {
   border: 1px solid #e0e4e7;
   max-width: 250px; /* increased from 105px */
   margin: 0 auto;
-  gap: 16px; /* Add this line for more spacing */
+  gap: 12px; /* reduced for height */
 }
 
 .control-button {
-  width: 64px;   /* increased from 40px */
-  height: 64px;  /* increased from 40px */
+  width: 58px;   /* increased button size */
+  height: 58px;  /* increased button size */
   border-radius: 50%;
   border: none;
   display: flex;
@@ -103,12 +103,12 @@ function handleStop() {
 }
 
 .icon {
-  font-size: 1.6rem; /* increased from 1rem */
-  margin-bottom: 4px;
+  font-size: 1.5rem; /* increased */
+  margin-bottom: 2px;
 }
 
 .label {
-  font-size: 0.7rem; /* increased from 0.45rem */
+  font-size: 0.65rem; /* increased */
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -120,20 +120,20 @@ function handleStop() {
 
 @media (min-width: 700px) {
   .power-controls {
-    max-width: 350px;
-    gap: 32px;
-    padding: 24px;
+    max-width: 240px;
+    gap: 14px;
+    padding: 10px;
   }
   .control-button {
-    width: 96px;
-    height: 96px;
+    width: 62px;
+    height: 62px;
   }
   .icon {
-    font-size: 2.2rem;
-    margin-bottom: 8px;
+    font-size: 1.6rem;
+    margin-bottom: 5px;
   }
   .label {
-    font-size: 1.1rem;
+    font-size: 0.75rem;
   }
 }
 

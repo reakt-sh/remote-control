@@ -1,17 +1,5 @@
 <template>
   <div class="speedometer">
-    <div class="gauge">
-      <div class="ticks">
-        <div v-for="tick in majorTicks" :key="tick.value"
-             class="tick major-tick" :style="tick.style">
-          <span class="tick-number" :style="tick.numberStyle">{{ tick.value * 2 }}</span>
-        </div>
-        <div v-for="tick in minorTicks" :key="tick.value"
-             class="tick minor-tick" :style="tick.style"></div>
-      </div>
-      <div class="needle" :style="{ transform: `rotate(${needleRotation}deg)` }"></div>
-      <div class="center"></div>
-    </div>
     <div class="speed-display">
       <div class="speed-row">
         <div class="current-speed">{{ formattedSpeed }}</div>
@@ -71,61 +59,10 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
-const visualMaxSpeed = 80;
 const tempTargetSpeed = ref(props.targetSpeed);
-
-const needleRotation = computed(() => {
-  const ratio = Math.min(props.currentSpeed, props.maxSpeed) / visualMaxSpeed;
-  return ratio * 180 - 90;
-});
 
 const formattedSpeed = computed(() => {
   return Math.round(props.currentSpeed).toString().padStart(3, '0');
-});
-
-const majorTicks = computed(() => {
-  const tickCount = 4;
-  const ticks = [];
-  for (let i = 0; i <= tickCount; i++) {
-    const value = i * 10;
-    const angle = (value / visualMaxSpeed) * 180 - 90;
-    const radius = 90;
-    
-    const radian = (angle * Math.PI) / 180;
-    const x = Math.cos(radian) * radius;
-    const y = Math.sin(radian) * radius;
-    
-    ticks.push({
-      value,
-      style: {
-        transform: `rotate(${angle}deg)`,
-      },
-      numberStyle: {
-        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${-angle}deg)`,
-        color: value <= 40 ? '#27ae60' : value <= 60 ? '#e67e22' : '#c0392b'
-      }
-    });
-  }
-  return ticks;
-});
-
-const minorTicks = computed(() => {
-  const majorTickCount = 4;
-  const minorTicksPerMajor = 5;
-  const ticks = [];
-  for (let i = 0; i <= majorTickCount * minorTicksPerMajor; i++) {
-    if (i % minorTicksPerMajor === 0) continue;
-
-    const value = (i / (majorTickCount * minorTicksPerMajor)) * visualMaxSpeed;
-    const angle = (value / visualMaxSpeed) * 180 - 90;
-    ticks.push({
-      value: Math.round(value) * 2,
-      style: {
-        transform: `rotate(${angle}deg)`,
-      }
-    });
-  }
-  return ticks;
 });
 
 const showSlider = ref(true);
@@ -151,7 +88,7 @@ function doneTargetSpeed() {
 .speedometer {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 6px;
+  padding: 4px; /* reduced for height */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -159,99 +96,6 @@ function doneTargetSpeed() {
   border: 1px solid #e0e4e7;
   max-width: 120px;
   margin: 0 auto;
-}
-
-.gauge {
-  width: 70px;
-  height: 35px;
-  position: relative;
-  border: 2px solid #e0e4e7;
-  border-radius: 120px 120px 0 0;
-  overflow: hidden;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #ffffff, #f8f9fa);
-}
-
-.gauge::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: conic-gradient(
-    #27ae60 0deg, 
-    #27ae60 90deg,
-    #e67e22 90deg,
-    #e67e22 135deg,
-    #c0392b 135deg,
-    #c0392b 180deg
-  );
-  clip-path: ellipse(100% 50% at 50% 100%);
-  opacity: 0.3;
-}
-
-.ticks {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.tick {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform-origin: bottom center;
-}
-
-.major-tick {
-  width: 2px;
-  height: 8px;
-  background: #333;
-}
-
-.minor-tick {
-  width: 1px;
-  height: 4px;
-  background: #666;
-}
-
-.tick-number {
-  position: absolute;
-  font-size: 6px;
-  font-weight: bold;
-  text-align: center;
-  width: 12px;
-  height: 12px;
-  line-height: 12px;
-  left: 50%;
-  top: 50%;
-  transform-origin: center center;
-}
-
-.needle {
-  position: absolute;
-  width: 2px;
-  height: 30px;
-  background: #e67e22;
-  bottom: 0;
-  left: 50%;
-  transform-origin: bottom center;
-  z-index: 3;
-  box-shadow: 0 0 2px rgba(230, 126, 34, 0.7);
-  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.center {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: linear-gradient(135deg, #ffffff, #f8f9fa);
-  border: 1px solid #e67e22;
-  border-radius: 50%;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 4;
 }
 
 .speed-display {
@@ -264,12 +108,12 @@ function doneTargetSpeed() {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 3px; /* reduced for height */
+  margin-bottom: 3px; /* reduced for height */
 }
 
 .current-speed {
-  font-size: 0.8rem;
+  font-size: 0.7rem; /* reduced for height */
   font-weight: bold;
   font-family: 'Segment7', monospace;
   color: #2c3e50;
@@ -277,7 +121,7 @@ function doneTargetSpeed() {
 }
 
 .speed-unit {
-  font-size: 0.6rem;
+  font-size: 0.5rem; /* reduced for height */
   color: #7f8c8d;
   margin-bottom: 0;
 }
@@ -285,7 +129,7 @@ function doneTargetSpeed() {
 .target-speed {
   position: relative;
   background: #f8f9fa;
-  padding: 6px;
+  padding: 4px; /* reduced for height */
   border-radius: 6px;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid #e0e4e7;
@@ -296,19 +140,19 @@ function doneTargetSpeed() {
   background: #2c3e50;
   color: white;
   font-weight: 500;
-  padding: 3px 8px;
+  padding: 2px 6px; /* reduced for height */
   border-radius: 12px;
-  font-size: 0.6em;
-  margin-bottom: 6px;
-  margin-right: 16px; /* Add spacing between label and toggle button */
+  font-size: 0.55em; /* reduced for height */
+  margin-bottom: 4px; /* reduced for height */
+  margin-right: 16px;
 }
 
 .toggle-input-btn {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
+  top: 3px; /* reduced for height */
+  right: 3px; /* reduced for height */
+  width: 12px; /* reduced for height */
+  height: 12px; /* reduced for height */
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -329,25 +173,25 @@ function doneTargetSpeed() {
 
 .slider-container {
   width: 100%;
-  padding: 4px 0;
+  padding: 3px 0; /* reduced for height */
 }
 
 .target-slider {
   width: 100%;
-  height: 4px;
+  height: 3px; /* reduced for height */
   -webkit-appearance: none;
   appearance: none;
   background: #e0e4e7;
   border-radius: 2px;
   outline: none;
-  margin: 4px 0;
+  margin: 3px 0; /* reduced for height */
 }
 
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 10px;
-  height: 10px;
+  width: 8px; /* reduced for height */
+  height: 8px; /* reduced for height */
   background: #2c3e50;
   border-radius: 50%;
   cursor: pointer;
@@ -361,7 +205,7 @@ function doneTargetSpeed() {
 
 .target-speed-buttons {
   flex-direction: column;
-  gap: 4px;
+  gap: 3px; /* reduced for height */
 }
 
 .button-row {
@@ -374,8 +218,8 @@ function doneTargetSpeed() {
 
 .change-speed-button {
   max-width: 22px;
-  font-size: 0.6em;
-  padding: 2px 4px;
+  font-size: 0.55em; /* reduced for height */
+  padding: 1px 3px; /* reduced for height */
   border-radius: 4px;
   border: 1px solid #d6dbdf;
   background: #f8f9fa;
@@ -385,12 +229,12 @@ function doneTargetSpeed() {
 }
 
 .done-btn {
-  font-size: 0.6em;
-  padding: 3px 8px;
+  font-size: 0.55em; /* reduced for height */
+  padding: 2px 6px; /* reduced for height */
   background: #27ae60;
   color: white;
   border-color: #219955;
-  margin-top: 4px;
+  margin-top: 3px; /* reduced for height */
 }
 
 button:hover {
@@ -405,168 +249,119 @@ button:active {
 /* Medium screens: iPad Portrait and similar */
 @media (min-width: 430px) {
   .speedometer {
-    max-width: 180px;
-    padding: 14px;
-  }
-  
-  .gauge {
-    width: 120px;
-    height: 60px;
-    margin-bottom: 12px;
-  }
-  
-  .major-tick {
-    height: 10px;
-  }
-  
-  .minor-tick {
-    height: 6px;
-  }
-  
-  .tick-number {
-    font-size: 8px;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-  }
-  
-  .needle {
-    height: 48px;
-  }
-  
-  .center {
-    width: 12px;
-    height: 12px;
-    bottom: -5px;
+    max-width: 140px;
+    padding: 6px;
   }
   
   .current-speed {
-    font-size: 1.3rem;
+    font-size: 0.85rem;
   }
   
   .speed-unit {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
   }
   
   .target-speed {
-    padding: 8px;
+    padding: 5px;
   }
   
   .target-speed-value {
-    padding: 4px 10px;
+    padding: 2px 6px;
   }
   
   .toggle-input-btn {
-    width: 18px;
-    height: 18px;
-    top: 6px;
-    right: 6px;
-    font-size: 0.8em;
+    width: 14px;
+    height: 14px;
+    top: 4px;
+    right: 4px;
+    font-size: 0.65em;
   }
   
   .button-row {
-    gap: 4px;
+    gap: 3px;
   }
   
   .change-speed-button {
-    max-width: 30px;
-    font-size: 0.7em;
-    padding: 4px 6px;
+    max-width: 26px;
+    font-size: 0.6em;
+    padding: 2px 4px;
   }
   
   .done-btn {
-    font-size: 0.7em;
-    padding: 4px 10px;
+    font-size: 0.6em;
+    padding: 2px 6px;
   }
 }
 
 @media (min-width: 700px) {
   .speedometer {
-    max-width: 340px;
-    width: 340px;
-    padding: 4px;
+    max-width: 300px;
+    width: 300px;
+    padding: 8px; /* reduced for height */
   }
-  .gauge {
-    width: 260px;
-    height: 130px;
-    margin-bottom: 24px;
-    border-radius: 260px 260px 0 0;
-  }
-  .major-tick {
-    height: 20px;
-    width: 3px;
-  }
-  .minor-tick {
-    height: 12px;
-    width: 2px;
-  }
-  .tick-number {
-    font-size: 18px;
-    width: 36px;
-    height: 36px;
-    line-height: 36px;
-  }
-  .needle {
-    height: 110px;
-    width: 4px;
-  }
-  .center {
-    width: 28px;
-    height: 28px;
-    bottom: -12px;
-  }
+  
   .current-speed {
-    font-size: 2rem;
+    font-size: 1.5rem; /* reduced for height */
   }
+  
   .speed-unit {
-    font-size: 1.5rem;
+    font-size: 1.1rem; /* reduced for height */
   }
+  
   .speed-row {
-    gap: 18px;
-    margin-bottom: 6px;
+    gap: 12px; /* reduced for height */
+    margin-bottom: 6px; /* reduced for height */
   }
+  
   .target-speed {
-    padding: 8px;
-    border-radius: 16px;
+    padding: 8px; /* reduced for height */
+    border-radius: 12px; /* reduced for height */
   }
+  
   .target-speed-value {
-    font-size: 1.3em;
-    padding: 16px 32px;
-    border-radius: 24px;
-    margin-bottom: 18px;
-    margin-right: 32px;
+    font-size: 0.95em; /* reduced for height */
+    padding: 8px 18px; /* reduced for height */
+    border-radius: 18px; /* reduced for height */
+    margin-bottom: 10px; /* reduced for height */
+    margin-right: 24px; /* reduced for height */
   }
+  
   .toggle-input-btn {
-    width: 48px;
-    height: 48px;
-    top: 16px;
-    right: 16px;
-    font-size: 2em;
+    width: 32px; /* reduced for height */
+    height: 32px; /* reduced for height */
+    top: 10px; /* reduced for height */
+    right: 10px; /* reduced for height */
+    font-size: 1.4em; /* reduced for height */
   }
+  
   .target-slider {
-    height: 10px;
-    border-radius: 4px;
-    margin: 12px 0;
+    height: 7px; /* reduced for height */
+    border-radius: 3px; /* reduced for height */
+    margin: 8px 0; /* reduced for height */
   }
+  
   .target-slider::-webkit-slider-thumb {
-    width: 30px;
-    height: 30px;
+    width: 20px; /* reduced for height */
+    height: 20px; /* reduced for height */
   }
+  
   .button-row {
-    gap: 10px;
-    margin-bottom: 5px;
+    gap: 6px; /* reduced for height */
+    margin-bottom: 4px; /* reduced for height */
   }
+  
   .change-speed-button {
-    max-width: 120px;
-    min-width: 50px;
-    font-size: 1.3em;
-    padding: 6px 20px;
-    border-radius: 12px;
+    max-width: 100px;
+    min-width: 45px;
+    font-size: 0.95em; /* reduced for height */
+    padding: 4px 12px; /* reduced for height */
+    border-radius: 8px; /* reduced for height */
   }
+  
   .done-btn {
-    font-size: 1.4em;
-    padding: 12px 28px;
-    border-radius: 12px;
+    font-size: 1.05em; /* reduced for height */
+    padding: 7px 18px; /* reduced for height */
+    border-radius: 8px; /* reduced for height */
   }
 }
 </style>
