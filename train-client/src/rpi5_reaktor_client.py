@@ -66,7 +66,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         else:
             current_mode = "UNKNOWN"
         self.telemetry.set_mode(current_mode)
-        self.telemetry.update_speed(current_speed_kmh)
+        self.telemetry.set_speed(current_speed_kmh)
 
     def update_speed(self, speed): # speed here in KM/H
         try:
