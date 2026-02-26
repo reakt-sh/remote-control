@@ -127,26 +127,26 @@ function setDirection(newDirection) {
 
 @media (min-width: 700px) {
   .direction-control {
-    max-width: 260px;
-    padding: 24px;
+    max-width: 180px;
+    padding: 16px;
   }
   .direction-label {
-    font-size: 1.3rem;
+    font-size: 0.9rem;
   }
   .direction-buttons {
-    gap: 16px;
+    gap: 10px;
   }
   .direction-button {
-    width: 120px;
-    height: 64px;
-    font-size: 1.1rem;
+    width: 80px;
+    height: 50px;
+    font-size: 0.9rem;
   }
   .icon {
-    font-size: 1.8rem;
-    margin-bottom: 4px;
+    font-size: 1.3rem;
+    margin-bottom: 3px;
   }
   .text {
-    font-size: 1rem;
+    font-size: 0.7rem;
   }
 }
 

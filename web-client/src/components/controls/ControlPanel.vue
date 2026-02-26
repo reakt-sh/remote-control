@@ -1,6 +1,6 @@
 <template>
   <div class="driver-console">
-    <div class="primary-controls">
+    <div class="primary-controls power-direction-controls">
       <PowerControls
         :disabled="isScenarioRunning"
         @start="handleStart"
@@ -13,7 +13,7 @@
       />
     </div>
 
-    <div class="primary-controls">
+    <div class="primary-controls speed-controls">
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
@@ -22,11 +22,11 @@
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
-      <VideoQuality
+      <!-- <VideoQuality
         v-model="videoQuality"
         :disabled="!telemetryData?.train_id || isScenarioRunning"
         @change="handleQualityChange"
-      />
+      /> -->
     </div>
 
     <div class="scenario-controls">
@@ -45,7 +45,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
-import VideoQuality from './VideoQuality.vue'
+// import VideoQuality from './VideoQuality.vue'
 import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
 const trainStore = useTrainStore()
@@ -55,7 +55,7 @@ const { telemetryData, direction } = storeToRefs(trainStore)
 const maxSpeed = ref(13)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
-const videoQuality = ref('medium')
+// const videoQuality = ref('medium')
 const isScenarioRunning = ref(false)
 
 // Computed
@@ -98,13 +98,13 @@ function onTargetSpeedCommit(val) {
   })
 }
 
-function handleQualityChange(quality) {
-  trainStore.sendCommand({
-    "instruction": "CHANGE_VIDEO_QUALITY",
-    "train_id": telemetryData.value.train_id,
-    "quality": quality
-  })
-}
+// function handleQualityChange(quality) {
+//   trainStore.sendCommand({
+//     "instruction": "CHANGE_VIDEO_QUALITY",
+//     "train_id": telemetryData.value.train_id,
+//     "quality": quality
+//   })
+// }
 
 function handleScenarioStateChange(running) {
   isScenarioRunning.value = running
@@ -162,6 +162,10 @@ watch(
     width: 100%;
     max-width: 480px;
     flex: 1 1 0;
+  }
+
+  .power-direction-controls {
+    flex-direction: row;
   }
 
   .scenario-controls {

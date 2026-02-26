@@ -120,20 +120,20 @@ function handleStop() {
 
 @media (min-width: 700px) {
   .power-controls {
-    max-width: 350px;
-    gap: 32px;
-    padding: 24px;
+    max-width: 240px;
+    gap: 20px;
+    padding: 16px;
   }
   .control-button {
-    width: 96px;
-    height: 96px;
+    width: 68px;
+    height: 68px;
   }
   .icon {
-    font-size: 2.2rem;
-    margin-bottom: 8px;
+    font-size: 1.6rem;
+    margin-bottom: 5px;
   }
   .label {
-    font-size: 1.1rem;
+    font-size: 0.75rem;
   }
 }
 
