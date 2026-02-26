@@ -62,7 +62,7 @@ const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 const tempTargetSpeed = ref(props.targetSpeed);
 
 const formattedSpeed = computed(() => {
-  return Math.round(props.currentSpeed).toString().padStart(3, '0');
+  return props.currentSpeed.toFixed(2);
 });
 
 const showSlider = ref(true);

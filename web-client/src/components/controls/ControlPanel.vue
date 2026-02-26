@@ -2,20 +2,17 @@
   <div class="driver-console">
     <div class="primary-controls">
       <PowerControls
-        :disabled="isScenarioRunning"
         @start="handleStart"
         @stop="handleStop"
       />
       <DirectionControl
         :direction="direction"
-        :disabled="isScenarioRunning"
         @change="handleDirectionChange"
       />
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
         :target-speed="targetSpeed"
-        :disabled="isScenarioRunning"
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
