@@ -1,44 +1,44 @@
 <template>
   <div class="scenario-panel">
-    <div class="panel-header">
-      <h3>Automatic Test Scenario Panel</h3>
-      <div :class="['status-indicator', isRunning ? 'running' : 'idle']">
-        {{ isRunning ? 'RUNNING' : 'IDLE' }}
+    <div class="top-controls">
+      <div class="scenario-selector">
+        <label for="scenario-select">Select Scenario:</label>
+        <select 
+          id="scenario-select"
+          v-model="selectedScenario" 
+          :disabled="isRunning"
+          class="scenario-dropdown"
+        >
+          <option value="">-- Choose Scenario --</option>
+          <option v-for="(value, key) in scenarios" :key="key" :value="key">
+            {{ formatScenarioName(key) }}
+          </option>
+        </select>
       </div>
-    </div>
 
-    <div class="scenario-selector">
-      <label for="scenario-select">Select Scenario:</label>
-      <select 
-        id="scenario-select"
-        v-model="selectedScenario" 
-        :disabled="isRunning"
-        class="scenario-dropdown"
-      >
-        <option value="">-- Choose Scenario --</option>
-        <option v-for="(value, key) in scenarios" :key="key" :value="key">
-          {{ formatScenarioName(key) }}
-        </option>
-      </select>
-    </div>
-
-    <div class="control-buttons">
-      <button 
-        @click="startScenario"
-        :disabled="!selectedScenario || isRunning || !trainId"
-        class="btn btn-start"
-      >
-        <span class="btn-icon">▶</span>
-        Start Test
-      </button>
-      <button 
-        @click="stopScenario"
-        :disabled="!isRunning"
-        class="btn btn-stop"
-      >
-        <span class="btn-icon">■</span>
-        Stop Test
-      </button>
+      <div class="control-section">
+        <div :class="['status-indicator', isRunning ? 'running' : 'idle']">
+          {{ isRunning ? 'RUNNING' : 'IDLE' }}
+        </div>
+        <div class="control-buttons">
+          <button 
+            @click="startScenario"
+            :disabled="!selectedScenario || isRunning || !trainId"
+            class="btn btn-start"
+          >
+            <span class="btn-icon">▶</span>
+            Start
+          </button>
+          <button 
+            @click="stopScenario"
+            :disabled="!isRunning"
+            class="btn btn-stop"
+          >
+            <span class="btn-icon">■</span>
+            Stop
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="isRunning || currentStep > 0" class="progress-section">
@@ -313,35 +313,28 @@ onUnmounted(() => {
 .scenario-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: 8px;
+  padding: 12px;
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 2px solid #e0e0e0;
 }
 
-.panel-header {
+.top-controls {
   display: flex;
+  gap: 12px;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.panel-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #2c3e50;
 }
 
 .status-indicator {
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 6px 14px;
+  border-radius: 16px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .status-indicator.idle {
@@ -363,11 +356,13 @@ onUnmounted(() => {
 .scenario-selector {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  min-width: 300px;
+  max-width: 300px;
 }
 
 .scenario-selector label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #34495e;
 }
@@ -392,14 +387,21 @@ onUnmounted(() => {
   opacity: 0.6;
 }
 
+.control-section {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
 .control-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .btn {
   flex: 1;
-  padding: 10px 16px;
+  padding: 8px 12px;
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -448,8 +450,8 @@ onUnmounted(() => {
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 8px;
   background-color: #f8f9fa;
   border-radius: 6px;
   border: 1px solid #dee2e6;
@@ -493,7 +495,7 @@ onUnmounted(() => {
 
 .history-timer-container {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -501,8 +503,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 8px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
@@ -562,24 +564,24 @@ onUnmounted(() => {
 .command-history {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
 }
 
 .history-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #7f8c8d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .history-scroll-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 105px;
+  gap: 3px;
+  max-height: 90px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -606,7 +608,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   background-color: white;
   border-radius: 4px;
   border-left: 2px solid #95a5a6;
@@ -683,15 +685,22 @@ onUnmounted(() => {
 
 @media (max-width: 700px) {
   .scenario-panel {
-    padding: 12px;
+    padding: 10px;
   }
   
-  .panel-header h3 {
-    font-size: 14px;
+  .top-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .control-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
   
   .btn {
-    padding: 8px 12px;
+    padding: 6px 10px;
     font-size: 13px;
   }
 }
