@@ -32,9 +32,10 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
+        # logging.basicConfig(level=logging.DEBUG)
         # Open connection
         self.connection = Connection()
-        self.connection.add_status_listener(self.set_status)
+        self.connection.add_status_listener(lambda x: self.set_status(x))
         await self.connection.open("/dev/ttyUSB0")
 
         # Test if connection is ready
