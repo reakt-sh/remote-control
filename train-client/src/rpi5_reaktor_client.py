@@ -13,29 +13,15 @@ from PyQt5.QtCore import QThread
 from connector.test.context import Connection, Status, Control, Mode
 
 INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
-MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
-
-# Status handling
-status = None
-last_log_time = 0
-def set_status(s: Status):
-    global status
-    status = s
-
-    # I want put log in each 300ms only to avoid flooding the log
-    global last_log_time
-    current_time = datetime.datetime.now().timestamp() * 1000
-    if current_time - last_log_time > 1000:
-        last_log_time = current_time
-        # logger.info(f"New status: {s}")
-
-
+MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s    
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
         super().__init__(video_source=CameraRPi5(), has_motor=True)
         self.current_mode = Mode.FORWARD
         self.current_speed = 0
+        self.status = None
+        self.last_log_time = 0
 
         if IS_REAKTOR_DRIVER_ENABLED:
             loop = qasync.QEventLoop(self)
@@ -48,15 +34,39 @@ class RPi5ReaktorClient(BaseClient, QThread):
         logger.info("Setting up connection...")
         # Open connection
         self.connection = Connection()
-        self.connection.add_status_listener(set_status)
+        self.connection.add_status_listener(self.set_status)
         await self.connection.open("/dev/ttyUSB0")
 
         # Test if connection is ready
         if not self.connection.is_ready():
             logger.warning("Warning: Connection not yet ready. Check connection.")
-        while not status:
+        while not self.status:
             logger.warning("Waiting for initial status...")
             await asyncio.sleep(.1)
+
+    def set_status(self, s: Status):
+        self.status = s
+        current_time = datetime.datetime.now().timestamp() * 1000
+        if current_time - self.last_log_time > 3000:
+            self.last_log_time = current_time
+            logger.info(f"New status: {s}")
+
+        current_speed_kmh = s.motor_speed * 3.6
+        current_mode = ""
+        if s.mode == Mode.EMERGENCY_STOP:
+            current_mode = "EMERGENCY_STOP"
+        elif s.mode == Mode.FORWARD:
+            current_mode = "FORWARD"
+        elif s.mode == Mode.REVERSE:
+            current_mode = "REVERSE"
+        elif s.mode == Mode.PARKING:
+            current_mode = "PARKING"
+        elif s.mode == Mode.NEUTRAL:
+            current_mode = "NEUTRAL"
+        else:
+            current_mode = "UNKNOWN"
+        self.telemetry.set_mode(current_mode)
+        self.telemetry.update_speed(current_speed_kmh)
 
     def update_speed(self, speed): # speed here in KM/H
         try:

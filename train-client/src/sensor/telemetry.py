@@ -6,7 +6,7 @@ from globals import *
 class Telemetry(QObject):
     telemetry_ready = pyqtSignal(dict)  # Emits a dictionary with telemetry data
 
-    def __init__(self, train_id: str, poll_interval_ms=1000, parent=None):
+    def __init__(self, train_id: str, poll_interval_ms=200, parent=None):
         super().__init__(parent)
         self.sequence_number = 0
         self.timer = QTimer(self)
@@ -45,13 +45,21 @@ class Telemetry(QObject):
         self.jitter = 0.0
         self.ping = 0.0
 
+        self.motor_mode = ""
+
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
 
     def get_speed(self):
         return self.speed
+    
+    def set_mode(self, mode: str):
+        self.motor_mode = mode
 
-    def set_speed(self, speed: int):
+    def get_mode(self):
+        return self.motor_mode
+
+    def set_speed(self, speed: float):
         if 0 <= speed <= self.max_speed:
             self.speed = speed
             if speed == 0:
@@ -132,6 +140,7 @@ class Telemetry(QObject):
             "jitter": self.jitter,
             "ping": self.ping,
             "sequence_number": self.sequence_number,
+            "reaktor_motor_mode" : self.motor_mode,
         }
 
         self.simulate_data()
