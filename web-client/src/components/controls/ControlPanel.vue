@@ -13,6 +13,7 @@
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
         :target-speed="targetSpeed"
+        :motor-mode="motorMode"
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
@@ -54,6 +55,7 @@ const isScenarioRunning = ref(false)
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
+const motorMode = computed(() => telemetryData.value?.reaktor_motor_mode || '')
 
 // Handlers
 function handleStart() {

@@ -13,7 +13,7 @@ from PyQt5.QtCore import QThread
 from connector.test.context import Connection, Status, Control, Mode
 
 INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
-MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s    
+MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
@@ -55,7 +55,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         current_speed_kmh = s.motor_speed * 3.6
         current_mode = ""
         if s.mode == Mode.EMERGENCY_STOP:
-            current_mode = "EMERGENCY_STOP"
+            current_mode = "STOP"
         elif s.mode == Mode.FORWARD:
             current_mode = "FORWARD"
         elif s.mode == Mode.REVERSE:

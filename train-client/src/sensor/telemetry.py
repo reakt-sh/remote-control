@@ -45,7 +45,7 @@ class Telemetry(QObject):
         self.jitter = 0.0
         self.ping = 0.0
 
-        self.motor_mode = ""
+        self.motor_mode = "UNKNOWN"
 
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
