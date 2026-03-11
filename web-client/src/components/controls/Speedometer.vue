@@ -4,6 +4,7 @@
       <div class="speed-row">
         <div class="current-speed">{{ formattedSpeed }}</div>
         <div class="speed-unit">km/h</div>
+        <div class="motor-mode">{{ formattedMotorMode }}</div>
       </div>
       <div class="target-speed">
         <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
@@ -52,6 +53,10 @@ const props = defineProps({
     type: Number,
     default: 13
   },
+  motorMode: {
+    type: String,
+    default: ''
+  },
   disabled: {
     type: Boolean,
     default: false
@@ -62,7 +67,15 @@ const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 const tempTargetSpeed = ref(props.targetSpeed);
 
 const formattedSpeed = computed(() => {
-  return Math.round(props.currentSpeed).toString().padStart(3, '0');
+  return props.currentSpeed.toFixed(2);
+});
+
+const formattedMotorMode = computed(() => {
+  if (props.motorMode === '') {
+    return '';
+  }
+  // return props.motorMode with bracketes inside
+  return `[${props.motorMode}]`;
 });
 
 const showSlider = ref(true);
@@ -123,6 +136,13 @@ function doneTargetSpeed() {
 .speed-unit {
   font-size: 0.5rem; /* reduced for height */
   color: #7f8c8d;
+  margin-bottom: 0;
+}
+
+.motor-mode {
+  font-size: 0.5rem; /* reduced for height */
+  color: #e67e22;
+  font-weight: 600;
   margin-bottom: 0;
 }
 
@@ -261,6 +281,10 @@ button:active {
     font-size: 0.6rem;
   }
   
+  .motor-mode {
+    font-size: 0.6rem;
+  }
+  
   .target-speed {
     padding: 5px;
   }
@@ -305,6 +329,10 @@ button:active {
   }
   
   .speed-unit {
+    font-size: 1.1rem; /* reduced for height */
+  }
+  
+  .motor-mode {
     font-size: 1.1rem; /* reduced for height */
   }
   

@@ -2,20 +2,18 @@
   <div class="driver-console">
     <div class="primary-controls">
       <PowerControls
-        :disabled="isScenarioRunning"
         @start="handleStart"
         @stop="handleStop"
       />
       <DirectionControl
         :direction="direction"
-        :disabled="isScenarioRunning"
         @change="handleDirectionChange"
       />
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
         :target-speed="targetSpeed"
-        :disabled="isScenarioRunning"
+        :motor-mode="motorMode"
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
@@ -57,6 +55,7 @@ const isScenarioRunning = ref(false)
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
+const motorMode = computed(() => telemetryData.value?.reaktor_motor_mode || '')
 
 // Handlers
 function handleStart() {
