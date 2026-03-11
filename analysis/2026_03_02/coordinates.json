@@ -1,0 +1,714 @@
+{
+  "coordinates": [
+    {
+      "latitude": 54.29275084234415,
+      "longitude": 10.601350665092468,
+      "order": 1,
+      "label": "Point 1"
+    },
+    {
+      "latitude": 54.29270700957881,
+      "longitude": 10.601447224617006,
+      "order": 2,
+      "label": "Point 2"
+    },
+    {
+      "latitude": 54.292658480391346,
+      "longitude": 10.601538419723513,
+      "order": 3,
+      "label": "Point 3"
+    },
+    {
+      "latitude": 54.29261777844806,
+      "longitude": 10.601629614830019,
+      "order": 4,
+      "label": "Point 4"
+    },
+    {
+      "latitude": 54.292578641926234,
+      "longitude": 10.601739585399628,
+      "order": 5,
+      "label": "Point 5"
+    },
+    {
+      "latitude": 54.29252228526943,
+      "longitude": 10.60184955596924,
+      "order": 6,
+      "label": "Point 6"
+    },
+    {
+      "latitude": 54.292470624932946,
+      "longitude": 10.601954162120819,
+      "order": 7,
+      "label": "Point 7"
+    },
+    {
+      "latitude": 54.292423660934446,
+      "longitude": 10.602064132690431,
+      "order": 8,
+      "label": "Point 8"
+    },
+    {
+      "latitude": 54.29237200047428,
+      "longitude": 10.60217410326004,
+      "order": 9,
+      "label": "Point 9"
+    },
+    {
+      "latitude": 54.29233129824785,
+      "longitude": 10.602259933948517,
+      "order": 10,
+      "label": "Point 10"
+    },
+    {
+      "latitude": 54.29227963767181,
+      "longitude": 10.602356493473053,
+      "order": 11,
+      "label": "Point 11"
+    },
+    {
+      "latitude": 54.29223267345551,
+      "longitude": 10.6024369597435,
+      "order": 12,
+      "label": "Point 12"
+    },
+    {
+      "latitude": 54.292185709185674,
+      "longitude": 10.602520108222961,
+      "order": 13,
+      "label": "Point 13"
+    },
+    {
+      "latitude": 54.29213717938391,
+      "longitude": 10.60260057449341,
+      "order": 14,
+      "label": "Point 14"
+    },
+    {
+      "latitude": 54.2920917804853,
+      "longitude": 10.602664947509766,
+      "order": 15,
+      "label": "Point 15"
+    },
+    {
+      "latitude": 54.29204168509085,
+      "longitude": 10.602734684944155,
+      "order": 16,
+      "label": "Point 16"
+    },
+    {
+      "latitude": 54.291993155119364,
+      "longitude": 10.602799057960512,
+      "order": 17,
+      "label": "Point 17"
+    },
+    {
+      "latitude": 54.29194149411914,
+      "longitude": 10.60286343097687,
+      "order": 18,
+      "label": "Point 18"
+    },
+    {
+      "latitude": 54.29188357110243,
+      "longitude": 10.60292512178421,
+      "order": 19,
+      "label": "Point 19"
+    },
+    {
+      "latitude": 54.2918303444747,
+      "longitude": 10.6029948592186,
+      "order": 20,
+      "label": "Point 20"
+    },
+    {
+      "latitude": 54.29177555228607,
+      "longitude": 10.60305118560791,
+      "order": 21,
+      "label": "Point 21"
+    },
+    {
+      "latitude": 54.291727022000956,
+      "longitude": 10.60311019420624,
+      "order": 22,
+      "label": "Point 22"
+    },
+    {
+      "latitude": 54.29167222967488,
+      "longitude": 10.60318797826767,
+      "order": 23,
+      "label": "Point 23"
+    },
+    {
+      "latitude": 54.291617437275875,
+      "longitude": 10.603255033493044,
+      "order": 24,
+      "label": "Point 24"
+    },
+    {
+      "latitude": 54.291557948302994,
+      "longitude": 10.603322088718416,
+      "order": 25,
+      "label": "Point 25"
+    },
+    {
+      "latitude": 54.2915094177615,
+      "longitude": 10.603375732898714,
+      "order": 26,
+      "label": "Point 26"
+    },
+    {
+      "latitude": 54.29144679762342,
+      "longitude": 10.6034454703331,
+      "order": 27,
+      "label": "Point 27"
+    },
+    {
+      "latitude": 54.29138887391093,
+      "longitude": 10.603496432304384,
+      "order": 28,
+      "label": "Point 28"
+    },
+    {
+      "latitude": 54.29131842604271,
+      "longitude": 10.603552758693697,
+      "order": 29,
+      "label": "Point 29"
+    },
+    {
+      "latitude": 54.291247978053974,
+      "longitude": 10.603611767292023,
+      "order": 30,
+      "label": "Point 30"
+    },
+    {
+      "latitude": 54.29119475060482,
+      "longitude": 10.603668093681335,
+      "order": 31,
+      "label": "Point 31"
+    },
+    {
+      "latitude": 54.291125867921394,
+      "longitude": 10.603711009025574,
+      "order": 32,
+      "label": "Point 32"
+    },
+    {
+      "latitude": 54.29104759200494,
+      "longitude": 10.603780746459963,
+      "order": 33,
+      "label": "Point 33"
+    },
+    {
+      "latitude": 54.29097557803041,
+      "longitude": 10.603839755058289,
+      "order": 34,
+      "label": "Point 34"
+    },
+    {
+      "latitude": 54.29087851551768,
+      "longitude": 10.603904128074648,
+      "order": 35,
+      "label": "Point 35"
+    },
+    {
+      "latitude": 54.290801804660326,
+      "longitude": 10.603963136672974,
+      "order": 36,
+      "label": "Point 36"
+    },
+    {
+      "latitude": 54.290732921319695,
+      "longitude": 10.604016780853271,
+      "order": 37,
+      "label": "Point 37"
+    },
+    {
+      "latitude": 54.29064055484122,
+      "longitude": 10.60408651828766,
+      "order": 38,
+      "label": "Point 38"
+    },
+    {
+      "latitude": 54.29056697461692,
+      "longitude": 10.604140162467957,
+      "order": 39,
+      "label": "Point 39"
+    },
+    {
+      "latitude": 54.29049339426115,
+      "longitude": 10.60419112443924,
+      "order": 40,
+      "label": "Point 40"
+    },
+    {
+      "latitude": 54.29042607594817,
+      "longitude": 10.604242086410524,
+      "order": 41,
+      "label": "Point 41"
+    },
+    {
+      "latitude": 54.290350929794414,
+      "longitude": 10.604290366172792,
+      "order": 42,
+      "label": "Point 42"
+    },
+    {
+      "latitude": 54.290280480150756,
+      "longitude": 10.60434401035309,
+      "order": 43,
+      "label": "Point 43"
+    },
+    {
+      "latitude": 54.290203768179495,
+      "longitude": 10.604397654533386,
+      "order": 44,
+      "label": "Point 44"
+    },
+    {
+      "latitude": 54.290133318284084,
+      "longitude": 10.60444861650467,
+      "order": 45,
+      "label": "Point 45"
+    },
+    {
+      "latitude": 54.29005190936601,
+      "longitude": 10.604502260684969,
+      "order": 46,
+      "label": "Point 46"
+    },
+    {
+      "latitude": 54.28998459033143,
+      "longitude": 10.604561269283296,
+      "order": 47,
+      "label": "Point 47"
+    },
+    {
+      "latitude": 54.289915705624,
+      "longitude": 10.604604184627535,
+      "order": 48,
+      "label": "Point 48"
+    },
+    {
+      "latitude": 54.28983429627576,
+      "longitude": 10.604665875434875,
+      "order": 49,
+      "label": "Point 49"
+    },
+    {
+      "latitude": 54.28977480472721,
+      "longitude": 10.60471683740616,
+      "order": 50,
+      "label": "Point 50"
+    },
+    {
+      "latitude": 54.28968869838634,
+      "longitude": 10.604767799377443,
+      "order": 51,
+      "label": "Point 51"
+    },
+    {
+      "latitude": 54.28961511646149,
+      "longitude": 10.60482680797577,
+      "order": 52,
+      "label": "Point 52"
+    },
+    {
+      "latitude": 54.28955562459637,
+      "longitude": 10.604877769947052,
+      "order": 53,
+      "label": "Point 53"
+    },
+    {
+      "latitude": 54.289480476854415,
+      "longitude": 10.604923367500305,
+      "order": 54,
+      "label": "Point 54"
+    },
+    {
+      "latitude": 54.289416288049594,
+      "longitude": 10.60497969388962,
+      "order": 55,
+      "label": "Point 55"
+    },
+    {
+      "latitude": 54.28934114005343,
+      "longitude": 10.605030655860903,
+      "order": 56,
+      "label": "Point 56"
+    },
+    {
+      "latitude": 54.2892706886825,
+      "longitude": 10.60507893562317,
+      "order": 57,
+      "label": "Point 57"
+    },
+    {
+      "latitude": 54.289201802781065,
+      "longitude": 10.605127215385439,
+      "order": 58,
+      "label": "Point 58"
+    },
+    {
+      "latitude": 54.28914231031893,
+      "longitude": 10.605180859565735,
+      "order": 59,
+      "label": "Point 59"
+    },
+    {
+      "latitude": 54.2890734242028,
+      "longitude": 10.605226457118988,
+      "order": 60,
+      "label": "Point 60"
+    },
+    {
+      "latitude": 54.28899514438548,
+      "longitude": 10.605285465717317,
+      "order": 61,
+      "label": "Point 61"
+    },
+    {
+      "latitude": 54.288926258023224,
+      "longitude": 10.605333745479586,
+      "order": 62,
+      "label": "Point 62"
+    },
+    {
+      "latitude": 54.28885580594262,
+      "longitude": 10.605382025241854,
+      "order": 63,
+      "label": "Point 63"
+    },
+    {
+      "latitude": 54.28877126328683,
+      "longitude": 10.605443716049194,
+      "order": 64,
+      "label": "Point 64"
+    },
+    {
+      "latitude": 54.288691417285946,
+      "longitude": 10.605497360229492,
+      "order": 65,
+      "label": "Point 65"
+    },
+    {
+      "latitude": 54.28861470235494,
+      "longitude": 10.605561733245851,
+      "order": 66,
+      "label": "Point 66"
+    },
+    {
+      "latitude": 54.28853172481976,
+      "longitude": 10.605620741844177,
+      "order": 67,
+      "label": "Point 67"
+    },
+    {
+      "latitude": 54.28846753453634,
+      "longitude": 10.605677068233492,
+      "order": 68,
+      "label": "Point 68"
+    },
+    {
+      "latitude": 54.288392384809136,
+      "longitude": 10.605722665786745,
+      "order": 69,
+      "label": "Point 69"
+    },
+    {
+      "latitude": 54.288314103697516,
+      "longitude": 10.605784356594087,
+      "order": 70,
+      "label": "Point 70"
+    },
+    {
+      "latitude": 54.288246781822494,
+      "longitude": 10.605835318565369,
+      "order": 71,
+      "label": "Point 71"
+    },
+    {
+      "latitude": 54.28816223791665,
+      "longitude": 10.605897009372713,
+      "order": 72,
+      "label": "Point 72"
+    },
+    {
+      "latitude": 54.288090218897004,
+      "longitude": 10.605953335762026,
+      "order": 73,
+      "label": "Point 73"
+    },
+    {
+      "latitude": 54.287997846491834,
+      "longitude": 10.606017708778381,
+      "order": 74,
+      "label": "Point 74"
+    },
+    {
+      "latitude": 54.28793835229067,
+      "longitude": 10.606074035167696,
+      "order": 75,
+      "label": "Point 75"
+    },
+    {
+      "latitude": 54.28786789852028,
+      "longitude": 10.606124997138979,
+      "order": 76,
+      "label": "Point 76"
+    },
+    {
+      "latitude": 54.28780057591597,
+      "longitude": 10.606175959110262,
+      "order": 77,
+      "label": "Point 77"
+    },
+    {
+      "latitude": 54.28771446544777,
+      "longitude": 10.606234967708588,
+      "order": 78,
+      "label": "Point 78"
+    },
+    {
+      "latitude": 54.2876424456452,
+      "longitude": 10.606291294097902,
+      "order": 79,
+      "label": "Point 79"
+    },
+    {
+      "latitude": 54.28757981962757,
+      "longitude": 10.60633957386017,
+      "order": 80,
+      "label": "Point 80"
+    },
+    {
+      "latitude": 54.28750623393518,
+      "longitude": 10.606401264667513,
+      "order": 81,
+      "label": "Point 81"
+    },
+    {
+      "latitude": 54.28742012285161,
+      "longitude": 10.606460273265839,
+      "order": 82,
+      "label": "Point 82"
+    },
+    {
+      "latitude": 54.28734653687391,
+      "longitude": 10.606524646282198,
+      "order": 83,
+      "label": "Point 83"
+    },
+    {
+      "latitude": 54.28726825377462,
+      "longitude": 10.606583654880524,
+      "order": 84,
+      "label": "Point 84"
+    },
+    {
+      "latitude": 54.287175879526096,
+      "longitude": 10.606650710105898,
+      "order": 85,
+      "label": "Point 85"
+    },
+    {
+      "latitude": 54.2870897677519,
+      "longitude": 10.606707036495209,
+      "order": 86,
+      "label": "Point 86"
+    },
+    {
+      "latitude": 54.28700991849136,
+      "longitude": 10.606771409511568,
+      "order": 87,
+      "label": "Point 87"
+    },
+    {
+      "latitude": 54.28693006907601,
+      "longitude": 10.606838464736938,
+      "order": 88,
+      "label": "Point 88"
+    },
+    {
+      "latitude": 54.28684865382646,
+      "longitude": 10.606897473335268,
+      "order": 89,
+      "label": "Point 89"
+    },
+    {
+      "latitude": 54.28677663251005,
+      "longitude": 10.606945753097536,
+      "order": 90,
+      "label": "Point 90"
+    },
+    {
+      "latitude": 54.28670147969779,
+      "longitude": 10.607002079486849,
+      "order": 91,
+      "label": "Point 91"
+    },
+    {
+      "latitude": 54.286624761060494,
+      "longitude": 10.607061088085175,
+      "order": 92,
+      "label": "Point 92"
+    },
+    {
+      "latitude": 54.286543345207534,
+      "longitude": 10.607122778892519,
+      "order": 93,
+      "label": "Point 93"
+    },
+    {
+      "latitude": 54.2864478379441,
+      "longitude": 10.607197880744934,
+      "order": 94,
+      "label": "Point 94"
+    },
+    {
+      "latitude": 54.28636642174144,
+      "longitude": 10.607262253761293,
+      "order": 95,
+      "label": "Point 95"
+    },
+    {
+      "latitude": 54.2862662169634,
+      "longitude": 10.607329308986664,
+      "order": 96,
+      "label": "Point 96"
+    },
+    {
+      "latitude": 54.28617853758266,
+      "longitude": 10.607404410839083,
+      "order": 97,
+      "label": "Point 97"
+    },
+    {
+      "latitude": 54.2860845951819,
+      "longitude": 10.60747414827347,
+      "order": 98,
+      "label": "Point 98"
+    },
+    {
+      "latitude": 54.28598595543052,
+      "longitude": 10.607549250125885,
+      "order": 99,
+      "label": "Point 99"
+    },
+    {
+      "latitude": 54.28588261829478,
+      "longitude": 10.607618987560274,
+      "order": 100,
+      "label": "Point 100"
+    },
+    {
+      "latitude": 54.285801200974944,
+      "longitude": 10.607688724994661,
+      "order": 101,
+      "label": "Point 101"
+    },
+    {
+      "latitude": 54.28570725771363,
+      "longitude": 10.607753098011019,
+      "order": 102,
+      "label": "Point 102"
+    },
+    {
+      "latitude": 54.28562114286921,
+      "longitude": 10.607822835445406,
+      "order": 103,
+      "label": "Point 103"
+    },
+    {
+      "latitude": 54.285525633467586,
+      "longitude": 10.607897937297821,
+      "order": 104,
+      "label": "Point 104"
+    },
+    {
+      "latitude": 54.28542699237773,
+      "longitude": 10.607973039150238,
+      "order": 105,
+      "label": "Point 105"
+    },
+    {
+      "latitude": 54.28533617973695,
+      "longitude": 10.608037412166597,
+      "order": 106,
+      "label": "Point 106"
+    },
+    {
+      "latitude": 54.28525319559703,
+      "longitude": 10.608096420764925,
+      "order": 107,
+      "label": "Point 107"
+    },
+    {
+      "latitude": 54.28516707980341,
+      "longitude": 10.60816079378128,
+      "order": 108,
+      "label": "Point 108"
+    },
+    {
+      "latitude": 54.285073135095935,
+      "longitude": 10.60823053121567,
+      "order": 109,
+      "label": "Point 109"
+    },
+    {
+      "latitude": 54.284993281926155,
+      "longitude": 10.608302950859072,
+      "order": 110,
+      "label": "Point 110"
+    },
+    {
+      "latitude": 54.284899336822335,
+      "longitude": 10.608364641666412,
+      "order": 111,
+      "label": "Point 111"
+    },
+    {
+      "latitude": 54.28480695726132,
+      "longitude": 10.608437061309816,
+      "order": 112,
+      "label": "Point 112"
+    },
+    {
+      "latitude": 54.28471457749313,
+      "longitude": 10.608504116535187,
+      "order": 113,
+      "label": "Point 113"
+    },
+    {
+      "latitude": 54.284653512786875,
+      "longitude": 10.608557760715486,
+      "order": 114,
+      "label": "Point 114"
+    },
+    {
+      "latitude": 54.28455956690819,
+      "longitude": 10.608630180358887,
+      "order": 115,
+      "label": "Point 115"
+    },
+    {
+      "latitude": 54.28444839734167,
+      "longitude": 10.608710646629335,
+      "order": 116,
+      "label": "Point 116"
+    },
+    {
+      "latitude": 54.28434192479948,
+      "longitude": 10.608791112899782,
+      "order": 117,
+      "label": "Point 117"
+    },
+    {
+      "latitude": 54.28424014931809,
+      "longitude": 10.608866214752199,
+      "order": 118,
+      "label": "Point 118"
+    }
+  ],
+  "total_points": 118,
+  "exported_at": "2026-03-11T14:24:02.047656"
+}
