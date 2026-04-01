@@ -1,6 +1,6 @@
-## Buzzer
+## Buzzer / LED
 
-The buzzer module can be connected to the Raspberry Pi 5 using the following pin configuration:
+The buzzer module is connected to the Raspberry Pi 5 using the following pin configuration:
 
 | Label on module | What it means | Where it goes on Raspberry Pi 5 |
 | --------------- | ------------- | ------------------------------- |
@@ -11,4 +11,5 @@ The buzzer module can be connected to the Raspberry Pi 5 using the following pin
 **Key Points:**
 - Signal pin uses GPIO17 (physical pin 11)
 - Powered by 3.3V output
-- Successfully tested and working
+- Successfully tested and working with buzzer
+- **Same configuration can be used for LED modules**
