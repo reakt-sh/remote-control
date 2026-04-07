@@ -1,34 +1,44 @@
 <template>
   <div class="driver-console">
-    <div class="primary-controls">
-      <PowerControls
-        @start="handleStart"
-        @stop="handleStop"
-      />
-      <DirectionControl
-        :direction="direction"
-        @change="handleDirectionChange"
-      />
-      <LightControl
-        @toggle="handleLightToggle"
-      />
-      <HornControl
-        @press="handleHornPress"
-        @release="handleHornRelease"
-      />
-      <Speedometer
-        :current-speed="currentSpeed"
-        :max-speed="maxSpeed"
-        :target-speed="targetSpeed"
-        :motor-mode="motorMode"
-        @update:targetSpeed="onTargetSpeedChange"
-        @change:targetSpeed="onTargetSpeedCommit"
-      />
-      <!-- <VideoQuality
-        v-model="videoQuality"
-        :disabled="!telemetryData?.train_id || isScenarioRunning"
-        @change="handleQualityChange"
-      /> -->
+    <div class="main-controls-wrapper">
+      <!-- Left side: 2x2 Control Grid (60%) -->
+      <div class="controls-grid">
+        <div class="control-item control-item--power">
+          <PowerControls
+            @start="handleStart"
+            @stop="handleStop"
+          />
+        </div>
+        <div class="control-item control-item--direction">
+          <DirectionControl
+            :direction="direction"
+            @change="handleDirectionChange"
+          />
+        </div>
+        <div class="control-item control-item--light">
+          <LightControl
+            @toggle="handleLightToggle"
+          />
+        </div>
+        <div class="control-item control-item--horn">
+          <HornControl
+            @press="handleHornPress"
+            @release="handleHornRelease"
+          />
+        </div>
+      </div>
+
+      <!-- Right side: Speedometer (40%) -->
+      <div class="speedometer-section">
+        <Speedometer
+          :current-speed="currentSpeed"
+          :max-speed="maxSpeed"
+          :target-speed="targetSpeed"
+          :motor-mode="motorMode"
+          @update:targetSpeed="onTargetSpeedChange"
+          @change:targetSpeed="onTargetSpeedCommit"
+        />
+      </div>
     </div>
 
     <div class="scenario-controls">
@@ -165,55 +175,152 @@ watch(
 <style scoped>
 .driver-console {
   display: flex;
-  flex-direction: row; /* Always side by side */
-  align-items: flex-start;
+  flex-direction: column;
   height: 100%;
-  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
-  color: #34495e;
-  padding: 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
+  color: #2c3e50;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.primary-controls {
+.main-controls-wrapper {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 5px;
-  min-width: 150px;
+  gap: 20px;
   width: 100%;
-  flex: 0 1 auto;
+  min-height: 400px;
+  flex-wrap: nowrap;
+}
+
+/* Left side: 2x2 Control Grid (60%) */
+.controls-grid {
+  flex: 0 0 40%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 400px;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 150px;
+}
+
+.control-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Right side: Speedometer (40%) */
+.speedometer-section {
+  flex: 0 0 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 400px;
 }
 
 .scenario-controls {
   display: flex;
   flex-direction: column;
-  flex: 1 1 100%;
-  min-width: 300px;
-  max-width: 100%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-@media (min-width: 700px) {
-  .primary-controls {
-    flex-direction: row;
-    justify-content: space-evenly;
-    align-items: flex-start;
-    gap: 16px;
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: none;
+/* Desktop layout: 40/60 split */
+@media (min-width: 900px) {
+  .main-controls-wrapper {
+    flex-wrap: nowrap;
   }
 
-  .scenario-controls {
-    flex: 1 1 auto;
-    min-width: 320px;
+  .controls-grid {
+    flex: 0 0 40%;
+  }
+
+  .speedometer-section {
+    flex: 0 0 40%;
   }
 }
 
-/* Remove any @media queries that change flex-direction */
+/* Tablet adjustments */
+@media (min-width: 600px) and (max-width: 899px) {
+  .main-controls-wrapper {
+    gap: 2px;
+    min-height: 220px;
+    max-height: 220px;
+  }
+
+  .controls-grid {
+    flex: 0 0 45%;
+    gap: 2px;
+    padding: 2px;
+    min-height: 200px;
+    max-height: 200px;
+  }
+
+  .speedometer-section {
+    flex: 0 0 45%;
+    padding: 2px;
+    min-height: 200px;
+    max-height: 200px;
+  }
+
+  .control-item {
+    min-height: 120px;
+    padding: 10px;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 599px) {
+  .driver-console {
+    padding: 8px;
+  }
+
+  .main-controls-wrapper {
+    gap: 8px;
+    min-height: 220px;
+  }
+
+  .controls-grid {
+    flex: 0 0 48%;
+    gap: 8px;
+    padding: 8px;
+    min-height: 220px;
+  }
+
+  .speedometer-section {
+    flex: 0 0 48%;
+    padding: 12px;
+    min-height: 220px;
+  }
+
+  .control-item {
+    min-height: 60px;
+    padding: 6px;
+  }
+}
 </style>

@@ -51,7 +51,7 @@ function toggleLight(event) {
 .light-control {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 8px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -62,19 +62,19 @@ function toggleLight(event) {
 }
 
 .light-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #555;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .switch-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 4px;
 }
 
 /* 3D Switch Styles */
@@ -94,8 +94,8 @@ function toggleLight(event) {
   transition:
     background-color 0.3s cubic-bezier(0.83, 0, 0.17, 1),
     box-shadow 0.3s cubic-bezier(0.83, 0, 0.17, 1);
-  width: 2.5em;
-  height: 4.5em;
+  width: 2em;
+  height: 3.5em;
 }
 
 .switch__input,
@@ -202,8 +202,8 @@ function toggleLight(event) {
     0 0 0 0.08em hsl(223, 10%, 65%) inset,
     0 0.15em 0 hsl(223, 10%, 90%) inset,
     0 0.08em 0 hsl(223, 10%, 90%);
-  width: 0.6em;
-  height: 0.6em;
+  width: 0.5em;
+  height: 0.5em;
 }
 
 .switch__lever-half-bottom {
@@ -221,8 +221,8 @@ function toggleLight(event) {
     0 0.08em 0 hsl(133, 10%, 30%) inset,
     0 -0.04em 0 hsl(223, 10%, 90%) inset,
     0 0 0.3em hsla(133, 90%, 45%, 0);
-  width: 0.18em;
-  height: 0.7em;
+  width: 0.15em;
+  height: 0.6em;
 }
 
 .switch__lever-shadow {
@@ -291,5 +291,37 @@ function toggleLight(event) {
 
 .switch__input:checked ~ .switch__lever-shadow:after {
   transform: skewX(0) scaleY(0.85);
+}
+
+/* Tablet adjustments - smaller switch */
+@media (min-width: 600px) and (max-width: 899px) {
+  .light-control {
+    padding: 3px;
+    max-width: 140px;
+  }
+
+  .light-label {
+    font-size: 0.5rem;
+    margin-bottom: 2px;
+  }
+
+  .switch-wrapper {
+    padding: 3px;
+  }
+
+  .switch {
+    width: 1.7em;
+    height: 3em;
+  }
+
+  .switch__lever-half-top:before {
+    width: 0.4em;
+    height: 0.4em;
+  }
+
+  .switch__lever-half-bottom:before {
+    width: 0.13em;
+    height: 0.5em;
+  }
 }
 </style>

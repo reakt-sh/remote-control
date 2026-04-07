@@ -104,8 +104,8 @@ function handleKeyUp(event) {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1.5em 0;
-  min-height: 13em;
+  padding: 0;
+  min-height: 7em;
 }
 
 /* Horn Button - Round Shape */
@@ -125,8 +125,8 @@ function handleKeyUp(event) {
   margin: auto;
   outline: transparent;
   position: relative;
-  width: 11em;
-  height: 11em;
+  width: 6em;
+  height: 6em;
   transition: box-shadow var(--trans-dur) var(--trans-timing);
   -webkit-tap-highlight-color: transparent;
 }
@@ -156,11 +156,11 @@ function handleKeyUp(event) {
   background-image: linear-gradient(
     hsl(223, 10%, 80%)
   );
-  box-shadow: 0 0.75em 0.75em 0.25em hsla(0, 0%, 0%, 0.3);
-  top: 1.5em;
-  left: 1.5em;
-  width: 8em;
-  height: 8em;
+  box-shadow: 0 0.4em 0.4em 0.13em hsla(0, 0%, 0%, 0.3);
+  top: 0.85em;
+  left: 0.85em;
+  width: 4.3em;
+  height: 4.3em;
   transition:
     box-shadow var(--trans-dur) var(--trans-timing2),
     transform var(--trans-dur) var(--trans-timing2);
@@ -177,10 +177,10 @@ function handleKeyUp(event) {
     0 0.0625em 0 hsl(223, 10%, 90%) inset,
     0 -0.0625em 0 hsl(223, 10%, 90%) inset,
     0 0 0 0 hsla(var(--horn-hue), var(--horn-sat), var(--horn-light), 0.1) inset;
-  top: 3em;
-  left: 3em;
-  width: 5em;
-  height: 5em;
+  top: 1.7em;
+  left: 1.7em;
+  width: 2.6em;
+  height: 2.6em;
   transition:
     background-color var(--trans-dur) var(--trans-timing),
     box-shadow var(--trans-dur) var(--trans-timing),
@@ -284,5 +284,40 @@ function handleKeyUp(event) {
 
 .horn-btn:disabled .horn-btn__icon {
   opacity: 0.5;
+}
+
+/* Tablet adjustments - smaller button */
+@media (min-width: 600px) and (max-width: 899px) {
+  .horn-control {
+    padding: 0;
+    min-height: 5em;
+  }
+
+  .horn-btn {
+    width: 4.5em;
+    height: 4.5em;
+  }
+
+  .horn-btn:before {
+    box-shadow: 0 0.3em 0.3em 0.08em hsla(0, 0%, 0%, 0.3);
+    top: 0.65em;
+    left: 0.65em;
+    width: 3.2em;
+    height: 3.2em;
+  }
+
+  .horn-btn:after {
+    top: 1.3em;
+    left: 1.3em;
+    width: 1.9em;
+    height: 1.9em;
+  }
+
+  .horn-btn__icon {
+    width: 1.3em;
+    height: 1.3em;
+    top: calc(50% - 0.65em);
+    left: calc(50% - 0.65em);
+  }
 }
 </style>
