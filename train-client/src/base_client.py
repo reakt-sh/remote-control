@@ -338,6 +338,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.warning(f"Unknown direction: {direction}")
             elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
                 self.networkspeed.start()
+            elif message['instruction'] == 'HEADLIGHT_ON':
+                self.on_headlight_on()
+            elif message['instruction'] == 'HEADLIGHT_OFF':
+                self.on_headlight_off()
             elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
                 video_quality = message.get('quality')
                 logger.info(f"Video quality is changing to {video_quality}")
