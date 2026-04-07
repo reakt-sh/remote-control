@@ -342,6 +342,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.on_headlight_on()
             elif message['instruction'] == 'HEADLIGHT_OFF':
                 self.on_headlight_off()
+            elif message['instruction'] == 'HORN_ON':
+                self.on_horn_on()
+            elif message['instruction'] == 'HORN_OFF':
+                self.on_horn_off()
             elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
                 video_quality = message.get('quality')
                 logger.info(f"Video quality is changing to {video_quality}")

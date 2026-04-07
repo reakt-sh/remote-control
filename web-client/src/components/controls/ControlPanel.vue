@@ -12,6 +12,10 @@
       <LightControl
         @toggle="handleLightToggle"
       />
+      <HornControl
+        @press="handleHornPress"
+        @release="handleHornRelease"
+      />
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
@@ -28,7 +32,7 @@
     </div>
 
     <div class="scenario-controls">
-      <ScenarioTestPanel 
+      <ScenarioTestPanel
         @scenarioStateChange="handleScenarioStateChange"
       />
     </div>
@@ -44,6 +48,7 @@ import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
 import LightControl from './LightControl.vue'
+import HornControl from './HornControl.vue'
 // import VideoQuality from './VideoQuality.vue'
 import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
@@ -116,6 +121,20 @@ function onHeadlightOn() {
 function onHeadlightOff() {
   trainStore.sendCommand({
     "instruction": 'HEADLIGHT_OFF',
+    "train_id": telemetryData.value.train_id
+  })
+}
+
+function handleHornPress() {
+  trainStore.sendCommand({
+    "instruction": 'HORN_ON',
+    "train_id": telemetryData.value.train_id
+  })
+}
+
+function handleHornRelease() {
+  trainStore.sendCommand({
+    "instruction": 'HORN_OFF',
     "train_id": telemetryData.value.train_id
   })
 }
