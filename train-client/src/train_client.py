@@ -14,7 +14,7 @@ class TrainClient(BaseClient, QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
-        self.headlight_on = True
+        self.headlight_on = False
         self.init_ui()
 
     def init_ui(self):

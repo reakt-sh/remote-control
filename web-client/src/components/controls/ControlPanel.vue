@@ -9,6 +9,9 @@
         :direction="direction"
         @change="handleDirectionChange"
       />
+      <LightControl
+        @toggle="handleLightToggle"
+      />
       <Speedometer
         :current-speed="currentSpeed"
         :max-speed="maxSpeed"
@@ -40,6 +43,7 @@ import { useTrainStore } from '@/stores/trainStore'
 import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
+import LightControl from './LightControl.vue'
 // import VideoQuality from './VideoQuality.vue'
 import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
@@ -82,6 +86,14 @@ function handleDirectionChange(newDirection) {
   })
 }
 
+function handleLightToggle(isOn) {
+  if (isOn) {
+    onHeadlightOn()
+  } else {
+    onHeadlightOff()
+  }
+}
+
 function onTargetSpeedChange(val) {
   targetSpeed.value = val
 }
@@ -91,6 +103,20 @@ function onTargetSpeedCommit(val) {
     "instruction": "CHANGE_TARGET_SPEED",
     "train_id": telemetryData.value.train_id,
     "target_speed": val
+  })
+}
+
+function onHeadlightOn() {
+  trainStore.sendCommand({
+    "instruction": 'HEADLIGHT_ON',
+    "train_id": telemetryData.value.train_id
+  })
+}
+
+function onHeadlightOff() {
+  trainStore.sendCommand({
+    "instruction": 'HEADLIGHT_OFF',
+    "train_id": telemetryData.value.train_id
   })
 }
 
