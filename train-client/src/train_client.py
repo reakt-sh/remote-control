@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
-from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor
+from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor, QColor
 from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer
 import qtawesome as qta
 import cv2
@@ -14,6 +14,7 @@ class TrainClient(BaseClient, QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
+        self.headlight_on = True
         self.init_ui()
 
     def init_ui(self):
@@ -131,12 +132,20 @@ class TrainClient(BaseClient, QMainWindow):
         self.source_button.clicked.connect(self.toggle_video_source)
         self.using_file_source = True
 
+        # Headlight indicator (round)
+        self.headlight_indicator = QLabel()
+        self.headlight_indicator.setFixedSize(120, 120)
+        self.headlight_indicator.setAlignment(Qt.AlignCenter)
+        self.update_headlight_display()
+
         # Create VBox layout for the buttons
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.capture_button)
         button_layout.addWidget(self.sending_button)
         button_layout.addWidget(self.write_button)
         button_layout.addWidget(self.source_button)
+        button_layout.addSpacing(20)
+        button_layout.addWidget(self.headlight_indicator, alignment=Qt.AlignCenter)
         button_layout.addStretch()
 
         layout = QGridLayout()
@@ -244,6 +253,47 @@ class TrainClient(BaseClient, QMainWindow):
 
     def on_change_direction(self, direction):
         self.video_source.set_direction(direction)
+
+    def update_headlight_display(self):
+        if self.headlight_on:
+            # Bright white headlight (on) with outer glow effect
+            self.headlight_indicator.setStyleSheet("""
+                QLabel {
+                    background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
+                        fx:0.5, fy:0.5, 
+                        stop:0 #ffffff, 
+                        stop:0.4 #ffffff,
+                        stop:0.7 #f5f5f5, 
+                        stop:1.0 #e0e0e0);
+                    border: 3px solid #ffffff;
+                    border-radius: 60px;
+                }
+            """)
+            # Create and apply glow effect
+            glow = QGraphicsDropShadowEffect()
+            glow.setBlurRadius(80)
+            glow.setColor(QColor(255, 255, 255, 220))
+            glow.setOffset(0, 0)
+            self.headlight_indicator.setGraphicsEffect(glow)
+        else:
+            # Dark headlight (off) - no glow, remove effect
+            self.headlight_indicator.setStyleSheet("""
+                QLabel {
+                    background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
+                        fx:0.5, fy:0.5, stop:0 #3a3a3a, stop:0.7 #2a2a2a, stop:1 #1a1a1a);
+                    border: 4px solid #333;
+                    border-radius: 60px;
+                }
+            """)
+            self.headlight_indicator.setGraphicsEffect(None)
+
+    def on_headlight_on(self):
+        self.headlight_on = True
+        self.update_headlight_display()
+
+    def on_headlight_off(self):
+        self.headlight_on = False
+        self.update_headlight_display()
 
     def closeEvent(self, event):
         self.close()
