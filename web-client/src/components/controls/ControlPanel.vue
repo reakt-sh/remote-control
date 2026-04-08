@@ -218,13 +218,7 @@ watch(
   border-radius: 10px;
   padding: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  min-height: 150px;
-}
-
-.control-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  min-height: 100px;
 }
 
 /* Right side: Speedometer (40%) */
@@ -289,7 +283,7 @@ watch(
   }
 
   .control-item {
-    min-height: 120px;
+    min-height: 80px;
     padding: 10px;
   }
 }
@@ -319,7 +313,7 @@ watch(
   }
 
   .control-item {
-    min-height: 60px;
+    min-height: 50px;
     padding: 6px;
   }
 }
