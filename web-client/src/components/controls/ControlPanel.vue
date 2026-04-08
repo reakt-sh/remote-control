@@ -193,6 +193,7 @@ watch(
   width: 100%;
   min-height: 400px;
   flex-wrap: nowrap;
+  box-sizing: border-box;
 }
 
 /* Left side: 2x2 Control Grid (60%) */
@@ -241,6 +242,7 @@ watch(
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }
 
 /* Desktop layout: 40/60 split */
@@ -290,30 +292,39 @@ watch(
 /* Mobile adjustments */
 @media (max-width: 599px) {
   .driver-console {
-    padding: 8px;
+    padding: 4px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .main-controls-wrapper {
-    gap: 8px;
-    min-height: 220px;
+    flex-direction: column;
+    gap: 4px;
+    min-height: auto;
   }
 
   .controls-grid {
-    flex: 1;
-    gap: 8px;
-    padding: 8px;
-    min-height: 220px;
+    width: 100%;
+    gap: 4px;
+    padding: 4px;
+    min-height: 180px;
+    max-height: none;
   }
 
   .speedometer-section {
-    flex: 1;
-    padding: 12px;
-    min-height: 220px;
+    width: 100%;
+    padding: 8px;
+    min-height: 180px;
+    max-height: none;
   }
 
   .control-item {
     min-height: 50px;
-    padding: 6px;
+    padding: 4px;
+  }
+  
+  .scenario-controls {
+    padding: 4px;
   }
 }
 </style>

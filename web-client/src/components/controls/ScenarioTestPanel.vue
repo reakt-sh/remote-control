@@ -317,6 +317,8 @@ onUnmounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 2px solid #e0e0e0;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .top-controls {
@@ -324,6 +326,8 @@ onUnmounted(() => {
   gap: 8px;
   align-items: center;
   justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .status-indicator {
@@ -366,6 +370,8 @@ onUnmounted(() => {
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .scenario-dropdown:hover:not(:disabled) {
@@ -676,23 +682,50 @@ onUnmounted(() => {
 
 @media (max-width: 700px) {
   .scenario-panel {
-    padding: 10px;
+    padding: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
   
   .top-controls {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    width: 100%;
   }
   
   .control-section {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .scenario-selector {
+    min-width: auto;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .scenario-dropdown {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  
+  .status-indicator {
+    font-size: 9px;
+    padding: 3px 10px;
   }
   
   .btn {
-    padding: 6px 10px;
-    font-size: 13px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  
+  .control-buttons {
+    gap: 4px;
   }
 }
 </style>
