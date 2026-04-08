@@ -324,4 +324,36 @@ function toggleLight(event) {
     height: 0.5em;
   }
 }
+
+/* Mobile adjustments - even smaller switch */
+@media (max-width: 599px) {
+  .light-control {
+    padding: 2px;
+    max-width: 100px;
+  }
+
+  .light-label {
+    font-size: 0.45rem;
+    margin-bottom: 1px;
+  }
+
+  .switch-wrapper {
+    padding: 2px;
+  }
+
+  .switch {
+    width: 1.4em;
+    height: 2.5em;
+  }
+
+  .switch__lever-half-top:before {
+    width: 0.35em;
+    height: 0.35em;
+  }
+
+  .switch__lever-half-bottom:before {
+    width: 0.11em;
+    height: 0.45em;
+  }
+}
 </style>

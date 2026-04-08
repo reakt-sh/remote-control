@@ -2,7 +2,6 @@
   <div class="scenario-panel">
     <div class="top-controls">
       <div class="scenario-selector">
-        <label for="scenario-select">Select Scenario:</label>
         <select 
           id="scenario-select"
           v-model="selectedScenario" 
@@ -312,8 +311,8 @@ onUnmounted(() => {
 .scenario-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: 4px;
+  padding: 6px;
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -322,15 +321,15 @@ onUnmounted(() => {
 
 .top-controls {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 8px;
+  align-items: center;
   justify-content: space-between;
 }
 
 .status-indicator {
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -355,22 +354,15 @@ onUnmounted(() => {
 .scenario-selector {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-width: 300px;
   max-width: 300px;
 }
 
-.scenario-selector label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #34495e;
-}
-
 .scenario-dropdown {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 2px solid #bdc3c7;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
@@ -400,10 +392,10 @@ onUnmounted(() => {
 
 .btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -449,8 +441,8 @@ onUnmounted(() => {
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  gap: 3px;
+  padding: 4px;
   background-color: #f8f9fa;
   border-radius: 6px;
   border: 1px solid #dee2e6;
@@ -458,7 +450,7 @@ onUnmounted(() => {
 
 .progress-bar-container {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background-color: #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
@@ -474,7 +466,7 @@ onUnmounted(() => {
 .progress-info {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 11px;
   color: #7f8c8d;
   font-weight: 600;
 }
@@ -494,7 +486,7 @@ onUnmounted(() => {
 
 .history-timer-container {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -502,16 +494,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px;
+  gap: 3px;
+  padding: 4px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
-  min-width: 80px;
+  min-width: 60px;
 }
 
 .timer-label {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
   color: white;
   text-transform: uppercase;
@@ -520,8 +512,8 @@ onUnmounted(() => {
 
 .timer-circle {
   position: relative;
-  width: 50px;
-  height: 50px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -553,7 +545,7 @@ onUnmounted(() => {
 
 .timer-value {
   position: relative;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   color: white;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
@@ -563,7 +555,7 @@ onUnmounted(() => {
 .command-history {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
 }
 
@@ -579,8 +571,8 @@ onUnmounted(() => {
 .history-scroll-container {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  max-height: 90px;
+  gap: 2px;
+  max-height: 75px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -607,11 +599,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 6px;
+  padding: 3px 6px;
   background-color: white;
   border-radius: 4px;
   border-left: 2px solid #95a5a6;
-  font-size: 12px;
+  font-size: 11px;
   color: #2c3e50;
   transition: all 0.3s ease;
 }
@@ -662,22 +654,22 @@ onUnmounted(() => {
 }
 
 .history-empty {
-  padding: 12px;
+  padding: 8px;
   text-align: center;
   color: #95a5a6;
-  font-size: 12px;
+  font-size: 11px;
   font-style: italic;
   background-color: rgba(149, 165, 166, 0.1);
   border-radius: 6px;
 }
 
 .warning-message {
-  padding: 10px;
+  padding: 6px;
   background-color: #fff3cd;
   border: 1px solid #ffc107;
   border-radius: 6px;
   color: #856404;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
   font-weight: 500;
 }

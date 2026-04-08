@@ -320,4 +320,39 @@ function handleKeyUp(event) {
     left: calc(50% - 0.65em);
   }
 }
+
+/* Mobile adjustments - even smaller button */
+@media (max-width: 599px) {
+  .horn-control {
+    padding: 0;
+    min-height: 3.5em;
+  }
+
+  .horn-btn {
+    width: 3.2em;
+    height: 3.2em;
+  }
+
+  .horn-btn:before {
+    box-shadow: 0 0.2em 0.2em 0.05em hsla(0, 0%, 0%, 0.3);
+    top: 0.5em;
+    left: 0.5em;
+    width: 2.2em;
+    height: 2.2em;
+  }
+
+  .horn-btn:after {
+    top: 0.95em;
+    left: 0.95em;
+    width: 1.3em;
+    height: 1.3em;
+  }
+
+  .horn-btn__icon {
+    width: 1em;
+    height: 1em;
+    top: calc(50% - 0.5em);
+    left: calc(50% - 0.5em);
+  }
+}
 </style>

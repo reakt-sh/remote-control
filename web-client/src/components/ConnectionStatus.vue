@@ -94,16 +94,26 @@ const { isWSConnected, isWTConnected, isMqttConnected, isRTCConnected } = storeT
 
 @media (max-width: 768px) {
   .connection-status {
-    gap: 12px;
-    padding: 6px 12px;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 8px;
   }
   
   .connection-details {
-    gap: 8px;
+    gap: 4px;
+  }
+  
+  .connection-item {
+    font-size: 0.6rem;
+    gap: 3px;
+  }
+  
+  .connection-item i {
+    font-size: 0.55rem;
   }
   
   .status-text {
-    font-size: 0.8rem;
+    font-size: 0.6rem;
   }
 }
 </style>
