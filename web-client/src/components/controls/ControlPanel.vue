@@ -23,6 +23,7 @@
         <div class="control-item control-item--horn">
           <HornControl
             @press="handleHornPress"
+            @hold="handleHornHold"
             @release="handleHornRelease"
           />
         </div>
@@ -138,6 +139,13 @@ function onHeadlightOff() {
 function handleHornPress() {
   trainStore.sendCommand({
     "instruction": 'HORN_ON',
+    "train_id": telemetryData.value.train_id
+  })
+}
+
+function handleHornHold() {
+  trainStore.sendCommand({
+    "instruction": 'HORN_RESET',
     "train_id": telemetryData.value.train_id
   })
 }
