@@ -185,7 +185,6 @@ watch(
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
-  gap: 16px;
 }
 
 .main-controls-wrapper {
@@ -198,7 +197,7 @@ watch(
 
 /* Left side: 2x2 Control Grid (60%) */
 .controls-grid {
-  flex: 0 0 40%;
+  flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
@@ -223,7 +222,7 @@ watch(
 
 /* Right side: Speedometer (40%) */
 .speedometer-section {
-  flex: 0 0 40%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,11 +250,11 @@ watch(
   }
 
   .controls-grid {
-    flex: 0 0 40%;
+    flex: 1;
   }
 
   .speedometer-section {
-    flex: 0 0 40%;
+    flex: 1;
   }
 }
 
@@ -268,7 +267,7 @@ watch(
   }
 
   .controls-grid {
-    flex: 0 0 45%;
+    flex: 1;
     gap: 2px;
     padding: 2px;
     min-height: 200px;
@@ -276,7 +275,7 @@ watch(
   }
 
   .speedometer-section {
-    flex: 0 0 45%;
+    flex: 1;
     padding: 2px;
     min-height: 200px;
     max-height: 200px;
@@ -300,14 +299,14 @@ watch(
   }
 
   .controls-grid {
-    flex: 0 0 48%;
+    flex: 1;
     gap: 8px;
     padding: 8px;
     min-height: 220px;
   }
 
   .speedometer-section {
-    flex: 0 0 48%;
+    flex: 1;
     padding: 12px;
     min-height: 220px;
   }
