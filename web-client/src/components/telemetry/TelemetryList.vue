@@ -208,4 +208,56 @@ function formatGPS(gps) {
 .speed, .gps, .signal, .temperature {
   justify-content: center;
 }
+
+@media (max-width: 768px) {
+  .telemetry-list {
+    padding: 0.875rem;
+    margin-top: 0.875rem;
+    border-radius: 12px;
+  }
+
+  .list-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .list-header h3 {
+    font-size: 1.0625rem;
+  }
+
+  .pagination-controls {
+    gap: 8px;
+  }
+
+  .pagination-controls button {
+    font-size: 0.875rem;
+  }
+
+  .pagination-controls span {
+    font-size: 0.875rem;
+  }
+
+  .list-table {
+    grid-template-columns: 1fr 1.5fr 0.8fr;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+
+  .header-cell, .table-cell {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .header-cell {
+    font-size: 0.75rem;
+  }
+
+  .table-cell i {
+    font-size: 0.75rem;
+  }
+
+  /* Hide less critical columns on mobile */
+  .gps, .signal, .temperature {
+    display: none;
+  }
+}
 </style>

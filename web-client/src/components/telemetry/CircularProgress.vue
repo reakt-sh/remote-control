@@ -88,4 +88,14 @@ const strokeDashoffset = computed(() => circumference.value - (progressValue.val
 .progress-ring-circle[value="0"] {
   opacity: 0;
 }
+
+@media (max-width: 768px) {
+  .progress-value {
+    font-size: 0.875rem;
+  }
+
+  .progress-label {
+    font-size: 0.625rem;
+  }
+}
 </style>

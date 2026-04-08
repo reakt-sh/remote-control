@@ -35,4 +35,18 @@ defineProps({
   color: #b0b7c3;
   font-style: italic;
 }
+
+@media (max-width: 768px) {
+  .passenger-count {
+    min-height: 32px;
+  }
+
+  .count {
+    font-size: 1.25rem;
+  }
+
+  .no-data {
+    font-size: 0.7rem;
+  }
+}
 </style>

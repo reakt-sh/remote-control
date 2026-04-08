@@ -304,14 +304,80 @@ function formatCoord(val) {
   gap: 7px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
+  .telemetry-panel {
+    border-radius: 12px;
+  }
+
   .telemetry-grid {
     grid-template-columns: 1fr;
-    padding: 18px 8px;
-    gap: 18px;
+    padding: 0.75rem;
+    gap: 0.75rem;
   }
+
   .telemetry-card {
-    padding: 18px 10px;
+    padding: 0.875rem;
+    border-radius: 12px;
+  }
+
+  .status-grid {
+    gap: 0.75rem;
+  }
+
+  .status-label {
+    font-size: 0.7rem;
+  }
+
+  .status-value {
+    font-size: 0.95rem;
+  }
+
+  .signal-bars {
+    height: 18px;
+  }
+
+  .signal-bar {
+    width: 4px;
+  }
+
+  .signal-value {
+    font-size: 0.8rem;
+  }
+
+  .location-value {
+    font-size: 0.9rem;
+  }
+
+  .location-next {
+    font-size: 0.8rem;
+  }
+
+  .gps-coord {
+    font-size: 0.75rem;
+  }
+
+  .environment-item {
+    font-size: 0.9rem;
+  }
+
+  .health-metrics {
+    gap: 0.75rem;
+  }
+
+  .speed-value {
+    font-size: 1.75rem;
+  }
+
+  .unit {
+    font-size: 0.875rem;
+  }
+
+  .acceleration {
+    font-size: 0.85rem;
+  }
+
+  .no-data {
+    font-size: 0.85rem;
   }
 }
 </style>
