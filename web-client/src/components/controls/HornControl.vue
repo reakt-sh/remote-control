@@ -123,8 +123,10 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0;
-  min-height: 7em;
+  padding: 8px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 /* Horn Button - Round Shape */
@@ -144,8 +146,9 @@ onUnmounted(() => {
   margin: auto;
   outline: transparent;
   position: relative;
-  width: 6em;
-  height: 6em;
+  width: min(75%, 9em);
+  height: 0;
+  padding-bottom: min(75%, 9em);
   transition: box-shadow var(--trans-dur) var(--trans-timing);
   -webkit-tap-highlight-color: transparent;
 }
@@ -176,10 +179,10 @@ onUnmounted(() => {
     hsl(223, 10%, 80%)
   );
   box-shadow: 0 0.4em 0.4em 0.13em hsla(0, 0%, 0%, 0.3);
-  top: 0.85em;
-  left: 0.85em;
-  width: 4.3em;
-  height: 4.3em;
+  top: 14.2%;
+  left: 14.2%;
+  width: 71.6%;
+  height: 71.6%;
   transition:
     box-shadow var(--trans-dur) var(--trans-timing2),
     transform var(--trans-dur) var(--trans-timing2);
@@ -196,10 +199,10 @@ onUnmounted(() => {
     0 0.0625em 0 hsl(223, 10%, 90%) inset,
     0 -0.0625em 0 hsl(223, 10%, 90%) inset,
     0 0 0 0 hsla(var(--horn-hue), var(--horn-sat), var(--horn-light), 0.1) inset;
-  top: 1.7em;
-  left: 1.7em;
-  width: 2.6em;
-  height: 2.6em;
+  top: 28.3%;
+  left: 28.3%;
+  width: 43.4%;
+  height: 43.4%;
   transition:
     background-color var(--trans-dur) var(--trans-timing),
     box-shadow var(--trans-dur) var(--trans-timing),
@@ -210,11 +213,12 @@ onUnmounted(() => {
 .horn-btn__icon {
   display: block;
   position: absolute;
-  top: calc(50% - 1em);
-  left: calc(50% - 1em);
-  width: 2em;
-  height: 2em;
-  transition: filter var(--trans-dur) var(--trans-timing);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 33%;
+  height: 33%;
+  transition: filter var(--trans-dur) var(--trans-timing), transform var(--trans-dur) var(--trans-timing);
   z-index: 1;
 }
 
@@ -238,9 +242,12 @@ onUnmounted(() => {
 
 /* Pressed State - Active Horn */
 .horn-btn[aria-pressed="true"]:before,
-.horn-btn[aria-pressed="true"]:after,
-.horn-btn[aria-pressed="true"] .horn-btn__icon {
+.horn-btn[aria-pressed="true"]:after {
   transform: scale(0.95);
+}
+
+.horn-btn[aria-pressed="true"] .horn-btn__icon {
+  transform: translate(-50%, -50%) scale(0.95);
 }
 
 .horn-btn[aria-pressed="true"]:before {
@@ -305,73 +312,27 @@ onUnmounted(() => {
   opacity: 0.5;
 }
 
-/* Tablet adjustments - smaller button */
+/* Tablet adjustments */
 @media (min-width: 600px) and (max-width: 899px) {
   .horn-control {
-    padding: 0;
-    min-height: 5em;
+    padding: 6px;
   }
 
   .horn-btn {
-    width: 4.5em;
-    height: 4.5em;
-  }
-
-  .horn-btn:before {
-    box-shadow: 0 0.3em 0.3em 0.08em hsla(0, 0%, 0%, 0.3);
-    top: 0.65em;
-    left: 0.65em;
-    width: 3.2em;
-    height: 3.2em;
-  }
-
-  .horn-btn:after {
-    top: 1.3em;
-    left: 1.3em;
-    width: 1.9em;
-    height: 1.9em;
-  }
-
-  .horn-btn__icon {
-    width: 1.3em;
-    height: 1.3em;
-    top: calc(50% - 0.65em);
-    left: calc(50% - 0.65em);
+    width: min(60%, 6.5em);
+    padding-bottom: min(60%, 6.5em);
   }
 }
 
-/* Mobile adjustments - even smaller button */
+/* Mobile adjustments */
 @media (max-width: 599px) {
   .horn-control {
-    padding: 0;
-    min-height: 3.5em;
+    padding: 5px;
   }
 
   .horn-btn {
-    width: 3.2em;
-    height: 3.2em;
-  }
-
-  .horn-btn:before {
-    box-shadow: 0 0.2em 0.2em 0.05em hsla(0, 0%, 0%, 0.3);
-    top: 0.5em;
-    left: 0.5em;
-    width: 2.2em;
-    height: 2.2em;
-  }
-
-  .horn-btn:after {
-    top: 0.95em;
-    left: 0.95em;
-    width: 1.3em;
-    height: 1.3em;
-  }
-
-  .horn-btn__icon {
-    width: 1em;
-    height: 1em;
-    top: calc(50% - 0.5em);
-    left: calc(50% - 0.5em);
+    width: min(60%, 5.5em);
+    padding-bottom: min(60%, 5.5em);
   }
 }
 </style>

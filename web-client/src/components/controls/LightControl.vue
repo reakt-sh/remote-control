@@ -1,6 +1,5 @@
 <template>
   <div class="light-control">
-    <div class="light-label">HEADLIGHT</div>
     <div class="switch-wrapper">
       <label class="switch">
         <input
@@ -49,32 +48,24 @@ function toggleLight(event) {
 
 <style scoped>
 .light-control {
-  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
-  border-radius: 10px;
-  padding: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-  border: 1px solid #e0e4e7;
-  max-width: 180px;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
   margin: 0 auto;
-}
-
-.light-label {
-  font-size: 0.6rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #555;
-  margin-bottom: 2px;
+  box-sizing: border-box;
 }
 
 .switch-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
 }
 
 /* 3D Switch Styles */
@@ -94,8 +85,9 @@ function toggleLight(event) {
   transition:
     background-color 0.3s cubic-bezier(0.83, 0, 0.17, 1),
     box-shadow 0.3s cubic-bezier(0.83, 0, 0.17, 1);
-  width: 2em;
-  height: 3.5em;
+  width: clamp(2.5em, 8vw, 4em);
+  height: clamp(4em, 14vw, 7.5em);
+  max-height: 85%;
 }
 
 .switch__input,
@@ -293,67 +285,17 @@ function toggleLight(event) {
   transform: skewX(0) scaleY(0.85);
 }
 
-/* Tablet adjustments - smaller switch */
+/* Tablet adjustments */
 @media (min-width: 600px) and (max-width: 899px) {
   .light-control {
-    padding: 3px;
-    max-width: 140px;
-  }
-
-  .light-label {
-    font-size: 0.5rem;
-    margin-bottom: 2px;
-  }
-
-  .switch-wrapper {
-    padding: 3px;
-  }
-
-  .switch {
-    width: 1.7em;
-    height: 3em;
-  }
-
-  .switch__lever-half-top:before {
-    width: 0.4em;
-    height: 0.4em;
-  }
-
-  .switch__lever-half-bottom:before {
-    width: 0.13em;
-    height: 0.5em;
+    padding: 6px;
   }
 }
 
-/* Mobile adjustments - even smaller switch */
+/* Mobile adjustments */
 @media (max-width: 599px) {
   .light-control {
-    padding: 2px;
-    max-width: 100px;
-  }
-
-  .light-label {
-    font-size: 0.45rem;
-    margin-bottom: 1px;
-  }
-
-  .switch-wrapper {
-    padding: 2px;
-  }
-
-  .switch {
-    width: 1.4em;
-    height: 2.5em;
-  }
-
-  .switch__lever-half-top:before {
-    width: 0.35em;
-    height: 0.35em;
-  }
-
-  .switch__lever-half-bottom:before {
-    width: 0.11em;
-    height: 0.45em;
+    padding: 5px;
   }
 }
 </style>

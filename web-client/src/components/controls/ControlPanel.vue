@@ -224,9 +224,10 @@ watch(
   justify-content: center;
   background: white;
   border-radius: 10px;
-  padding: 12px;
+  padding: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   min-height: 100px;
+  overflow: hidden;
 }
 
 /* Right side: Speedometer (40%) */
@@ -293,7 +294,7 @@ watch(
 
   .control-item {
     min-height: 80px;
-    padding: 10px;
+    padding: 0;
   }
 }
 
@@ -328,7 +329,7 @@ watch(
 
   .control-item {
     min-height: 50px;
-    padding: 4px;
+    padding: 0;
   }
   
   .scenario-controls {
