@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor, QColor
-from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, QMutex
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 import qtawesome as qta
 import cv2
@@ -18,12 +18,14 @@ class TrainClient(BaseClient, QMainWindow):
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
         self.headlight_on = False
         self.horn_active = False
+        self.horn_mutex = QMutex(QMutex.Recursive)  # Recursive mutex to allow re-locking in signal handlers
+        self.init_ui()
 
         # Initialize horn sound player
         self.horn_player = QMediaPlayer()
         self.horn_player.setVolume(100)  # Set volume to 100%
-        # Connect signal to loop the horn sound
-        self.horn_player.mediaStatusChanged.connect(self.on_horn_media_status_changed)
+        # Connect signal to loop the horn sound (Qt.QueuedConnection avoids deadlock)
+        self.horn_player.mediaStatusChanged.connect(self.on_horn_media_status_changed, Qt.QueuedConnection)
         self.horn_sound_path = os.path.abspath("asset/train_horn_sample.wav")
 
         # Load horn sound media once
@@ -32,7 +34,6 @@ class TrainClient(BaseClient, QMainWindow):
             content = QMediaContent(url)
             self.horn_player.setMedia(content)
 
-        self.init_ui()
 
 
     def init_ui(self):
@@ -364,30 +365,40 @@ class TrainClient(BaseClient, QMainWindow):
         self.update_headlight_display()
 
     def on_horn_media_status_changed(self, status):
-        """Loop horn sound by restarting when it ends"""
-        from PyQt5.QtMultimedia import QMediaPlayer
-        # When media ends and horn is still active, restart playback
-        if status == QMediaPlayer.EndOfMedia and self.horn_active:
-            self.horn_player.setPosition(0)
-            self.horn_player.play()
+        self.horn_mutex.lock()
+        try:
+            if status == QMediaPlayer.EndOfMedia:
+                self.horn_player.setPosition(0)
+                self.horn_player.play()
+        finally:
+            self.horn_mutex.unlock()
+
 
     def on_horn_on(self):
         """Activate horn - play sound and show visual indicator"""
-        self.horn_active = True
-        self.update_horn_display()
-        
-        # Play horn sound (media already loaded in constructor)
-        self.horn_player.play()
-        self.log_message(f"🔊 Horn activated")
+        self.horn_mutex.lock()
+        try:
+            self.horn_active = True
+            self.update_horn_display()
+
+            self.horn_player.play()
+            self.log_message(f"🔊 Horn activated")
+        finally:
+            self.horn_mutex.unlock()
 
     def on_horn_off(self):
         """Deactivate horn - stop sound and hide visual indicator"""
-        self.horn_active = False
-        self.update_horn_display()
-        
-        # Stop horn sound
-        self.horn_player.stop()
-        self.log_message("🔇 Horn deactivated")
+        self.horn_mutex.lock()
+        try:
+            self.horn_active = False  # Set flag first to prevent any restart logic
+            self.update_horn_display()
+
+            self.horn_player.pause()
+            self.horn_player.stop()
+            self.horn_player.setPosition(0)
+            self.log_message("🔇 Horn deactivated")
+        finally:
+            self.horn_mutex.unlock()
 
     def closeEvent(self, event):
         self.close()
