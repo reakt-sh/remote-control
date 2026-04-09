@@ -192,7 +192,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             elif event.data[2] == PACKET_TYPE["command"] or event.data[2] == PACKET_TYPE["rtt"] or event.data[2] == PACKET_TYPE["rtt_train"]:
                 logger.info(f"QUIC: Relaying stream data to train from remote control {self.remote_control_id}: data = {event.data}")
                 # retrieve data size from first two bytes
-                data_size = struct.unpack("H", event.data[:2])[0]
+                data_size = struct.unpack(">H", event.data[:2])[0]
                 self.stream_data_size_remaining = data_size
                 if len(event.data) - 2 != data_size:
                     self.stream_data_to_process = event.data[2:]  # Store the initial chunk of data
