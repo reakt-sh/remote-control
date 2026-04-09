@@ -7,7 +7,7 @@
         <div class="motor-mode">{{ formattedMotorMode }}</div>
       </div>
       <div class="target-speed">
-        <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
+        <div class="target-speed-value" :class="{ invisible: !showTargetLabel }">Target: {{ tempTargetSpeed }} km/h</div>
         <button class="toggle-input-btn" @click="toggleInputMode" :disabled="disabled" :title="showSlider ? 'Switch to button input' : 'Switch to slider input'">
           <i :class="showSlider ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"></i>
         </button>
@@ -18,8 +18,8 @@
             :max="maxSpeed"
             :value="tempTargetSpeed"
             :disabled="disabled"
-            @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value))}"
-            @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value))}"
+            @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value)); showTargetLabel = true}"
+            @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value)); showTargetLabel = false}"
             class="target-slider"
           />
         </div>
@@ -65,6 +65,7 @@ const props = defineProps({
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
 const tempTargetSpeed = ref(props.targetSpeed);
+const showTargetLabel = ref(false);
 
 const formattedSpeed = computed(() => {
   return props.currentSpeed.toFixed(2);
@@ -88,11 +89,13 @@ function changeTargetSpeed(delta) {
   let newSpeed = tempTargetSpeed.value + delta;
   newSpeed = Math.max(0, Math.min(props.maxSpeed, newSpeed));
   tempTargetSpeed.value = newSpeed;
+  showTargetLabel.value = true;
 }
 
 function doneTargetSpeed() {
   emit('update:targetSpeed', tempTargetSpeed.value);
   emit('change:targetSpeed', tempTargetSpeed.value);
+  showTargetLabel.value = false;
 }
 </script>
 
@@ -165,6 +168,10 @@ function doneTargetSpeed() {
   font-size: 0.85em;
   margin-bottom: 8px;
   margin-right: 22px;
+}
+
+.target-speed-value.invisible {
+  visibility: hidden;
 }
 
 .toggle-input-btn {
