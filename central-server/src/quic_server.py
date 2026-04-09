@@ -167,7 +167,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             try:
                 message = event.data.decode()
             except UnicodeDecodeError:
-                logger.warning("Could not decode message from remote control, maybe binary data, length: {len(event.data)} bytes")
+                pass
 
             if message.startswith("MAP_CONNECTION:"):
                 parts = message[15:].split(":")
@@ -192,7 +192,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             elif event.data[2] == PACKET_TYPE["command"] or event.data[2] == PACKET_TYPE["rtt"] or event.data[2] == PACKET_TYPE["rtt_train"]:
                 logger.info(f"QUIC: Relaying stream data to train from remote control {self.remote_control_id}: data = {event.data}")
                 # retrieve data size from first two bytes
-                data_size = struct.unpack(">H", event.data[:2])[0]
+                data_size = (event.data[0] << 8) | event.data[1]
                 self.stream_data_size_remaining = data_size
                 if len(event.data) - 2 != data_size:
                     self.stream_data_to_process = event.data[2:]  # Store the initial chunk of data
@@ -211,7 +211,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 if self.stream_data_size_remaining != 0 and self.stream_data_to_process is not None:
                     self.stream_data_to_process += event.data
                     self.stream_data_size_remaining -= len(event.data)
-                    logger.debug(f"Received additional stream data chunk, size: {len(event.data)} bytes, remaining size: {self.stream_data_size_remaining} bytes")
+                    logger.warning(f"Received additional stream data chunk, size: {len(event.data)} bytes, remaining size: {self.stream_data_size_remaining} bytes")
                     if self.stream_data_size_remaining == 0:
                         asyncio.create_task(
                             self.client_manager.relay_stream_to_train(self.remote_control_id, self.stream_data_to_process)
