@@ -410,7 +410,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}")
 
     def on_telemetry_data(self, data):
-        self.log_message(f"Telemetry data: {data}")
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
@@ -420,7 +419,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.network_worker_mqtt.send_data(packet_data)
 
     def on_imu_data(self, data):
-        self.log_message(f"IMU Data: {data}")
+        pass
 
     def on_encoded_frame(self, frame_id, timestamp, encoded_bytes):
         if self.write_to_file:

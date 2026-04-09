@@ -108,18 +108,18 @@ class Encoder(QObject):
             timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
             if len(encoded_frame) > 0:
                 nal_type = encoded_frame[4] & 0x1F
-                if log_callback:
-                    if nal_type == 7:
-                        log_callback(f"SPS NAL unit detected for Frame ID: {frame_id}")
-                    elif nal_type == 8:
-                        log_callback(f"PPS NAL unit detected for Frame ID: {frame_id}")
-                    elif nal_type == 5:
-                        log_callback(f"IDR NAL unit detected for Frame ID: {frame_id}")
-                    elif nal_type == 1:
-                        # print(f"P-frame NAL unit detected for Frame ID: {frame_id}")
-                        pass
-                    elif nal_type == 0:
-                        log_callback(f"B-frame NAL unit detected for Frame ID: {frame_id}")
+                # if log_callback:
+                #     if nal_type == 7:
+                #         log_callback(f"SPS NAL unit detected for Frame ID: {frame_id}")
+                #     elif nal_type == 8:
+                #         log_callback(f"PPS NAL unit detected for Frame ID: {frame_id}")
+                #     elif nal_type == 5:
+                #         log_callback(f"IDR NAL unit detected for Frame ID: {frame_id}")
+                #     elif nal_type == 1:
+                #         # print(f"P-frame NAL unit detected for Frame ID: {frame_id}")
+                #         pass
+                #     elif nal_type == 0:
+                #         log_callback(f"B-frame NAL unit detected for Frame ID: {frame_id}")
 
                 if nal_type == 5:  # IDR frame
                     # Prepend SPS and PPS to the IDR frame
