@@ -163,7 +163,12 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["keepalive"]:
             self.decode_keepalive_packet(event.data)
         elif self.client_type == "REMOTE_CONTROL":
-            message = event.data.decode()
+            message = ""
+            try:
+                message = event.data.decode()
+            except UnicodeDecodeError:
+                logger.warning("Could not decode message from remote control, maybe binary data, length: {len(event.data)} bytes")
+
             if message.startswith("MAP_CONNECTION:"):
                 parts = message[15:].split(":")
                 if len(parts) == 2:
