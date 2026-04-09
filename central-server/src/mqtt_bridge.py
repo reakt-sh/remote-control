@@ -165,13 +165,11 @@ class MqttBridge:
             # logger.info(f"Telemetry from train {train_id}: {telemetry_data}")
 
             # Extract key metrics for summary logging
-            speed = telemetry_data.get('speed', 'N/A')
-            status = telemetry_data.get('status', 'N/A')
-            location = telemetry_data.get('location', 'N/A')
-            battery = telemetry_data.get('battery_level', 'N/A')
-
-            logger.info(f"Train {train_id} - Speed: {speed}, Status: {status}, "
-                       f"Location: {location}, Battery: {battery}%")
+            # speed = telemetry_data.get('speed', 'N/A')
+            # status = telemetry_data.get('status', 'N/A')
+            # location = telemetry_data.get('location', 'N/A')
+            # battery = telemetry_data.get('battery_level', 'N/A')
+            # logger.info(f"Telemetry from train {train_id} - Speed: {speed}, Status: {status}, Location: {location}, Battery: {battery}")
 
             # Call registered telemetry handlers
             for handler_name, handler in self.telemetry_handlers.items():
