@@ -357,7 +357,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.on_horn_off()
                 self.horn_control_reset_time = 0
                 self.horn_control_reset_timer.stop()
-            elif message['instruction'] == 'HORN_RESET':
+            elif message['instruction'] == 'HORN_TIMER_RESET':
                 self.horn_control_reset_time = int(datetime.datetime.now().timestamp() * 1000)
             elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
                 video_quality = message.get('quality')

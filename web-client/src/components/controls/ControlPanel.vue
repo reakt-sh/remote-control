@@ -145,7 +145,7 @@ function handleHornPress() {
 
 function handleHornHold() {
   trainStore.sendCommand({
-    "instruction": 'HORN_RESET',
+    "instruction": 'HORN_TIMER_RESET',
     "train_id": telemetryData.value.train_id
   })
 }
