@@ -236,6 +236,19 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
 
     def quic_event_received(self, event: QuicEvent):
         logger.debug(f"Processing QUIC event: {event}")
+
+        if isinstance(event, ConnectionTerminated):
+            logger.error(f"QUIC connection terminated! Error code: {event.error_code}, "
+                        f"Reason: {event.reason_phrase}")
+            self.network_worker._running = False
+            self.network_worker.connection_closed.emit()
+            return
+
+        if isinstance(event, StreamReset):
+            logger.warning(f"Stream {event.stream_id} reset! Error code: {event.error_code}")
+            # Potentially reconnect or handle gracefully
+            return
+
         if isinstance(event, StreamDataReceived):
             try:
                 packet_type = event.data[0]

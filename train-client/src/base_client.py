@@ -173,6 +173,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_quic_closed(self):
         logger.info("QUIC connection closed")
+        self.stop_train_operations()
 
     def on_data_received_quic(self, data):
         logger.info(f"QUIC data received: {data}")
@@ -440,6 +441,17 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
         # logger.info(f"{timestamp} {message}")
+
+    def stop_train_operations(self):
+        if self.is_sending:
+            self.toggle_sending()
+
+        self.on_horn_off()
+        self.on_headlight_off()
+
+        self.target_speed = 0
+        self.on_power_off()
+
 
     def close(self):
         self._running = False
