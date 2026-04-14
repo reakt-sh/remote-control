@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import asyncio
 import datetime
 import os
 import uuid
@@ -338,6 +337,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.warning(f"Unknown direction: {direction}")
             elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
                 self.networkspeed.start()
+            elif message['instruction'] == 'HEADLIGHT_ON':
+                self.on_headlight_on()
+            elif message['instruction'] == 'HEADLIGHT_OFF':
+                self.on_headlight_off()
+            elif message['instruction'] == 'HORN_ON':
+                self.on_horn_on()
+            elif message['instruction'] == 'HORN_OFF':
+                self.on_horn_off()
             elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
                 video_quality = message.get('quality')
                 logger.info(f"Video quality is changing to {video_quality}")
@@ -389,7 +396,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}")
 
     def on_telemetry_data(self, data):
-        self.log_message(f"Telemetry data: {data}")
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
@@ -399,7 +405,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.network_worker_mqtt.send_data(packet_data)
 
     def on_imu_data(self, data):
-        self.log_message(f"IMU Data: {data}")
+        pass
 
     def on_encoded_frame(self, frame_id, timestamp, encoded_bytes):
         if self.write_to_file:
@@ -442,6 +448,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
         self.output_file.close()
+        self.hw_info_generator_timer.stop()
         logger.info("BaseClient closed.")
 
     @abstractmethod

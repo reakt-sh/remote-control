@@ -96,4 +96,20 @@ const activeTab = ref(props.initialTab)
   background: #1a1e24;
   min-height: 300px;
 }
+
+@media (max-width: 768px) {
+  .tabs-header button {
+    padding: 8px 12px;
+    font-size: 9px;
+    gap: 4px;
+  }
+  
+  .tabs-header button i {
+    font-size: 0.75em;
+  }
+  
+  .tabs-header button.active::after {
+    height: 2px;
+  }
+}
 </style>

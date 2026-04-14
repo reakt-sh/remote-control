@@ -9,7 +9,6 @@
         @click="setDirection('FORWARD')"
       >
         <span class="icon">↑</span>
-        <span class="text">FORWARD</span>
       </button>
       <button
         class="direction-button reverse"
@@ -18,7 +17,6 @@
         @click="setDirection('BACKWARD')"
       >
         <span class="icon">↓</span>
-        <span class="text">BACKWARD</span>
       </button>
     </div>
   </div>
@@ -58,33 +56,34 @@ function setDirection(newDirection) {
 .direction-control {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 8px; /* reduced for height */
+  padding: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.06);
   border: 1px solid #e0e4e7;
-  max-width: 180px; /* increased from 105px */
+  max-width: 180px;
   margin: 0 auto;
 }
 
 .direction-label {
-  font-size: 0.65rem; /* reduced for height */
+  font-size: 0.55rem;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #555;
+  margin-bottom: 2px;
 }
 
 .direction-buttons {
   display: flex;
   flex-direction: column;
-  gap: 6px; /* reduced for height */
+  gap: 3px;
 }
 
 .direction-button {
-  width: 75px;
-  height: 42px;  /* increased button size */
+  width: 60px;
+  height: 24px;
   border: none;
   border-radius: 6px;
   display: flex;
@@ -96,7 +95,7 @@ function setDirection(newDirection) {
   font-weight: bold;
   background: #a3a6a1;
   color: #546E7A;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18); /* Stronger shadow for better separation */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 
 .direction-button:hover {
@@ -115,64 +114,48 @@ function setDirection(newDirection) {
 }
 
 .icon {
-  font-size: 1.0rem; /* increased */
-  margin-bottom: 1px;
-}
-
-.text {
-  font-size: 0.55rem; /* increased */
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 1.2rem;
 }
 
 @media (min-width: 700px) {
   .direction-control {
     max-width: 180px;
-    padding: 10px;
+    padding: 6px;
   }
   .direction-label {
-    font-size: 0.75rem;
-  }
-  .direction-buttons {
-    gap: 8px;
-  }
-  .direction-button {
-    width: 85px;
-    height: 46px;
-    font-size: 0.9rem;
-  }
-  .icon {
-    font-size: 1.2rem;
-    margin-bottom: 2px;
-  }
-  .text {
     font-size: 0.65rem;
-  }
-}
-
-@media (max-height: 700px) {
-  /* For DirectionControl */
-  .direction-control {
-    max-width: 110px;
-    padding: 8px;
-  }
-  .direction-label {
-    font-size: 0.5rem;
+    margin-bottom: 3px;
   }
   .direction-buttons {
     gap: 4px;
   }
   .direction-button {
-    width: 40px;
+    width: 70px;
     height: 28px;
-    font-size: 0.7rem;
   }
-  .direction-button .icon {
-    font-size: 0.7rem;
+  .icon {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .direction-control {
+    max-width: 100px;
+    padding: 3px;
+  }
+  .direction-label {
+    font-size: 0.45rem;
     margin-bottom: 1px;
   }
-  .direction-button .text {
-    font-size: 0.35rem;
+  .direction-buttons {
+    gap: 2px;
+  }
+  .direction-button {
+    width: 36px;
+    height: 18px;
+  }
+  .icon {
+    font-size: 0.9rem;
   }
 }
 </style>

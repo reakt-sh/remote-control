@@ -14,9 +14,7 @@
         >
           <div class="train-card-gradient"></div>
           <div class="train-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2c-4.97 0-9 2.18-9 5v10c0 1.66 1.34 3 3 3h1v2h2v-2h6v2h2v-2h1c1.66 0 3-1.34 3-3V7c0-2.82-4.03-5-9-5zm0 2c3.87 0 7 1.79 7 3v2H5V7c0-1.21 3.13-3 7-3zm-7 5h14v8c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V9zm3 3c-.83 0-1.5.67-1.5 1.5S7.17 15 8 15s1.5-.67 1.5-1.5S8.83 12 8 12zm8 0c-.83 0-1.5.67-1.5 1.5S15.17 15 16 15s1.5-.67 1.5-1.5S16.83 12 16 12z"/>
-            </svg>
+            <i class="fas fa-train"></i>
           </div>
           <div class="train-info">
             <div class="train-id">Train ID</div>
@@ -24,24 +22,18 @@
           </div>
           <div class="select-train-btn">
             <span>Select</span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-            </svg>
+            <i class="fas fa-chevron-right"></i>
           </div>
         </div>
       </div>
       <div v-else class="no-trains-message">
         <div class="no-trains-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-          </svg>
+          <i class="fas fa-info-circle"></i>
         </div>
         <h3>No Trains Connected</h3>
         <p>Please check your connection to the central server</p>
         <button class="retry-btn" @click="fetchAvailableTrains">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
+          <i class="fas fa-sync-alt"></i>
           Retry Connection
         </button>
       </div>
@@ -129,9 +121,8 @@ const selectTrain = (id) => {
   color: #3949ab;
 }
 
-.train-icon svg {
-  width: 40px;
-  height: 40px;
+.train-icon i {
+  font-size: 40px;
 }
 
 .train-info {
@@ -170,9 +161,8 @@ const selectTrain = (id) => {
   color: white;
 }
 
-.select-train-btn svg {
-  width: 20px;
-  height: 20px;
+.select-train-btn i {
+  font-size: 20px;
 }
 
 .no-trains-message {
@@ -187,9 +177,8 @@ const selectTrain = (id) => {
   margin-bottom: 1.5rem;
 }
 
-.no-trains-icon svg {
-  width: 60px;
-  height: 60px;
+.no-trains-icon i {
+  font-size: 60px;
   color: #9e9e9e;
 }
 
@@ -223,9 +212,8 @@ const selectTrain = (id) => {
   transform: translateY(-2px);
 }
 
-.retry-btn svg {
-  width: 18px;
-  height: 18px;
+.retry-btn i {
+  font-size: 18px;
 }
 
 .fade-enter-active,
@@ -239,11 +227,96 @@ const selectTrain = (id) => {
 }
 
 @media (max-width: 768px) {
+  .live-train-selector-container {
+    padding: 0.625rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .live-train-selector-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .live-train-selector-title {
+    font-size: 1.125rem;
+  }
+
   .train-grid {
     grid-template-columns: 1fr;
+    gap: 0.625rem;
   }
-  .live-train-selector-title {
-    font-size: 1.5rem;
+
+  .train-card {
+    height: 130px;
+    border-radius: 10px;
+  }
+
+  .train-card-gradient {
+    height: 2px;
+  }
+
+  .train-icon {
+    padding: 0.75rem 0.75rem 0;
+  }
+
+  .train-icon i {
+    font-size: 24px;
+  }
+
+  .train-info {
+    padding: 0 0.75rem;
+  }
+
+  .train-id {
+    font-size: 0.7rem;
+    margin-bottom: 3px;
+  }
+
+  .train-id-value {
+    font-size: 0.85rem;
+  }
+
+  .select-train-btn {
+    padding: 8px 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .select-train-btn i {
+    font-size: 14px;
+  }
+
+  .no-trains-message {
+    padding: 1.5rem 0.75rem;
+    border-radius: 10px;
+  }
+
+  .no-trains-icon {
+    margin-bottom: 1rem;
+  }
+
+  .no-trains-icon i {
+    font-size: 40px;
+  }
+
+  .no-trains-message h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .no-trains-message p {
+    font-size: 0.8125rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .retry-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+    gap: 6px;
+  }
+
+  .retry-btn i {
+    font-size: 14px;
   }
 }
 </style>

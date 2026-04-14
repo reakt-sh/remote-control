@@ -1159,117 +1159,280 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .train-carousel-container {
-    gap: 0.5rem;
+  .recorded-train-selector-container {
+    padding: 0.625rem;
+    margin-top: 0.625rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
-  
-  .carousel-nav-btn {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .carousel-nav-btn i {
-    font-size: 16px;
-  }
-  
-  .train-grid {
-    gap: 0.75rem;
-  }
-  
-  .train-card {
-    padding: 0.8rem;
-    min-width: 160px;
-    max-width: 160px;
-  }
-  
+
   .recorded-train-selector-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
     align-items: stretch;
+    margin-bottom: 0.75rem;
+  }
+
+  .recorded-train-selector-title {
+    font-size: 1.125rem;
   }
 
   .header-actions {
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.375rem;
+  }
+
+  .refresh-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+  }
+
+  .refresh-btn i {
+    font-size: 12px;
+  }
+
+  .toggle-select-btn {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+  }
+
+  .toggle-select-btn i {
+    font-size: 12px;
+  }
+
+  .selected-count {
+    font-size: 0.8125rem;
+  }
+
+  .bulk-delete-btn {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+  }
+
+  .bulk-delete-btn i {
+    font-size: 12px;
+  }
+
+  .train-carousel-container {
+    gap: 0.25rem;
+  }
+  
+  .carousel-nav-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .carousel-nav-btn i {
+    font-size: 12px;
+  }
+  
+  .train-grid {
+    gap: 0.375rem;
+  }
+  
+  .train-card {
+    padding: 0.5rem;
+    min-width: 115px;
+    max-width: 115px;
+    border-radius: 12px;
+  }
+  
+  .train-card-gradient {
+    height: 2px;
   }
   
   .train-icon {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    margin-bottom: 0.375rem;
   }
   
   .train-icon i {
-    font-size: 16px;
+    font-size: 12px;
+  }
+  
+  .train-info {
+    margin-bottom: 0.5rem;
   }
   
   .train-id-value {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.375rem;
+  }
+  
+  .train-stats {
+    gap: 0.25rem;
   }
   
   .stat-item {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
+    padding: 0.125rem 0;
+    gap: 0.375rem;
   }
 
+  .stat-icon {
+    font-size: 0.7rem;
+    width: 12px;
+  }
+
+  .stat-value {
+    font-size: 0.65rem;
+  }
 
   .card-actions {
-    padding: 0.5rem;
+    padding: 0.25rem;
     opacity: 1; /* Always visible on mobile */
   }
 
   .delete-btn {
-    padding: 0.375rem;
+    padding: 0.25rem;
+    border-radius: 6px;
   }
 
   .delete-btn-content {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
 
   .delete-btn i {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .delete-tooltip {
     display: none; /* Hide tooltip on mobile */
   }
 
+  .loading-state {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .loading-state p {
+    font-size: 0.875rem;
+  }
+
+  .loading-spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+  }
+
+  .no-trains-message {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .no-trains-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 0.75rem;
+  }
+
+  .no-trains-icon i {
+    font-size: 28px;
+  }
+
+  .no-trains-message h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .no-trains-message p {
+    font-size: 0.8125rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .retry-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+  }
+
+  .retry-btn i {
+    font-size: 14px;
+  }
+
   .delete-dialog {
     width: 95%;
-    margin: 1rem;
+    margin: 0.75rem;
+    border-radius: 12px;
   }
 
   .delete-dialog-header {
-    padding: 1rem 1rem 0.75rem 1rem;
+    padding: 0.875rem 0.875rem 0.625rem 0.875rem;
   }
 
   .delete-dialog-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
   }
 
-  .delete-dialog-icon svg {
-    width: 20px;
-    height: 20px;
+  .delete-dialog-icon i {
+    font-size: 18px;
   }
 
   .delete-dialog-header h3 {
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
+  }
+
+  .dialog-close-btn {
+    width: 28px;
+    height: 28px;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .dialog-close-btn i {
+    font-size: 14px;
   }
 
   .delete-dialog-body {
-    padding: 0.75rem 1rem 1rem 1rem;
+    padding: 0.625rem 0.875rem 0.875rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .delete-dialog-body p {
+    margin-bottom: 0.75rem;
+  }
+
+  .ids-preview {
+    gap: 0.3rem;
+    margin: 0.375rem 0 0.625rem 0;
+  }
+
+  .id-chip {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  .delete-warning {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
   }
 
   .delete-dialog-actions {
-    padding: 0.75rem 1rem 1rem 1rem;
+    padding: 0.625rem 0.875rem 0.875rem 0.875rem;
     flex-direction: column;
+    gap: 0.5rem;
   }
 
   .cancel-btn,
   .confirm-delete-btn {
     width: 100%;
     justify-content: center;
+    padding: 0.5625rem 1.125rem;
+    font-size: 0.8125rem;
+    border-radius: 6px;
+  }
+
+  .cancel-btn i,
+  .confirm-delete-btn i {
+    font-size: 12px;
   }
 }
 </style>

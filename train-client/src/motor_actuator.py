@@ -3,10 +3,11 @@ from globals import MAX_SPEED, SCALE_FACTOR_PWM
 from utils.app_logger import logger
 
 class MotorActuator:
-    def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000):
+    def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000, led_pin=17):
         self.input1_pin = input1_pin                # GPIO pin for IN1, used for forward direction
         self.input2_pin = input2_pin                # GPIO pin for IN2, used for backward direction
         self.enable_pin = enable_pin                # GPIO pin for EN, used for PWM control
+        self.led_pin = led_pin                      # GPIO pin for LED indicator
         self.pwm_freq = pwm_freq                    # Frequency for PWM control
         self.direction = 1                          # 1 for forward, 0 for backward
         self.scale_factor = SCALE_FACTOR_PWM        # Scale factor to convert speed to PWM duty cycle
@@ -17,8 +18,12 @@ class MotorActuator:
         GPIO.setup(self.input1_pin, GPIO.OUT)
         GPIO.setup(self.input2_pin, GPIO.OUT)
         GPIO.setup(self.enable_pin, GPIO.OUT)
+        GPIO.setup(self.led_pin, GPIO.OUT)
+
+        # initial state: motor stopped, LED off
         GPIO.output(self.input1_pin, GPIO.LOW)
         GPIO.output(self.input2_pin, GPIO.LOW)
+        GPIO.output(self.led_pin, GPIO.LOW)
         self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
         self.pwm.start(0)  # Default to speed 0
         logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
@@ -51,7 +56,13 @@ class MotorActuator:
     def get_speed(self):
         return int(self.current_speed / self.scale_factor)  # Convert back to original speed scale
 
+    def set_led_turn_on(self):
+        GPIO.output(self.led_pin, GPIO.HIGH)
+
+    def set_led_turn_off(self):
+        GPIO.output(self.led_pin, GPIO.LOW)
+
     def cleanup(self):
         self.stop_motor()
         self.pwm.stop()
-        GPIO.cleanup([self.input1_pin, self.input2_pin, self.enable_pin])
+        GPIO.cleanup([self.input1_pin, self.input2_pin, self.enable_pin, self.led_pin])

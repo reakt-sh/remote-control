@@ -7,7 +7,7 @@
         <div class="motor-mode">{{ formattedMotorMode }}</div>
       </div>
       <div class="target-speed">
-        <div class="target-speed-value">Target: {{ tempTargetSpeed }} km/h</div>
+        <div class="target-speed-value" :class="{ invisible: !showTargetLabel }">Target: {{ tempTargetSpeed }} km/h</div>
         <button class="toggle-input-btn" @click="toggleInputMode" :disabled="disabled" :title="showSlider ? 'Switch to button input' : 'Switch to slider input'">
           <i :class="showSlider ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"></i>
         </button>
@@ -18,8 +18,8 @@
             :max="maxSpeed"
             :value="tempTargetSpeed"
             :disabled="disabled"
-            @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value))}"
-            @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value))}"
+            @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value)); showTargetLabel = true}"
+            @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value)); showTargetLabel = false}"
             class="target-slider"
           />
         </div>
@@ -65,6 +65,7 @@ const props = defineProps({
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
 
 const tempTargetSpeed = ref(props.targetSpeed);
+const showTargetLabel = ref(false);
 
 const formattedSpeed = computed(() => {
   return props.currentSpeed.toFixed(2);
@@ -88,11 +89,13 @@ function changeTargetSpeed(delta) {
   let newSpeed = tempTargetSpeed.value + delta;
   newSpeed = Math.max(0, Math.min(props.maxSpeed, newSpeed));
   tempTargetSpeed.value = newSpeed;
+  showTargetLabel.value = true;
 }
 
 function doneTargetSpeed() {
   emit('update:targetSpeed', tempTargetSpeed.value);
   emit('change:targetSpeed', tempTargetSpeed.value);
+  showTargetLabel.value = false;
 }
 </script>
 
@@ -101,13 +104,13 @@ function doneTargetSpeed() {
 .speedometer {
   background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
   border-radius: 10px;
-  padding: 4px; /* reduced for height */
+  padding: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.06);
   border: 1px solid #e0e4e7;
-  max-width: 120px;
+  max-width: 280px;
   margin: 0 auto;
 }
 
@@ -121,12 +124,12 @@ function doneTargetSpeed() {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 3px; /* reduced for height */
-  margin-bottom: 3px; /* reduced for height */
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .current-speed {
-  font-size: 0.7rem; /* reduced for height */
+  font-size: 1.3rem;
   font-weight: bold;
   font-family: 'Segment7', monospace;
   color: #2c3e50;
@@ -134,13 +137,13 @@ function doneTargetSpeed() {
 }
 
 .speed-unit {
-  font-size: 0.5rem; /* reduced for height */
+  font-size: 0.95rem;
   color: #7f8c8d;
   margin-bottom: 0;
 }
 
 .motor-mode {
-  font-size: 0.5rem; /* reduced for height */
+  font-size: 0.95rem;
   color: #e67e22;
   font-weight: 600;
   margin-bottom: 0;
@@ -149,8 +152,8 @@ function doneTargetSpeed() {
 .target-speed {
   position: relative;
   background: #f8f9fa;
-  padding: 4px; /* reduced for height */
-  border-radius: 6px;
+  padding: 7px;
+  border-radius: 10px;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
   border: 1px solid #e0e4e7;
 }
@@ -160,19 +163,23 @@ function doneTargetSpeed() {
   background: #2c3e50;
   color: white;
   font-weight: 500;
-  padding: 2px 6px; /* reduced for height */
-  border-radius: 12px;
-  font-size: 0.55em; /* reduced for height */
-  margin-bottom: 4px; /* reduced for height */
-  margin-right: 16px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.85em;
+  margin-bottom: 8px;
+  margin-right: 22px;
+}
+
+.target-speed-value.invisible {
+  visibility: hidden;
 }
 
 .toggle-input-btn {
   position: absolute;
-  top: 3px; /* reduced for height */
-  right: 3px; /* reduced for height */
-  width: 12px; /* reduced for height */
-  height: 12px; /* reduced for height */
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -183,7 +190,7 @@ function doneTargetSpeed() {
   justify-content: center;
   padding: 0;
   transition: all 0.2s;
-  font-size: 0.6em;
+  font-size: 1.2em;
 }
 
 .toggle-input-btn:hover {
@@ -193,25 +200,25 @@ function doneTargetSpeed() {
 
 .slider-container {
   width: 100%;
-  padding: 3px 0; /* reduced for height */
+  padding: 6px 0;
 }
 
 .target-slider {
   width: 100%;
-  height: 3px; /* reduced for height */
+  height: 6px;
   -webkit-appearance: none;
   appearance: none;
   background: #e0e4e7;
-  border-radius: 2px;
+  border-radius: 3px;
   outline: none;
-  margin: 3px 0; /* reduced for height */
+  margin: 6px 0;
 }
 
 .target-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 8px; /* reduced for height */
-  height: 8px; /* reduced for height */
+  width: 18px;
+  height: 18px;
   background: #2c3e50;
   border-radius: 50%;
   cursor: pointer;
@@ -225,22 +232,24 @@ function doneTargetSpeed() {
 
 .target-speed-buttons {
   flex-direction: column;
-  gap: 3px; /* reduced for height */
+  gap: 5px;
 }
 
 .button-row {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-wrap: wrap;
+  margin-bottom: 3px;
 }
 
 .change-speed-button {
-  max-width: 22px;
-  font-size: 0.55em; /* reduced for height */
-  padding: 1px 3px; /* reduced for height */
-  border-radius: 4px;
+  max-width: 80px;
+  min-width: 40px;
+  font-size: 0.85em;
+  padding: 4px 10px;
+  border-radius: 6px;
   border: 1px solid #d6dbdf;
   background: #f8f9fa;
   color: #2c3e50;
@@ -249,12 +258,13 @@ function doneTargetSpeed() {
 }
 
 .done-btn {
-  font-size: 0.55em; /* reduced for height */
-  padding: 2px 6px; /* reduced for height */
+  font-size: 0.9em;
+  padding: 6px 16px;
   background: #27ae60;
   color: white;
   border-color: #219955;
-  margin-top: 3px; /* reduced for height */
+  border-radius: 8px;
+  margin-top: 5px;
 }
 
 button:hover {
@@ -269,51 +279,52 @@ button:active {
 /* Medium screens: iPad Portrait and similar */
 @media (min-width: 430px) {
   .speedometer {
-    max-width: 140px;
-    padding: 6px;
+    max-width: 290px;
+    padding: 8px;
   }
   
   .current-speed {
-    font-size: 0.85rem;
+    font-size: 1.4rem;
   }
   
   .speed-unit {
-    font-size: 0.6rem;
+    font-size: 1.0rem;
   }
   
   .motor-mode {
-    font-size: 0.6rem;
+    font-size: 1.0rem;
   }
   
   .target-speed {
-    padding: 5px;
+    padding: 7px;
   }
   
   .target-speed-value {
-    padding: 2px 6px;
+    padding: 6px 14px;
   }
   
   .toggle-input-btn {
-    width: 14px;
-    height: 14px;
-    top: 4px;
-    right: 4px;
-    font-size: 0.65em;
+    width: 30px;
+    height: 30px;
+    top: 8px;
+    right: 8px;
+    font-size: 1.25em;
   }
   
   .button-row {
-    gap: 3px;
+    gap: 5px;
   }
   
   .change-speed-button {
-    max-width: 26px;
-    font-size: 0.6em;
-    padding: 2px 4px;
+    max-width: 85px;
+    min-width: 42px;
+    font-size: 0.9em;
+    padding: 4px 11px;
   }
   
   .done-btn {
-    font-size: 0.6em;
-    padding: 2px 6px;
+    font-size: 0.95em;
+    padding: 6px 16px;
   }
 }
 

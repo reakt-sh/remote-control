@@ -1,6 +1,8 @@
-from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton
-from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor
-from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer
+import os
+from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor, QColor
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, QMutex
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 import qtawesome as qta
 import cv2
 import numpy as np
@@ -14,7 +16,25 @@ class TrainClient(BaseClient, QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
+        self.headlight_on = False
+        self.horn_active = False
+        self.horn_mutex = QMutex(QMutex.Recursive)  # Recursive mutex to allow re-locking in signal handlers
         self.init_ui()
+
+        # Initialize horn sound player
+        self.horn_player = QMediaPlayer()
+        self.horn_player.setVolume(100)  # Set volume to 100%
+        # Connect signal to loop the horn sound (Qt.QueuedConnection avoids deadlock)
+        self.horn_player.mediaStatusChanged.connect(self.on_horn_media_status_changed, Qt.QueuedConnection)
+        self.horn_sound_path = os.path.abspath("asset/train_horn_sample.wav")
+
+        # Load horn sound media once
+        if os.path.exists(self.horn_sound_path):
+            url = QUrl.fromLocalFile(self.horn_sound_path)
+            content = QMediaContent(url)
+            self.horn_player.setMedia(content)
+
+
 
     def init_ui(self):
         self.central_widget = QWidget()
@@ -131,12 +151,29 @@ class TrainClient(BaseClient, QMainWindow):
         self.source_button.clicked.connect(self.toggle_video_source)
         self.using_file_source = True
 
+        # Headlight indicator (round)
+        self.headlight_indicator = QLabel()
+        self.headlight_indicator.setFixedSize(120, 120)
+        self.headlight_indicator.setAlignment(Qt.AlignCenter)
+        self.update_headlight_display()
+
+        # Horn indicator (speaker icon with animation)
+        self.horn_indicator = QLabel()
+        self.horn_indicator.setFixedSize(160, 70)
+        self.horn_indicator.setAlignment(Qt.AlignCenter)
+        self.horn_indicator.setText("HORN")
+        self.update_horn_display()
+
         # Create VBox layout for the buttons
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.capture_button)
         button_layout.addWidget(self.sending_button)
         button_layout.addWidget(self.write_button)
         button_layout.addWidget(self.source_button)
+        button_layout.addSpacing(20)
+        button_layout.addWidget(self.headlight_indicator, alignment=Qt.AlignCenter)
+        button_layout.addSpacing(10)
+        button_layout.addWidget(self.horn_indicator, alignment=Qt.AlignCenter)
         button_layout.addStretch()
 
         layout = QGridLayout()
@@ -244,6 +281,124 @@ class TrainClient(BaseClient, QMainWindow):
 
     def on_change_direction(self, direction):
         self.video_source.set_direction(direction)
+
+    def update_headlight_display(self):
+        if self.headlight_on:
+            # Bright white headlight (on) with outer glow effect
+            self.headlight_indicator.setStyleSheet("""
+                QLabel {
+                    background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
+                        fx:0.5, fy:0.5, 
+                        stop:0 #ffffff, 
+                        stop:0.4 #ffffff,
+                        stop:0.7 #f5f5f5, 
+                        stop:1.0 #e0e0e0);
+                    border: 3px solid #ffffff;
+                    border-radius: 60px;
+                }
+            """)
+            # Create and apply glow effect
+            glow = QGraphicsDropShadowEffect()
+            glow.setBlurRadius(80)
+            glow.setColor(QColor(255, 255, 255, 220))
+            glow.setOffset(0, 0)
+            self.headlight_indicator.setGraphicsEffect(glow)
+        else:
+            # Dark headlight (off) - no glow, remove effect
+            self.headlight_indicator.setStyleSheet("""
+                QLabel {
+                    background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5,
+                        fx:0.5, fy:0.5, stop:0 #3a3a3a, stop:0.7 #2a2a2a, stop:1 #1a1a1a);
+                    border: 4px solid #333;
+                    border-radius: 60px;
+                }
+            """)
+            self.headlight_indicator.setGraphicsEffect(None)
+
+    def update_horn_display(self):
+        if self.horn_active:
+            # Active horn - red/orange rectangular speaker design
+            self.horn_indicator.setText("♪ HORN ♪")
+            self.horn_indicator.setStyleSheet("""
+                QLabel {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                        stop:0 #ff4757, stop:0.5 #ff6b6b, stop:1 #ff4757);
+                    border: 3px solid #ff4757;
+                    border-radius: 12px;
+                    font-size: 14pt;
+                    font-weight: bold;
+                    color: #ffffff;
+                    padding: 8px;
+                    letter-spacing: 2px;
+                }
+            """)
+            # Create and apply glow effect
+            glow = QGraphicsDropShadowEffect()
+            glow.setBlurRadius(60)
+            glow.setColor(QColor(255, 71, 87, 220))
+            glow.setOffset(0, 0)
+            self.horn_indicator.setGraphicsEffect(glow)
+        else:
+            # Inactive horn - dark gray, muted speaker
+            self.horn_indicator.setText("HORN")
+            self.horn_indicator.setStyleSheet("""
+                QLabel {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                        stop:0 #2a2a2a, stop:0.5 #3a3a3a, stop:1 #2a2a2a);
+                    border: 3px solid #333;
+                    border-radius: 12px;
+                    font-size: 14pt;
+                    font-weight: bold;
+                    color: #666;
+                    padding: 8px;
+                    letter-spacing: 2px;
+                }
+            """)
+            self.horn_indicator.setGraphicsEffect(None)
+
+    def on_headlight_on(self):
+        self.headlight_on = True
+        self.update_headlight_display()
+
+    def on_headlight_off(self):
+        self.headlight_on = False
+        self.update_headlight_display()
+
+    def on_horn_media_status_changed(self, status):
+        self.horn_mutex.lock()
+        try:
+            if status == QMediaPlayer.EndOfMedia:
+                self.horn_player.setPosition(0)
+                self.horn_player.play()
+        finally:
+            self.horn_mutex.unlock()
+
+
+    def on_horn_on(self):
+        """Activate horn - play sound and show visual indicator"""
+        self.horn_mutex.lock()
+        try:
+            self.horn_active = True
+            self.update_horn_display()
+
+            self.horn_player.play()
+            self.log_message(f"🔊 Horn activated")
+        finally:
+            self.horn_mutex.unlock()
+
+    def on_horn_off(self):
+        """Deactivate horn - stop sound and hide visual indicator"""
+        self.horn_mutex.lock()
+        try:
+            self.horn_active = False  # Set flag first to prevent any restart logic
+            self.update_horn_display()
+
+            self.horn_player.pause()
+            self.horn_player.stop()
+            self.horn_player.setPosition(0)
+            self.log_message("🔇 Horn deactivated")
+        finally:
+            self.horn_mutex.unlock()
 
     def closeEvent(self, event):
         self.close()

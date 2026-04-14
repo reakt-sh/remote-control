@@ -63,7 +63,7 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
-  const indexedDBStorageEnabled = ref(true)
+  const indexedDBStorageEnabled = ref(false)
   const commandCounter = ref(0)
 
   // Variables to calculate latency of last 30 frames
@@ -316,10 +316,17 @@ export const useTrainStore = defineStore('train', () => {
     packet[0] = PACKET_TYPE.command
     packet.set(jsonBytes, 1)
 
+    // Add data size in first two bytes
+    const dataSize = packet.length
+    const lengthPrefixedPacket = new Uint8Array(2 + packet.length)
+    lengthPrefixedPacket[0] = (dataSize >> 8) & 0xFF // High byte
+    lengthPrefixedPacket[1] = dataSize & 0xFF        // Low byte
+    lengthPrefixedPacket.set(packet, 2)
+
     try {
       // Try WebTransport first
       if (isWTConnected.value) {
-        await sendWtMessage(packet)
+        await sendWtMessage(lengthPrefixedPacket)
         console.log('✅ Command sent via WebTransport')
       }
       // Fallback to WebSocket if WebTransport is not connected
@@ -346,7 +353,13 @@ export const useTrainStore = defineStore('train', () => {
     packet[0] = PACKET_TYPE.rtt; // Set the first byte as PACKET_TYPE.rtt
     packet.set(packetData, 1);
 
-    await sendWtMessage(packet)
+    const dataSize = packet.length
+    const lengthPrefixedPacket = new Uint8Array(2 + packet.length)
+    lengthPrefixedPacket[0] = (dataSize >> 8) & 0xFF // High byte
+    lengthPrefixedPacket[1] = dataSize & 0xFF        // Low byte
+    lengthPrefixedPacket.set(packet, 2)
+
+    await sendWtMessage(lengthPrefixedPacket)
   }
 
   async function sendRTT_Train(rttPacket) {
@@ -355,8 +368,14 @@ export const useTrainStore = defineStore('train', () => {
     packet[0] = PACKET_TYPE.rtt_train; // Set the first byte as PACKET_TYPE.rtt_train
     packet.set(packetData, 1);
 
+    const dataSize = packet.length
+    const lengthPrefixedPacket = new Uint8Array(2 + packet.length)
+    lengthPrefixedPacket[0] = (dataSize >> 8) & 0xFF // High byte
+    lengthPrefixedPacket[1] = dataSize & 0xFF        // Low byte
+    lengthPrefixedPacket.set(packet, 2)
+
     try {
-      await sendWtMessage(packet)
+      await sendWtMessage(lengthPrefixedPacket)
       console.log('✅ RTT_Train packet sent successfully')
     } catch (error) {
       console.error('❌ Failed to send RTT_Train packet:', error)

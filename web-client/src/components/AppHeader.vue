@@ -59,7 +59,7 @@ function goToHome() {
   }
   
   .app-header h1 {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
   }
   
   .header-controls {

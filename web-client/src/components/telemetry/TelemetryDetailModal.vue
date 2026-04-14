@@ -302,19 +302,74 @@ function formatTime() {
   .modal-content {
     width: 95%;
     max-width: none;
+    border-radius: 16px;
   }
   
   .detail-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 0.75rem;
   }
   
   .modal-header {
-    padding: 20px;
+    padding: 0.875rem 1rem;
+  }
+
+  .modal-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .modal-header .timestamp {
+    font-size: 0.8rem;
+  }
+
+  .close-button {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
   }
   
   .modal-body {
-    padding: 20px;
+    padding: 0.875rem 1rem;
+  }
+
+  .detail-card {
+    padding: 0.875rem;
+    border-radius: 12px;
+  }
+
+  .detail-card h4 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    gap: 8px;
+  }
+
+  .detail-card h4 i {
+    font-size: 0.875rem;
+  }
+
+  .info-row {
+    padding: 8px 0;
+  }
+
+  .info-row .label {
+    font-size: 0.8rem;
+  }
+
+  .info-row .value {
+    font-size: 0.8rem;
+  }
+
+  .health-metrics {
+    gap: 0.75rem;
+  }
+
+  .metric-item {
+    grid-template-columns: 70px 1fr;
+    gap: 10px;
+  }
+
+  .progress-bar {
+    height: 6px;
   }
 }
 </style>
