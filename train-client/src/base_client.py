@@ -62,12 +62,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.last_few_frame_ids = []
         self.show_capture_frame_log = True
 
-        # Horn control variables
-        self.horn_control_reset_time = 0
-        self.horn_control_reset_timer = QTimer()
-        self.horn_control_reset_timer.timeout.connect(self.check_horn_control_reset)
-        self.horn_control_reset_timer.setInterval(10)  # Check every 10ms
-
 
     def generate_hw_info(self):
         self.hw_info.get_hw_info(write_to_file=True)
@@ -349,16 +343,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.on_headlight_off()
             elif message['instruction'] == 'HORN_ON':
                 self.on_horn_on()
-                self.horn_control_reset_time = int(datetime.datetime.now().timestamp() * 1000)
-                # Start timer to periodically check 300ms and reset horn control if needed
-                if not self.horn_control_reset_timer.isActive():
-                    self.horn_control_reset_timer.start()
             elif message['instruction'] == 'HORN_OFF':
                 self.on_horn_off()
-                self.horn_control_reset_time = 0
-                self.horn_control_reset_timer.stop()
-            elif message['instruction'] == 'HORN_TIMER_RESET':
-                self.horn_control_reset_time = int(datetime.datetime.now().timestamp() * 1000)
             elif message['instruction'] == 'CHANGE_VIDEO_QUALITY':
                 video_quality = message.get('quality')
                 logger.info(f"Video quality is changing to {video_quality}")
@@ -455,15 +441,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
         # logger.info(f"{timestamp} {message}")
 
-    def check_horn_control_reset(self):
-        """Check if horn should be automatically turned off after 300ms timeout."""
-        if self.horn_control_reset_time != 0:
-            current_time = int(datetime.datetime.now().timestamp() * 1000)
-            if current_time - self.horn_control_reset_time >= 300:
-                self.on_horn_off()
-                self.horn_control_reset_time = 0
-                self.horn_control_reset_timer.stop()
-
     def close(self):
         self._running = False
         self.video_source.stop()
@@ -472,7 +449,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.stop()
         self.output_file.close()
         self.hw_info_generator_timer.stop()
-        self.horn_control_reset_timer.stop()
         logger.info("BaseClient closed.")
 
     @abstractmethod

@@ -36,9 +36,9 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref } from 'vue'
 
-const emit = defineEmits(['press', 'release', 'hold'])
+const emit = defineEmits(['press', 'release'])
 
 const props = defineProps({
   disabled: {
@@ -49,29 +49,17 @@ const props = defineProps({
 
 const isPressed = ref(false)
 const hornBtn = ref(null)
-const holdInterval = ref(null)
 
 function handlePressStart() {
   if (props.disabled || isPressed.value) return
   
   isPressed.value = true
   emit('press')
-  
-  // Start sending hold/reset commands every 100ms
-  holdInterval.value = setInterval(() => {
-    if (isPressed.value) {
-      emit('hold')
-    }
-  }, 100)
 }
 
 function handlePressEnd() {
   if (props.disabled || !isPressed.value) return
-  // Clear the interval
-  if (holdInterval.value) {
-    clearInterval(holdInterval.value)
-    holdInterval.value = null
-  }
+  
   isPressed.value = false
   emit('release')
 }
@@ -95,13 +83,6 @@ function handleKeyUp(event) {
     handlePressEnd(event)
   }
 }
-
-// Cleanup on component unmount
-onUnmounted(() => {
-  if (holdInterval.value) {
-    clearInterval(holdInterval.value)
-  }
-})
 </script>
 
 <style scoped>
