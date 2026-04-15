@@ -110,6 +110,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.warning(f"QUIC: Received unhandled data : {event.data}")
 
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
+        if event.end_stream == True:
+            # Stream ended by client, clean up resources and close connection
+            self._close_connection()
+            return
         if self.client_type is None:
             try:
                 message = event.data.decode()
@@ -289,8 +293,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.debug(f"Decoded keepalive packet: {payload}")
 
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
-            print(f"Error decoding packet: {e}")
-            print(f"Raw JSON bytes: {json_bytes}")
+            logger.error(f"Error decoding packet: {e}")
+            logger.error(f"Raw JSON bytes: {json_bytes}")
 
     async def measure_download_speed(self):
         logger.info(f"QUIC: Starting download speed test for remote control {self.remote_control_id}")
