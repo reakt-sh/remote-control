@@ -21,6 +21,7 @@ PACKET_TYPE = {
     "rtt": 28,
     "map_ack": 29,
     "rtt_train": 30,
+    "map_nack": 31
 }
 
 HOST = "0.0.0.0"
