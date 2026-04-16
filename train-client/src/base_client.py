@@ -192,6 +192,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse map_ack JSON: {e}")
 
+        elif packet_type == PACKET_TYPE["map_nack"]:
+            try:
+                remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+                logger.warning(f"Map NACK received from remote control ID: {remote_control_id}")
+                if remote_control_id in self.connected_remote_control_ids:
+                    self.connected_remote_control_ids.remove(remote_control_id)
+                    logger.info(f"Remote control ID {remote_control_id} removed from connected set due to NACK")
+                else:
+                    logger.warning(f"Received map_nack for unknown remote control ID: {remote_control_id}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse map_nack JSON: {e}")
+
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')
             jsonData = json.loads(jsonString)

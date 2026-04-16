@@ -109,10 +109,22 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         else:
             logger.warning(f"QUIC: Received unhandled data : {event.data}")
 
+    async def _handle_stream_end(self) -> None:
+        if self.client_type == "REMOTE_CONTROL":
+            # Send a message to the train client to acknowledge the unmapping
+            data = {
+                "type": "unmapping_acknowledgement",
+                "remote_control_id": self.remote_control_id,
+            }
+            packet_data = json.dumps(data).encode('utf-8')
+            packet = struct.pack("B", PACKET_TYPE["map_nack"]) + packet_data
+            await self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
+        self._close_connection()
+
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
         if event.end_stream == True:
             # Stream ended by client, clean up resources and close connection
-            self._close_connection()
+            asyncio.create_task(self._handle_stream_end())
             return
         if self.client_type is None:
             try:
