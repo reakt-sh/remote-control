@@ -201,6 +201,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.info(f"Remote control ID {remote_control_id} removed from connected set due to NACK")
                 else:
                     logger.warning(f"Received map_nack for unknown remote control ID: {remote_control_id}")
+
+                self.stop_train_operations()
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse map_nack JSON: {e}")
 

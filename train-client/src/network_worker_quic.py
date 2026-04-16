@@ -256,7 +256,7 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
-                elif packet_type == PACKET_TYPE["map_ack"]:
+                elif packet_type == PACKET_TYPE["map_ack"] or packet_type == PACKET_TYPE["map_nack"]:
                     self.network_worker.data_received.emit(event.data)
                 elif packet_type == PACKET_TYPE["rtt"]:
                     # just modify event data with current timestamp
