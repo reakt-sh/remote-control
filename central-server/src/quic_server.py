@@ -205,7 +205,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     )
                 else:
                     logger.warning("Invalid MAP_CONNECTION message format")
-            elif event.data[2] == PACKET_TYPE["command"] or event.data[2] == PACKET_TYPE["rtt"] or event.data[2] == PACKET_TYPE["rtt_train"]:
+            elif len(event.data) > 2 and ((event.data[2] == PACKET_TYPE["command"] or event.data[2] == PACKET_TYPE["rtt"] or event.data[2] == PACKET_TYPE["rtt_train"])):
                 logger.info(f"QUIC: Relaying stream data to train from remote control {self.remote_control_id}: data = {event.data}")
                 # retrieve data size from first two bytes
                 data_size = (event.data[0] << 8) | event.data[1]
@@ -213,7 +213,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 if len(event.data) - 2 != data_size:
                     self.stream_data_to_process = event.data[2:]  # Store the initial chunk of data
                     self.stream_data_size_remaining -= len(self.stream_data_to_process)
-                    logger.warning(f"Data size mismatch: expected {data_size} bytes, but got {len(event.data) - 2} bytes")
+                    logger.warning(f"Data size mismatch: expected {data_size} bytes, but got {len(event.data) - 2} bytes, data: {event.data}")
                 else:
                     asyncio.create_task(
                         self.client_manager.relay_stream_to_train(self.remote_control_id, event.data[2:])
@@ -227,7 +227,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 if self.stream_data_size_remaining != 0 and self.stream_data_to_process is not None:
                     self.stream_data_to_process += event.data
                     self.stream_data_size_remaining -= len(event.data)
-                    logger.warning(f"Received additional stream data chunk, size: {len(event.data)} bytes, remaining size: {self.stream_data_size_remaining} bytes")
+                    logger.warning(f"Received additional stream data chunk, client type: {self.client_type}, size: {len(event.data)} bytes, remaining size: {self.stream_data_size_remaining} bytes, data: {event.data}")
                     if self.stream_data_size_remaining == 0:
                         asyncio.create_task(
                             self.client_manager.relay_stream_to_train(self.remote_control_id, self.stream_data_to_process)
@@ -235,7 +235,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                         self.stream_data_to_process = None
                         self.stream_data_size_remaining = 0
                 else:
-                    logger.warning(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
+                    logger.warning(f"QUIC: Received unhandled data from client type {self.client_type}, ID: {self.remote_control_id if self.client_type == 'REMOTE_CONTROL' else self.train_id}: {event.data}")
+
         else:
             logger.debug(f"QUIC: Unhandled stream data on stream_id {event.stream_id}, data length: {len(event.data)}, data: {event.data[:50]}...")
     def _h3_event_received(self, event: H3Event) -> None:
