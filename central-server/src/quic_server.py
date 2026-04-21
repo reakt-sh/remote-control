@@ -125,7 +125,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             # Stream ended by client, clean up resources and close connection
             asyncio.create_task(self._handle_stream_end())
             return
-        self.construct_stream_packet(event.data, event.stream_id)
+
+        if self.session_id != -1 and self.session_id == event.stream_id:
+            self.construct_stream_packet(event.data, event.stream_id)
 
 
     def construct_stream_packet(self, data: bytes, stream_id: int):
