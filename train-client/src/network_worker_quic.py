@@ -100,8 +100,7 @@ class NetworkWorkerQUIC(QThread):
 
                 logger.debug(f"Sending QUIC handshake on stream {self._stream_id}")
                 # Send train identification
-                handshake = f"TRAIN:{self.train_client_id}".encode()
-                client._quic.send_stream_data(self._stream_id, handshake, end_stream=False)
+                client._quic.send_stream_data(self._stream_id, self.prepareConnectMessage(), end_stream=False)
                 result = client.transmit()
                 if result is not None:
                     await result
@@ -116,6 +115,26 @@ class NetworkWorkerQUIC(QThread):
         except Exception as e:
             logger.error(f"QUIC connection error: {e}")
             self.connection_failed.emit(str(e))
+
+    def prepareConnectMessage(self):
+        connect_packet = {
+            "type": "CONNECT",
+            "client_type": "TRAIN",
+            "train_id": self.train_client_id,
+        }
+        packet_data = json.dumps(connect_packet).encode('utf-8')
+
+        # Create packet with type byte + data
+        packet = struct.pack("B", PACKET_TYPE["connect"]) + packet_data
+
+        # Add 2-byte length prefix (big-endian)
+        data_size = len(packet)
+        length_prefixed_packet = bytearray(2 + len(packet))
+        length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+        length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+        length_prefixed_packet[2:] = packet
+
+        return bytes(length_prefixed_packet)
 
     async def send_stream_reliable(self):
         while self._running:
@@ -167,7 +186,7 @@ class NetworkWorkerQUIC(QThread):
                 keepalive_packet = {
                     "type": "keepalive",
                     "protocol": "quic",
-                    "trainClientId": self.train_client_id,
+                    "train_id": self.train_client_id,
                     "timestamp": asyncio.get_event_loop().time(),
                     "sequence": getattr(self, "keepalive_sequence", 1)
                 }
@@ -175,11 +194,17 @@ class NetworkWorkerQUIC(QThread):
                 self.keepalive_sequence = keepalive_packet["sequence"] + 1
 
                 packet_data = json.dumps(keepalive_packet).encode('utf-8')
-
                 packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
 
+                # Add 2-byte length prefix (big-endian)
+                data_size = len(packet)
+                length_prefixed_packet = bytearray(2 + len(packet))
+                length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+                length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+                length_prefixed_packet[2:] = packet # Final packet with length prefix
+
                 # Enqueue the keepalive packet to be sent reliably over the stream
-                self.enqueue_stream_packet(packet)
+                self.enqueue_stream_packet(length_prefixed_packet)
 
                 logger.debug(f"Sent keepalive packet: {keepalive_packet}")
 
@@ -256,16 +281,23 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
-                elif packet_type == PACKET_TYPE["map_ack"] or packet_type == PACKET_TYPE["map_nack"]:
+                elif packet_type == PACKET_TYPE["map_connect"] or packet_type == PACKET_TYPE["map_disconnect"]:
                     self.network_worker.data_received.emit(event.data)
                 elif packet_type == PACKET_TYPE["rtt"]:
                     # just modify event data with current timestamp
                     rtt_data = json.loads(payload.decode('utf-8'))
                     rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
                     rtt_packet = json.dumps(rtt_data).encode('utf-8')
-                    self.network_worker.enqueue_stream_packet(
-                        struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
-                    )
+                    rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+
+                    # Add 2-byte length prefix (big-endian)
+                    data_size = len(rtt_packet)
+                    length_prefixed_packet = bytearray(2 + len(rtt_packet))
+                    length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+                    length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+                    length_prefixed_packet[2:] = rtt_packet
+
+                    self.network_worker.enqueue_stream_packet(length_prefixed_packet)
                 elif packet_type == PACKET_TYPE["rtt_train"]:
                     self.network_worker.data_received.emit(event.data)
                 else:
