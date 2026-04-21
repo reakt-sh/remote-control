@@ -15,7 +15,7 @@ import { SERVER_URL } from '@/scripts/config'
 
 
 // Packet Types
-const PACKET_TYPE = {
+export const PACKET_TYPE = {
   video: 13,
   audio: 14,
   control: 15,
@@ -32,9 +32,10 @@ const PACKET_TYPE = {
   uploading: 26,
   upload_end: 27,
   rtt: 28,
-  map_ack: 29,
+  map_connect: 29,
   rtt_train: 30,
-  map_nack: 31
+  map_disconnect: 31,
+  connect: 32,
 }
 
 
@@ -239,7 +240,7 @@ export const useTrainStore = defineStore('train', () => {
     }
 
     // Send a message through WebTransport to notify the server
-    await sendWtMessage(`MAP_CONNECTION:${remoteControlId.value}:${trainId}`);
+    await sendWtMessage(prepareMapConnectionMessage(remoteControlId.value, trainId));
 
     // Subscribe to MQTT telemetry for this specific train
     subscribeToTrain(trainId)
@@ -248,6 +249,28 @@ export const useTrainStore = defineStore('train', () => {
     await performRTTCalibration()
 
     commandCounter.value = 0
+  }
+
+  function prepareMapConnectionMessage(remoteControlId, trainId) {
+    const mapConnectPacket = {
+      type: "MAP_CONNECT",
+      remote_control_id: remoteControlId,
+      train_id: trainId
+    };
+
+    const packetData = new TextEncoder().encode(JSON.stringify(mapConnectPacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.map_connect;
+    packet.set(packetData, 1);
+
+    // Add data size in first two bytes
+    const dataSize = packet.length
+    const lengthPrefixedPacket = new Uint8Array(2 + packet.length)
+    lengthPrefixedPacket[0] = (dataSize >> 8) & 0xFF // High byte
+    lengthPrefixedPacket[1] = dataSize & 0xFF        // Low byte
+    lengthPrefixedPacket.set(packet, 2)
+
+    return lengthPrefixedPacket;
   }
 
   async function performRTTCalibration() {
@@ -603,7 +626,7 @@ export const useTrainStore = defineStore('train', () => {
     const keepalivePacket = {
       type: "keepalive",
       protocol: "webtransport",
-      remoteControlId: remoteControlId.value,
+      remote_control_id: remoteControlId.value,
       timestamp: Date.now() / 1000, // seconds since epoch, similar to Python's time()
       sequence: keepaliveSequence.value++  // increment your sequence variable
     };
@@ -612,7 +635,14 @@ export const useTrainStore = defineStore('train', () => {
     packet[0] = PACKET_TYPE.keepalive; // Set the first byte as PACKET_TYPE.keepalive
     packet.set(packetData, 1);
 
-    sendWtMessage(packet)
+    // add length prefix size
+    const dataSize = packet.length
+    const lengthPrefixedPacket = new Uint8Array(2 + packet.length)
+    lengthPrefixedPacket[0] = (dataSize >> 8) & 0xFF // High byte
+    lengthPrefixedPacket[1] = dataSize & 0xFF        // Low byte
+    lengthPrefixedPacket.set(packet, 2)
+
+    sendWtMessage(lengthPrefixedPacket)
   }
 
   async function onNetworkSpeedCalculated(downloadSpeed, uploadSpeed) {
