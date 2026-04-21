@@ -113,7 +113,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         if self.client_type == "REMOTE_CONTROL":
             # Send a message to the train client to acknowledge the unmapping
             data = {
-                "remoteControlId": self.remote_control_id,
+                "remote_control_id": self.remote_control_id,
             }
             packet_data = json.dumps(data).encode('utf-8')
             packet = struct.pack("B", PACKET_TYPE["map_disconnect"]) + packet_data
@@ -126,7 +126,12 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             asyncio.create_task(self._handle_stream_end())
             return
 
-        if self.session_id != -1 and self.session_id == event.stream_id:
+        if self.client_type is None:
+            # we need to wait for first application data
+            if len(event.data) > 3 and event.data[0] == PACKET_TYPE["connect"]:
+                self.construct_stream_packet(event.data, event.stream_id)
+        else:
+            # client type is already determined, we can directly process stream packet without checking packet type
             self.construct_stream_packet(event.data, event.stream_id)
 
 
