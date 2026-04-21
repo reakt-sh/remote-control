@@ -127,11 +127,13 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             return
 
         if self.client_type is None:
-            # we need to wait for first application data
-            if len(event.data) > 3 and event.data[0] == PACKET_TYPE["connect"]:
+            # wait for first connect message to determine client type
+            if len(event.data) > 3 and event.data[2] == PACKET_TYPE["connect"]:
                 self.construct_stream_packet(event.data, event.stream_id)
+            else:
+                # ignore any data received before the connect message
+                logger.warning(f"QUIC: Received stream data before client type is determined, ignoring. data: {event.data}")
         else:
-            # client type is already determined, we can directly process stream packet without checking packet type
             self.construct_stream_packet(event.data, event.stream_id)
 
 
@@ -215,7 +217,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
             if packet and packet[0] == PACKET_TYPE["map_connect"]:
                 remote_control_id = message.get("remote_control_id")
-                train_id = message.get("trainId")
+                train_id = message.get("train_id")
                 asyncio.create_task(
                     self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
                 )
@@ -254,6 +256,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         self.session_id = stream_id
+        logger.info(f"QUIC: WebTransport handshake received on stream {stream_id}, authority: {authority}, path: {path}")
         self._send_response(stream_id, 200, end_stream=False)
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
