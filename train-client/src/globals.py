@@ -38,9 +38,10 @@ PACKET_TYPE = {
     "uploading": 26,
     "upload_end": 27,
     "rtt": 28,
-    "map_ack": 29,
+    "map_connect": 29,
     "rtt_train": 30,
-    "map_nack": 31
+    "map_disconnect": 31,
+    "connect": 32,
 }
 
 TRAIN_STATUS = {

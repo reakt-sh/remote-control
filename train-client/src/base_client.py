@@ -179,32 +179,32 @@ class BaseClient(ABC, metaclass=QABCMeta):
         logger.info(f"QUIC data received: {data}")
         packet_type = data[0]
         payload = data[1:]
-        if packet_type == PACKET_TYPE["map_ack"]:
-            ## Map ACK received: data =  b'{"type": "mapping_acknowledgement", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
+        if packet_type == PACKET_TYPE["map_connect"]:
+            ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
             try:
                 remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
                 self.connected_remote_control_ids.add(remote_control_id)
-                logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
+                logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
                 # Reset samples for this remote and start RTT measurement
                 self.clock_offset_samples[remote_control_id] = []
                 self.send_rtt_packets(remote_control_id)
                 self.hw_info.notify_new_remote_control_connected(remote_control_id)
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse map_ack JSON: {e}")
+                logger.error(f"Failed to parse map_connect JSON: {e}")
 
-        elif packet_type == PACKET_TYPE["map_nack"]:
+        elif packet_type == PACKET_TYPE["map_disconnect"]:
             try:
                 remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
-                logger.warning(f"Map NACK received from remote control ID: {remote_control_id}")
+                logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
                 if remote_control_id in self.connected_remote_control_ids:
                     self.connected_remote_control_ids.remove(remote_control_id)
-                    logger.info(f"Remote control ID {remote_control_id} removed from connected set due to NACK")
+                    logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
                 else:
-                    logger.warning(f"Received map_nack for unknown remote control ID: {remote_control_id}")
+                    logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
 
                 self.stop_train_operations()
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse map_nack JSON: {e}")
+                logger.error(f"Failed to parse map_disconnect JSON: {e}")
 
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')
@@ -265,7 +265,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
             rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
             rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
-            self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
+
+            # Add 2-byte length prefix (big-endian)
+            data_size = len(rtt_train_packet)
+            length_prefixed_packet = bytearray(2 + len(rtt_train_packet))
+            length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+            length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+            length_prefixed_packet[2:] = rtt_train_packet
+            self.network_worker_quic.enqueue_stream_packet(length_prefixed_packet)
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
 
         # Send packets with delays using QTimer
