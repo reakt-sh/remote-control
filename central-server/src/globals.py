@@ -33,6 +33,9 @@ QUIC_PORT = 4437
 CLIENT_TYPE_TRAIN = "TRAIN"
 CLIENT_TYPE_REMOTE_CONTROL = "REMOTE_CONTROL"
 
+STREAM_MESSAGE_SIZE_LIMIT = 300  # bytes, will adjust if needed after testing
+
+
 @dataclass
 class ServerConfig:
     cert_file: str = ""

@@ -379,7 +379,6 @@ class WebRTCManager:
         Sends periodic ping messages to keep the connection alive.
         """
         if remote_control_id in self.keepalive_tasks:
-            logger.debug(f"WebRTC: Keepalive already running for {remote_control_id}")
             return
 
         async def keepalive_loop():
@@ -396,12 +395,11 @@ class WebRTCManager:
                             # Send a small keepalive ping
                             keepalive_msg = b'\x00PING'
                             channel.send(keepalive_msg)
-                            logger.debug(f"WebRTC: Sent keepalive to {remote_control_id}")
                         except (ConnectionError, OpenSSLError) as transport_err:
                             # Handle SSL/DTLS errors in keepalive gracefully
-                            logger.debug(f"WebRTC: Transport error in keepalive for {remote_control_id}, continuing...")
+                            logger.error(f"WebRTC: Transport error in keepalive for {remote_control_id}, continuing...")
                         except Exception as e:
-                            logger.warning(f"WebRTC: Error sending keepalive to {remote_control_id}: {e}")
+                            logger.error(f"WebRTC: Error sending keepalive to {remote_control_id}: {e}")
                     else:
                         logger.warning(f"WebRTC: Commands channel not available for keepalive {remote_control_id}")
 

@@ -110,7 +110,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.warning(f"QUIC: Received unhandled data : {event.data}")
 
     async def _handle_stream_end(self) -> None:
-        if self.client_type == "REMOTE_CONTROL":
+        if self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
             # Send a message to the train client to acknowledge the unmapping
             data = {
                 "remote_control_id": self.remote_control_id,
@@ -142,6 +142,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             if self.stream_data_to_process == None:
                 # it's the first chunk of data, retrieve the total expected data size from the first two bytes
                 self.stream_data_size_remaining = (data[0] << 8) | data[1]
+
+                # add a safety check to make sure the data size is reasonable
+                if self.stream_data_size_remaining < 0 or self.stream_data_size_remaining > STREAM_MESSAGE_SIZE_LIMIT:
+                    # reset immediately if the data size is invalid to avoid potential issues
+                    logger.error(f"Invalid stream data size: {self.stream_data_size_remaining}, data: {data}")
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
+                    return
 
                 if self.stream_data_size_remaining == len(data) - 2:
                     # perfect case, all data is received in one chunk, process it directly
