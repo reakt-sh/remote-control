@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { QUIC_URL } from '@/scripts/config'
+import { PACKET_TYPE } from '@/stores/trainStore'
 
 export function useWebTransport(remoteControlId, messageHandler) {
   const isWTConnected = ref(false)
@@ -93,13 +94,12 @@ export function useWebTransport(remoteControlId, messageHandler) {
 
   function prepareConnectMessage() {
     const connectPacket = {
-      type: "CONNECT",
-      client_type: "REMOTE_CONTROL",
+      type: "connect",
       remote_control_id: remoteControlId.value,
     };
     const packetData = new TextEncoder().encode(JSON.stringify(connectPacket));
     const packet = new Uint8Array(1 + packetData.length);
-    packet[0] = 32;
+    packet[0] = PACKET_TYPE.connect;
     packet.set(packetData, 1);
 
     // Add data size in first two bytes

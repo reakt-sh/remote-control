@@ -36,6 +36,7 @@ export const PACKET_TYPE = {
   rtt_train: 30,
   map_disconnect: 31,
   connect: 32,
+  connect_response: 33,
 }
 
 
@@ -253,7 +254,7 @@ export const useTrainStore = defineStore('train', () => {
 
   function prepareMapConnectionMessage(remoteControlId, trainId) {
     const mapConnectPacket = {
-      type: "MAP_CONNECT",
+      type: "map_connect",
       remote_control_id: remoteControlId,
       train_id: trainId
     };
@@ -502,6 +503,10 @@ export const useTrainStore = defineStore('train', () => {
         const downloadDuration = (download_end_time.value - download_start_time.value) / 1000 // seconds
         const speedMbps = (total_downloaded_bytes.value * 8) / (1024 * 1024) / downloadDuration
         console.log(`Download speed calculated: ${speedMbps.toFixed(2)} Mbps`)
+        break
+      }
+      case PACKET_TYPE.connect_response: {
+        console.log('✅ Received connect response from server via WebTransport, data = ', new TextDecoder().decode(payload))
         break
       }
       case PACKET_TYPE.rtt: {

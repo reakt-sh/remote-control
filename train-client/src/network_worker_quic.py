@@ -118,8 +118,7 @@ class NetworkWorkerQUIC(QThread):
 
     def prepareConnectMessage(self):
         connect_packet = {
-            "type": "CONNECT",
-            "client_type": "TRAIN",
+            "type": "connect",
             "train_id": self.train_client_id,
         }
         packet_data = json.dumps(connect_packet).encode('utf-8')
@@ -300,7 +299,9 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                     self.network_worker.enqueue_stream_packet(length_prefixed_packet)
                 elif packet_type == PACKET_TYPE["rtt_train"]:
                     self.network_worker.data_received.emit(event.data)
+                elif packet_type == PACKET_TYPE["connect_response"]:
+                    logger.info(f"Received connect response from server, data = {event.data}")
                 else:
-                    logger.warning(f"Invalid process command with packet type = {packet_type}")
+                    logger.warning(f"Invalid process command with packet type = {packet_type}, data: {event.data}")
             except Exception as e:
                 logger.warning("There is no packet type in the received data")
