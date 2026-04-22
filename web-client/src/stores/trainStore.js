@@ -142,7 +142,7 @@ export const useTrainStore = defineStore('train', () => {
     } catch (error) {
       console.error('❌ WebRTC connection failed:', error)
     }
-    setInterval(sendKeepAliveWebTransport, 10000);
+    setInterval(sendKeepAliveWebTransport, 200);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
 

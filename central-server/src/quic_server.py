@@ -205,24 +205,15 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
 
     def process_stream_packet(self, packet: bytes, stream_id: int):
+        message = self.decode_packet(packet)
         if self.client_type is None and packet and packet[0] == PACKET_TYPE["connect"]:
             self.create_new_connection(packet, stream_id)
         elif self.client_type == CLIENT_TYPE_TRAIN:
-            if packet and (packet[0] == PACKET_TYPE["telemetry"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"]):
+            if packet and (packet[0] == PACKET_TYPE["telemetry"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"] or packet[0] == PACKET_TYPE["keepalive"]):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_remote_controls(self.train_id, packet)
                 )
-            if packet and packet[0] == PACKET_TYPE["keepalive"]:
-                self.decode_keepalive_packet(packet)
         elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
-            message = ""
-            try:
-                json_str = packet[1:].decode('utf-8')
-                message = json.loads(json_str)
-            except Exception as e:
-                logger.error(f"Error decoding stream packet from remote control: {e}, packet: {packet}", exc_info=True)
-                return
-
             if packet and packet[0] == PACKET_TYPE["map_connect"]:
                 remote_control_id = message.get("remote_control_id")
                 train_id = message.get("train_id")
@@ -233,14 +224,10 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(remote_control_id, packet)
                 )
-            elif packet and (packet[0] == PACKET_TYPE["command"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"]):
-                logger.info(f"QUIC: Relaying stream data to train from remote control {self.remote_control_id}: data = {packet}")
+            elif packet and (packet[0] == PACKET_TYPE["command"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"] or packet[0] == PACKET_TYPE["keepalive"]):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
                 )
-
-            elif packet and packet[0] == PACKET_TYPE["keepalive"]:
-                self.decode_keepalive_packet(packet)
             else:
                 logger.error(f"QUIC: Unhandled stream packet from remote control {self.remote_control_id}: data = {packet}")
         else:
@@ -304,17 +291,16 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         except Exception as e:
             logger.error(f"Error cleaning up client: {e}")
 
-    def decode_keepalive_packet(self, data) -> None:
-
+    def decode_packet(self, data) -> None:
         json_bytes = data[1:]
+        message = ""
         try:
             json_str = json_bytes.decode('utf-8')
-            payload = json.loads(json_str)
-            logger.debug(f"Decoded keepalive packet: {payload}")
-
+            message = json.loads(json_str)
+            logger.debug(f"Decoded: {message}")
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
-            logger.error(f"Error decoding packet: {e}")
-            logger.error(f"Raw JSON bytes: {json_bytes}")
+            logger.error(f"Error decoding packet: {e}, data: {data}")
+        return message
 
     async def measure_download_speed(self):
         logger.info(f"QUIC: Starting download speed test for remote control {self.remote_control_id}")
