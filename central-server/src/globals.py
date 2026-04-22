@@ -23,6 +23,7 @@ PACKET_TYPE = {
     "rtt_train": 30,
     "map_disconnect": 31,
     "connect": 32,
+    "connect_response": 33,
 }
 
 HOST = "0.0.0.0"

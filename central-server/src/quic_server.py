@@ -88,7 +88,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug(f"Stream reset: {event.stream_id}")
 
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
-        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
+        if self.client_type == CLIENT_TYPE_TRAIN and event.data and event.data[0] == PACKET_TYPE["video"]:
             # Relay the video frame to all mapped remote controls
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
@@ -199,14 +199,14 @@ class QUICRelayProtocol(QuicConnectionProtocol):
     def process_stream_packet(self, packet: bytes, stream_id: int):
         if self.client_type is None and packet and packet[0] == PACKET_TYPE["connect"]:
             self.create_new_connection(packet, stream_id)
-        elif self.client_type == "TRAIN":
+        elif self.client_type == CLIENT_TYPE_TRAIN:
             if packet and (packet[0] == PACKET_TYPE["telemetry"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"]):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_remote_controls(self.train_id, packet)
                 )
             if packet and packet[0] == PACKET_TYPE["keepalive"]:
                 self.decode_keepalive_packet(packet)
-        elif self.client_type == "REMOTE_CONTROL":
+        elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
             message = ""
             try:
                 json_str = packet[1:].decode('utf-8')
@@ -266,9 +266,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
-        if self.client_type == "TRAIN":
+        if self.client_type == CLIENT_TYPE_TRAIN:
             logger.info(f"QUIC: Connection lost for train_id: {self.train_id}")
-        elif self.client_type == "REMOTE_CONTROL":
+        elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
             logger.info(f"QUIC: Connection lost for remote_control_id: {self.remote_control_id}")
         else:
             logger.warning("QUIC: Connection lost for unknown client type")
@@ -287,9 +287,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
     async def _remove_client_from_manager(self) -> None:
         try:
-            if self.client_type == 'TRAIN':
+            if self.client_type == CLIENT_TYPE_TRAIN:
                 await self.client_manager.remove_train_client(self.train_id)
-            elif self.client_type == 'REMOTE_CONTROL':
+            elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
                 await self.client_manager.remove_remote_control_client(self.remote_control_id)
                 if not self.client_manager.remote_control_clients:
                     self.sim_process.destroy_simulation_process()
@@ -350,23 +350,28 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         try:
             json_str = payload.decode('utf-8')
             message = json.loads(json_str)
-            if message.get("client_type") == CLIENT_TYPE_TRAIN:
+            # here we need to check of message contains field named "train_id"
+
+            if message.get("train_id") is not None:
                 self.client_type = CLIENT_TYPE_TRAIN
                 self.stream_id = stream_id
                 self.train_id = message.get("train_id")
                 self.video_datagram_assembler = VideoDatagramAssembler(self.train_id)
                 asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
 
-                # try send Stream hello world message to the remote control
-                logger.debug(f"QUIC: stream received from stream_id: {stream_id}, train-id: {self.train_id}")
-                hello_message = f"HELLO: {self.train_id}".encode()
-                self._quic.send_stream_data(stream_id, hello_message, end_stream=False)
-                transmit_coro = self.transmit()
-                logger.debug(f"QUIC: hello_message sent to train {self.train_id}")
+                # try send Stream hello world message to the train client
+                connect_response_msg = {
+                    "type" : "connect_response",
+                    "train_id": self.train_id,
+                }
+                connect_response_packet = json.dumps(connect_response_msg).encode('utf-8')
+                connect_response_packet = struct.pack("B", PACKET_TYPE["connect_response"]) + connect_response_packet
+                self._quic.send_stream_data(stream_id, connect_response_packet, end_stream=False)
+                self.transmit()
                 return
 
-            if message.get("client_type") == CLIENT_TYPE_REMOTE_CONTROL:
-                self.client_type = "REMOTE_CONTROL"
+            if message.get("remote_control_id") is not None:
+                self.client_type = CLIENT_TYPE_REMOTE_CONTROL
                 self.stream_id = stream_id
                 self.remote_control_id = message.get("remote_control_id")
                 asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
@@ -379,13 +384,15 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     # self.sim_process.create_simulation_process()
 
                 # try send Stream hello world message to the remote control
-                hello_message = f"HELLO: {self.remote_control_id}".encode()
-                self._quic.send_stream_data(stream_id, hello_message, end_stream=False)
-                self.transmit()
-                logger.debug(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
+                connect_response_msg = {
+                    "type" : "connect_response",
+                    "remote_control_id": self.remote_control_id,
+                }
+                connect_response_packet = json.dumps(connect_response_msg).encode('utf-8')
+                connect_response_packet = struct.pack("B", PACKET_TYPE["connect_response"]) + connect_response_packet
 
-                # initiate download/upload speed test with the remote control
-                # asyncio.create_task(self.measure_download_speed())
+                self._quic.send_stream_data(stream_id, connect_response_packet, end_stream=False)
+                self.transmit()
                 return
         except UnicodeDecodeError:
             logger.warning("Could not decode connect message")
