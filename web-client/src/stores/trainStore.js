@@ -632,7 +632,7 @@ export const useTrainStore = defineStore('train', () => {
       type: "keepalive",
       protocol: "webtransport",
       remote_control_id: remoteControlId.value,
-      timestamp: Date.now() / 1000, // seconds since epoch, similar to Python's time()
+      remote_control_timestamp: Date.now(),
       sequence: keepaliveSequence.value++  // increment your sequence variable
     };
     const packetData = new TextEncoder().encode(JSON.stringify(keepalivePacket));

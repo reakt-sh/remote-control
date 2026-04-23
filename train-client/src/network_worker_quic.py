@@ -259,8 +259,6 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
         self.network_worker = network_worker
 
     def quic_event_received(self, event: QuicEvent):
-        logger.debug(f"Processing QUIC event: {event}")
-
         if isinstance(event, ConnectionTerminated):
             logger.error(f"QUIC connection terminated! Error code: {event.error_code}, "
                         f"Reason: {event.reason_phrase}")
@@ -280,7 +278,7 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
-                elif packet_type == PACKET_TYPE["map_connect"] or packet_type == PACKET_TYPE["map_disconnect"]:
+                elif packet_type == PACKET_TYPE["map_connect"] or packet_type == PACKET_TYPE["map_disconnect"] or packet_type == PACKET_TYPE["keepalive"]:
                     self.network_worker.data_received.emit(event.data)
                 elif packet_type == PACKET_TYPE["rtt"]:
                     # just modify event data with current timestamp

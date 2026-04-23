@@ -307,7 +307,6 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         try:
             json_str = json_bytes.decode('utf-8')
             message = json.loads(json_str)
-            logger.debug(f"Decoded: {message}")
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
             logger.error(f"Error decoding packet: {e}, data: {data}")
         return message

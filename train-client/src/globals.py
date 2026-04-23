@@ -19,6 +19,7 @@ ASSET_DIR = os.path.join(BASE_DIR, '..', 'asset')
 H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'dump')
 LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency')
 HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
+LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency_keepalive')
 
 # Packet Types
 PACKET_TYPE = {
