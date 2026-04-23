@@ -274,7 +274,6 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
         if isinstance(event, StreamDataReceived):
             try:
                 packet_type = event.data[0]
-                logger.debug(f"packet_type = {packet_type}")
                 payload = event.data[1:]
                 if packet_type == PACKET_TYPE["command"]:
                     self.network_worker.process_command.emit(payload)
