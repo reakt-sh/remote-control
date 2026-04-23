@@ -154,7 +154,6 @@ class ClientManager:
                 try:
                     protocol._quic.send_stream_data(protocol.stream_id, data, end_stream=False)
                     protocol.transmit()
-                    logger.info(f"Relayed stream data(Reliable) to train {train_id} from remote_control {remote_control_id}")
                 except Exception as e:
                     logger.error(f"Failed to relay stream to train {train_id}: {e}")
         else:

@@ -44,6 +44,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
         self.stream_data_to_process = None
+        self.header_data = None
         self.stream_data_size_remaining = 0
 
     def connection_idle_timeout(self) -> None:
@@ -88,7 +89,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug(f"Stream reset: {event.stream_id}")
 
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
-        if self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["video"]:
+        if self.client_type == CLIENT_TYPE_TRAIN and event.data and event.data[0] == PACKET_TYPE["video"]:
             # Relay the video frame to all mapped remote controls
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)
@@ -109,119 +110,138 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         else:
             logger.warning(f"QUIC: Received unhandled data : {event.data}")
 
+    async def _handle_stream_end(self) -> None:
+        if self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
+            # Send a message to the train client to acknowledge the unmapping
+            data = {
+                "remote_control_id": self.remote_control_id,
+            }
+            packet_data = json.dumps(data).encode('utf-8')
+            packet = struct.pack("B", PACKET_TYPE["map_disconnect"]) + packet_data
+            await self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
+        self._close_connection()
+
     def _handle_stream_data(self, event: StreamDataReceived) -> None:
+        if event.end_stream == True:
+            # Stream ended by client, clean up resources and close connection
+            asyncio.create_task(self._handle_stream_end())
+            return
+
         if self.client_type is None:
-            try:
-                message = event.data.decode()
-                if message.startswith("TRAIN:"):
-                    self.client_type = "TRAIN"
-                    self.stream_id = event.stream_id
-                    self.train_id = message[6:]  # Extract train ID
-                    self.video_datagram_assembler = VideoDatagramAssembler(self.train_id)
-                    asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
+            # wait for first connect message to determine client type
+            if len(event.data) > 3 and event.data[2] == PACKET_TYPE["connect"]:
+                self.construct_stream_packet(event.data, event.stream_id)
+            else:
+                # ignore any data received before the connect message
+                logger.warning(f"QUIC: Received stream data before client type is determined, ignoring. data: {event.data}")
+        else:
+            self.construct_stream_packet(event.data, event.stream_id)
 
-                    # try send Stream hello world message to the remote control
-                    logger.debug(f"QUIC: stream received from stream_id: {event.stream_id}, train-id: {self.train_id}")
-                    hello_message = f"HELLO: {self.train_id}".encode()
-                    self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
-                    transmit_coro = self.transmit()
-                    logger.debug(f"QUIC: hello_message sent to train {self.train_id}")
+
+    def construct_stream_packet(self, data: bytes, stream_id: int):
+        try:
+            if self.stream_data_to_process == None:
+                if self.header_data is not None:
+                    data = self.header_data + data
+                    self.header_data = None  # clear the stored header data
+
+                if len(data) < 2:
+                    logger.warning(f"QUIC: Received stream data chunk that is too small to contain size header, datasize: {len(data)}, data: {data}")
+                    self.header_data = data  # Store the incomplete header data
                     return
-                elif message.startswith("REMOTE_CONTROL:"):
-                    self.client_type = "REMOTE_CONTROL"
-                    self.stream_id = event.stream_id
-                    self.remote_control_id = message[15:]  # Extract train ID
-                    asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
-                    # If no train clients are connected, spawn a subprocess to run a simulated train client
-                    logger.info(f"Check self.client_manager.train_clients = {self.client_manager.train_clients}")
-                    if not self.client_manager.train_clients:
-                        logger.info("No train clients connected. here we can spawn a simulated train client subprocess.")
-                        # Currently simulation process creation is stopped temporarily
-                        # self.sim_process.create_simulation_process()
+                # it's the first chunk of data, retrieve the total expected data size from the first two bytes
+                self.stream_data_size_remaining = (data[0] << 8) | data[1]
 
-                    # try send Stream hello world message to the remote control
-                    hello_message = f"HELLO: {self.remote_control_id}".encode()
-                    self._quic.send_stream_data(event.stream_id, hello_message, end_stream=False)
-                    self.transmit()
-                    logger.debug(f"QUIC: hello_message sent to Remote control {self.remote_control_id}")
-
-                    # initiate download/upload speed test with the remote control
-                    # asyncio.create_task(self.measure_download_speed())
+                # add a safety check to make sure the data size is reasonable
+                if self.stream_data_size_remaining < 0 or self.stream_data_size_remaining > STREAM_MESSAGE_SIZE_LIMIT:
+                    # reset immediately if the data size is invalid to avoid potential issues
+                    logger.error(f"Invalid stream data size: {self.stream_data_size_remaining}, data: {data}")
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
                     return
-                else:
-                    logger.warning(f"Unknown client identification message: {message}")
-                    return
-            except UnicodeDecodeError:
-                logger.warning("Could not decode client identification message")
-                return
 
-        elif self.client_type == "TRAIN" and event.data and (event.data[0] == PACKET_TYPE["telemetry"] or event.data[0] == PACKET_TYPE["rtt"] or event.data[0] == PACKET_TYPE["rtt_train"]):
-            asyncio.create_task(
-                self.client_manager.relay_stream_to_remote_controls(self.train_id, event.data)
-            )
-        elif self.client_type == "TRAIN" and event.data and event.data[0] == PACKET_TYPE["keepalive"]:
-            self.decode_keepalive_packet(event.data)
-        elif self.client_type == "REMOTE_CONTROL":
-            message = ""
-            try:
-                message = event.data.decode()
-            except UnicodeDecodeError:
-                pass
-
-            if message.startswith("MAP_CONNECTION:"):
-                parts = message[15:].split(":")
-                if len(parts) == 2:
-                    remote_control_id, train_id = parts
-                    asyncio.create_task(
-                        self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
-                    )
-                    # also send a message to the train client to acknowledge the mapping
-                    data = {
-                        "type": "mapping_acknowledgement",
-                        "remote_control_id": remote_control_id,
-                    }
-                    packet_data = json.dumps(data).encode('utf-8')
-                    packet = struct.pack("B", PACKET_TYPE["map_ack"]) + packet_data
-
-                    asyncio.create_task(
-                        self.client_manager.relay_stream_to_train(remote_control_id, packet)
-                    )
-                else:
-                    logger.warning("Invalid MAP_CONNECTION message format")
-            elif event.data[2] == PACKET_TYPE["command"] or event.data[2] == PACKET_TYPE["rtt"] or event.data[2] == PACKET_TYPE["rtt_train"]:
-                logger.info(f"QUIC: Relaying stream data to train from remote control {self.remote_control_id}: data = {event.data}")
-                # retrieve data size from first two bytes
-                data_size = (event.data[0] << 8) | event.data[1]
-                self.stream_data_size_remaining = data_size
-                if len(event.data) - 2 != data_size:
-                    self.stream_data_to_process = event.data[2:]  # Store the initial chunk of data
+                if self.stream_data_size_remaining == len(data) - 2:
+                    # perfect case, all data is received in one chunk, process it directly
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
+                    self.process_stream_packet(data[2:], stream_id)
+                elif self.stream_data_size_remaining < len(data) - 2:
+                    # more data than expected, process the expected data and recursively call the function with remaining bytes
+                    self.process_stream_packet(data[2:2 + self.stream_data_size_remaining], stream_id)
+                    remaining_data = data[2 + self.stream_data_size_remaining:]
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
+                    self.construct_stream_packet(remaining_data, stream_id)
+                elif self.stream_data_size_remaining > len(data) - 2:
+                    logger.warning(f"Data size mismatch: expected {self.stream_data_size_remaining} bytes, but got {len(data) - 2} bytes, data: {data}")
+                    self.stream_data_to_process = data[2:]  # Store the initial chunk of data
                     self.stream_data_size_remaining -= len(self.stream_data_to_process)
-                    logger.warning(f"Data size mismatch: expected {data_size} bytes, but got {len(event.data) - 2} bytes")
                 else:
-                    asyncio.create_task(
-                        self.client_manager.relay_stream_to_train(self.remote_control_id, event.data[2:])
-                    )
+                    logger.error(f"Unexpected case in construct_stream_packet: data size: {len(data) - 2}, remaining size: {self.stream_data_size_remaining}, data: {data}")
                     self.stream_data_to_process = None
                     self.stream_data_size_remaining = 0
 
-            elif event.data[0] == PACKET_TYPE["keepalive"]:
-                self.decode_keepalive_packet(event.data)
             else:
-                if self.stream_data_size_remaining != 0 and self.stream_data_to_process is not None:
-                    self.stream_data_to_process += event.data
-                    self.stream_data_size_remaining -= len(event.data)
-                    logger.warning(f"Received additional stream data chunk, size: {len(event.data)} bytes, remaining size: {self.stream_data_size_remaining} bytes")
-                    if self.stream_data_size_remaining == 0:
-                        asyncio.create_task(
-                            self.client_manager.relay_stream_to_train(self.remote_control_id, self.stream_data_to_process)
-                        )
-                        self.stream_data_to_process = None
-                        self.stream_data_size_remaining = 0
+                if len(data) > self.stream_data_size_remaining:
+                    logger.warning(f"Data size mismatch: expected {self.stream_data_size_remaining} bytes, but got {len(data)} bytes, data: {data}")
+                    self.stream_data_to_process += data[:self.stream_data_size_remaining]
+                    self.process_stream_packet(self.stream_data_to_process, stream_id)
+
+                    # now consider rest of the bytes might be a new packet, so recursively call the function with remaining bytes
+                    remaining_data = data[self.stream_data_size_remaining:]
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
+                    self.construct_stream_packet(remaining_data, stream_id)
+                elif len(data) == self.stream_data_size_remaining:
+                    self.stream_data_to_process += data
+                    self.stream_data_size_remaining -= len(data)
+                    logger.warning(f"Received additional stream data chunk, client type: {self.client_type}, size: {len(data)} bytes, remaining size: {self.stream_data_size_remaining} bytes, data: {data}")
+                    self.process_stream_packet(self.stream_data_to_process, stream_id)
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
+                elif len(data) < self.stream_data_size_remaining:
+                    self.stream_data_to_process += data
+                    self.stream_data_size_remaining -= len(data)
+                    logger.warning(f"Received additional stream data chunk, client type: {self.client_type}, size: {len(data)} bytes, remaining size: {self.stream_data_size_remaining} bytes, data: {data}")
                 else:
-                    logger.warning(f"QUIC: Received unhandled data from remote control {self.remote_control_id}: {message}")
+                    logger.error(f"Unexpected case in construct_stream_packet: data size: {len(data)}, remaining size: {self.stream_data_size_remaining}, data: {data}")
+                    self.stream_data_to_process = None
+                    self.stream_data_size_remaining = 0
+        except Exception as e:
+            logger.error(f"Error in construct_stream_packet: {e}, data: {data}", exc_info=True)
+            self.stream_data_to_process = None
+            self.stream_data_size_remaining = 0
+
+
+    def process_stream_packet(self, packet: bytes, stream_id: int):
+        message = self.decode_packet(packet)
+        if self.client_type is None and packet and packet[0] == PACKET_TYPE["connect"]:
+            self.create_new_connection(packet, stream_id)
+        elif self.client_type == CLIENT_TYPE_TRAIN:
+            if packet and (packet[0] == PACKET_TYPE["telemetry"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"] or packet[0] == PACKET_TYPE["keepalive"]):
+                asyncio.create_task(
+                    self.client_manager.relay_stream_to_remote_controls(self.train_id, packet)
+                )
+        elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
+            if packet and packet[0] == PACKET_TYPE["map_connect"]:
+                remote_control_id = message.get("remote_control_id")
+                train_id = message.get("train_id")
+                asyncio.create_task(
+                    self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
+                )
+                # also send a message to the train client to acknowledge the mapping
+                asyncio.create_task(
+                    self.client_manager.relay_stream_to_train(remote_control_id, packet)
+                )
+            elif packet and (packet[0] == PACKET_TYPE["command"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"] or packet[0] == PACKET_TYPE["keepalive"]):
+                asyncio.create_task(
+                    self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
+                )
+            else:
+                logger.error(f"QUIC: Unhandled stream packet from remote control {self.remote_control_id}: data = {packet}")
         else:
-            logger.debug(f"QUIC: Unhandled stream data on stream_id {event.stream_id}, data length: {len(event.data)}, data: {event.data[:50]}...")
+            logger.error(f"QUIC: Received stream packet but client type is unknown or packet is empty, client type: {self.client_type}, packet: {packet}")
     def _h3_event_received(self, event: H3Event) -> None:
         if isinstance(event, HeadersReceived):
             headers = {}
@@ -241,6 +261,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         self.session_id = stream_id
+        logger.info(f"QUIC: WebTransport handshake received on stream {stream_id}, authority: {authority}, path: {path}")
         self._send_response(stream_id, 200, end_stream=False)
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
@@ -250,9 +271,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.h3_connection.send_headers(stream_id=stream_id, headers=headers, end_stream=end_stream)
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
-        if self.client_type == "TRAIN":
+        if self.client_type == CLIENT_TYPE_TRAIN:
             logger.info(f"QUIC: Connection lost for train_id: {self.train_id}")
-        elif self.client_type == "REMOTE_CONTROL":
+        elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
             logger.info(f"QUIC: Connection lost for remote_control_id: {self.remote_control_id}")
         else:
             logger.warning("QUIC: Connection lost for unknown client type")
@@ -271,26 +292,24 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
     async def _remove_client_from_manager(self) -> None:
         try:
-            if self.client_type == 'TRAIN':
+            if self.client_type == CLIENT_TYPE_TRAIN:
                 await self.client_manager.remove_train_client(self.train_id)
-            elif self.client_type == 'REMOTE_CONTROL':
+            elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
                 await self.client_manager.remove_remote_control_client(self.remote_control_id)
                 if not self.client_manager.remote_control_clients:
                     self.sim_process.destroy_simulation_process()
         except Exception as e:
             logger.error(f"Error cleaning up client: {e}")
 
-    def decode_keepalive_packet(self, data) -> None:
-
+    def decode_packet(self, data) -> None:
         json_bytes = data[1:]
+        message = ""
         try:
             json_str = json_bytes.decode('utf-8')
-            payload = json.loads(json_str)
-            logger.debug(f"Decoded keepalive packet: {payload}")
-
+            message = json.loads(json_str)
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
-            print(f"Error decoding packet: {e}")
-            print(f"Raw JSON bytes: {json_bytes}")
+            logger.error(f"Error decoding packet: {e}, data: {data}")
+        return message
 
     async def measure_download_speed(self):
         logger.info(f"QUIC: Starting download speed test for remote control {self.remote_control_id}")
@@ -329,6 +348,58 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             logger.info(f"QUIC: Upload speed: {self.upload_speed:.2f} MB/s")
         else:
             logger.warning(f"QUIC: Received unhandled upload packet type: {packet_type}")
+
+    def create_new_connection(self, payload, stream_id):
+        try:
+            json_str = payload.decode('utf-8')
+            message = json.loads(json_str)
+            # here we need to check of message contains field named "train_id"
+
+            if message.get("train_id") is not None:
+                self.client_type = CLIENT_TYPE_TRAIN
+                self.stream_id = stream_id
+                self.train_id = message.get("train_id")
+                self.video_datagram_assembler = VideoDatagramAssembler(self.train_id)
+                asyncio.create_task(self.client_manager.add_train_client(self.train_id, self))
+
+                # try send Stream hello world message to the train client
+                connect_response_msg = {
+                    "type" : "connect_response",
+                    "train_id": self.train_id,
+                }
+                connect_response_packet = json.dumps(connect_response_msg).encode('utf-8')
+                connect_response_packet = struct.pack("B", PACKET_TYPE["connect_response"]) + connect_response_packet
+                self._quic.send_stream_data(stream_id, connect_response_packet, end_stream=False)
+                self.transmit()
+                return
+
+            if message.get("remote_control_id") is not None:
+                self.client_type = CLIENT_TYPE_REMOTE_CONTROL
+                self.stream_id = stream_id
+                self.remote_control_id = message.get("remote_control_id")
+                asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
+
+                # If no train clients are connected, spawn a subprocess to run a simulated train client
+                logger.info(f"Check self.client_manager.train_clients = {self.client_manager.train_clients}")
+                if not self.client_manager.train_clients:
+                    logger.info("No train clients connected. here we can spawn a simulated train client subprocess.")
+                    # Currently simulation process creation is stopped temporarily
+                    # self.sim_process.create_simulation_process()
+
+                # try send Stream hello world message to the remote control
+                connect_response_msg = {
+                    "type" : "connect_response",
+                    "remote_control_id": self.remote_control_id,
+                }
+                connect_response_packet = json.dumps(connect_response_msg).encode('utf-8')
+                connect_response_packet = struct.pack("B", PACKET_TYPE["connect_response"]) + connect_response_packet
+
+                self._quic.send_stream_data(stream_id, connect_response_packet, end_stream=False)
+                self.transmit()
+                return
+        except UnicodeDecodeError:
+            logger.warning("Could not decode connect message")
+            return
 
 
 async def run_quic_server():

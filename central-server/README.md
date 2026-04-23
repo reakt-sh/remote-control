@@ -196,9 +196,9 @@ docker run -d \
   -p 8083:8083 \
   -p 8084:8084 \
   -p 8883:8883 \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain3.pem:/etc/fullchain1.pem \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/chain3.pem:/etc/chain1.pem \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey3.pem:/etc/privkey1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain4.pem:/etc/fullchain1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/chain4.pem:/etc/chain1.pem \
+  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey4.pem:/etc/privkey1.pem \
   -v /home/rcd/Desktop/Workspace/remote-control/central-server/NanoMQ/nanomq.conf:/etc/nanomq.conf \
   --cpus=0.5 \
   --memory=100m \

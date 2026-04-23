@@ -19,6 +19,7 @@ ASSET_DIR = os.path.join(BASE_DIR, '..', 'asset')
 H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'dump')
 LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency')
 HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
+LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency_keepalive')
 
 # Packet Types
 PACKET_TYPE = {
@@ -38,8 +39,11 @@ PACKET_TYPE = {
     "uploading": 26,
     "upload_end": 27,
     "rtt": 28,
-    "map_ack": 29,
+    "map_connect": 29,
     "rtt_train": 30,
+    "map_disconnect": 31,
+    "connect": 32,
+    "connect_response": 33,
 }
 
 TRAIN_STATUS = {

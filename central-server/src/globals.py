@@ -19,13 +19,22 @@ PACKET_TYPE = {
     "uploading": 26,
     "upload_end": 27,
     "rtt": 28,
-    "map_ack": 29,
+    "map_connect": 29,
     "rtt_train": 30,
+    "map_disconnect": 31,
+    "connect": 32,
+    "connect_response": 33,
 }
 
 HOST = "0.0.0.0"
 FAST_API_PORT = 8000
 QUIC_PORT = 4437
+
+CLIENT_TYPE_TRAIN = "TRAIN"
+CLIENT_TYPE_REMOTE_CONTROL = "REMOTE_CONTROL"
+
+STREAM_MESSAGE_SIZE_LIMIT = 300  # bytes, will adjust if needed after testing
+
 
 @dataclass
 class ServerConfig:

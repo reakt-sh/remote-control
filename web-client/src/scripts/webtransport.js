@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { QUIC_URL } from '@/scripts/config'
+import { PACKET_TYPE } from '@/stores/trainStore'
 
 export function useWebTransport(remoteControlId, messageHandler) {
   const isWTConnected = ref(false)
@@ -80,7 +81,8 @@ export function useWebTransport(remoteControlId, messageHandler) {
       bidistream.value = await transport.value.createBidirectionalStream()
       setupStreamReader()
       setupDatagramReader()
-      await send(`REMOTE_CONTROL:${remoteControlId.value}`);
+      const dataToSend = prepareConnectMessage()
+      await send(dataToSend);
     } catch (error) {
       console.error('❌ WT connection error:', error)
       isWTConnected.value = false
@@ -88,6 +90,26 @@ export function useWebTransport(remoteControlId, messageHandler) {
         attemptReconnect()
       }
     }
+  }
+
+  function prepareConnectMessage() {
+    const connectPacket = {
+      type: "connect",
+      remote_control_id: remoteControlId.value,
+    };
+    const packetData = new TextEncoder().encode(JSON.stringify(connectPacket));
+    const packet = new Uint8Array(1 + packetData.length);
+    packet[0] = PACKET_TYPE.connect;
+    packet.set(packetData, 1);
+
+    // Add data size in first two bytes
+    const dataSize = packet.length
+    const lengthPrefixedPacket = new Uint8Array(2 + packet.length)
+    lengthPrefixedPacket[0] = (dataSize >> 8) & 0xFF // High byte
+    lengthPrefixedPacket[1] = dataSize & 0xFF        // Low byte
+    lengthPrefixedPacket.set(packet, 2)
+
+    return lengthPrefixedPacket;
   }
 
   async function disconnect() {

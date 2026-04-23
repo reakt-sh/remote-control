@@ -36,7 +36,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
         self.number_of_rtt_packets = 5
         self.clock_offset_samples = {}
-        self.create_dump_file_for_latency()
+        self.latency_output_file =self.create_dump_file_for_latency(LATENCY_DUMP)
+        self.latency_output_file_for_keepalive = self.create_dump_file_for_latency(LATENCY_KEEPALIVE_DUMP)
 
         # Initialize components
         self.telemetry = Telemetry(self.train_client_id)
@@ -120,20 +121,22 @@ class BaseClient(ABC, metaclass=QABCMeta):
         output_filename = f"{H264_DUMP}_{timestamp}.h264"
         self.output_file = open(output_filename, 'wb')
 
-    def create_dump_file_for_latency(self):
-        dump_dir = os.path.dirname(LATENCY_DUMP)
+    def create_dump_file_for_latency(self, file_prefix):
+        dump_dir = os.path.dirname(file_prefix)
         if dump_dir and not os.path.exists(dump_dir):
             os.makedirs(dump_dir, exist_ok=True)
 
         time_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"{LATENCY_DUMP}_{time_suffix}.log"
+        output_filename = f"{file_prefix}_{time_suffix}.log"
 
 
         # create a new file only if it doesn't exist
+        output_file = None
         if not os.path.exists(output_filename):
-            self.latency_output_file = open(output_filename, 'w')
+            output_file = open(output_filename, 'w')
         else:
-            self.latency_output_file = open(output_filename, 'a')
+            output_file = open(output_filename, 'a')
+        return output_file
 
     def init_network(self):
         # WebSocket
@@ -158,6 +161,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
 
 
+
     def on_network_speed_calculated(self, data):
         logger.info(
             f"Network speed calculated - Download: {data['download_speed']:.2f} Mbps, "
@@ -173,23 +177,37 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_quic_closed(self):
         logger.info("QUIC connection closed")
+        self.stop_train_operations()
 
     def on_data_received_quic(self, data):
-        logger.info(f"QUIC data received: {data}")
         packet_type = data[0]
         payload = data[1:]
-        if packet_type == PACKET_TYPE["map_ack"]:
-            ## Map ACK received: data =  b'{"type": "mapping_acknowledgement", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
+        if packet_type == PACKET_TYPE["map_connect"]:
+            ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
             try:
                 remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
                 self.connected_remote_control_ids.add(remote_control_id)
-                logger.info(f"Map ACK received from remote control ID: {remote_control_id}")
+                logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
                 # Reset samples for this remote and start RTT measurement
                 self.clock_offset_samples[remote_control_id] = []
                 self.send_rtt_packets(remote_control_id)
                 self.hw_info.notify_new_remote_control_connected(remote_control_id)
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse map_ack JSON: {e}")
+                logger.error(f"Failed to parse map_connect JSON: {e}")
+
+        elif packet_type == PACKET_TYPE["map_disconnect"]:
+            try:
+                remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+                logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
+                if remote_control_id in self.connected_remote_control_ids:
+                    self.connected_remote_control_ids.remove(remote_control_id)
+                    logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
+                else:
+                    logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
+
+                self.stop_train_operations()
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse map_disconnect JSON: {e}")
 
         elif packet_type == PACKET_TYPE["rtt_train"]:
             jsonString = payload.decode('utf-8')
@@ -234,6 +252,25 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
                 self.clock_offset_samples[remote_control_id] = []
 
+        elif packet_type == PACKET_TYPE["keepalive"]:
+            try:
+                message = json.loads(payload.decode('utf-8'))
+                remote_control_id = message.get('remote_control_id', 0)
+                latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
+
+                if latency is not None:
+                    latency_log_entry = {
+                        "remote_control_id": remote_control_id,
+                        "latency": latency,
+                        "created_at": message.get('remote_control_timestamp', 0),
+                        "received_at": int(datetime.datetime.now().timestamp() * 1000),
+                        "size" : len(payload),
+                        "sequence" : message.get('sequence', None),
+                    }
+                    self.latency_output_file_for_keepalive.write(json.dumps(latency_log_entry) + "\n")
+                    self.latency_output_file_for_keepalive.flush()
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse keepalive JSON: {e}")
         else:
             logger.warning(f"Unknown QUIC packet type received: {packet_type}")
 
@@ -250,7 +287,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
             rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
             rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
-            self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
+
+            # Add 2-byte length prefix (big-endian)
+            data_size = len(rtt_train_packet)
+            length_prefixed_packet = bytearray(2 + len(rtt_train_packet))
+            length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+            length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+            length_prefixed_packet[2:] = rtt_train_packet
+            self.network_worker_quic.enqueue_stream_packet(length_prefixed_packet)
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
 
         # Send packets with delays using QTimer
@@ -440,6 +484,17 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def log_message(self, message):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
         # logger.info(f"{timestamp} {message}")
+
+    def stop_train_operations(self):
+        if self.is_sending:
+            self.toggle_sending()
+
+        self.on_horn_off()
+        self.on_headlight_off()
+
+        self.target_speed = 0
+        self.on_power_off()
+
 
     def close(self):
         self._running = False
