@@ -44,6 +44,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         self.is_closed = False
         self.file = open("video_dump.h264", "wb")
         self.stream_data_to_process = None
+        self.header_data = None
         self.stream_data_size_remaining = 0
 
     def connection_idle_timeout(self) -> None:
@@ -140,6 +141,15 @@ class QUICRelayProtocol(QuicConnectionProtocol):
     def construct_stream_packet(self, data: bytes, stream_id: int):
         try:
             if self.stream_data_to_process == None:
+                if self.header_data is not None:
+                    data = self.header_data + data
+                    self.header_data = None  # clear the stored header data
+
+                if len(data) < 2:
+                    logger.warning(f"QUIC: Received stream data chunk that is too small to contain size header, datasize: {len(data)}, data: {data}")
+                    self.header_data = data  # Store the incomplete header data
+                    return
+
                 # it's the first chunk of data, retrieve the total expected data size from the first two bytes
                 self.stream_data_size_remaining = (data[0] << 8) | data[1]
 
