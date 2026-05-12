@@ -111,30 +111,30 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
 
-        Stops current source, disconnects signal, assigns new source, connects it and initializes capture if capturing.
+        Shuts down the old node and its executor, then starts the new ROS2 node.
         Maintains speed & direction state if supported.
         """
         try:
-            # Disconnect and stop old source
-            if hasattr(self.video_source, 'frame_ready'):
-                try:
-                    self.video_source.frame_ready.disconnect(self.on_new_frame)
-                except Exception:
-                    pass
-            if hasattr(self.video_source, 'stop'):
-                try:
-                    self.video_source.stop()
-                except Exception:
-                    pass
+            # Stop the old source's timer/capture and shut down its executor
+            try:
+                self.video_source.stop()
+            except Exception as e:
+                logger.warning(f"Error stopping old video source: {e}")
 
-            # Replace
-            self.video_source = new_source
-            self.video_source.frame_ready.connect(self.on_new_frame)
+            try:
+                self.video_source_executor.shutdown(timeout_sec=1.0)
+            except Exception as e:
+                logger.warning(f"Error shutting down old video source executor: {e}")
 
-            # Apply current direction & speed if methods exist
+            try:
+                self.video_source.destroy_node()
+            except Exception as e:
+                logger.warning(f"Error destroying old video source node: {e}")
+
+            # Apply current direction & speed to new source before starting
             if hasattr(new_source, 'set_direction'):
                 try:
-                    new_source.set_direction(DIRECTION["FORWARD"])  # default forward
+                    new_source.set_direction(DIRECTION["FORWARD"])
                 except Exception:
                     pass
             if hasattr(new_source, 'set_speed'):
@@ -143,8 +143,15 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 except Exception:
                     pass
 
+            # Start the new source
+            self.video_source = new_source
             if self.is_capturing:
                 self.video_source.init_capture()
+
+            self.video_source_executor = SingleThreadedExecutor()
+            self.video_source_executor.add_node(self.video_source)
+            threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
+
             self.log_message(f"Video source switched to {new_source.__class__.__name__}")
         except Exception as e:
             self.log_message(f"Failed to switch video source: {e}")
