@@ -64,7 +64,11 @@ def run_cli_client():
     client.start()
     sys.exit(app.exec_())
 
+import rclpy
+
 if __name__ == "__main__":
+    rclpy.init()
+
     if len(sys.argv) > 1 and sys.argv[1] == "cli":
         run_cli_client()
     elif (len(sys.argv) > 1 and sys.argv[1] == "reaktor"):

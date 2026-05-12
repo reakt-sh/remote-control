@@ -16,16 +16,34 @@ from sensor.imu import IMU
 from encoder import Encoder
 from PyQt5.QtCore import QObject
 from hw_info import HWInfo
+import threading
+
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+
+from cv_bridge import CvBridge
 
 # Fix for metaclass conflict with QObject
 class QABCMeta(type(QObject), type(ABC)):
     pass
 
+class Bridge(Node):
+    def __init__(self, frame_callback):
+        super().__init__('bridge_node')
+        self._bridge = CvBridge()
+        self._frame_callback = frame_callback
+        self.create_subscription(Image, 'frame_ready', self._on_frame_msg, 10)
+
+    def _on_frame_msg(self, msg: Image):
+        frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        self._frame_callback(int(msg.header.frame_id), frame, msg.width, msg.height, False)
+
 class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
         super().__init__()
         self.train_client_id = self.initialize_train_client_id()
-        self.video_source = video_source
         self.has_motor = has_motor
         self.write_to_file = True
         self.is_capturing = True
@@ -50,18 +68,41 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
         self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
-        # Connect signals
-        self.video_source.frame_ready.connect(self.on_new_frame)
+        # Initialize ROS2 node
+        self.video_source = video_source
+        self.video_source.init_capture()
+        self.bridge = Bridge(frame_callback=self.on_new_frame)
+
+        self.video_source_executor = SingleThreadedExecutor()
+        self.video_source_executor.add_node(self.video_source)
+        threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
+
+        self.bridge_executor = SingleThreadedExecutor()
+        self.bridge_executor.add_node(self.bridge)
+        threading.Thread(target=self.bridge_executor.spin, daemon=True).start()
+
+        # self.video_source.stop()
+        # self.video_source.destroy_node()
+        # rclpy.shutdown()
+
+
         self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
         self.imu.imu_ready.connect(self.on_imu_data)
         self.encoder.encode_ready.connect(self.on_encoded_frame)
-        self.video_source.init_capture()
         self.telemetry.start()
         self.imu.start()
 
         # FPS calculation variables
         self.last_few_frame_ids = []
         self.show_capture_frame_log = True
+
+    def _on_frame_msg(self, msg: Image):
+        frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        frame_count = int(msg.header.frame_id)
+        width = msg.width
+        height = msg.height
+        is_encoded = False           # bgr8 encoding implies raw
+        self.on_new_frame(frame_count, frame, width, height, is_encoded)
 
 
     def generate_hw_info(self):
