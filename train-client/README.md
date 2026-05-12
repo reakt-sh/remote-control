@@ -62,3 +62,39 @@ cat id_ed25519.pub
 ```
 
 > **Note:** Copy the output of `cat id_ed25519.pub` and add it to your Git hosting service (GitHub, GitLab, etc.) under SSH keys settings.
+
+
+### ROS2 Installation Guide
+```bash
+sudo apt install -y curl gnupg2 software-properties-common
+
+
+## Cleanly re-add the official ROS 2 repository like this:
+sudo rm -f /etc/apt/sources.list.d/ros2*
+sudo rm -f /usr/share/keyrings/ros-archive-keyring.gpg
+
+sudo apt update
+sudo apt install -y curl gnupg2 software-properties-common
+sudo add-apt-repository universe
+
+
+## Add ROS2 Repo
+curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+| sudo gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+| sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+sudo apt update
+
+## Install
+sudo apt install ros-jazzy-rclpy
+sudo apt install ros-jazzy-ros-base
+
+
+## Dependencies
+source /opt/ros/jazzy/setup.bash
+pip install pyyaml
+pip install setuptools
+pip install cv_bridge
+```
