@@ -1,5 +1,7 @@
 import av
 import datetime
+import queue
+import threading
 from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
 from utils.app_logger import logger
@@ -20,11 +22,15 @@ class Encoder(QObject):
         self.enc_width = None
         self.enc_height = None
         self._pending_reinit = False  # Flag when bitrate change requires reinit
+        self._frame_queue: queue.Queue = queue.Queue(maxsize=30)
+        self._stop_event = threading.Event()
+        self._worker_thread = threading.Thread(target=self._encode_worker, daemon=True, name='EncoderWorker')
+        self._worker_thread.start()
 
     def init_encoder(self, width: int, height: int):
         """(Re)initialize encoder for given resolution."""
-        # Close any existing resources first
-        self.close()
+        # Release existing av resources without stopping the worker thread
+        self._close_av_resources()
         self.enc_width = width
         self.enc_height = height
         self.output_container = av.open('pipe:', mode='w', format='mp4')
@@ -85,7 +91,27 @@ class Encoder(QObject):
             logger.info(f"Encoder bitrate unchanged at {self.current_bitrate} bps")
 
 
-    def encode_frame(self, frame_id, frame, width, height, log_callback=None):
+    def enqueue_frame(self, frame_id, frame, width, height):
+        try:
+            self._frame_queue.put_nowait((frame_id, frame, width, height))
+        except queue.Full:
+            logger.warning(f"Encoder queue full, dropping frame {frame_id}")
+
+    def _encode_worker(self):
+        while not self._stop_event.is_set():
+            try:
+                item = self._frame_queue.get(timeout=0.01)
+            except queue.Empty:
+                continue
+            frame_id, frame, width, height = item
+            try:
+                self.encode_frame(frame_id, frame, width, height)
+            except Exception as e:
+                logger.error(f"Unhandled encoder error on frame {frame_id}: {e}")
+            finally:
+                self._frame_queue.task_done()
+
+    def encode_frame(self, frame_id, frame, width, height):
         # Lazy init or reinit if resolution changed or pending bitrate reinit
         if (self.stream is None or
             self.enc_width != width or
@@ -108,26 +134,37 @@ class Encoder(QObject):
             timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
             if len(encoded_frame) > 0:
                 nal_type = encoded_frame[4] & 0x1F
-                # if log_callback:
-                #     if nal_type == 7:
-                #         log_callback(f"SPS NAL unit detected for Frame ID: {frame_id}")
-                #     elif nal_type == 8:
-                #         log_callback(f"PPS NAL unit detected for Frame ID: {frame_id}")
-                #     elif nal_type == 5:
-                #         log_callback(f"IDR NAL unit detected for Frame ID: {frame_id}")
-                #     elif nal_type == 1:
-                #         # print(f"P-frame NAL unit detected for Frame ID: {frame_id}")
-                #         pass
-                #     elif nal_type == 0:
-                #         log_callback(f"B-frame NAL unit detected for Frame ID: {frame_id}")
-
                 if nal_type == 5:  # IDR frame
-                    # Prepend SPS and PPS to the IDR frame
+                    # Prepend SPS and PPS only if it is a IDR frame
                     encoded_frame = current_sps_pps + encoded_frame
                 self.encode_ready.emit(frame_id, timestamp, encoded_frame)
 
 
+    def _close_av_resources(self):
+        """Release av encoder/container resources only (safe to call from worker thread)."""
+        try:
+            if self.stream:
+                try:
+                    for _ in self.stream.encode():
+                        pass
+                except Exception:
+                    pass
+            if self.output_container:
+                try:
+                    self.output_container.close()
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning(f"Error closing encoder container: {e}")
+        finally:
+            self.output_container = None
+            self.stream = None
+
     def close(self):
+        # Stop the worker thread first (only when shutting down from outside)
+        self._stop_event.set()
+        if self._worker_thread.is_alive() and threading.current_thread() is not self._worker_thread:
+            self._worker_thread.join(timeout=2.0)
         try:
             # Drain encoder if possible
             if self.stream:
