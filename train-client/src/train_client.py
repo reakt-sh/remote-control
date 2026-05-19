@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor, QColor
-from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, QMutex
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, QMutex, pyqtSignal
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 import qtawesome as qta
 import cv2
@@ -13,6 +13,8 @@ from base_client import BaseClient
 from globals import *
 
 class TrainClient(BaseClient, QMainWindow):
+    _frame_ready = pyqtSignal(object)
+
     def __init__(self):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
@@ -33,6 +35,8 @@ class TrainClient(BaseClient, QMainWindow):
             url = QUrl.fromLocalFile(self.horn_sound_path)
             content = QMediaContent(url)
             self.horn_player.setMedia(content)
+
+        self._frame_ready.connect(self._render_frame, Qt.QueuedConnection)
 
 
 
@@ -197,6 +201,10 @@ class TrainClient(BaseClient, QMainWindow):
         self.hw_info_label.setText(hw_text)
 
     def on_new_frame(self, frame_id, frame, width, height, is_encoded):
+        super().on_new_frame(frame_id, frame, width, height, is_encoded)
+        self._frame_ready.emit(frame.copy())
+
+    def _render_frame(self, frame):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
 
@@ -233,8 +241,6 @@ class TrainClient(BaseClient, QMainWindow):
         # Create pixmap and set it to the label
         pixmap = QPixmap.fromImage(qt_image)
         self.image_label.setPixmap(pixmap)
-
-        super().on_new_frame(frame_id, frame, width, height, is_encoded)
 
     def toggle_capture(self):
         super().toggle_capture()
