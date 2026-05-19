@@ -64,9 +64,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.init_network()
         self.create_dump_file()
         self.hw_info = HWInfo()
-        self.hw_info_generator_timer = QTimer()
-        self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
-        self.hw_info_generator_timer.start(1000)  # every 1 seconds
+        # self.hw_info_generator_timer = QTimer()
+        # self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
+        # self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
         # Initialize ROS2 node
         self.video_source = video_source
@@ -472,7 +472,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if is_encoded:
             self.on_encoded_frame(frame_id, int(datetime.datetime.now().timestamp() * 1000), frame)  # Placeholder for encoded bytes
         else:
-            self.encoder.encode_frame(frame_id, frame, width, height, self.log_message)
+            self.encoder.enqueue_frame(frame_id, frame, width, height)
 
         # calculate continuous FPS
         self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
@@ -551,7 +551,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
         self.output_file.close()
-        self.hw_info_generator_timer.stop()
+        # self.hw_info_generator_timer.stop()
         logger.info("BaseClient closed.")
 
     @abstractmethod
