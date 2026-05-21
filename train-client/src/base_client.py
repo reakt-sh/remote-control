@@ -20,10 +20,11 @@ import threading
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 
-from cv_bridge import CvBridge
+import cv2
+import numpy as np
 
 # Fix for metaclass conflict with QObject
 class QABCMeta(type(QObject), type(ABC)):
@@ -32,13 +33,20 @@ class QABCMeta(type(QObject), type(ABC)):
 class Bridge(Node):
     def __init__(self, frame_callback):
         super().__init__('bridge_node')
-        self._bridge = CvBridge()
         self._frame_callback = frame_callback
-        self.create_subscription(Image, 'frame_ready', self._on_frame_msg, 10)
+        self.create_subscription(CompressedImage, 'frame_ready', self._on_compressed_frame_msg, 10)
 
-    def _on_frame_msg(self, msg: Image):
-        frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        self._frame_callback(int(msg.header.frame_id), frame, msg.width, msg.height, False)
+    def _on_compressed_frame_msg(self, msg: CompressedImage):
+        frame_count, width, height = msg.header.frame_id.split(':')
+        if msg.format == "h264":
+            self._frame_callback(int(frame_count), bytes(msg.data), int(width), int(height), True)
+        elif msg.format == "bgr24":
+            np_arr = np.frombuffer(bytes(msg.data), np.uint8).reshape((int(height), int(width), 3))
+            self._frame_callback(int(frame_count), np_arr, int(width), int(height), False)
+        else:
+            np_arr = np.frombuffer(bytes(msg.data), np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            self._frame_callback(int(frame_count), frame, int(width), int(height), False)
 
 class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
@@ -95,14 +103,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # FPS calculation variables
         self.last_few_frame_ids = []
         self.show_capture_frame_log = True
-
-    def _on_frame_msg(self, msg: Image):
-        frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        frame_count = int(msg.header.frame_id)
-        width = msg.width
-        height = msg.height
-        is_encoded = False           # bgr8 encoding implies raw
-        self.on_new_frame(frame_count, frame, width, height, is_encoded)
 
 
     def generate_hw_info(self):
