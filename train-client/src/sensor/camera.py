@@ -1,8 +1,7 @@
 import cv2
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from sensor_msgs.msg import CompressedImage
 from datetime import datetime
 from globals import VIDEO_FPS, VIDEO_RESOLUTION
 
@@ -20,8 +19,7 @@ class Camera(Node):
         self.current_fps = VIDEO_FPS
         self.direction = 1
 
-        self._bridge = CvBridge()
-        self._publisher = self.create_publisher(Image, 'frame_ready', 10)
+        self._publisher = self.create_publisher(CompressedImage, 'frame_ready', 10)
 
     def _set_resolution(self):
         resolution = VIDEO_RESOLUTION
@@ -108,9 +106,11 @@ class Camera(Node):
             cv2.putText(frame, text, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
 
         try:
-            msg = self._bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+            msg = CompressedImage()
             msg.header.stamp = self.get_clock().now().to_msg()
-            msg.header.frame_id = str(self.frame_count)
+            msg.header.frame_id = f"{self.frame_count}:{self.width}:{self.height}"
+            msg.format = "bgr24"
+            msg.data = frame.tobytes()
             self._publisher.publish(msg)
         except Exception as e:
             self.get_logger().error(f"Error publishing frame: {e}")
