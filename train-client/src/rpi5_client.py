@@ -39,15 +39,15 @@ class RPi5Client(BaseClient, QThread):
     def on_headlight_on(self):
         logger.info("Turning on headlights.")
         self.motor_actuator.set_led_turn_on()
-    
+
     def on_headlight_off(self):
         logger.info("Turning off headlights.")
-        self.motor_actuator.set_led_turn_on()  # Assuming the same method toggles the LED state
+        self.motor_actuator.set_led_turn_off()  # Assuming the same method toggles the LED state
 
     def on_horn_on(self):
         logger.info("Horn on - not implemented yet.")
         # Implement horn control if hardware supports it
-    
+
     def on_horn_off(self):
         logger.info("Horn off - not implemented yet.")
         # Implement horn control if hardware supports it
