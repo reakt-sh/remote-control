@@ -65,6 +65,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.latency_output_file =self.create_dump_file_for_latency(LATENCY_DUMP)
         self.latency_output_file_for_keepalive = self.create_dump_file_for_latency(LATENCY_KEEPALIVE_DUMP)
 
+        # Keepalive timer for safety
+        self.keepalive_timer = QTimer()
+        self.keepalive_timer.setInterval(2000)  # 2 seconds
+        self.keepalive_timer.setSingleShot(True)
+        self.keepalive_timer.timeout.connect(self.on_keepalive_timeout)
+
         # Initialize components
         self.telemetry = Telemetry(self.train_client_id)
         self.imu = IMU()
@@ -227,6 +233,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
         logger.info("QUIC connection closed")
         self.stop_train_operations()
 
+    def on_keepalive_timeout(self):
+        logger.warning("Keepalive timer expired: No keepalive received in 2 seconds. Going to safe state.")
+        self.stop_train_operations()
+        # Optionally, add any additional safe state logic here
+        # For example, notify user/UI, log, etc.
+
     def on_data_received_quic(self, data):
         packet_type = data[0]
         payload = data[1:]
@@ -240,6 +252,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.clock_offset_samples[remote_control_id] = []
                 self.send_rtt_packets(remote_control_id)
                 self.hw_info.notify_new_remote_control_connected(remote_control_id)
+
+                # Start keepalive timer on connect
+                self.keepalive_timer.start()
+                logger.info("Keepalive timer started (on map_connect)")
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse map_connect JSON: {e}")
 
@@ -254,6 +270,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
 
                 self.stop_train_operations()
+
+                # Stop keepalive timer and go to safe state
+                if self.keepalive_timer.isActive():
+                    self.keepalive_timer.stop()
+                    logger.info("Keepalive timer stopped (on map_disconnect)")
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse map_disconnect JSON: {e}")
 
@@ -305,6 +326,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 message = json.loads(payload.decode('utf-8'))
                 remote_control_id = message.get('remote_control_id', 0)
                 latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
+
+                # Reset keepalive timer on every keepalive packet
+                self.keepalive_timer.start()
+                logger.debug("Keepalive timer reset (on keepalive packet)")
 
                 if latency is not None:
                     latency_log_entry = {
