@@ -63,6 +63,28 @@ cat id_ed25519.pub
 
 > **Note:** Copy the output of `cat id_ed25519.pub` and add it to your Git hosting service (GitHub, GitLab, etc.) under SSH keys settings.
 
+### Install necessary libraries on RPi5, Pair Bluetooth devices
+```bash
+sudo apt install pulseaudio pulseaudio-module-bluetooth bluez-tools pygame
+sudo apt install libasound2-dev
+
+sudo systemctl enable bluetooth
+sudo systemctl start bluetooth
+bluetoothctl show
+bluetoothctl
+    power on
+    agent on
+    default-agent
+    scan on
+
+pair XX:XX:XX:XX:XX:XX
+trust XX:XX:XX:XX:XX:XX
+connect XX:XX:XX:XX:XX:XX
+exit
+```
+
+
+
 
 ### ROS2 Installation Guide (For Ubuntu system)
 ```bash

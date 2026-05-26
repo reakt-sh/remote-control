@@ -2,6 +2,9 @@ import RPi.GPIO as GPIO
 from globals import MAX_SPEED, SCALE_FACTOR_PWM
 from utils.app_logger import logger
 
+# Use bluetooth speaker
+import pygame
+
 class MotorActuator:
     def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000, led_pin=17):
         self.input1_pin = input1_pin                # GPIO pin for IN1, used for forward direction
@@ -28,6 +31,9 @@ class MotorActuator:
         self.pwm.start(0)  # Default to speed 0
         logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
 
+        # Use bluetooth speaker for horn sound
+        pygame.mixer.init()
+        self.sound = pygame.mixer.Sound("./asset/train_horn_sample.wav")
     def start_motor(self):
         if self.direction == 1:
             GPIO.output(self.input1_pin, GPIO.HIGH)
@@ -61,6 +67,14 @@ class MotorActuator:
 
     def set_led_turn_off(self):
         GPIO.output(self.led_pin, GPIO.LOW)
+
+    def horn_on(self):
+        logger.info("Playing horn sound.")
+        self.sound.play(loops=-1)  # Play the sound in a loop
+
+    def horn_off(self):
+        logger.info("Stopping horn sound.")
+        self.sound.stop()
 
     def cleanup(self):
         self.stop_motor()

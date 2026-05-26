@@ -35,3 +35,17 @@ class RPi5Client(BaseClient, QThread):
         elif direction == DIRECTION["BACKWARD"]:
             self.motor_actuator.move_backward()
         self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+
+    def on_headlight_on(self):
+        logger.info("Turning on headlights.")
+        self.motor_actuator.set_led_turn_on()
+
+    def on_headlight_off(self):
+        logger.info("Turning off headlights.")
+        self.motor_actuator.set_led_turn_off()  # Assuming the same method toggles the LED state
+
+    def on_horn_on(self):
+        self.motor_actuator.horn_on()
+
+    def on_horn_off(self):
+        self.motor_actuator.horn_off()
