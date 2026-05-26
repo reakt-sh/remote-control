@@ -16,16 +16,42 @@ from sensor.imu import IMU
 from encoder import Encoder
 from PyQt5.QtCore import QObject
 from hw_info import HWInfo
+import threading
+
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+
+import cv2
+import numpy as np
 
 # Fix for metaclass conflict with QObject
 class QABCMeta(type(QObject), type(ABC)):
     pass
 
+class Bridge(Node):
+    def __init__(self, frame_callback):
+        super().__init__('bridge_node')
+        self._frame_callback = frame_callback
+        self.create_subscription(CompressedImage, 'frame_ready', self._on_compressed_frame_msg, 10)
+
+    def _on_compressed_frame_msg(self, msg: CompressedImage):
+        frame_count, width, height = msg.header.frame_id.split(':')
+        if msg.format == "h264":
+            self._frame_callback(int(frame_count), bytes(msg.data), int(width), int(height), True)
+        elif msg.format == "bgr24":
+            np_arr = np.frombuffer(bytes(msg.data), np.uint8).reshape((int(height), int(width), 3))
+            self._frame_callback(int(frame_count), np_arr, int(width), int(height), False)
+        else:
+            np_arr = np.frombuffer(bytes(msg.data), np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            self._frame_callback(int(frame_count), frame, int(width), int(height), False)
+
 class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
         super().__init__()
         self.train_client_id = self.initialize_train_client_id()
-        self.video_source = video_source
         self.has_motor = has_motor
         self.write_to_file = True
         self.is_capturing = True
@@ -46,16 +72,31 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.init_network()
         self.create_dump_file()
         self.hw_info = HWInfo()
-        self.hw_info_generator_timer = QTimer()
-        self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
-        self.hw_info_generator_timer.start(1000)  # every 1 seconds
+        # self.hw_info_generator_timer = QTimer()
+        # self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
+        # self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
-        # Connect signals
-        self.video_source.frame_ready.connect(self.on_new_frame)
+        # Initialize ROS2 node
+        self.video_source = video_source
+        self.video_source.init_capture()
+        self.bridge = Bridge(frame_callback=self.on_new_frame)
+
+        self.video_source_executor = SingleThreadedExecutor()
+        self.video_source_executor.add_node(self.video_source)
+        threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
+
+        self.bridge_executor = SingleThreadedExecutor()
+        self.bridge_executor.add_node(self.bridge)
+        threading.Thread(target=self.bridge_executor.spin, daemon=True).start()
+
+        # self.video_source.stop()
+        # self.video_source.destroy_node()
+        # rclpy.shutdown()
+
+
         self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
         self.imu.imu_ready.connect(self.on_imu_data)
         self.encoder.encode_ready.connect(self.on_encoded_frame)
-        self.video_source.init_capture()
         self.telemetry.start()
         self.imu.start()
 
@@ -70,30 +111,30 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def switch_video_source(self, new_source):
         """Switch the active video source at runtime.
 
-        Stops current source, disconnects signal, assigns new source, connects it and initializes capture if capturing.
+        Shuts down the old node and its executor, then starts the new ROS2 node.
         Maintains speed & direction state if supported.
         """
         try:
-            # Disconnect and stop old source
-            if hasattr(self.video_source, 'frame_ready'):
-                try:
-                    self.video_source.frame_ready.disconnect(self.on_new_frame)
-                except Exception:
-                    pass
-            if hasattr(self.video_source, 'stop'):
-                try:
-                    self.video_source.stop()
-                except Exception:
-                    pass
+            # Stop the old source's timer/capture and shut down its executor
+            try:
+                self.video_source.stop()
+            except Exception as e:
+                logger.warning(f"Error stopping old video source: {e}")
 
-            # Replace
-            self.video_source = new_source
-            self.video_source.frame_ready.connect(self.on_new_frame)
+            try:
+                self.video_source_executor.shutdown(timeout_sec=1.0)
+            except Exception as e:
+                logger.warning(f"Error shutting down old video source executor: {e}")
 
-            # Apply current direction & speed if methods exist
+            try:
+                self.video_source.destroy_node()
+            except Exception as e:
+                logger.warning(f"Error destroying old video source node: {e}")
+
+            # Apply current direction & speed to new source before starting
             if hasattr(new_source, 'set_direction'):
                 try:
-                    new_source.set_direction(DIRECTION["FORWARD"])  # default forward
+                    new_source.set_direction(DIRECTION["FORWARD"])
                 except Exception:
                     pass
             if hasattr(new_source, 'set_speed'):
@@ -102,8 +143,15 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 except Exception:
                     pass
 
+            # Start the new source
+            self.video_source = new_source
             if self.is_capturing:
                 self.video_source.init_capture()
+
+            self.video_source_executor = SingleThreadedExecutor()
+            self.video_source_executor.add_node(self.video_source)
+            threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
+
             self.log_message(f"Video source switched to {new_source.__class__.__name__}")
         except Exception as e:
             self.log_message(f"Failed to switch video source: {e}")
@@ -424,7 +472,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if is_encoded:
             self.on_encoded_frame(frame_id, int(datetime.datetime.now().timestamp() * 1000), frame)  # Placeholder for encoded bytes
         else:
-            self.encoder.encode_frame(frame_id, frame, width, height, self.log_message)
+            self.encoder.enqueue_frame(frame_id, frame, width, height)
 
         # calculate continuous FPS
         self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
@@ -503,7 +551,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
         self.output_file.close()
-        self.hw_info_generator_timer.stop()
+        # self.hw_info_generator_timer.stop()
         logger.info("BaseClient closed.")
 
     @abstractmethod
