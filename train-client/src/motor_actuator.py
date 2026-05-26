@@ -23,7 +23,7 @@ class MotorActuator:
         # initial state: motor stopped, LED off
         GPIO.output(self.input1_pin, GPIO.LOW)
         GPIO.output(self.input2_pin, GPIO.LOW)
-        GPIO.output(self.led_pin, GPIO.LOW)
+        GPIO.output(self.led_pin, GPIO.HIGH)
         self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
         self.pwm.start(0)  # Default to speed 0
         logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
@@ -57,10 +57,10 @@ class MotorActuator:
         return int(self.current_speed / self.scale_factor)  # Convert back to original speed scale
 
     def set_led_turn_on(self):
-        GPIO.output(self.led_pin, GPIO.HIGH)
+        GPIO.output(self.led_pin, GPIO.LOW)
 
     def set_led_turn_off(self):
-        GPIO.output(self.led_pin, GPIO.LOW)
+        GPIO.output(self.led_pin, GPIO.HIGH)
 
     def cleanup(self):
         self.stop_motor()
