@@ -40,10 +40,10 @@ def run_reaktor_client():
         app = QApplication(sys.argv)
         loop = qasync.QEventLoop(app)
         asyncio.set_event_loop(loop)
-        
+
         client = ReaktorClient()
         client.show()
-        
+
         with loop:
             loop.run_forever()
     except ImportError:

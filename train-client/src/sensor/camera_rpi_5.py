@@ -45,7 +45,7 @@ class CameraRPi5(Node):
 
             # Determine transform based on IS_CAMERA_UPSIDE_DOWN_ENABLED
             # 180-degree rotation is achieved by flipping both horizontally and vertically
-            transform = Transform(hflip=1, vflip=1) if IS_CAMERA_UPSIDE_DOWN_ENABLED else Transform()
+            transform = Transform(hflip=0, vflip=0) if IS_CAMERA_UPSIDE_DOWN_ENABLED else Transform()
 
             # Configure for H.264 encoding
             video_config = self.picam2.create_video_configuration(
