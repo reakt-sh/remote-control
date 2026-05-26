@@ -64,7 +64,7 @@ cat id_ed25519.pub
 > **Note:** Copy the output of `cat id_ed25519.pub` and add it to your Git hosting service (GitHub, GitLab, etc.) under SSH keys settings.
 
 
-### ROS2 Installation Guide
+### ROS2 Installation Guide (For Ubuntu system)
 ```bash
 sudo apt install -y curl gnupg2 software-properties-common
 
@@ -98,3 +98,85 @@ pip install pyyaml
 pip install setuptools
 pip install cv_bridge
 ```
+
+
+### ROS2 Installation Guide (For Debian based system, Manual process)
+```bash
+sudo apt update && sudo apt upgrade -y
+
+sudo apt install -y locales
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+sudo apt update
+sudo apt install -y \
+  build-essential \
+  cmake \
+  git \
+  curl \
+  wget \
+  gnupg2 \
+  lsb-release \
+  python3-pip \
+  python3-venv \
+  python3-colcon-common-extensions \
+  python3-rosdep \
+  python3-vcstool \
+  python3-bloom \
+  python3-argcomplete \
+  python3-empy \
+  python3-numpy \
+  libasio-dev \
+  libtinyxml2-dev \
+  libcunit1-dev
+
+sudo apt install -y python3-rosdep
+sudo rosdep init
+rosdep update
+
+## this following command must work.. as most of the dependencies are going to install from here
+rosdep install --from-paths src --ignore-src -r -y --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers"
+
+## create a new directory
+mkdir -p ~/ros2_humble/src
+cd ~/ros2_humble
+
+## Fetch the sources
+pip3 install -U vcstool
+wget https://raw.githubusercontent.com/ros2/ros2/humble/ros2.repos
+vcs import src < ros2.repos
+
+
+## install other dependencies
+sudo apt install python3-colcon-common-extensions
+sudo apt install libacl1-dev
+sudo apt install liblttng-ust-dev lttng-tools libbabeltrace-dev
+sudo apt install python3-lark
+sudo apt install libeigen3-dev
+sudo apt install pkg-config liblttng-ust-dev lttng-tools python3-lttng
+sudo apt install liblttng-ctl-dev
+sudo apt install libxrandr-dev libx11-dev libxext-dev libxrender-dev
+sudo apt install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
+sudo apt install libfreetype6-dev
+pip install pytest
+
+
+## Start building
+cd ~/ros2_humble
+colcon build --symlink-install --parallel-workers $(nproc)
+
+
+
+
+## now run Ros2 ENV automatically while system starts
+echo "source ~/ros2_humble/install/local_setup.bash" >> ~/.zshrc
+source ~/.zshrc
+
+## Check if the installed packages working or not
+ros2 run demo_nodes_py listener
+ros2 run demo_nodes_cpp talker
+
+```
+
+
