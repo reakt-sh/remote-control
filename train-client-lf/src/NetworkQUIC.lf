@@ -1,0 +1,11 @@
+target Python {
+  keepalive: true
+}
+
+reactor NetworkQUIC {
+    input frame;
+    input clock_synchronization;
+    input heartbeat;
+    output command;
+    output rc_heartbeat;
+}

@@ -1,0 +1,7 @@
+target Python {
+  keepalive: true
+}
+
+reactor Client {
+
+}

@@ -1,0 +1,64 @@
+target Python {
+  keepalive: true
+}
+
+import CameraRpi5 from "CameraRpi5.lf";
+import NetworkQUIC from "NetworkQUIC.lf";
+import Motor from "Motor.lf";
+import Encoder from "Encoder.lf";
+
+
+main reactor TrainClient {
+    camera = new CameraRpi5();
+    quic = new NetworkQUIC();
+    motor = new Motor();
+    // encoder = new Encoder();
+    latency_calculator = new LatencyCalculator();
+    clock_synchronizer = new ClockSynchronizer();
+    data_storage = new DataStoreage();
+    command_parser = new CommandParser();
+    emergency_break = new EmergencyBreak();
+    heartbeat = new Heartbeat();
+
+    camera.frame -> quic.frame;
+    quic.command -> command_parser.command;
+    quic.command -> latency_calculator.command;
+    quic.rc_heartbeat -> emergency_break.rc_heartbeat;
+    emergency_break.motor_control , command_parser.motor_control -> motor.motor_control;
+    clock_synchronizer.clock_synchronization -> quic.clock_synchronization;
+    latency_calculator.latency -> data_storage.latency;
+    heartbeat.heartbeat -> quic.heartbeat;
+}
+
+
+reactor LatencyCalculator {
+  input command;
+  output latency;
+}
+
+reactor ClockSynchronizer {
+  output clock_synchronization;
+}
+
+reactor DataStoreage {
+  input latency;
+}
+
+reactor CommandParser {
+  input command;
+  output motor_control;
+}
+
+reactor EmergencyBreak {
+    input rc_heartbeat;
+    output motor_control;
+}
+
+reactor Heartbeat {
+  output heartbeat;
+  timer t(1s)
+
+  reaction(t) -> heartbeat {=
+
+  =}
+}

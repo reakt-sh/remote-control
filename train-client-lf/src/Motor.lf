@@ -1,0 +1,8 @@
+target Python {
+  keepalive: true
+}
+
+reactor Motor {
+  input[2] motor_control;
+
+}
