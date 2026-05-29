@@ -5,7 +5,14 @@ target Python {
 import CameraRpi5 from "CameraRpi5.lf";
 import NetworkQUIC from "NetworkQUIC.lf";
 import Motor from "Motor.lf";
-import Encoder from "Encoder.lf";
+import LatencyCalculator from "LatencyCalculator.lf";
+import ClockSynchronizer from "ClockSynchronizer.lf";
+import DataStorage from "DataStorage.lf";
+import CommandParser from "CommandParser.lf";
+import EmergencyBreak from "EmergencyBreak.lf";
+import HeartbeatSender from "HeartbeatSender.lf";
+
+// import Encoder from "Encoder.lf";
 
 
 main reactor TrainClient {
@@ -15,10 +22,10 @@ main reactor TrainClient {
     // encoder = new Encoder();
     latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
-    data_storage = new DataStoreage();
+    data_storage = new DataStorage();
     command_parser = new CommandParser();
     emergency_break = new EmergencyBreak();
-    heartbeat = new Heartbeat();
+    heartbeat_sender = new HeartbeatSender();
 
     camera.frame -> quic.frame;
     quic.command -> command_parser.command;
@@ -27,38 +34,5 @@ main reactor TrainClient {
     emergency_break.motor_control , command_parser.motor_control -> motor.motor_control;
     clock_synchronizer.clock_synchronization -> quic.clock_synchronization;
     latency_calculator.latency -> data_storage.latency;
-    heartbeat.heartbeat -> quic.heartbeat;
-}
-
-
-reactor LatencyCalculator {
-  input command;
-  output latency;
-}
-
-reactor ClockSynchronizer {
-  output clock_synchronization;
-}
-
-reactor DataStoreage {
-  input latency;
-}
-
-reactor CommandParser {
-  input command;
-  output motor_control;
-}
-
-reactor EmergencyBreak {
-    input rc_heartbeat;
-    output motor_control;
-}
-
-reactor Heartbeat {
-  output heartbeat;
-  timer t(1s)
-
-  reaction(t) -> heartbeat {=
-
-  =}
+    heartbeat_sender.heartbeat -> quic.heartbeat;
 }

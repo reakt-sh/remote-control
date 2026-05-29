@@ -1,0 +1,12 @@
+target Python {
+  keepalive: true
+}
+
+reactor HeartbeatSender {
+  output heartbeat;
+  timer t(1s)
+
+  reaction(t) -> heartbeat {=
+
+  =}
+}

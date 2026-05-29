@@ -1,0 +1,8 @@
+target python {
+  keepalive: true
+}
+
+reactor CommandParser {
+  input command;
+  output motor_control;
+}

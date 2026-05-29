@@ -1,0 +1,8 @@
+target Python {
+  keepalive: true
+}
+
+reactor LatencyCalculator {
+  input command;
+  output latency;
+}

@@ -1,0 +1,9 @@
+target python {
+  keepalive: true
+}
+
+reactor EmergencyBreak {
+    input rc_heartbeat;
+    output motor_control;
+}
+
