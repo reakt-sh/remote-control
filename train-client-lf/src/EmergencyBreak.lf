@@ -1,8 +1,12 @@
 target python {
-  keepalive: true
+  keepalive: true,
+  files: ["../../train-client/src/utils/app_logger.py"]
 }
 
 reactor EmergencyBreak {
+    preamble {=
+        from app_logger import logger
+    =}
     input rc_heartbeat;
     output motor_control;
 }

@@ -1,8 +1,12 @@
 target Python {
-  keepalive: true
+  keepalive: true,
+  files: ["../../train-client/src/utils/app_logger.py"]
 }
 
 reactor HeartbeatSender {
+    preamble {=
+        from app_logger import logger
+    =}
   output heartbeat;
   timer t(1s)
 

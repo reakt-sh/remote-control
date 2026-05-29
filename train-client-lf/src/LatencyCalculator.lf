@@ -1,8 +1,12 @@
 target Python {
-  keepalive: true
+  keepalive: true,
+  files: ["../../train-client/src/utils/app_logger.py"]
 }
 
 reactor LatencyCalculator {
+    preamble {=
+        from app_logger import logger
+    =}
   input command;
   output latency;
 }

@@ -1,7 +1,21 @@
 target Python {
-  keepalive: true
+  keepalive: true,
+  files: ["../../train-client/src/utils/app_logger.py"]
 }
 
 reactor CameraRpi5 {
+    preamble {=
+        from app_logger import logger
+    =}
+
     output frame;
+    timer capture_timer(100ms);
+
+    reaction(capture_timer) -> frame {=
+        // Capture frame from camera and send it to output
+        // This is a placeholder implementation. Replace with actual camera capture code.
+		buffer = b"fake_frame_data"  // Replace with actual frame data
+		logger.info("Capturing frame from RPi5 camera...");
+		frame.send(buffer)
+    =}
 }

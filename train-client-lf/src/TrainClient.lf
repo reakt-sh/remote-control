@@ -1,5 +1,6 @@
 target Python {
-  keepalive: true
+  keepalive: true,
+  files: ["../../train-client/src/utils/app_logger.py"]
 }
 
 import CameraRpi5 from "CameraRpi5.lf";
@@ -16,6 +17,10 @@ import HeartbeatSender from "HeartbeatSender.lf";
 
 
 main reactor TrainClient {
+    preamble {=
+      from app_logger import logger
+    =}
+
     camera = new CameraRpi5();
     quic = new NetworkQUIC();
     motor = new Motor();
