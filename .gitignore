@@ -39,3 +39,7 @@
 *.xlsx
 yt-dlp
 yt-dlp_linux
+src-gen
+include
+bin
+build

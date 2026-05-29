@@ -15,14 +15,14 @@ reactor NetworkQUIC {
     output rc_heartbeat;
 
 	reaction (frame) {=
-		logger.info(f"Received frame: {frame}")
+		self.logger.info(f"Received frame: {frame}")
 	=}
 
 	reaction (clock_synchronization) -> command {=
-		logger.info("Received clock synchronization, sending command")
+		self.logger.info("Received clock synchronization, sending command")
 	=}
 
 	reaction (heartbeat) -> rc_heartbeat {=
-		logger.info("Received heartbeat, sending rc_heartbeat")
+		self.logger.info("Received heartbeat, sending rc_heartbeat")
 	=}
 }

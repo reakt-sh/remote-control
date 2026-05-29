@@ -9,13 +9,10 @@ reactor CameraRpi5 {
     =}
 
     output frame;
-    timer capture_timer(100ms);
+    timer capture_timer(0, 100ms);
 
     reaction(capture_timer) -> frame {=
-        // Capture frame from camera and send it to output
-        // This is a placeholder implementation. Replace with actual camera capture code.
-		buffer = b"fake_frame_data"  // Replace with actual frame data
-		logger.info("Capturing frame from RPi5 camera...");
-		frame.send(buffer)
+		buffer = b"fake_frame_data"
+		frame.set(buffer)
     =}
 }
