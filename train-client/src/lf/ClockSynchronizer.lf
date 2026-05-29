@@ -1,11 +1,11 @@
 target python {
   keepalive: true,
-  files: ["../../train-client/src/utils/app_logger.py"]
+  files: ["src/utils/app_logger.py"]
 }
 
 reactor ClockSynchronizer {
     preamble {=
         from app_logger import logger
     =}
-    output clock_synchronization;
+    output clock_sync;
 }

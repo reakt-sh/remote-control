@@ -43,3 +43,4 @@ src-gen
 include
 bin
 build
+.venv

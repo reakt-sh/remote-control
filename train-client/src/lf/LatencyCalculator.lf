@@ -1,6 +1,6 @@
 target Python {
   keepalive: true,
-  files: ["../../train-client/src/utils/app_logger.py"]
+  files: ["src/utils/app_logger.py"]
 }
 
 reactor LatencyCalculator {

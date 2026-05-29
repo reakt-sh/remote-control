@@ -1,0 +1,34 @@
+target Python {
+  keepalive: true,
+  files: ["src/utils/app_logger.py", "src/network_worker_quic.py", "src/globals.py", "src/video_config.py"]
+}
+
+reactor NetworkQUIC(train_client_id = "") {
+    preamble {=
+        from app_logger import logger
+        from network_worker_quic import NetworkWorkerQUIC
+    =}
+
+    input frame;
+    input clock_sync;
+    input heartbeat;
+    output command;
+    output rc_heartbeat;
+
+    reaction (startup) {=
+        self.logger.info(f"NetworkQUIC reactor started for train client ID: {self.train_client_id}")
+        self.network_worker = self.NetworkWorkerQUIC(train_client_id=self.train_client_id)
+    =}
+
+	reaction (frame) {=
+		self.logger.info(f"Received frame: {frame.value}")
+	=}
+
+	reaction (clock_sync) -> command {=
+		self.logger.info("Received clock synchronization, sending command")
+	=}
+
+	reaction (heartbeat) -> rc_heartbeat {=
+		self.logger.info("Received heartbeat, sending rc_heartbeat")
+	=}
+}
