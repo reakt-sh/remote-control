@@ -4,7 +4,7 @@ import queue
 import threading
 from fractions import Fraction
 from PyQt5.QtCore import QObject, pyqtSignal
-from utils.app_logger import logger
+from app_logger import logger
 
 from globals import *
 class Encoder(QObject):

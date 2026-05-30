@@ -5,7 +5,7 @@ import uuid
 import json
 import struct
 from PyQt5.QtCore import QThread, QDateTime, QTimer
-from utils.app_logger import logger
+from app_logger import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
@@ -18,10 +18,13 @@ from PyQt5.QtCore import QObject
 from hw_info import HWInfo
 import threading
 
+"""
+# ROS2: configuration and imports
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+"""
 
 import cv2
 import numpy as np
@@ -30,6 +33,8 @@ import numpy as np
 class QABCMeta(type(QObject), type(ABC)):
     pass
 
+"""
+# ROS2: video capture and processing
 class Bridge(Node):
     def __init__(self, frame_callback):
         super().__init__('bridge_node')
@@ -47,7 +52,7 @@ class Bridge(Node):
             np_arr = np.frombuffer(bytes(msg.data), np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             self._frame_callback(int(frame_count), frame, int(width), int(height), False)
-
+"""
 class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
         super().__init__()
@@ -82,9 +87,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
         # self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
-        # Initialize ROS2 node
         self.video_source = video_source
         self.video_source.init_capture()
+        self.video_source.frame_ready.connect(self.on_new_frame)
+
+        """
+        # ROS2: Initialize node
         self.bridge = Bridge(frame_callback=self.on_new_frame)
 
         self.video_source_executor = SingleThreadedExecutor()
@@ -98,7 +106,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # self.video_source.stop()
         # self.video_source.destroy_node()
         # rclpy.shutdown()
-
+        """
 
         self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
         self.imu.imu_ready.connect(self.on_imu_data)
@@ -115,11 +123,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.hw_info.get_hw_info(write_to_file=True)
 
     def switch_video_source(self, new_source):
-        """Switch the active video source at runtime.
-
-        Shuts down the old node and its executor, then starts the new ROS2 node.
-        Maintains speed & direction state if supported.
-        """
         try:
             # Stop the old source's timer/capture and shut down its executor
             try:
@@ -127,6 +130,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
             except Exception as e:
                 logger.warning(f"Error stopping old video source: {e}")
 
+            """
+            # ROS2: Shutdown old executors and destroy old nodes
             try:
                 self.video_source_executor.shutdown(timeout_sec=1.0)
             except Exception as e:
@@ -136,6 +141,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.video_source.destroy_node()
             except Exception as e:
                 logger.warning(f"Error destroying old video source node: {e}")
+            """
 
             # Apply current direction & speed to new source before starting
             if hasattr(new_source, 'set_direction'):
@@ -151,12 +157,16 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
             # Start the new source
             self.video_source = new_source
+            self.video_source.frame_ready.connect(self.on_new_frame)
             if self.is_capturing:
                 self.video_source.init_capture()
 
+            """
+            # ROS2: Start new executor for the new video source
             self.video_source_executor = SingleThreadedExecutor()
             self.video_source_executor.add_node(self.video_source)
             threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
+            """
 
             self.log_message(f"Video source switched to {new_source.__class__.__name__}")
         except Exception as e:

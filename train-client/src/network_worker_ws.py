@@ -5,7 +5,7 @@ import struct
 import ssl
 from PyQt5.QtCore import QThread, pyqtSignal
 import websockets
-from utils.app_logger import logger
+from app_logger import logger
 
 from globals import *
 

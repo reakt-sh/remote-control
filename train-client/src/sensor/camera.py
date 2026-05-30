@@ -1,25 +1,43 @@
 import cv2
-import rclpy
-from rclpy.node import Node
-from sensor_msgs.msg import CompressedImage
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from datetime import datetime
 from globals import VIDEO_FPS, VIDEO_RESOLUTION
 
 
+"""
+# ROS2: Import ROS2 libraries and message types
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
 class Camera(Node):
+"""
 
-    def __init__(self, index: int = 0):
-        super().__init__('camera')
+class Camera(QObject):
+    frame_ready = pyqtSignal(object, object, int, int, bool)
+
+    def __init__(self, parent=None, index: int = 0):
+        super().__init__(parent)
         self.index = index
         self.cap = None
+
+        """
+        # ROS2: timer usage
         self._timer = None
+        """
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.capture_frame)
+
         self.width = 0
         self.height = 0
         self.frame_count = 0
         self.current_fps = VIDEO_FPS
         self.direction = 1
 
+        """
+        # ROS2: Publisher for compressed images
         self._publisher = self.create_publisher(CompressedImage, 'frame_ready', 10)
+        """
 
     def _set_resolution(self):
         resolution = VIDEO_RESOLUTION
@@ -37,30 +55,41 @@ class Camera(Node):
 
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.get_logger().info(f"Camera initialized with resolution: {self.width}x{self.height}")
 
         fps = self.cap.get(cv2.CAP_PROP_FPS)
         if fps and fps > 1:
             self.current_fps = min(self.current_fps, fps)
 
         self.frame_count = 0
+
+        """
+        # ROS2: Start timer for frame capture
         self._timer = self.create_timer(1.0 / self.current_fps, self.capture_frame)
+        """
+        self.timer.start(int(1000 / self.current_fps))  # Start timer with interval based on current FPS
+
 
     def set_speed(self, speed_kmh: int):
-        self.get_logger().debug(f"Do nothing about set_speed, it's just a camera, speed_kmh={speed_kmh}")
+        pass
 
     def set_direction(self, direction: int):
         if direction in (1, -1):
             self.direction = direction
 
     def stop(self):
+        """
+        # ROS2: Stop timer and release camera
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
+        """
+        if self.timer.isActive():
+            self.timer.stop()
+
         if self.cap:
             self.cap.release()
             self.cap = None
-        self.get_logger().info("Camera stopped")
+
 
     def capture_frame(self):
         if self.cap is None:
@@ -105,6 +134,10 @@ class Camera(Node):
             x, y, text = pos
             cv2.putText(frame, text, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
 
+        self.frame_ready.emit(self.frame_count, frame, self.width, self.height, False)
+
+        """
+        # ROS2: Publish the frame as a CompressedImage message
         try:
             msg = CompressedImage()
             msg.header.stamp = self.get_clock().now().to_msg()
@@ -114,3 +147,4 @@ class Camera(Node):
             self._publisher.publish(msg)
         except Exception as e:
             self.get_logger().error(f"Error publishing frame: {e}")
+        """
