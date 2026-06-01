@@ -1,5 +1,6 @@
 import cv2
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal
+import threading
+import time
 from datetime import datetime
 from globals import VIDEO_FPS, VIDEO_RESOLUTION
 
@@ -12,11 +13,23 @@ from sensor_msgs.msg import CompressedImage
 class Camera(Node):
 """
 
-class Camera(QObject):
-    frame_ready = pyqtSignal(object, object, int, int, bool)
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
 
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class Camera:
     def __init__(self, parent=None, index: int = 0):
-        super().__init__(parent)
+        self.frame_ready = _Signal()
         self.index = index
         self.cap = None
 
@@ -24,10 +37,8 @@ class Camera(QObject):
         # ROS2: timer usage
         self._timer = None
         """
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.capture_frame)
-
+        self._thread = None
+        self._running = False
         self.width = 0
         self.height = 0
         self.frame_count = 0
@@ -61,13 +72,24 @@ class Camera(QObject):
             self.current_fps = min(self.current_fps, fps)
 
         self.frame_count = 0
-
         """
         # ROS2: Start timer for frame capture
         self._timer = self.create_timer(1.0 / self.current_fps, self.capture_frame)
         """
-        self.timer.start(int(1000 / self.current_fps))  # Start timer with interval based on current FPS
 
+        self._running = True
+        self._thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._thread.start()
+
+    def _capture_loop(self):
+        interval = 1.0 / self.current_fps
+        while self._running:
+            t0 = datetime.now().timestamp()
+            self.capture_frame()
+            elapsed = datetime.now().timestamp() - t0
+            remaining = interval - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
 
     def set_speed(self, speed_kmh: int):
         pass
@@ -83,18 +105,18 @@ class Camera(QObject):
             self._timer.cancel()
             self._timer = None
         """
-        if self.timer.isActive():
-            self.timer.stop()
 
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=2.0)
+            self._thread = None
         if self.cap:
             self.cap.release()
             self.cap = None
 
-
     def capture_frame(self):
         if self.cap is None:
             return
-
         ret, frame = self.cap.read()
         if not ret:
             return
@@ -124,10 +146,8 @@ class Camera(QObject):
         for pos in positions:
             x, y, text = pos
             (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, thickness)
-            top_left = (x - 5, y - text_height - 5)
-            bottom_right = (x + text_width + 5, y + 5)
             overlay = frame.copy()
-            cv2.rectangle(overlay, top_left, bottom_right, bg_color, -1)
+            cv2.rectangle(overlay, (x - 5, y - text_height - 5), (x + text_width + 5, y + 5), bg_color, -1)
             cv2.addWeighted(overlay, opacity, frame, 1 - opacity, 0, frame)
 
         for pos in positions:
