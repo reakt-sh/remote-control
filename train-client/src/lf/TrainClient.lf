@@ -46,4 +46,5 @@ main reactor TrainClient {
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
 
     latency_calculator.latency -> data_storage.latency;
+	camera.frame -> data_storage.frame;
 }
