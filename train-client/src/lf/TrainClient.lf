@@ -1,6 +1,6 @@
 target Python {
   keepalive: true,
-  files: ["src/utils/app_logger.py", "src/lf/helper/helper.py"]
+  files: ["src/app_logger.py", "src/helper.py"]
 }
 
 import NetworkQUIC from "NetworkQUIC.lf";
@@ -9,7 +9,7 @@ import Motor from "Motor.lf";
 import LatencyCalculator from "LatencyCalculator.lf";
 import ClockSynchronizer from "ClockSynchronizer.lf";
 import DataStorage from "DataStorage.lf";
-import CommandParser from "CommandParser.lf";
+import Parser from "Parser.lf";
 import EmergencyBreak from "EmergencyBreak.lf";
 import HeartbeatSender from "HeartbeatSender.lf";
 
@@ -31,16 +31,16 @@ main reactor TrainClient {
     latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
-    command_parser = new CommandParser();
+    parser = new Parser();
     emergency_break = new EmergencyBreak();
     heartbeat_sender = new HeartbeatSender();
 
     camera.frame -> quic.frame;
-    quic.command -> command_parser.command;
-    quic.command -> latency_calculator.command;
-    quic.rc_heartbeat -> emergency_break.rc_heartbeat;
-    emergency_break.motor_control , command_parser.motor_control -> motor.motor_control;
-    clock_synchronizer.clock_sync -> quic.clock_sync;
+    quic.receiving_data -> parser.data;
+	parser.heartbeat_rc -> emergency_break.heartbeat_rc;
+	emergency_break.motor_control , parser.command -> motor.motor_control;
+
+	clock_synchronizer.clock_sync_train, clock_synchronizer.clock_sync_rc, heartbeat_sender.heartbeat -> quic.sending_data;
+
     latency_calculator.latency -> data_storage.latency;
-    heartbeat_sender.heartbeat -> quic.heartbeat;
 }

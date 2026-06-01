@@ -1,6 +1,6 @@
 target Python {
   keepalive: true,
-  files: ["src/utils/app_logger.py", "src/network_worker_quic.py", "src/globals.py", "src/video_config.py"]
+  files: ["src/app_logger.py", "src/network_worker_quic.py", "src/globals.py", "src/video_config.py"]
 }
 
 reactor NetworkQUIC(train_client_id = "") {
@@ -10,25 +10,32 @@ reactor NetworkQUIC(train_client_id = "") {
     =}
 
     input frame;
-    input clock_sync;
-    input heartbeat;
-    output command;
-    output rc_heartbeat;
+    input[3] sending_data;
+    output receiving_data;
 
-    reaction (startup) {=
+    physical action act_receiving_data;
+
+    reaction (startup) -> act_receiving_data {=
         self.logger.info(f"NetworkQUIC reactor started for train client ID: {self.train_client_id}")
         self.network_worker = self.NetworkWorkerQUIC(train_client_id=self.train_client_id)
+
+        self.network_worker.stream_data.connect(
+            lambda msg: self.act_receiving_data.schedule(0, msg)
+        )
+        self.network_worker.start()
     =}
 
-	reaction (frame) {=
-		self.logger.info(f"Received frame: {frame.value}")
-	=}
+    reaction (frame) {=
+        self.logger.info(f"Received frame: {frame.value}")
+    =}
 
-	reaction (clock_sync) -> command {=
-		self.logger.info("Received clock synchronization, sending command")
-	=}
+    reaction (sending_data) {=
+        self.logger.info(f"Received data to send, enqueuing to network worker: {sending_data.value}")
+    =}
 
-	reaction (heartbeat) -> rc_heartbeat {=
-		self.logger.info("Received heartbeat, sending rc_heartbeat")
-	=}
+    reaction (act_receiving_data) {=
+        data = act_receiving_data.value
+        self.logger.info(f"Received data from network worker: {data}")
+        self.receiving_data.emit(data)
+    =}
 }
