@@ -35,8 +35,7 @@ class NetworkWorkerQUIC(QThread):
     connection_established = pyqtSignal()
     connection_failed = pyqtSignal(str)
     connection_closed = pyqtSignal()
-    process_command = pyqtSignal(object)
-    data_received = pyqtSignal(bytes)  # Signal for received data
+    stream_data = pyqtSignal(bytes)
 
     def __init__(self, train_client_id: str, parent=None):
         super().__init__(parent)
@@ -272,33 +271,5 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
             return
 
         if isinstance(event, StreamDataReceived):
-            try:
-                packet_type = event.data[0]
-                payload = event.data[1:]
-                if packet_type == PACKET_TYPE["command"]:
-                    self.network_worker.process_command.emit(payload)
-                elif packet_type == PACKET_TYPE["map_connect"] or packet_type == PACKET_TYPE["map_disconnect"] or packet_type == PACKET_TYPE["keepalive"]:
-                    self.network_worker.data_received.emit(event.data)
-                elif packet_type == PACKET_TYPE["rtt"]:
-                    # just modify event data with current timestamp
-                    rtt_data = json.loads(payload.decode('utf-8'))
-                    rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
-                    rtt_packet = json.dumps(rtt_data).encode('utf-8')
-                    rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+            self.network_worker.stream_data.emit(event.data)  # Emit raw stream data for processing
 
-                    # Add 2-byte length prefix (big-endian)
-                    data_size = len(rtt_packet)
-                    length_prefixed_packet = bytearray(2 + len(rtt_packet))
-                    length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-                    length_prefixed_packet[1] = data_size & 0xFF         # Low byte
-                    length_prefixed_packet[2:] = rtt_packet
-
-                    self.network_worker.enqueue_stream_packet(length_prefixed_packet)
-                elif packet_type == PACKET_TYPE["rtt_train"]:
-                    self.network_worker.data_received.emit(event.data)
-                elif packet_type == PACKET_TYPE["connect_response"]:
-                    logger.info(f"Received connect response from server, data = {event.data}")
-                else:
-                    logger.warning(f"Invalid process command with packet type = {packet_type}, data: {event.data}")
-            except Exception as e:
-                logger.warning("There is no packet type in the received data")

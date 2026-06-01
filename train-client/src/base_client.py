@@ -213,8 +213,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.connection_established.connect(self.on_quic_connected)
         self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
         self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
-        self.network_worker_quic.data_received.connect(self.on_data_received_quic)
-        self.network_worker_quic.process_command.connect(self.on_new_command)
+        self.network_worker_quic.stream_data.connect(self.on_data_received_quic)
+        # self.network_worker_quic.data_received.connect(self.on_data_received_quic)
+        # self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
         # MQTT
@@ -250,112 +251,136 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # For example, notify user/UI, log, etc.
 
     def on_data_received_quic(self, data):
-        packet_type = data[0]
-        payload = data[1:]
-        if packet_type == PACKET_TYPE["map_connect"]:
-            ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
-            try:
-                remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
-                self.connected_remote_control_ids.add(remote_control_id)
-                logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
-                # Reset samples for this remote and start RTT measurement
-                self.clock_offset_samples[remote_control_id] = []
-                self.send_rtt_packets(remote_control_id)
-                self.hw_info.notify_new_remote_control_connected(remote_control_id)
 
-                # Start keepalive timer on connect
-                self.keepalive_timer.start()
-                logger.info("Keepalive timer started (on map_connect)")
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse map_connect JSON: {e}")
+        try:
+            packet_type = data[0]
+            payload = data[1:]
+            if packet_type == PACKET_TYPE["command"]:
+                self.on_new_command(payload)
+            elif packet_type == PACKET_TYPE["map_connect"]:
+                ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
+                try:
+                    remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+                    self.connected_remote_control_ids.add(remote_control_id)
+                    logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
+                    # Reset samples for this remote and start RTT measurement
+                    self.clock_offset_samples[remote_control_id] = []
+                    self.send_rtt_packets(remote_control_id)
+                    self.hw_info.notify_new_remote_control_connected(remote_control_id)
 
-        elif packet_type == PACKET_TYPE["map_disconnect"]:
-            try:
-                remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
-                logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
-                if remote_control_id in self.connected_remote_control_ids:
-                    self.connected_remote_control_ids.remove(remote_control_id)
-                    logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
-                else:
-                    logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
+                    # Start keepalive timer on connect
+                    self.keepalive_timer.start()
+                    logger.info("Keepalive timer started (on map_connect)")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse map_connect JSON: {e}")
+            elif packet_type == PACKET_TYPE["map_disconnect"]:
+                try:
+                    remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
+                    logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
+                    if remote_control_id in self.connected_remote_control_ids:
+                        self.connected_remote_control_ids.remove(remote_control_id)
+                        logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
+                    else:
+                        logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
 
-                self.stop_train_operations()
+                    self.stop_train_operations()
 
-                # Stop keepalive timer and go to safe state
-                if self.keepalive_timer.isActive():
-                    self.keepalive_timer.stop()
-                    logger.info("Keepalive timer stopped (on map_disconnect)")
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse map_disconnect JSON: {e}")
+                    # Stop keepalive timer and go to safe state
+                    if self.keepalive_timer.isActive():
+                        self.keepalive_timer.stop()
+                        logger.info("Keepalive timer stopped (on map_disconnect)")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse map_disconnect JSON: {e}")
 
-        elif packet_type == PACKET_TYPE["rtt_train"]:
-            jsonString = payload.decode('utf-8')
-            jsonData = json.loads(jsonString)
+            elif packet_type == PACKET_TYPE["rtt_train"]:
+                jsonString = payload.decode('utf-8')
+                jsonData = json.loads(jsonString)
 
-            # Extract timestamps
-            remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
-            train_timestamp_sent = jsonData.get('train_timestamp', 0)
-            current_time = int(datetime.datetime.now().timestamp() * 1000)
-            remote_control_id = jsonData.get('remote_control_id')
+                # Extract timestamps
+                remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
+                train_timestamp_sent = jsonData.get('train_timestamp', 0)
+                current_time = int(datetime.datetime.now().timestamp() * 1000)
+                remote_control_id = jsonData.get('remote_control_id')
 
-            # Calculate RTT (Round Trip Time)
-            rtt = current_time - train_timestamp_sent
+                # Calculate RTT (Round Trip Time)
+                rtt = current_time - train_timestamp_sent
 
-            # Calculate clock offset
-            # Clock offset = remote_time - local_time (at the midpoint of RTT)
-            # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
-            clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
+                # Calculate clock offset
+                # Clock offset = remote_time - local_time (at the midpoint of RTT)
+                # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
+                clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
 
-            # Collect offset samples per remote and compute average after N samples
-            samples = self.clock_offset_samples.setdefault(remote_control_id, [])
-            samples.append(clock_offset)
+                # Collect offset samples per remote and compute average after N samples
+                samples = self.clock_offset_samples.setdefault(remote_control_id, [])
+                samples.append(clock_offset)
 
-            logger.info(
-                f"RTT packet received - "
-                f"RTT: {rtt}ms, "
-                f"Clock Offset sample: {clock_offset:.2f}ms, "
-                f"Sample count for {remote_control_id}: {len(samples)}/{self.number_of_rtt_packets}, "
-                f"Remote timestamp: {remote_control_timestamp}, "
-                f"Train timestamp sent: {train_timestamp_sent}, "
-                f"Current time: {current_time}"
-            )
-
-            if len(samples) >= self.number_of_rtt_packets:
-                avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
-                avg_offset = round(avg_offset)
-                self.clock_offsets[remote_control_id] = avg_offset
                 logger.info(
-                    f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
-                    f"(averaged over {self.number_of_rtt_packets} RTT samples)"
+                    f"RTT packet received - "
+                    f"RTT: {rtt}ms, "
+                    f"Clock Offset sample: {clock_offset:.2f}ms, "
+                    f"Sample count for {remote_control_id}: {len(samples)}/{self.number_of_rtt_packets}, "
+                    f"Remote timestamp: {remote_control_timestamp}, "
+                    f"Train timestamp sent: {train_timestamp_sent}, "
+                    f"Current time: {current_time}"
                 )
-                # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
-                self.clock_offset_samples[remote_control_id] = []
 
-        elif packet_type == PACKET_TYPE["keepalive"]:
-            try:
-                message = json.loads(payload.decode('utf-8'))
-                remote_control_id = message.get('remote_control_id', 0)
-                latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
+                if len(samples) >= self.number_of_rtt_packets:
+                    avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
+                    avg_offset = round(avg_offset)
+                    self.clock_offsets[remote_control_id] = avg_offset
+                    logger.info(
+                        f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
+                        f"(averaged over {self.number_of_rtt_packets} RTT samples)"
+                    )
+                    # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
+                    self.clock_offset_samples[remote_control_id] = []
 
-                # Reset keepalive timer on every keepalive packet
-                self.keepalive_timer.start()
-                logger.debug("Keepalive timer reset (on keepalive packet)")
+            elif packet_type == PACKET_TYPE["keepalive"]:
+                try:
+                    message = json.loads(payload.decode('utf-8'))
+                    remote_control_id = message.get('remote_control_id', 0)
+                    latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
 
-                if latency is not None:
-                    latency_log_entry = {
-                        "remote_control_id": remote_control_id,
-                        "latency": latency,
-                        "created_at": message.get('remote_control_timestamp', 0),
-                        "received_at": int(datetime.datetime.now().timestamp() * 1000),
-                        "size" : len(payload),
-                        "sequence" : message.get('sequence', None),
-                    }
-                    self.latency_output_file_for_keepalive.write(json.dumps(latency_log_entry) + "\n")
-                    self.latency_output_file_for_keepalive.flush()
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse keepalive JSON: {e}")
-        else:
-            logger.warning(f"Unknown QUIC packet type received: {packet_type}")
+                    # Reset keepalive timer on every keepalive packet
+                    self.keepalive_timer.start()
+                    logger.debug("Keepalive timer reset (on keepalive packet)")
+
+                    if latency is not None:
+                        latency_log_entry = {
+                            "remote_control_id": remote_control_id,
+                            "latency": latency,
+                            "created_at": message.get('remote_control_timestamp', 0),
+                            "received_at": int(datetime.datetime.now().timestamp() * 1000),
+                            "size" : len(payload),
+                            "sequence" : message.get('sequence', None),
+                        }
+                        self.latency_output_file_for_keepalive.write(json.dumps(latency_log_entry) + "\n")
+                        self.latency_output_file_for_keepalive.flush()
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse keepalive JSON: {e}")
+
+            elif packet_type == PACKET_TYPE["rtt"]:
+                # just modify event data with current timestamp
+                rtt_data = json.loads(payload.decode('utf-8'))
+                rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+                rtt_packet = json.dumps(rtt_data).encode('utf-8')
+                rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+
+                # Add 2-byte length prefix (big-endian)
+                data_size = len(rtt_packet)
+                length_prefixed_packet = bytearray(2 + len(rtt_packet))
+                length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+                length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+                length_prefixed_packet[2:] = rtt_packet
+
+                self.network_worker.enqueue_stream_packet(length_prefixed_packet)
+
+            elif packet_type == PACKET_TYPE["connect_response"]:
+                logger.info(f"Received connect response from server, data = {data}")
+            else:
+                logger.warning(f"Invalid process command with packet type = {packet_type}, data: {data}")
+        except Exception as e:
+            logger.warning("There is no packet type in the received data")
 
 
     def send_rtt_packets(self, remote_control_id):
@@ -535,13 +560,16 @@ class BaseClient(ABC, metaclass=QABCMeta):
         pass
 
     def on_encoded_frame(self, frame_id, timestamp, encoded_bytes):
-        if self.write_to_file:
-            self.output_file.write(encoded_bytes)
-            self.output_file.flush()
-        if self.is_sending:
-            # Send the encoded frame over the network
-            self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
-            self.telemetry.notify_new_frame_processed()
+        try:
+            if self.write_to_file:
+                self.output_file.write(encoded_bytes)
+                self.output_file.flush()
+            if self.is_sending:
+                # Send the encoded frame over the network
+                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+                self.telemetry.notify_new_frame_processed()
+        except Exception as e:
+            logger.error(f"Error writing on_encoded_frame: {e}")
 
     def toggle_capture(self):
         self.is_capturing = not self.is_capturing
