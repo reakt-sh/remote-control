@@ -1,18 +1,30 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py"]
+  files: ["src/app_logger.py", "src/sensor/camera.py"]
 }
 
 reactor Camera {
     preamble {=
         from app_logger import logger
+        from camera import Camera as CameraImpl
     =}
 
     output frame;
-    timer capture_timer(0, 100ms);
 
-    reaction(capture_timer) -> frame {=
-		buffer = b"fake_frame_data"
-		frame.set(buffer)
-    =}
+	physical action capturing_data;
+
+    reaction (startup) -> capturing_data {=
+		self.logger.info("Camera reactor started, beginning to capture frames.")
+		self.camera_impl = self.CameraImpl()
+		self.camera_impl.frame_ready.connect(
+			lambda frame_count, frame, width, height, flag:
+				capturing_data.schedule(0, (frame_count, frame, width, height, flag))
+		)
+		self.camera_impl.init_capture()
+	=}
+
+	reaction (capturing_data) {=
+		frame_count, frame, width, height, flag = capturing_data.value
+		self.logger.info(f"Captured frame: {frame_count}")
+	=}
 }
