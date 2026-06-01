@@ -7,6 +7,7 @@ reactor ClockSynchronizer {
     preamble {=
         from app_logger import logger
     =}
-    output clock_sync_train;
-    output clock_sync_rc;
+
+    input clock_sync_recv;
+    output clock_sync_send;
 }

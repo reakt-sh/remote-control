@@ -1,0 +1,21 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py"]
+}
+
+reactor HeartbeatHandler {
+    preamble {=
+        from app_logger import logger
+    =}
+
+	input heartbeat_recv;
+  	output heartbeat_send;
+	output heartbeat_timout;
+
+  	timer t(1s)
+
+	reaction(t) -> heartbeat_send {=
+		self.logger.info("Emitting heartbeat signal")
+		heartbeat_send.set("heartbeat")
+	=}
+}

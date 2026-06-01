@@ -7,11 +7,9 @@ reactor Parser {
     preamble {=
         from app_logger import logger
     =}
-  input data;
+	input data;
 
-  output command;
-  output clock_sync_train;
-  output clock_sync_rc;
-  output heartbeat_train;
-  output heartbeat_rc;
+	output command;
+	output clock_sync;
+	output heartbeat;
 }

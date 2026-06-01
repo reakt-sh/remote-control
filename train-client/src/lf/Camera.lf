@@ -3,7 +3,7 @@ target Python {
   files: ["src/app_logger.py"]
 }
 
-reactor CameraRpi5 {
+reactor Camera {
     preamble {=
         from app_logger import logger
     =}

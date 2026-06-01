@@ -10,7 +10,7 @@ reactor NetworkQUIC(train_client_id = "") {
     =}
 
     input frame;
-    input[3] sending_data;
+    input[2] sending_data;
     output receiving_data;
 
     physical action act_receiving_data;

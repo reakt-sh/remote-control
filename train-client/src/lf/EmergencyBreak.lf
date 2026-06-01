@@ -7,7 +7,7 @@ reactor EmergencyBreak {
     preamble {=
         from app_logger import logger
     =}
-    input heartbeat_rc;
+    input heartbeat_timeout;
     output motor_control;
 }
 
