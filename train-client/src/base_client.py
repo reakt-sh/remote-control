@@ -207,7 +207,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def init_network(self):
         # WebSocket
         self.network_worker_ws = NetworkWorkerWS(self.train_client_id)
-        self.network_worker_ws.process_command.connect(self.on_new_command)
+        self.network_worker_ws.recieved_data.connect(self.on_new_command)
         self.network_worker_ws.start()
 
         # QUIC
@@ -216,8 +216,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
         self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
         self.network_worker_quic.stream_data.connect(self.on_data_received_quic)
-        # self.network_worker_quic.data_received.connect(self.on_data_received_quic)
-        # self.network_worker_quic.process_command.connect(self.on_new_command)
         self.network_worker_quic.start()
 
         # MQTT

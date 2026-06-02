@@ -27,7 +27,7 @@ class _Signal:
 
 class NetworkWorkerWS:
     def __init__(self, train_client_id, parent=None):
-        self.process_command = _Signal()
+        self.recieved_data = _Signal()
         self.packet_queue = queue.Queue()
         self.train_client_id = train_client_id
         self.train_client_id_bytes = train_client_id.encode('utf-8').ljust(36)[:36]  # Ensure 36 bytes
@@ -102,7 +102,7 @@ class NetworkWorkerWS:
                         message = json.loads(payload.decode('utf-8'))
                         print(f"WebSocket: Keepalive message: {message}")
                     elif packet_type == PACKET_TYPE["command"]:
-                        self.process_command.emit(payload)
+                        self.recieved_data.emit(payload)
                     else:
                         print(f"WebSocket: Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:

@@ -4,6 +4,7 @@ target Python {
 }
 
 import NetworkQUIC from "NetworkQUIC.lf";
+import NetworkWS from "NetworkWS.lf";
 import Camera from "Camera.lf";
 import Motor from "Motor.lf";
 import LatencyCalculator from "LatencyCalculator.lf";
@@ -30,6 +31,7 @@ main reactor TrainClient {
 
     camera = new Camera();
     quic = new NetworkQUIC();
+    ws = new NetworkWS();
     motor = new Motor();
     encoder = new Encoder();
     latency_calculator = new LatencyCalculator();
@@ -39,7 +41,7 @@ main reactor TrainClient {
     emergency_break = new EmergencyBreak();
     heartbeat_handler = new HeartbeatHandler();
 
-    quic.receiving_data -> parser.data;
+    quic.receiving_data, ws.receiving_data -> parser.data;
 	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
 	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
 	parser.command -> latency_calculator.command;

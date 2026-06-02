@@ -7,7 +7,7 @@ reactor Parser {
     preamble {=
         from app_logger import logger
     =}
-	input data;
+	input[2] data;
 
 	output command;
 	output clock_sync;
