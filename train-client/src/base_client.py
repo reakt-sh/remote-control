@@ -5,6 +5,9 @@ import uuid
 import json
 import struct
 from PyQt5.QtCore import QThread, QDateTime, QTimer
+from PyQt5.QtCore import QMetaObject, Qt
+from PyQt5.QtCore import QObject
+
 from app_logger import logger
 from globals import *
 from network_worker_ws import NetworkWorkerWS
@@ -14,7 +17,6 @@ from networkspeed import NetworkSpeed
 from sensor.telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
-from PyQt5.QtCore import QObject
 from hw_info import HWInfo
 import threading
 
@@ -251,7 +253,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # For example, notify user/UI, log, etc.
 
     def on_data_received_quic(self, data):
-
         try:
             packet_type = data[0]
             payload = data[1:]
@@ -287,54 +288,55 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
                     # Stop keepalive timer and go to safe state
                     if self.keepalive_timer.isActive():
-                        self.keepalive_timer.stop()
+                        QMetaObject.invokeMethod(self.keepalive_timer, "stop", Qt.QueuedConnection)
                         logger.info("Keepalive timer stopped (on map_disconnect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_disconnect JSON: {e}")
-
             elif packet_type == PACKET_TYPE["rtt_train"]:
-                jsonString = payload.decode('utf-8')
-                jsonData = json.loads(jsonString)
+                try:
+                    jsonString = payload.decode('utf-8')
+                    jsonData = json.loads(jsonString)
 
-                # Extract timestamps
-                remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
-                train_timestamp_sent = jsonData.get('train_timestamp', 0)
-                current_time = int(datetime.datetime.now().timestamp() * 1000)
-                remote_control_id = jsonData.get('remote_control_id')
+                    # Extract timestamps
+                    remote_control_timestamp = jsonData.get('remote_control_timestamp', 0)
+                    train_timestamp_sent = jsonData.get('train_timestamp', 0)
+                    current_time = int(datetime.datetime.now().timestamp() * 1000)
+                    remote_control_id = jsonData.get('remote_control_id')
 
-                # Calculate RTT (Round Trip Time)
-                rtt = current_time - train_timestamp_sent
+                    # Calculate RTT (Round Trip Time)
+                    rtt = current_time - train_timestamp_sent
 
-                # Calculate clock offset
-                # Clock offset = remote_time - local_time (at the midpoint of RTT)
-                # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
-                clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
+                    # Calculate clock offset
+                    # Clock offset = remote_time - local_time (at the midpoint of RTT)
+                    # Approximation: remote_control_timestamp was captured at roughly (train_timestamp_sent + rtt/2)
+                    clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
 
-                # Collect offset samples per remote and compute average after N samples
-                samples = self.clock_offset_samples.setdefault(remote_control_id, [])
-                samples.append(clock_offset)
+                    # Collect offset samples per remote and compute average after N samples
+                    samples = self.clock_offset_samples.setdefault(remote_control_id, [])
+                    samples.append(clock_offset)
 
-                logger.info(
-                    f"RTT packet received - "
-                    f"RTT: {rtt}ms, "
-                    f"Clock Offset sample: {clock_offset:.2f}ms, "
-                    f"Sample count for {remote_control_id}: {len(samples)}/{self.number_of_rtt_packets}, "
-                    f"Remote timestamp: {remote_control_timestamp}, "
-                    f"Train timestamp sent: {train_timestamp_sent}, "
-                    f"Current time: {current_time}"
-                )
-
-                if len(samples) >= self.number_of_rtt_packets:
-                    avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
-                    avg_offset = round(avg_offset)
-                    self.clock_offsets[remote_control_id] = avg_offset
                     logger.info(
-                        f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
-                        f"(averaged over {self.number_of_rtt_packets} RTT samples)"
+                        f"RTT packet received - "
+                        f"RTT: {rtt}ms, "
+                        f"Clock Offset sample: {clock_offset:.2f}ms, "
+                        f"Sample count for {remote_control_id}: {len(samples)}/{self.number_of_rtt_packets}, "
+                        f"Remote timestamp: {remote_control_timestamp}, "
+                        f"Train timestamp sent: {train_timestamp_sent}, "
+                        f"Current time: {current_time}"
                     )
-                    # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
-                    self.clock_offset_samples[remote_control_id] = []
 
+                    if len(samples) >= self.number_of_rtt_packets:
+                        avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
+                        avg_offset = round(avg_offset)
+                        self.clock_offsets[remote_control_id] = avg_offset
+                        logger.info(
+                            f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
+                            f"(averaged over {self.number_of_rtt_packets} RTT samples)"
+                        )
+                        # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
+                        self.clock_offset_samples[remote_control_id] = []
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse rtt_train JSON: {e}")
             elif packet_type == PACKET_TYPE["keepalive"]:
                 try:
                     message = json.loads(payload.decode('utf-8'))
@@ -342,8 +344,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
 
                     # Reset keepalive timer on every keepalive packet
-                    self.keepalive_timer.start()
-                    logger.debug("Keepalive timer reset (on keepalive packet)")
+                    #self.keepalive_timer.start()
+                    QMetaObject.invokeMethod(self.keepalive_timer, "start", Qt.QueuedConnection)
 
                     if latency is not None:
                         latency_log_entry = {
@@ -358,23 +360,24 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         self.latency_output_file_for_keepalive.flush()
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse keepalive JSON: {e}")
-
             elif packet_type == PACKET_TYPE["rtt"]:
-                # just modify event data with current timestamp
-                rtt_data = json.loads(payload.decode('utf-8'))
-                rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
-                rtt_packet = json.dumps(rtt_data).encode('utf-8')
-                rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+                try:
+                    # just modify event data with current timestamp
+                    rtt_data = json.loads(payload.decode('utf-8'))
+                    rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+                    rtt_packet = json.dumps(rtt_data).encode('utf-8')
+                    rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
 
-                # Add 2-byte length prefix (big-endian)
-                data_size = len(rtt_packet)
-                length_prefixed_packet = bytearray(2 + len(rtt_packet))
-                length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-                length_prefixed_packet[1] = data_size & 0xFF         # Low byte
-                length_prefixed_packet[2:] = rtt_packet
+                    # Add 2-byte length prefix (big-endian)
+                    data_size = len(rtt_packet)
+                    length_prefixed_packet = bytearray(2 + len(rtt_packet))
+                    length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
+                    length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+                    length_prefixed_packet[2:] = rtt_packet
 
-                self.network_worker.enqueue_stream_packet(length_prefixed_packet)
-
+                    self.network_worker_quic.enqueue_stream_packet(length_prefixed_packet)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse rtt JSON: {e}")
             elif packet_type == PACKET_TYPE["connect_response"]:
                 logger.info(f"Received connect response from server, data = {data}")
             else:
@@ -392,23 +395,25 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 "remote_control_id": remote_control_id,
                 "train_timestamp": int(datetime.datetime.now().timestamp() * 1000)
             }
-
             rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
             rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
 
-            # Add 2-byte length prefix (big-endian)
             data_size = len(rtt_train_packet)
             length_prefixed_packet = bytearray(2 + len(rtt_train_packet))
-            length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-            length_prefixed_packet[1] = data_size & 0xFF         # Low byte
+            length_prefixed_packet[0] = (data_size >> 8) & 0xFF
+            length_prefixed_packet[1] = data_size & 0xFF
             length_prefixed_packet[2:] = rtt_train_packet
             self.network_worker_quic.enqueue_stream_packet(length_prefixed_packet)
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
 
-        # Send packets with delays using QTimer
-        for i in range(self.number_of_rtt_packets):
-            after_ms = 2000
-            QTimer.singleShot(after_ms + i * 200, lambda idx=i: send_packet(idx))
+        def _sender():
+            import time
+            time.sleep(2.0)  # initial 2000ms delay
+            for i in range(self.number_of_rtt_packets):
+                send_packet(i)
+                time.sleep(0.2)  # 200ms between packets
+
+        threading.Thread(target=_sender, daemon=True, name="RTTSender").start()
 
 
     def calculate_latency(self, remote_control_id, remote_timestamp):

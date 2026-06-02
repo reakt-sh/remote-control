@@ -7,6 +7,15 @@ reactor DataStorage {
     preamble {=
         from app_logger import logger
     =}
-  input latency;
-  input frame;
+	input latency;
+	input frame;
+
+	reaction (latency) {=
+		self.logger.info(f"Received latency data: {latency.value} ms")
+	=}
+
+	reaction (frame) {=
+		frame_id, timestamp, encoded_bytes = frame.value
+		self.logger.info(f"Received frame for storage: {frame_id} at {timestamp}")
+	=}
 }
