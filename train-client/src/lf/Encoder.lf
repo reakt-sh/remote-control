@@ -1,11 +1,37 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py"]
+  files: ["src/app_logger.py", "src/encoder.py"]
 }
 
 reactor Encoder {
     preamble {=
         from app_logger import logger
+        from encoder import Encoder as EncoderImpl
+        encoder = EncoderImpl()
+    =}
+
+    input raw_frame;
+    output encoded_frame;
+
+    physical action act_encoding;
+
+    reaction (startup) -> act_encoding {=
+        _act = act_encoding
+        self.encoder.encode_ready.connect(
+            lambda frame_id, timestamp, encoded_bytes: _act.schedule(0, (frame_id, timestamp, encoded_bytes))
+        )
+    =}
+
+    reaction (raw_frame) {=
+        frame_id, frame_data, width, height = raw_frame.value
+        self.logger.info(f"Received raw frame: {frame_id}, scheduling for encoding.")
+        self.encoder.enqueue_frame(frame_id, frame_data, width, height)
+    =}
+
+    reaction(act_encoding) -> encoded_frame {=
+        frame_id, timestamp, encoded_bytes = act_encoding.value
+        self.logger.info(f"Encoded frame ready: {frame_id} at {timestamp}")
+        encoded_frame.set((frame_id, timestamp, encoded_bytes))
     =}
 
 }

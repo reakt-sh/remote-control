@@ -3,14 +3,28 @@ import datetime
 import queue
 import threading
 from fractions import Fraction
-from PyQt5.QtCore import QObject, pyqtSignal
 from app_logger import logger
 
 from globals import *
-class Encoder(QObject):
-    encode_ready = pyqtSignal(int, object, object)  # Emits frame_id, timestamp (as object to handle 64-bit), encoded_bytes
+
+
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
+
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class Encoder:
     def __init__(self, parent=None):
-        super().__init__(parent)
+        self.encode_ready = _Signal()  # Emits frame_id, timestamp (as object to handle 64-bit), encoded_bytes
         self.frame_rate = VIDEO_FPS
         self.pixel_format = VIDEO_FORMAT_FFMPEG
         self.h264_dump_path = H264_DUMP

@@ -30,7 +30,8 @@ reactor NetworkQUIC(train_client_id = "") {
     =}
 
     reaction (frame) {=
-        self.logger.info(f"Received frame: {frame.value}")
+        frame_id, timestamp, encoded_bytes = frame.value
+        self.logger.info(f"Received frame: {frame_id}")
     =}
 
     reaction (sending_data) {=
