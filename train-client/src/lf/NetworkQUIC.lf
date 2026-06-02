@@ -45,7 +45,7 @@ reactor NetworkQUIC {
 
     reaction (act_receiving_data) -> receiving_data {=
         data = act_receiving_data.value
-        self.logger.info(f"Received data from network worker: {data}")
+        # self.logger.info(f"Received data from network worker: {data}")
         receiving_data.set(data)
     =}
 }

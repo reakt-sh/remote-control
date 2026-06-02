@@ -10,7 +10,6 @@ reactor NetworkWS {
         from network_worker_ws import NetworkWorkerWS
     =}
 
-    input[2] sending_data;
     output receiving_data;
 
     physical action act_receiving_data;
@@ -27,10 +26,6 @@ reactor NetworkWS {
             lambda msg: _act.schedule(0, msg)
         )
         self.network_worker.start()
-    =}
-
-    reaction (sending_data) {=
-        self.logger.info(f"Received data to send, enqueuing to network worker: {sending_data.value}")
     =}
 
     reaction (act_receiving_data) -> receiving_data {=
