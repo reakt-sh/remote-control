@@ -23,8 +23,9 @@ reactor NetworkQUIC(train_client_id = "") {
         self.logger.info(f"NetworkQUIC reactor started for train client ID: {train_client_id}")
         self.network_worker = self.NetworkWorkerQUIC(train_client_id)
 
+        _act = act_receiving_data
         self.network_worker.stream_data.connect(
-            lambda msg: self.act_receiving_data.schedule(0, msg)
+            lambda msg: _act.schedule(0, msg)
         )
         self.network_worker.start()
     =}
@@ -38,9 +39,9 @@ reactor NetworkQUIC(train_client_id = "") {
         self.logger.info(f"Received data to send, enqueuing to network worker: {sending_data.value}")
     =}
 
-    reaction (act_receiving_data) {=
+    reaction (act_receiving_data) -> receiving_data {=
         data = act_receiving_data.value
         self.logger.info(f"Received data from network worker: {data}")
-        self.receiving_data.emit(data)
+        receiving_data.set(data)
     =}
 }
