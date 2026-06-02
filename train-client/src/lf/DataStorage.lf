@@ -16,6 +16,7 @@ reactor DataStorage {
 
 	reaction (frame) {=
 		frame_id, timestamp, encoded_bytes = frame.value
-		self.logger.info(f"Received frame for storage: {frame_id} at {timestamp}")
+		if frame_id % 100 == 0:
+			self.logger.info(f"Received frame for storage: {frame_id} at {timestamp}")
 	=}
 }

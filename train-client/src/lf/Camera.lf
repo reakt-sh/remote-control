@@ -25,7 +25,6 @@ reactor Camera {
 
 	reaction (capturing_data) -> frame{=
 		frame_count, frame_data, width, height, flag = capturing_data.value
-		self.logger.info(f"Captured frame: {frame_count}")
 		frame.set((frame_count, frame_data, width, height))
 	=}
 }

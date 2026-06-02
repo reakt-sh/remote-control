@@ -14,8 +14,7 @@ reactor HeartbeatHandler {
 
   	timer t(1s)
 
-	reaction(t) -> heartbeat_send {=
-		self.logger.info("Emitting heartbeat signal")
-		heartbeat_send.set("heartbeat")
+	reaction(t) {=
+		self.logger.info("Checking heartbeat signal")
 	=}
 }

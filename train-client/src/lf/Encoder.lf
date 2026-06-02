@@ -24,13 +24,11 @@ reactor Encoder {
 
     reaction (raw_frame) -> act_encoding {=
         frame_id, frame_data, width, height = raw_frame.value
-        self.logger.info(f"Received raw frame: {frame_id}, scheduling for encoding.")
         self.encoder.enqueue_frame(frame_id, frame_data, width, height)
     =}
 
     reaction(act_encoding) -> encoded_frame {=
         frame_id, timestamp, encoded_bytes = act_encoding.value
-        self.logger.info(f"Encoded frame ready: {frame_id} at {timestamp}")
         encoded_frame.set((frame_id, timestamp, encoded_bytes))
     =}
 

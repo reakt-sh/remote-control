@@ -30,13 +30,17 @@ reactor NetworkQUIC {
         self.network_worker.start()
     =}
 
-    reaction (frame) {=
+    reaction (frame) -> act_receiving_data {=
         frame_id, timestamp, encoded_bytes = frame.value
-        self.logger.info(f"Received frame: {frame_id}")
+
+        if frame_id % 100 == 0:
+            self.logger.info(f"Scheduling frame {frame_id} for network transmission.")
+
+        self.network_worker.enqueue_frame(frame_id, timestamp, encoded_bytes)
     =}
 
     reaction (sending_data) {=
-        self.logger.info(f"Received data to send, enqueuing to network worker: {sending_data.value}")
+        self.network_worker.enqueue_stream_packet(sending_data.value)
     =}
 
     reaction (act_receiving_data) -> receiving_data {=
