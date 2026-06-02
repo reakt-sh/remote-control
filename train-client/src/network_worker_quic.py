@@ -4,11 +4,11 @@ import ssl
 import json
 import struct
 import datetime
+import threading
 from typing import Optional
 
 
 from app_logger import logger
-from PyQt5.QtCore import QThread, pyqtSignal
 from aioquic.asyncio import connect
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import QuicConnection
@@ -30,15 +30,30 @@ def patched_stream_close(self):
             raise
 
 QuicStreamAdapter.close = patched_stream_close
-class NetworkWorkerQUIC(QThread):
-    # Signals for Qt integration
-    connection_established = pyqtSignal()
-    connection_failed = pyqtSignal(str)
-    connection_closed = pyqtSignal()
-    stream_data = pyqtSignal(bytes)
 
+
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
+
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class NetworkWorkerQUIC:
     def __init__(self, train_client_id: str, parent=None):
-        super().__init__(parent)
+        self.connection_established = _Signal()
+        self.connection_failed = _Signal()
+        self.connection_closed = _Signal()
+        self.stream_data = _Signal()
+
+        self._thread: Optional[threading.Thread] = None
         self.train_client_id = train_client_id
         self.train_client_id_bytes = train_client_id.encode('utf-8').ljust(36)[:36]  # Ensure 36 bytes
 
@@ -63,7 +78,11 @@ class NetworkWorkerQUIC(QThread):
         logger.info(f"QUIC client initialized for train {train_client_id}")
         logger.info(f"QUIC server URL: {self.server_host}:{self.server_port}")
 
-    def run(self):
+    def start(self):
+        self._thread = threading.Thread(target=self._run, daemon=True, name='NetworkWorkerQUIC')
+        self._thread.start()
+
+    def _run(self):
         self._running = True
         try:
             # Create a new event loop for this thread
@@ -249,8 +268,8 @@ class NetworkWorkerQUIC(QThread):
 
     def stop(self):
         self._running = False
-        self.quit()
-        self.wait(4000)
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=4.0)
 
 class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnectionProtocol
     def __init__(self, *args, network_worker: NetworkWorkerQUIC, **kwargs):
