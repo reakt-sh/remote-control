@@ -1,11 +1,12 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py", "src/network_worker_quic.py", "src/globals.py", "src/video_config.py"]
+  files: ["src/app_logger.py", "src/network_worker_quic.py", "src/globals.py", "src/video_config.py", "src/app_context.py"]
 }
 
 reactor NetworkQUIC(train_client_id = "") {
     preamble {=
         from app_logger import logger
+        from app_context import AppContext
         from network_worker_quic import NetworkWorkerQUIC
     =}
 
@@ -16,8 +17,11 @@ reactor NetworkQUIC(train_client_id = "") {
     physical action act_receiving_data;
 
     reaction (startup) -> act_receiving_data {=
-        self.logger.info(f"NetworkQUIC reactor started for train client ID: {self.train_client_id}")
-        self.network_worker = self.NetworkWorkerQUIC(train_client_id=self.train_client_id)
+        context = self.AppContext()
+        train_client_id = context.train_client_id
+
+        self.logger.info(f"NetworkQUIC reactor started for train client ID: {train_client_id}")
+        self.network_worker = self.NetworkWorkerQUIC(train_client_id)
 
         self.network_worker.stream_data.connect(
             lambda msg: self.act_receiving_data.schedule(0, msg)

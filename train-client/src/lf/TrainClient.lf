@@ -1,6 +1,6 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py", "src/helper.py"]
+  files: ["src/app_logger.py", "src/helper.py", "src/app_context.py"]
 }
 
 import NetworkQUIC from "NetworkQUIC.lf";
@@ -20,12 +20,17 @@ main reactor TrainClient {
     preamble {=
 		from app_logger import logger
 		from helper import Helper
+		from app_context import AppContext
+
+		logger.info("TrainClient is starting up.")
+		app_context = AppContext()
 		helper = Helper()
-		train_client_id = helper.get_uuid()
+		app_context.train_client_id = helper.get_uuid()
+		logger.info(f"Assigned Train Client ID: {app_context.train_client_id}")
     =}
 
     camera = new Camera();
-    quic = new NetworkQUIC(train_client_id = {= self.train_client_id =});
+    quic = new NetworkQUIC();
     motor = new Motor();
     // encoder = new Encoder();
     latency_calculator = new LatencyCalculator();
