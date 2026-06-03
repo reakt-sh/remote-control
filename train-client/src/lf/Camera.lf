@@ -1,6 +1,6 @@
 target Python {
-  keepalive: true,
-  files: ["src/app_logger.py", "src/sensor/camera.py"]
+  	keepalive: true,
+  	files: ["src/app_logger.py", "src/sensor/camera.py"]
 }
 
 reactor Camera {
@@ -13,18 +13,23 @@ reactor Camera {
 
 	physical action capturing_data;
 
+	state current_frame;
+
     reaction (startup) -> capturing_data {=
 		self.logger.info("Camera reactor started, beginning to capture frames.")
 		self.camera_impl = self.CameraImpl()
-		self.camera_impl.frame_ready.connect(
-			lambda frame_count, frame, width, height, flag:
-				capturing_data.schedule(0, (frame_count, frame, width, height, flag))
-		)
+
+		def on_frame_ready(frame_count, frame_data, width, height, flag):
+			self.current_frame = (frame_count, frame_data, width, height, flag)
+			capturing_data.schedule(0, None)  # Trigger the reaction to process the captured frame
+			# self.logger.debug(f"Captured frame {frame_count} with dimensions {width}x{height}")
+
+		self.camera_impl.frame_ready.connect(on_frame_ready)
 		self.camera_impl.init_capture()
 	=}
 
 	reaction (capturing_data) -> frame{=
-		frame_count, frame_data, width, height, flag = capturing_data.value
+		frame_count, frame_data, width, height, flag = self.current_frame
 		frame.set((frame_count, frame_data, width, height))
 	=}
 }
