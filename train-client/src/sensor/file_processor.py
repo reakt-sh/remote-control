@@ -1,5 +1,6 @@
 import cv2
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal
+import threading
+import time
 from datetime import datetime
 import random
 import os
@@ -14,12 +15,24 @@ from sensor_msgs.msg import CompressedImage
 class FileProcessor(Node):
 """
 
-class FileProcessor(QObject):
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
 
-    frame_ready = pyqtSignal(object, object, int, int, bool)
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class FileProcessor:
 
     def __init__(self, parent=None):
-        super().__init__(parent)
+        self.frame_ready = _Signal()
         asset_dir = ASSET_DIR
         video_files = [f for f in os.listdir(asset_dir) if f.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
         if not video_files:
@@ -32,8 +45,8 @@ class FileProcessor(QObject):
         self._timer = None           # replaces QTimer
         """
 
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.capture_frame)
+        self._thread = None
+        self._running = False
 
         self.cap = None
         self.frame_count = 0
@@ -64,10 +77,28 @@ class FileProcessor(QObject):
         self.start_time = self.get_clock().now() 
         """
 
-        self.start_time = cv2.getTickCount()  # Use OpenCV's tick count for timing
-        self.timer.start(int(1000 / self.current_fps))  # Start timer with interval based on current FPS
-
+        self.start_time = datetime.now().timestamp()
         self.set_speed(MAX_SPEED)
+
+        """
+        # ROS2: Start timer for frame capture
+        self._timer = self.create_timer(1.0 / self.current_fps, self.capture_frame)
+        """
+
+        self._running = True
+        self._thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._thread.start()
+
+
+    def _capture_loop(self):
+        while self._running:
+            interval = 1.0 / self.current_fps
+            t0 = datetime.now().timestamp()
+            self.capture_frame()
+            elapsed = datetime.now().timestamp() - t0
+            remaining = interval - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
 
 
     def set_speed(self, speed_kmh):
@@ -79,10 +110,6 @@ class FileProcessor(QObject):
             self._timer.cancel()
         self._timer = self.create_timer(1.0 / self.current_fps, self.capture_frame)
         """
-
-        if self.timer.isActive():
-            self.timer.stop()
-            self.timer.start(int(1000 / self.current_fps))
 
     def set_direction(self, direction):
         """Set direction: 1 for forward, -1 for backward."""
@@ -97,8 +124,11 @@ class FileProcessor(QObject):
             self._timer.cancel()
             self._timer = None
         """
-        if self.timer.isActive():
-            self.timer.stop()
+
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=2.0)
+            self._thread = None
 
         if self.cap:
             self.cap.release()
