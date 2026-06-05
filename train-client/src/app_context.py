@@ -18,3 +18,4 @@ class AppContext:
 
     def _initialize(self, *args: Any, **kwargs: Any) -> None:
         self.train_client_id = None
+        self.clock_offset_samples = {}

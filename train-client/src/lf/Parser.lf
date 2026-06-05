@@ -1,15 +1,46 @@
 target python {
   keepalive: true,
-  files: ["src/app_logger.py"]
+  files: ["src/app_logger.py", "src/globals.py", "src/app_context.py"]
 }
 
 reactor Parser {
     preamble {=
+        from json import loads, dumps, JSONDecodeError
         from app_logger import logger
+        from globals import PACKET_TYPE
+        from app_context import AppContext
+
+        appcontext = AppContext()
     =}
+
 	input[2] data;
 
 	output command;
 	output clock_sync;
 	output heartbeat;
+
+    reaction (data) {=
+        for d in data:
+            if d.is_present:
+                try:
+                    raw_data = d.value
+                    packet_type = raw_data[0]
+                    payload = raw_data[1:]
+
+                    if packet_type == self.PACKET_TYPE["command"]:
+                        command.set(payload)
+                    elif packet_type == self.PACKET_TYPE["map_connect"]:
+                        try:
+                            message = self.loads(payload.decode("utf-8"))
+                            remote_control_id = message.get("remote_control_id")
+                            self.logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
+                            self.clock_offset_samples[remote_control_id] = []
+                        except self.JSONDecodeError as e:
+                            self.logger.error(f"Failed to decode map connect message: {e}")
+                            return
+
+                except Exception as e:
+                    self.logger.error(f"Failed to parse incoming data: {e}")
+                    return
+    =}
 }
