@@ -14,6 +14,7 @@ import Parser from "Parser.lf";
 import EmergencyBreak from "EmergencyBreak.lf";
 import HeartbeatHandler from "HeartbeatHandler.lf";
 import Encoder from "Encoder.lf";
+import CommandProcessor from "CommandProcessor.lf";
 
 
 main reactor TrainClient {
@@ -40,11 +41,13 @@ main reactor TrainClient {
     parser = new Parser();
     emergency_break = new EmergencyBreak();
     heartbeat_handler = new HeartbeatHandler();
+	command_processor = new CommandProcessor();
 
     quic.receiving_data, ws.receiving_data -> parser.data;
 	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
 	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
 	parser.command -> latency_calculator.command;
+	parser.command -> command_processor.command;
 	heartbeat_handler.heartbeat_timout -> emergency_break.heartbeat_timeout;
 	emergency_break.motor_control , parser.command -> motor.motor_control;
 

@@ -1,0 +1,23 @@
+target python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/globals.py", "src/app_context.py"]
+}
+
+reactor CommandProcessor {
+    preamble {=
+        from json import loads, dumps, JSONDecodeError
+        from app_logger import logger
+        from globals import PACKET_TYPE
+        from app_context import AppContext 
+    =}
+
+	input command;
+
+	output change_speed;
+	output start;
+	output stop;
+
+    reaction (command) {=
+        self.logger.info(f"Received command: {command.value}")
+    =}
+}
