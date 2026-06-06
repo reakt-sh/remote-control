@@ -16,10 +16,11 @@ reactor Parser {
 	input[2] data;
 
 	output command;
+    output clock_sync_init;
 	output clock_sync;
 	output heartbeat;
 
-    reaction (data) -> command, clock_sync, heartbeat {=
+    reaction (data) -> command, clock_sync, heartbeat, clock_sync_init {=
         for d in data:
             if d.is_present:
                 try:
@@ -33,11 +34,19 @@ reactor Parser {
                         try:
                             message = self.json.loads(payload.decode("utf-8"))
                             remote_control_id = message.get("remote_control_id")
+                            self.appcontext.remote_control_client_id = remote_control_id
+                            self.appcontext.connected_remote_control_ids.add(remote_control_id)
                             self.logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
-                            self.appcontext.clock_offset_samples[remote_control_id] = []
+                            clock_sync_init.set(True) # Trigger clock synchronization process on map connect
                         except self.json.JSONDecodeError as e:
                             self.logger.error(f"Failed to decode map connect message: {e}")
                             return
+                    elif packet_type == self.PACKET_TYPE["rtt"] or packet_type == self.PACKET_TYPE["rtt_train"]:
+                        clock_sync.set(payload)
+                    elif packet_type == self.PACKET_TYPE["keepalive"]:
+                        heartbeat.set(payload)
+                    else:
+                        self.logger.warning(f"Received unknown packet type: {packet_type}")
 
                 except Exception as e:
                     self.logger.error(f"Failed to parse incoming data: {e}")

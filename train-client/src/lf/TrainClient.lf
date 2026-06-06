@@ -43,15 +43,17 @@ main reactor TrainClient {
     heartbeat_handler = new HeartbeatHandler();
 	command_processor = new CommandProcessor();
 
+	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
     quic.receiving_data, ws.receiving_data -> parser.data;
-	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
-	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
 	parser.command -> latency_calculator.command;
 	parser.command -> command_processor.command;
+	parser.clock_sync_init -> clock_synchronizer.clock_sync_init;
+	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
+	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
 	heartbeat_handler.heartbeat_timout -> emergency_break.heartbeat_timeout;
 	emergency_break.motor_control , parser.command -> motor.motor_control;
 
-	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
+	
 
     latency_calculator.latency -> data_storage.latency;
 	camera.frame -> encoder.raw_frame;

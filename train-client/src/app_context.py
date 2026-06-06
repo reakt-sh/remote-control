@@ -19,3 +19,6 @@ class AppContext:
     def _initialize(self, *args: Any, **kwargs: Any) -> None:
         self.train_client_id = None
         self.clock_offset_samples = {}
+        self.connected_remote_control_ids = set()
+        self.remote_control_client_id = None
+        self.number_of_rtt_packets = 5

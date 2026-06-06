@@ -14,7 +14,14 @@ reactor HeartbeatHandler {
 
   	timer t(1s)
 
+	reaction(heartbeat_recv) {=
+		# do nothing
+		self.logger.debug("Received heartbeat signal")
+	=}
+
 	reaction(t) {=
 		self.logger.info("Checking heartbeat signal")
 	=}
+
+	
 }

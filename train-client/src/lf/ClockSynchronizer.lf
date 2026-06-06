@@ -1,13 +1,71 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py"]
+  files: ["src/app_logger.py", "src/app_context.py", "src/globals.py", "src/helper.py"]
 }
 
 reactor ClockSynchronizer {
     preamble {=
+        import json
+        import struct
         from app_logger import logger
+        from app_context import AppContext
+        from globals import PACKET_TYPE
+        from helper import Helper
+
+        appcontext = AppContext()
+        helper = Helper()
     =}
 
+    input clock_sync_init;
     input clock_sync_recv;
     output clock_sync_send;
+
+    logical action synchronize_clock;
+    state counter = 0;
+
+    reaction (synchronize_clock) -> clock_sync_send {=
+        def create_clock_sync_packet():
+            rtt_train_Packet = {
+                "type": "rtt_train",
+                "remote_control_timestamp": 0,
+                "remote_control_id": self.appcontext.remote_control_client_id,
+                "train_timestamp": self.helper.get_timestamp()
+            }
+            rtt_train_data = self.json.dumps(rtt_train_Packet).encode("utf-8")
+            rtt_train_packet = self.struct.pack("B", self.PACKET_TYPE["rtt_train"]) + rtt_train_data
+            rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
+            return rtt_train_packet
+
+        
+        packet = create_clock_sync_packet()
+        clock_sync_send.set(packet)
+        self.counter -= 1
+        if self.counter > 0:  # Limit the number of synchronization attempts
+            synchronize_clock.schedule(MSEC(200), None)  # Schedule next synchronization attempt after a short delay
+        else:
+            self.logger.info("Clock synchronization completed.")
+        
+    =}
+
+    reaction (clock_sync_init) -> synchronize_clock {=
+        self.logger.info("Clock synchronization initiated.")
+        self.counter = self.appcontext.number_of_rtt_packets
+        synchronize_clock.schedule(SEC(2), None)  # Start the synchronization process after a short delay
+    =}
+
+    reaction (clock_sync_recv) {=
+        try:
+            payload = clock_sync_recv.value
+            message = self.json.loads(payload.decode("utf-8"))
+            
+            if message.get("type") == "rtt":
+                self.logger.info(f"Received RTT timestamp: {message.get('remote_control_timestamp')}")
+            elif message.get("type") == "rtt_train":
+                self.logger.info(f"Received RTT_TRAIN: {message.get('remote_control_id')}")
+            else:
+                self.logger.warning(f"Received unknown packet type in clock sync: {packet_type}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to process clock sync response: {e}")
+    =}
 }

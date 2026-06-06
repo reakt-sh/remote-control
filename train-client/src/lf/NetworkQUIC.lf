@@ -30,7 +30,7 @@ reactor NetworkQUIC {
         self.network_worker.start()
     =}
 
-    reaction (frame) -> act_receiving_data {=
+    reaction (frame) {=
         frame_id, timestamp, encoded_bytes = frame.value
 
         if frame_id % 100 == 0:
