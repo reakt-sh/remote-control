@@ -1,4 +1,4 @@
-target python {
+target Python {
   keepalive: true,
   files: ["src/app_logger.py", "src/globals.py", "src/app_context.py"]
 }

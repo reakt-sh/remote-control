@@ -1,4 +1,4 @@
-target python {
+target Python {
   keepalive: true
 }
 
