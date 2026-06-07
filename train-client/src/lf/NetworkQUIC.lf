@@ -43,7 +43,7 @@ reactor NetworkQUIC {
         for data in sending_data:
             if data.is_present:
                 self.logger.info(f"Scheduling sending data of length {len(data.value)} bytes for network transmission.")
-                self.network_worker.enqueue_stream_packet(sending_data.value)
+                self.network_worker.enqueue_stream_packet(data.value)
     =}
 
     reaction (act_receiving_data) -> receiving_data {=

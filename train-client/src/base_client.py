@@ -59,6 +59,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
         super().__init__()
         self.train_client_id = self.initialize_train_client_id()
+        
+        # FPS calculation variables
+        self.last_few_frame_ids = []
+        self.show_capture_frame_log = True
+
         self.has_motor = has_motor
         self.write_to_file = True
         self.is_capturing = True
@@ -115,10 +120,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.encoder.encode_ready.connect(self.on_encoded_frame)
         self.telemetry.start()
         self.imu.start()
-
-        # FPS calculation variables
-        self.last_few_frame_ids = []
-        self.show_capture_frame_log = True
 
 
     def generate_hw_info(self):
