@@ -22,7 +22,7 @@ reactor Parser {
 	output heartbeat;
     
 
-    reaction (data) -> command, clock_sync, heartbeat, connect {=
+    reaction (data) -> command, clock_sync, heartbeat, connect, disconnect {=
         for d in data:
             if d.is_present:
                 try:
@@ -61,9 +61,10 @@ reactor Parser {
                         clock_sync.set(payload)
                     elif packet_type == self.PACKET_TYPE["keepalive"]:
                         heartbeat.set(payload)
+                    elif packet_type == self.PACKET_TYPE["connect_response"]:
+                        self.logger.info(f"Connection established to the server, data = {payload}")
                     else:
-                        self.logger.warning(f"Received unknown packet type: {packet_type}")
-
+                        self.logger.warning(f"Invalid data to Parse with packet type = {packet_type}, data: {payload}")
                 except Exception as e:
                     self.logger.error(f"Failed to parse incoming data: {e}")
                     return
