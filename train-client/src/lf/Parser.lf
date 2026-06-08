@@ -17,8 +17,10 @@ reactor Parser {
 
 	output command;
     output connect;
+    output disconnect;
 	output clock_sync;
 	output heartbeat;
+    
 
     reaction (data) -> command, clock_sync, heartbeat, connect {=
         for d in data:
@@ -41,6 +43,20 @@ reactor Parser {
                         except self.json.JSONDecodeError as e:
                             self.logger.error(f"Failed to decode map connect message: {e}")
                             return
+                    elif packet_type == self.PACKET_TYPE["map_disconnect"]:
+                        try:
+                            remote_control_id = self.json.loads(payload.decode("utf-8")).get("remote_control_id")
+                            self.logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
+                            if remote_control_id in self.appcontext.connected_remote_control_ids:
+                                self.appcontext.connected_remote_control_ids.remove(remote_control_id)
+                                self.logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
+                            else:
+                                self.logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
+
+                            # TODO: Stop Heartbeat handler timer
+                            # TODO: self.stop_train_operations(), later we will introduce safe state
+                        except Exception as e:
+                            self.logger.error(f"Failed to parse map_disconnect JSON: {e}")
                     elif packet_type == self.PACKET_TYPE["rtt"] or packet_type == self.PACKET_TYPE["rtt_train"]:
                         clock_sync.set(payload)
                     elif packet_type == self.PACKET_TYPE["keepalive"]:
