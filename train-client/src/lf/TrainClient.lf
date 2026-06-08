@@ -31,29 +31,30 @@ main reactor TrainClient {
     =}
 
     camera = new Camera();
-    quic = new NetworkQUIC();
-    ws = new NetworkWS();
+	parser = new Parser();
     motor = new Motor();
     encoder = new Encoder();
     latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
-    parser = new Parser();
     emergency_break = new EmergencyBreak();
     heartbeat_handler = new HeartbeatHandler();
 	command_processor = new CommandProcessor();
+	quic = new NetworkQUIC();
+	ws = new NetworkWS();
 
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
-    quic.receiving_data, ws.receiving_data -> parser.data;
 	parser.command -> latency_calculator.command;
 	parser.command -> command_processor.command;
-	parser.clock_sync_init -> clock_synchronizer.clock_sync_init;
+	parser.connect -> clock_synchronizer.clock_sync_init;
 	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
 	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
+
+    quic.receiving_data, ws.receiving_data -> parser.data;
+
 	heartbeat_handler.heartbeat_timout -> emergency_break.heartbeat_timeout;
 	emergency_break.motor_control , parser.command -> motor.motor_control;
 
-	
 
     latency_calculator.latency -> data_storage.latency;
 	camera.frame -> encoder.raw_frame;

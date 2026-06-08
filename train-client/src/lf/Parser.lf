@@ -16,11 +16,11 @@ reactor Parser {
 	input[2] data;
 
 	output command;
-    output clock_sync_init;
+    output connect;
 	output clock_sync;
 	output heartbeat;
 
-    reaction (data) -> command, clock_sync, heartbeat, clock_sync_init {=
+    reaction (data) -> command, clock_sync, heartbeat, connect {=
         for d in data:
             if d.is_present:
                 try:
@@ -37,7 +37,7 @@ reactor Parser {
                             self.appcontext.remote_control_client_id = remote_control_id
                             self.appcontext.connected_remote_control_ids.add(remote_control_id)
                             self.logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
-                            clock_sync_init.set(True) # Trigger clock synchronization process on map connect
+                            connect.set(True) # Trigger clock synchronization process on map connect
                         except self.json.JSONDecodeError as e:
                             self.logger.error(f"Failed to decode map connect message: {e}")
                             return

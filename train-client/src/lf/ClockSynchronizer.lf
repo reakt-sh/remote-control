@@ -23,6 +23,12 @@ reactor ClockSynchronizer {
     logical action synchronize_clock;
     state counter = 0;
 
+    reaction (clock_sync_init) -> synchronize_clock {=
+        self.logger.info("Clock synchronization initiated.")
+        self.counter = self.appcontext.number_of_rtt_packets
+        synchronize_clock.schedule(SEC(2), None)  # Start the synchronization process after a short delay
+    =}
+
     reaction (synchronize_clock) -> clock_sync_send {=
         def create_clock_sync_packet():
             rtt_train_Packet = {
@@ -36,7 +42,7 @@ reactor ClockSynchronizer {
             rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
             return rtt_train_packet
 
-        
+
         packet = create_clock_sync_packet()
         clock_sync_send.set(packet)
         self.counter -= 1
@@ -44,22 +50,25 @@ reactor ClockSynchronizer {
             synchronize_clock.schedule(MSEC(200), None)  # Schedule next synchronization attempt after a short delay
         else:
             self.logger.info("Clock synchronization completed.")
-        
+
     =}
 
-    reaction (clock_sync_init) -> synchronize_clock {=
-        self.logger.info("Clock synchronization initiated.")
-        self.counter = self.appcontext.number_of_rtt_packets
-        synchronize_clock.schedule(SEC(2), None)  # Start the synchronization process after a short delay
-    =}
-
-    reaction (clock_sync_recv) {=
+    reaction (clock_sync_recv) -> clock_sync_send {=
         try:
             payload = clock_sync_recv.value
             message = self.json.loads(payload.decode("utf-8"))
-            
+
             if message.get("type") == "rtt":
-                self.logger.info(f"Received RTT timestamp: {message.get('remote_control_timestamp')}")
+                try:
+                    # just modify event data with current timestamp
+                    rtt_data = self.json.loads(payload.decode("utf-8"))
+                    rtt_data["train_timestamp"] = self.helper.get_timestamp()
+                    rtt_packet = self.json.dumps(rtt_data).encode("utf-8")
+                    rtt_packet = self.struct.pack("B", self.PACKET_TYPE["rtt"]) + rtt_packet
+                    rtt_packet = self.helper.get_length_prefixed_packet(rtt_packet)
+                    clock_sync_send.set(rtt_packet)
+                except self.json.JSONDecodeError as e:
+                    self.logger.error(f"Failed to parse rtt JSON: {e}")
             elif message.get("type") == "rtt_train":
                 try:
                     jsonString = payload.decode("utf-8")
@@ -111,4 +120,5 @@ reactor ClockSynchronizer {
         except Exception as e:
             self.logger.error(f"Failed to process clock sync response: {e}")
     =}
+
 }
