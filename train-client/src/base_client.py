@@ -18,6 +18,7 @@ from telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
 from hw_info import HWInfo
+from helper import Helper
 import threading
 
 """
@@ -59,6 +60,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
         super().__init__()
         self.train_client_id = self.initialize_train_client_id()
+        self.helper = Helper()
+        self.keepalive_sequence = 0
         
         # FPS calculation variables
         self.last_few_frame_ids = []
@@ -266,6 +269,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     # Reset samples for this remote and start RTT measurement
                     self.clock_offset_samples[remote_control_id] = []
                     self.send_rtt_packets(remote_control_id)
+                    self.send_keepalive_packets()
                     self.hw_info.notify_new_remote_control_connected(remote_control_id)
 
                     # Start keepalive timer on connect
@@ -363,18 +367,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 try:
                     # just modify event data with current timestamp
                     rtt_data = json.loads(payload.decode('utf-8'))
-                    rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+                    rtt_data["train_timestamp"] = self.helper.get_timestamp()
                     rtt_packet = json.dumps(rtt_data).encode('utf-8')
                     rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
-
-                    # Add 2-byte length prefix (big-endian)
-                    data_size = len(rtt_packet)
-                    length_prefixed_packet = bytearray(2 + len(rtt_packet))
-                    length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-                    length_prefixed_packet[1] = data_size & 0xFF         # Low byte
-                    length_prefixed_packet[2:] = rtt_packet
-
-                    self.network_worker_quic.enqueue_stream_packet(length_prefixed_packet)
+                    rtt_packet = self.helper.get_length_prefixed_packet(rtt_packet)
+                    self.network_worker_quic.enqueue_stream_packet(rtt_packet)
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse rtt JSON: {e}")
             elif packet_type == PACKET_TYPE["connect_response"]:
@@ -388,21 +385,17 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def send_rtt_packets(self, remote_control_id):
         """Send RTT packets with delays using QTimer to avoid blocking."""
         def send_packet(packet_index):
-            rtt_train_Packet = {
+            rtt_train_packet = {
                 "type": "rtt_train",
                 "remote_control_timestamp": 0,
                 "remote_control_id": remote_control_id,
-                "train_timestamp": int(datetime.datetime.now().timestamp() * 1000)
+                "train_timestamp": self.helper.get_timestamp(),
             }
-            rtt_train_data = json.dumps(rtt_train_Packet).encode('utf-8')
-            rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_data
-
-            data_size = len(rtt_train_packet)
-            length_prefixed_packet = bytearray(2 + len(rtt_train_packet))
-            length_prefixed_packet[0] = (data_size >> 8) & 0xFF
-            length_prefixed_packet[1] = data_size & 0xFF
-            length_prefixed_packet[2:] = rtt_train_packet
-            self.network_worker_quic.enqueue_stream_packet(length_prefixed_packet)
+            rtt_train_packet = json.dumps(rtt_train_packet).encode('utf-8')
+            rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_packet
+            rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
+            
+            self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
 
         def _sender():
@@ -413,6 +406,34 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 time.sleep(0.2)  # 200ms between packets
 
         threading.Thread(target=_sender, daemon=True, name="RTTSender").start()
+    
+    def send_keepalive_packets(self):
+        def send_packet():
+            keepalive_packet = {
+                "type": "keepalive",
+                "protocol": "quic",
+                "train_id": self.train_client_id,
+                "timestamp": self.helper.get_timestamp(),
+                "sequence": self.keepalive_sequence,
+            }
+
+            # Increment the sequence for next time
+            self.keepalive_sequence += 1
+
+            keepalive_packet = json.dumps(keepalive_packet).encode('utf-8')
+            keepalive_packet = struct.pack("B", PACKET_TYPE["keepalive"]) + keepalive_packet
+            keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
+            
+            self.network_worker_quic.enqueue_stream_packet(keepalive_packet)
+            logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence} to all connected remote controls")
+
+        def _sender():
+            import time
+            while True:
+                send_packet()
+                time.sleep(10)  # 10 seconds between packets
+
+        threading.Thread(target=_sender, daemon=True, name="KeepaliveSender").start()
 
 
     def calculate_latency(self, remote_control_id, remote_timestamp):

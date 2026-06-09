@@ -125,7 +125,6 @@ class NetworkWorkerQUIC:
                 logger.info(f"QUIC handshake sent on stream {self._stream_id}")
 
                 asyncio.create_task(self.send_stream_reliable())  # Start sending stream packets
-                asyncio.create_task(self.send_keepalive())  # Start sending keepalive packets
 
                 # Main sending loop
                 await self.send_datagram_unreliable()
@@ -196,39 +195,6 @@ class NetworkWorkerQUIC:
             except Exception as e:
                 logger.error(f"Error in send loop: {e}")
                 continue
-
-    async def send_keepalive(self):
-        while self._running:
-            try:
-                keepalive_packet = {
-                    "type": "keepalive",
-                    "protocol": "quic",
-                    "train_id": self.train_client_id,
-                    "timestamp": asyncio.get_event_loop().time(),
-                    "sequence": getattr(self, "keepalive_sequence", 1)
-                }
-                # Increment the sequence for next time
-                self.keepalive_sequence = keepalive_packet["sequence"] + 1
-
-                packet_data = json.dumps(keepalive_packet).encode('utf-8')
-                packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
-
-                # Add 2-byte length prefix (big-endian)
-                data_size = len(packet)
-                length_prefixed_packet = bytearray(2 + len(packet))
-                length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-                length_prefixed_packet[1] = data_size & 0xFF         # Low byte
-                length_prefixed_packet[2:] = packet # Final packet with length prefix
-
-                # Enqueue the keepalive packet to be sent reliably over the stream
-                self.enqueue_stream_packet(length_prefixed_packet)
-
-                logger.debug(f"Sent keepalive packet: {keepalive_packet}")
-
-                await asyncio.sleep(10)  # Send every 10 seconds
-            except Exception as e:
-                logger.error(f"Error sending keepalive: {e}")
-                await asyncio.sleep(10)
 
     def create_packets(self, frame_id: int, timestamp: int, frame: bytes) -> list[bytes]:
         packet_list = []
