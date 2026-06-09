@@ -3,7 +3,7 @@ target Python {
   files: ["src/app_logger.py", "src/network_worker_ws.py", "src/globals.py", "src/video_config.py", "src/app_context.py"]
 }
 
-reactor NetworkWS {
+reactor WebSocket {
     preamble {=
         from app_logger import logger
         from app_context import AppContext
@@ -18,7 +18,7 @@ reactor NetworkWS {
         context = self.AppContext()
         train_client_id = context.train_client_id
 
-        self.logger.info(f"NetworkWS reactor started for train client ID: {train_client_id}")
+        self.logger.info(f"WebSocket reactor started for train client ID: {train_client_id}")
         self.network_worker = self.NetworkWorkerWS(train_client_id)
 
         _act = act_receiving_data

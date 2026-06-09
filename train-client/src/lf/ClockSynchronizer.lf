@@ -66,6 +66,7 @@ reactor ClockSynchronizer {
                     rtt_packet = self.json.dumps(rtt_data).encode("utf-8")
                     rtt_packet = self.struct.pack("B", self.PACKET_TYPE["rtt"]) + rtt_packet
                     rtt_packet = self.helper.get_length_prefixed_packet(rtt_packet)
+                    self.logger.info(f"Sending RTT response packet with updated train timestamp: {rtt_data['train_timestamp']}")
                     clock_sync_send.set(rtt_packet)
                 except self.json.JSONDecodeError as e:
                     self.logger.error(f"Failed to parse rtt JSON: {e}")

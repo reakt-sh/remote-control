@@ -3,8 +3,8 @@ target Python {
   files: ["src/app_logger.py", "src/helper.py", "src/app_context.py"]
 }
 
-import NetworkQUIC from "NetworkQUIC.lf";
-import NetworkWS from "NetworkWS.lf";
+import QUIC from "QUIC.lf";
+import WebSocket from "WebSocket.lf";
 import Camera from "Camera.lf";
 import Motor from "Motor.lf";
 import LatencyCalculator from "LatencyCalculator.lf";
@@ -40,8 +40,8 @@ main reactor TrainClient {
     emergency_break = new EmergencyBreak();
     heartbeat_handler = new HeartbeatHandler();
 	command_processor = new CommandProcessor();
-	quic = new NetworkQUIC();
-	ws = new NetworkWS();
+	quic = new QUIC();
+	ws = new WebSocket();
 
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
 	parser.command -> latency_calculator.command;
