@@ -11,7 +11,7 @@ import LatencyCalculator from "LatencyCalculator.lf";
 import ClockSynchronizer from "ClockSynchronizer.lf";
 import DataStorage from "DataStorage.lf";
 import Parser from "Parser.lf";
-import EmergencyBreak from "EmergencyBreak.lf";
+import EmergencyBrake from "EmergencyBrake.lf";
 import HeartbeatHandler from "HeartbeatHandler.lf";
 import Encoder from "Encoder.lf";
 import CommandProcessor from "CommandProcessor.lf";
@@ -40,7 +40,7 @@ main reactor TrainClient {
     latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
-    emergency_break = new EmergencyBreak();
+    emergency_brake = new EmergencyBrake();
     heartbeat_handler = new HeartbeatHandler();
 	command_processor = new CommandProcessor();
 	quic = new QUIC();
@@ -58,7 +58,7 @@ main reactor TrainClient {
 
     quic.receiving_data, ws.receiving_data -> parser.data;
 
-	heartbeat_handler.heartbeat_timout -> emergency_break.heartbeat_timeout;
+	heartbeat_handler.heartbeat_timout -> emergency_brake.heartbeat_timeout;
 
     latency_calculator.latency -> data_storage.latency;
 	camera.frame -> encoder.raw_frame;
@@ -67,5 +67,5 @@ main reactor TrainClient {
 
 	telemetry.telemetry -> mqtt.data;
 	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, motor.current_speed -> telemetry.update;
-	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, emergency_break.stop -> motor.motor_control;
+	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, emergency_brake.stop -> motor.motor_control;
 }
