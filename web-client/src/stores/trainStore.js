@@ -48,6 +48,7 @@ export const useTrainStore = defineStore('train', () => {
   const remoteControlId = ref(null)
   const videoDatagramAssembler = ref(null)
   const keepaliveSequence = ref(0)
+  const keepaliveIntervalId = ref(null)
   const direction = ref('FORWARD')
   const isPoweredOn = ref(true)
   const router = useRouter()
@@ -142,7 +143,8 @@ export const useTrainStore = defineStore('train', () => {
     } catch (error) {
       console.error('❌ WebRTC connection failed:', error)
     }
-    setInterval(sendKeepAliveWebTransport, 500);
+    if (keepaliveIntervalId.value) clearInterval(keepaliveIntervalId.value)
+    keepaliveIntervalId.value = setInterval(sendKeepAliveWebTransport, 500);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
 

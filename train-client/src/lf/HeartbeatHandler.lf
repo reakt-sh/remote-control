@@ -8,20 +8,36 @@ reactor HeartbeatHandler {
         from app_logger import logger
     =}
 
+	input heartbeat_init;
 	input heartbeat_recv;
   	output heartbeat_send;
 	output heartbeat_timout;
 
-  	timer t(1s)
+    logical action heartbeat_act;
+    logical action watchdog_act;
+    state watchdog_generation = 0;
 
-	reaction(heartbeat_recv) {=
-		# do nothing
+    reaction(heartbeat_init) -> watchdog_act, heartbeat_act {=
+        watchdog_act.schedule(SEC(3), self.watchdog_generation)
+        heartbeat_act.schedule(MSEC(500))
+    =}
+
+	reaction(heartbeat_recv) -> watchdog_act {=
 		self.logger.debug("Received heartbeat signal")
+		self.watchdog_generation += 1
 	=}
 
-	reaction(t) {=
+    reaction(watchdog_act) -> heartbeat_timout {=
+        if watchdog_act.value == self.watchdog_generation:
+            self.logger.warning("Heartbeat timeout — no heartbeat received for 3 seconds")
+            heartbeat_timout.set(True)
+        else:
+            self.logger.debug("Heartbeat received in time, resetting watchdog")
+            watchdog_act.schedule(SEC(3), self.watchdog_generation)
+    =}
+
+	reaction(heartbeat_act) -> heartbeat_act {=
 		self.logger.info("Checking heartbeat signal")
+		heartbeat_act.schedule(MSEC(500))
 	=}
-
-	
 }

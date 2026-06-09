@@ -52,6 +52,7 @@ main reactor TrainClient {
 	parser.command -> latency_calculator.command;
 	parser.command -> command_processor.command;
 	parser.connect -> clock_synchronizer.clock_sync_init;
+	parser.connect -> heartbeat_handler.heartbeat_init;
 	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
 	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
 
