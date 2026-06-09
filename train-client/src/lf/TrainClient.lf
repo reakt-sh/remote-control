@@ -16,6 +16,7 @@ import HeartbeatHandler from "HeartbeatHandler.lf";
 import Encoder from "Encoder.lf";
 import CommandProcessor from "CommandProcessor.lf";
 import Telemetry from "Telemetry.lf";
+import MQTT from "MQTT.lf";
 
 
 main reactor TrainClient {
@@ -45,6 +46,7 @@ main reactor TrainClient {
 	quic = new QUIC();
 	ws = new WebSocket();
 	telemetry = new Telemetry();
+	mqtt = new MQTT();
 
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
 	parser.command -> latency_calculator.command;
@@ -56,11 +58,13 @@ main reactor TrainClient {
     quic.receiving_data, ws.receiving_data -> parser.data;
 
 	heartbeat_handler.heartbeat_timout -> emergency_break.heartbeat_timeout;
-	emergency_break.motor_control , parser.command -> motor.motor_control;
-
 
     latency_calculator.latency -> data_storage.latency;
 	camera.frame -> encoder.raw_frame;
 	encoder.encoded_frame -> data_storage.frame;
 	encoder.encoded_frame -> quic.frame;
+
+	telemetry.telemetry -> mqtt.data;
+	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, motor.current_speed -> telemetry.update;
+	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, emergency_break.stop -> motor.motor_control;
 }

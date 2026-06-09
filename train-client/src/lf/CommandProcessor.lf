@@ -13,7 +13,8 @@ reactor CommandProcessor {
 
 	input command;
 
-	output change_speed;
+	output target_speed;
+    output direction;
 	output start;
 	output stop;
 

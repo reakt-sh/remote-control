@@ -1,0 +1,22 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/network_worker_mqtt.py", "src/globals.py", "src/video_config.py", "src/app_context.py"]
+}
+
+reactor MQTT {
+    preamble {=
+        from app_logger import logger
+        from app_context import AppContext
+        from network_worker_mqtt import NetworkWorkerMqtt
+        appcontext = AppContext()
+        mqtt_worker = NetworkWorkerMqtt(appcontext.train_client_id)
+    =}
+
+    input data;
+
+
+    reaction (data) {=
+        self.logger.info(f"Sending data via MQTT: {data.value}")
+        self.mqtt_worker.send_data(data.value)
+    =}
+}

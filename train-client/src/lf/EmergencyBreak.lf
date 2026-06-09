@@ -8,6 +8,6 @@ reactor EmergencyBreak {
         from app_logger import logger
     =}
     input heartbeat_timeout;
-    output motor_control;
+    output stop;
 }
 
