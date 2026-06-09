@@ -1,22 +1,38 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py"]
+  files: ["src/app_logger.py", "src/app_context.py", "src/globals.py", "src/helper.py"]
 }
 
 reactor DataStorage {
     preamble {=
+        import json
+        import struct
         from app_logger import logger
+        from app_context import AppContext
+        from globals import H264_DUMP, LATENCY_DUMP
+        from helper import Helper
+
+        appcontext = AppContext()
+        helper = Helper()
     =}
 	input latency;
 	input frame;
 
+
+	reaction(startup) {=
+		self.logger.info("DataStorage reactor has started.")
+		self.appcontext.frame_output_file = self.helper.create_storage_file(self.H264_DUMP, "h264")
+		self.appcontext.latency_command_output_file = self.helper.create_storage_file(self.LATENCY_DUMP, "log")
+	=}
+
 	reaction (latency) {=
-		self.logger.info(f"Received latency data: {latency.value} ms")
+		self.appcontext.latency_command_output_file.write(self.json.dumps(latency.value) + "\n")
+		self.appcontext.latency_command_output_file.flush()  # Ensure data is written to disk
 	=}
 
 	reaction (frame) {=
 		frame_id, timestamp, encoded_bytes = frame.value
-		if frame_id % 100 == 0:
-			self.logger.info(f"Received frame for storage: {frame_id} at {timestamp}")
+		self.appcontext.frame_output_file.write(encoded_bytes)
+		self.appcontext.frame_output_file.flush()  # Ensure data is written to disk
 	=}
 }

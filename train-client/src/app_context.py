@@ -23,3 +23,7 @@ class AppContext:
         self.connected_remote_control_ids = set()
         self.remote_control_client_id = None
         self.number_of_rtt_packets = 10
+
+        self.latency_command_output_file = None
+        self.frame_output_file = None
+        self.latency_keepalive_output_file = None
