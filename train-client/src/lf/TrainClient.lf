@@ -1,6 +1,6 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py", "src/helper.py", "src/app_context.py"]
+  files: ["src/app_logger.py", "src/helper.py", "src/app_context.py", "src/telemetry.py"]
 }
 
 import QUIC from "QUIC.lf";
@@ -15,6 +15,7 @@ import EmergencyBreak from "EmergencyBreak.lf";
 import HeartbeatHandler from "HeartbeatHandler.lf";
 import Encoder from "Encoder.lf";
 import CommandProcessor from "CommandProcessor.lf";
+import Telemetry from "Telemetry.lf";
 
 
 main reactor TrainClient {
@@ -27,6 +28,7 @@ main reactor TrainClient {
 		app_context = AppContext()
 		helper = Helper()
 		app_context.train_client_id = helper.get_uuid()
+		app_context.init_telemetry()
 		logger.info(f"Assigned Train Client ID: {app_context.train_client_id}")
     =}
 
@@ -42,6 +44,7 @@ main reactor TrainClient {
 	command_processor = new CommandProcessor();
 	quic = new QUIC();
 	ws = new WebSocket();
+	telemetry = new Telemetry();
 
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
 	parser.command -> latency_calculator.command;

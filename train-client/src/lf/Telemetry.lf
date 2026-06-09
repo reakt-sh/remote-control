@@ -1,0 +1,30 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/app_context.py"]
+}
+
+reactor Telemetry {
+    preamble {=
+        from app_logger import logger
+        from app_context import AppContext
+        appcontext = AppContext()
+    =}
+
+    output telemetry;
+
+    physical action act_receiving_data;
+
+    reaction (startup) -> act_receiving_data {=
+
+        _act = act_receiving_data
+        self.appcontext.telemetryObj.telemetry_ready.connect(
+            lambda msg: _act.schedule(0, msg)
+        )
+    =}
+
+    reaction (act_receiving_data) -> telemetry {=
+        data = act_receiving_data.value
+        self.logger.info(f"Received data from Telemetry reactor: {data}")
+        # telemetry.set(data)
+    =}
+}

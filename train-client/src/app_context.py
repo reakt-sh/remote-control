@@ -1,6 +1,7 @@
 
 import threading
 from typing import Any
+from telemetry import Telemetry
 
 
 class AppContext:
@@ -27,3 +28,7 @@ class AppContext:
         self.latency_command_output_file = None
         self.frame_output_file = None
         self.latency_keepalive_output_file = None
+
+    def init_telemetry(self):
+        self.telemetryObj = Telemetry(self.train_client_id)
+        self.telemetryObj.start()

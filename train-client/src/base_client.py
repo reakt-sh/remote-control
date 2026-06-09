@@ -14,7 +14,7 @@ from network_worker_ws import NetworkWorkerWS
 from network_worker_quic import NetworkWorkerQUIC
 from network_worker_mqtt import NetworkWorkerMqtt
 from networkspeed import NetworkSpeed
-from sensor.telemetry import Telemetry
+from telemetry import Telemetry
 from sensor.imu import IMU
 from encoder import Encoder
 from hw_info import HWInfo
