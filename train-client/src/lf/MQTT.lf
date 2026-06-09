@@ -16,7 +16,6 @@ reactor MQTT {
 
 
     reaction (data) {=
-        self.logger.info(f"Sending data via MQTT: {data.value}")
         self.mqtt_worker.send_data(data.value)
     =}
 }
