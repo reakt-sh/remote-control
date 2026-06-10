@@ -75,6 +75,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self._running = True
         self.connected_remote_control_ids = set()
         self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
+        self.clock_offset_calculation_completed = False
         self.number_of_rtt_packets = 5
         self.clock_offset_samples = {}
         self.latency_output_file =self.create_dump_file_for_latency(LATENCY_DUMP)
@@ -123,6 +124,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.encoder.encode_ready.connect(self.on_encoded_frame)
         self.telemetry.start()
         self.imu.start()
+        self.send_keepalive_packets()
 
 
     def generate_hw_info(self):
@@ -269,7 +271,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     # Reset samples for this remote and start RTT measurement
                     self.clock_offset_samples[remote_control_id] = []
                     self.send_rtt_packets(remote_control_id)
-                    self.send_keepalive_packets()
                     self.hw_info.notify_new_remote_control_connected(remote_control_id)
 
                     # Start keepalive timer on connect
@@ -332,6 +333,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
                         avg_offset = round(avg_offset)
                         self.clock_offsets[remote_control_id] = avg_offset
+                        self.clock_offset_calculation_completed = True
                         logger.info(
                             f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
                             f"(averaged over {self.number_of_rtt_packets} RTT samples)"
@@ -406,7 +408,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 time.sleep(0.2)  # 200ms between packets
 
         threading.Thread(target=_sender, daemon=True, name="RTTSender").start()
-    
+
     def send_keepalive_packets(self):
         def send_packet():
             keepalive_packet = {
@@ -423,14 +425,15 @@ class BaseClient(ABC, metaclass=QABCMeta):
             keepalive_packet = json.dumps(keepalive_packet).encode('utf-8')
             keepalive_packet = struct.pack("B", PACKET_TYPE["keepalive"]) + keepalive_packet
             keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
-            
+
             self.network_worker_quic.enqueue_stream_packet(keepalive_packet)
             logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence} to all connected remote controls")
 
         def _sender():
             import time
             while True:
-                send_packet()
+                if self.is_sending and self.clock_offset_calculation_completed == True:
+                    send_packet()
                 time.sleep(10)  # 10 seconds between packets
 
         threading.Thread(target=_sender, daemon=True, name="KeepaliveSender").start()
