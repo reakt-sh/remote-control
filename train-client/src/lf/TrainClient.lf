@@ -67,6 +67,17 @@ main reactor TrainClient {
 	encoder.encoded_frame -> quic.frame;
 
 	telemetry.telemetry -> mqtt.data;
-	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, motor.current_speed -> telemetry.update;
-	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, emergency_brake.stop -> motor.motor_control;
+
+	emergency_brake.stop, command_processor.stop -> motor.stop;
+
+	command_processor.target_speed -> motor.target_speed;
+	command_processor.direction -> motor.direction;
+	command_processor.start -> motor.start;
+
+
+	command_processor.target_speed -> telemetry.target_speed;
+	command_processor.direction -> telemetry.direction;
+	command_processor.start -> telemetry.start;
+	command_processor.stop -> telemetry.stop;
+	motor.current_speed -> telemetry.current_speed;
 }

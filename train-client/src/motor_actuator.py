@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 from globals import MAX_SPEED, SCALE_FACTOR_PWM
-from utils.app_logger import logger
+from app_logger import logger
 
 # Use bluetooth speaker
 import pygame

@@ -20,7 +20,7 @@ reactor Parser {
     output disconnect;
 	output clock_sync;
 	output heartbeat;
-    
+
 
     reaction (data) -> command, clock_sync, heartbeat, connect, disconnect {=
         for d in data:

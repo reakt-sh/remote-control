@@ -5,7 +5,7 @@ target Python {
 
 reactor CommandProcessor {
     preamble {=
-        from json import loads, dumps, JSONDecodeError
+        import json
         from app_logger import logger
         from globals import PACKET_TYPE
         from app_context import AppContext 
@@ -19,6 +19,79 @@ reactor CommandProcessor {
 	output stop;
 
     reaction (command) {=
-        self.logger.info(f"Received command: {command.value}")
+        payload = command.value
+        self.logger.info(f"Received command: {payload}")
+
+        try:
+            message = self.json.loads(payload.decode("utf-8"))
+            remote_control_id = message.get("remote_control_id")
+
+            if message["instruction" ] == "CHANGE_TARGET_SPEED":
+                self.target_speed = message["target_speed"]
+                self.update_speed(self.target_speed)
+            elif message["instruction" ] == "STOP_SENDING_DATA":
+                # if self.is_sending:
+                #     self.toggle_sending()
+                pass
+            elif message["instruction" ] == "START_SENDING_DATA":
+                # if not self.is_sending:
+                #     self.toggle_sending()
+                pass
+            elif message["instruction" ] == "POWER_ON":
+                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+                self.target_speed = max(self.target_speed, MAX_SPEED)
+                self.on_power_on()
+            elif message["instruction" ] == "POWER_OFF":
+                self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
+                self.target_speed = 0
+                self.on_power_off()
+            elif message["instruction" ] == "CHANGE_DIRECTION":
+                direction = message.get("direction")
+                if direction in ("FORWARD", "BACKWARD"):
+                    self.telemetry.set_direction(DIRECTION[direction])
+                    self.on_change_direction(DIRECTION[direction])
+                else:
+                    logger.warning(f"Unknown direction: {direction}")
+            elif message["instruction" ] == "CALCULATE_NETWORK_SPEED":
+                # self.networkspeed.start()
+                pass
+            elif message["instruction" ] == "HEADLIGHT_ON":
+                # self.on_headlight_on()
+                pass
+            elif message["instruction" ] == "HEADLIGHT_OFF":
+                # self.on_headlight_off()
+                pass
+            elif message["instruction" ] == "HORN_ON":
+                # self.on_horn_on()
+                pass
+            elif message["instruction" ] == "HORN_OFF":
+                # self.on_horn_off()
+                pass
+            elif message["instruction" ] == "CHANGE_VIDEO_QUALITY":
+                # video_quality = message.get("quality")
+                # logger.info(f"Video quality is changing to {video_quality}")
+                # if video_quality ==  "low":
+                #     logger.info(f"Setting encoder bitrate to LOW_BITRATE: {LOW_BITRATE}")
+                #     self.encoder.set_bitrate(LOW_BITRATE)
+                # elif video_quality == "medium":
+                #     logger.info(f"Setting encoder bitrate to MEDIUM_BITRATE: {MEDIUM_BITRATE}")
+                #     self.encoder.set_bitrate(MEDIUM_BITRATE)
+                # elif video_quality == "high":
+                #     logger.info(f"Setting encoder bitrate to HIGH_BITRATE: {HIGH_BITRATE}")
+                #     self.encoder.set_bitrate(HIGH_BITRATE)
+                # else:
+                #     logger.warning(f"Unknown video quality: {video_quality}")
+                pass
+            elif message["instruction" ] == "SWITCH_PROTOCOL":
+                # protocol = message.get("protocol", "").upper()
+                # if protocol in ["WEBSOCKET", "QUIC", "WEBRTC"]:
+                #     self.switch_protocol(protocol)
+                # else:
+                #     logger.warning(f"Unknown protocol: {protocol}")
+                pass
+            else:
+                logger.warning(f"Unknown instruction: {message['instruction']}")
+        except Exception as e:
+            self.logger.error(f"Error processing command: {e}")
     =}
 }

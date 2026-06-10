@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import qasync
-from utils.app_logger import logger
+from app_logger import logger
 from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator

@@ -11,7 +11,11 @@ reactor Telemetry {
         appcontext = AppContext()
     =}
 
-    input[5] update;
+    input target_speed;
+    input direction;
+    input start;
+    input stop;
+    input current_speed;
 
     output telemetry;
 
