@@ -36,6 +36,8 @@ reactor Parser {
                         try:
                             message = self.json.loads(payload.decode("utf-8"))
                             remote_control_id = message.get("remote_control_id")
+                            self.appcontext.clock_offset_calculated = False  # Reset clock offset calculation on new map connect
+                            self.appcontext.keepalive_sequence = 0  # Reset keepalive sequence on new map connect
                             self.appcontext.remote_control_client_id = remote_control_id
                             self.appcontext.connected_remote_control_ids.add(remote_control_id)
                             self.logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
@@ -53,7 +55,10 @@ reactor Parser {
                             else:
                                 self.logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
 
+                            self.appcontext.clock_offset_calculated = False  # Reset clock offset calculation on map disconnect
+                            self.appcontext.keepalive_sequence = 0  # Reset keepalive sequence on map disconnect
                             # TODO: Stop Heartbeat handler timer
+                            disconnect.set(True) # Trigger any necessary cleanup on map disconnect, e.g., stopping heartbeat handler
                             # TODO: self.stop_train_operations(), later we will introduce safe state
                         except Exception as e:
                             self.logger.error(f"Failed to parse map_disconnect JSON: {e}")

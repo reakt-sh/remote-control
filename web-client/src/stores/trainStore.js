@@ -561,6 +561,17 @@ export const useTrainStore = defineStore('train', () => {
         }
         break
       }
+      case PACKET_TYPE.keepalive: {
+        try {
+          // Currently not used in the client
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+          // console.log('✅ Received keepalive packet from Train:', jsonData)
+        } catch (error) {
+          console.error('❌ Error handling rtt_train packet:', error, payload)
+        }
+        break
+      }
     }
   }
 

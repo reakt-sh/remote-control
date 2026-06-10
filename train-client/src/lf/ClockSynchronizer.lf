@@ -107,6 +107,7 @@ reactor ClockSynchronizer {
                         avg_offset = sum(samples[:self.appcontext.number_of_rtt_packets]) / self.appcontext.number_of_rtt_packets
                         avg_offset = round(avg_offset)
                         self.appcontext.clock_offsets[remote_control_id] = avg_offset
+                        self.appcontext.clock_offset_calculated = True
                         self.logger.info(
                             f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
                             f"(averaged over {self.appcontext.number_of_rtt_packets} RTT samples)"

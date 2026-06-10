@@ -21,6 +21,7 @@ class AppContext:
         self.train_client_id = None
         self.clock_offset_samples = {}
         self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
+        self.clock_offset_calculated = False
         self.connected_remote_control_ids = set()
         self.remote_control_client_id = None
         self.number_of_rtt_packets = 10
@@ -28,6 +29,8 @@ class AppContext:
         self.latency_command_output_file = None
         self.frame_output_file = None
         self.latency_keepalive_output_file = None
+
+        self.keepalive_sequence = 0  # Sequence number for keepalive packets
 
     def init_telemetry(self):
         self.telemetryObj = Telemetry(self.train_client_id)

@@ -1,43 +1,85 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py"]
+  files: ["src/app_logger.py", "src/app_context.py", "src/helper.py", "src/globals.py"]
 }
 
 reactor HeartbeatHandler {
     preamble {=
+        import json
+        import struct
         from app_logger import logger
+        from app_context import AppContext
+        from globals import PACKET_TYPE
+        from helper import Helper
+        appcontext = AppContext()
+        helper = Helper()
     =}
 
 	input heartbeat_init;
 	input heartbeat_recv;
+    input heartbeat_stop;
   	output heartbeat_send;
 	output heartbeat_timout;
 
     logical action heartbeat_act;
     logical action watchdog_act;
-    state heartbeat_counter = 0;
+    state rc_heartbeat_counter = 0;
+    state heartbeat_running = False;
 
     reaction(heartbeat_init) -> watchdog_act, heartbeat_act {=
-        watchdog_act.schedule(SEC(3), self.heartbeat_counter)
+        self.heartbeat_running = True
+        watchdog_act.schedule(SEC(3), self.rc_heartbeat_counter)
         heartbeat_act.schedule(MSEC(500))
+    =}
+
+    reaction(heartbeat_stop) -> heartbeat_timout {=
+        self.heartbeat_running = False
+        self.logger.info("Heartbeat handler stopped")
+        heartbeat_timout.set(True)
     =}
 
 	reaction(heartbeat_recv) -> watchdog_act {=
 		self.logger.debug("Received heartbeat signal")
-		self.heartbeat_counter += 1
+		self.rc_heartbeat_counter += 1
 	=}
 
     reaction(watchdog_act) -> heartbeat_timout {=
-        if watchdog_act.value == self.heartbeat_counter:
+        if not self.heartbeat_running:
+            return
+
+        if watchdog_act.value == self.rc_heartbeat_counter:
+            self.heartbeat_running = False
             self.logger.warning("Heartbeat timeout — no heartbeat received for 3 seconds")
             heartbeat_timout.set(True)
         else:
             self.logger.debug("Heartbeat received in time, resetting watchdog")
-            watchdog_act.schedule(SEC(3), self.heartbeat_counter)
+            watchdog_act.schedule(SEC(3), self.rc_heartbeat_counter)
     =}
 
 	reaction(heartbeat_act) -> heartbeat_act, heartbeat_send {=
-		self.logger.info("Checking heartbeat signal")
-		heartbeat_act.schedule(MSEC(500))
-	=}
+        if not self.heartbeat_running:
+            return
+
+        def create_keepalive_packet():
+            keepalive_packet = {
+                "type": "keepalive",
+                "protocol": "quic",
+                "train_id": self.appcontext.train_client_id,
+                "timestamp": self.helper.get_timestamp(),
+                "sequence": self.appcontext.keepalive_sequence,
+            }
+
+            # Increment the sequence for next time
+            self.appcontext.keepalive_sequence += 1
+
+            keepalive_packet = self.json.dumps(keepalive_packet).encode("utf-8")
+            keepalive_packet = self.struct.pack("B", self.PACKET_TYPE["keepalive"]) + keepalive_packet
+            keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
+            return keepalive_packet
+
+        self.logger.info("Checking heartbeat signal")
+        if self.appcontext.clock_offset_calculated:
+            heartbeat_send.set(create_keepalive_packet())
+        heartbeat_act.schedule(MSEC(500))
+    =}
 }
