@@ -9,5 +9,10 @@ reactor EmergencyBrake {
     =}
     input heartbeat_timeout;
     output stop;
+
+    reaction(heartbeat_timeout) -> stop {=
+        self.logger.warning("Emergency brake activated due to heartbeat timeout")
+        stop.set(True)
+    =}
 }
 

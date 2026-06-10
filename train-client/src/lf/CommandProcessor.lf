@@ -7,8 +7,9 @@ reactor CommandProcessor {
     preamble {=
         import json
         from app_logger import logger
-        from globals import PACKET_TYPE
-        from app_context import AppContext 
+        from globals import PACKET_TYPE, TRAIN_STATUS, DIRECTION, MAX_SPEED
+        from app_context import AppContext
+        appcontext = AppContext()
     =}
 
 	input command;
@@ -18,7 +19,7 @@ reactor CommandProcessor {
 	output start;
 	output stop;
 
-    reaction (command) {=
+    reaction (command) -> target_speed, direction, start, stop {=
         payload = command.value
         self.logger.info(f"Received command: {payload}")
 
@@ -27,8 +28,8 @@ reactor CommandProcessor {
             remote_control_id = message.get("remote_control_id")
 
             if message["instruction" ] == "CHANGE_TARGET_SPEED":
-                self.target_speed = message["target_speed"]
-                self.update_speed(self.target_speed)
+                self.appcontext.target_speed_value = message["target_speed"]
+                target_speed.set(self.appcontext.target_speed_value)
             elif message["instruction" ] == "STOP_SENDING_DATA":
                 # if self.is_sending:
                 #     self.toggle_sending()
@@ -38,20 +39,14 @@ reactor CommandProcessor {
                 #     self.toggle_sending()
                 pass
             elif message["instruction" ] == "POWER_ON":
-                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
-                self.target_speed = max(self.target_speed, MAX_SPEED)
-                self.on_power_on()
+                self.appcontext.target_speed_value = max(self.appcontext.target_speed_value, self.MAX_SPEED)
+                start.set(True)
             elif message["instruction" ] == "POWER_OFF":
-                self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
-                self.target_speed = 0
-                self.on_power_off()
+                self.appcontext.target_speed_value = 0
+                stop.set(True)
             elif message["instruction" ] == "CHANGE_DIRECTION":
-                direction = message.get("direction")
-                if direction in ("FORWARD", "BACKWARD"):
-                    self.telemetry.set_direction(DIRECTION[direction])
-                    self.on_change_direction(DIRECTION[direction])
-                else:
-                    logger.warning(f"Unknown direction: {direction}")
+                direction_value = message.get("direction")
+                direction.set(direction_value)
             elif message["instruction" ] == "CALCULATE_NETWORK_SPEED":
                 # self.networkspeed.start()
                 pass

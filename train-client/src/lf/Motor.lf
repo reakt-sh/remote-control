@@ -1,11 +1,15 @@
 target Python {
   	keepalive: true,
-  		files: ["src/app_logger.py"]
+  		files: ["src/app_logger.py", "src/app_context.py", "src/helper.py", "src/globals.py", "src/motor_actuator.py"]
 }
 
 reactor Motor {
     preamble {=
         from app_logger import logger
+        from app_context import AppContext
+        appcontext = AppContext()
+
+        motor_actuator = MotorActuator()
     =}
   	input target_speed;
     input direction;

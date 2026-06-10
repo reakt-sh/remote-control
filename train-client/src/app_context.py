@@ -31,6 +31,7 @@ class AppContext:
         self.latency_keepalive_output_file = None
 
         self.keepalive_sequence = 0  # Sequence number for keepalive packets
+        self.target_speed_value = 0
 
     def init_telemetry(self):
         self.telemetryObj = Telemetry(self.train_client_id)
