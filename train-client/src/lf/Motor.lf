@@ -21,7 +21,7 @@ reactor Motor {
     state old_speed_value = 0;
     state direction = 1 # DIRECTION = { "FORWARD": 1, "BACKWARD": -1, "STOPPED": 0}
 
-    timer current_speed_send_timer(200ms);
+    timer current_speed_send_timer(0, 200ms);
 
     reaction (actuate) {=
         for a in actuate:
