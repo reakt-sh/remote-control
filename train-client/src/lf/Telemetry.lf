@@ -12,7 +12,7 @@ reactor Telemetry {
         appcontext = AppContext()
     =}
 
-    input[5] update;
+    input[6] update;
 
     output telemetry;
 
