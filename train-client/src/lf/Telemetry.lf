@@ -12,7 +12,7 @@ reactor Telemetry {
         appcontext = AppContext()
     =}
 
-    input[6] update;
+    input[10] update;
 
     output telemetry;
 
@@ -46,6 +46,14 @@ reactor Telemetry {
                     self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_ON"])
                 elif instruction == "POWER_OFF":
                     self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_OFF"])
+                elif instruction == "HORN_ON":
+                    self.appcontext.telemetryObj.set_horn_status("ON")
+                elif instruction == "HORN_OFF":
+                    self.appcontext.telemetryObj.set_horn_status("OFF")
+                elif instruction == "HEADLIGHT_ON":
+                    self.appcontext.telemetryObj.set_headlight_status("ON")
+                elif instruction == "HEADLIGHT_OFF":
+                    self.appcontext.telemetryObj.set_headlight_status("OFF")
                 else:
                     self.logger.warning(f"Unknown telemetry update instruction: {instruction}")
     =}

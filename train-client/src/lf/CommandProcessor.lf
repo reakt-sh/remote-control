@@ -18,8 +18,12 @@ reactor CommandProcessor {
     output direction;
 	output start;
 	output stop;
+    output headlight_on;
+    output headlight_off;
+    output horn_on;
+    output horn_off;
 
-    reaction (command) -> target_speed, direction, start, stop {=
+    reaction (command) -> target_speed, direction, start, stop, headlight_on, headlight_off, horn_on, horn_off {=
         payload = command.value
         self.logger.info(f"Received command: {payload}")
 
@@ -50,17 +54,13 @@ reactor CommandProcessor {
                 # self.networkspeed.start()
                 pass
             elif message["instruction" ] == "HEADLIGHT_ON":
-                # self.on_headlight_on()
-                pass
+                headlight_on.set((message["instruction"], True))
             elif message["instruction" ] == "HEADLIGHT_OFF":
-                # self.on_headlight_off()
-                pass
+                headlight_off.set((message["instruction"], True))
             elif message["instruction" ] == "HORN_ON":
-                # self.on_horn_on()
-                pass
+                horn_on.set((message["instruction"], True))
             elif message["instruction" ] == "HORN_OFF":
-                # self.on_horn_off()
-                pass
+                horn_off.set((message["instruction"], True))
             elif message["instruction" ] == "CHANGE_VIDEO_QUALITY":
                 # video_quality = message.get("quality")
                 # logger.info(f"Video quality is changing to {video_quality}")

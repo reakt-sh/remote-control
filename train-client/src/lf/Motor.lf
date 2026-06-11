@@ -13,7 +13,7 @@ reactor Motor {
         motor_actuator = MotorActuator()
     =}
 
-  	input[5] actuate;
+  	input[9] actuate;
 
     output current_speed;
 
@@ -43,6 +43,20 @@ reactor Motor {
                     self.motor_actuator.stop_motor()
                     self.old_speed_value = self.current_speed_value
                     self.current_speed_value = 0
+                elif instruction == "HORN_ON":
+                    self.logger.info("Horn ON command received")
+                    self.motor_actuator.horn_on()
+                elif instruction == "HORN_OFF":
+                    self.logger.info("Horn OFF command received")
+                    self.motor_actuator.horn_off()
+                elif instruction == "HEADLIGHT_ON":
+                    self.logger.info("Headlight ON command received")
+                    self.motor_actuator.set_led_turn_on()
+                elif instruction == "HEADLIGHT_OFF":
+                    self.logger.info("Headlight OFF command received")
+                    self.motor_actuator.set_led_turn_off()
+                else:
+                    self.logger.warning(f"Unknown motor instruction received: {instruction}")
     =}
 
     reaction (current_speed_send_timer) -> current_speed {=

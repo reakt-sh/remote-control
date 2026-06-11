@@ -61,6 +61,9 @@ class Telemetry:
 
         self.motor_mode = "UNKNOWN"
 
+        self.horn_status = "OFF"
+        self.headlight_status = "OFF"
+
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
 
@@ -94,6 +97,12 @@ class Telemetry:
         self.upload_speed = upload_speed
         self.jitter = jitter
         self.ping = ping
+
+    def set_horn_status(self, status: str):
+        self.horn_status = status
+
+    def set_headlight_status(self, status: str):
+        self.headlight_status = status
 
     def _poll_loop(self):
         interval = self.poll_interval_ms / 1000.0
@@ -172,6 +181,8 @@ class Telemetry:
             "ping": self.ping,
             "sequence_number": self.sequence_number,
             "reaktor_motor_mode" : self.motor_mode,
+            "horn_status": self.horn_status,
+            "headlight_status": self.headlight_status,
         }
 
         self.simulate_data()
