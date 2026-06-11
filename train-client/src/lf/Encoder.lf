@@ -23,8 +23,8 @@ reactor Encoder {
     =}
 
     reaction (raw_frame) -> act_encoding {=
-        frame_id, frame_data, width, height = raw_frame.value
-        self.encoder.enqueue_frame(frame_id, frame_data, width, height)
+        frame_id, frame_data, width, height, is_encoded = raw_frame.value
+        self.encoder.enqueue_frame(frame_id, frame_data, width, height, is_encoded)
     =}
 
     reaction(act_encoding) -> encoded_frame {=

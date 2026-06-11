@@ -107,7 +107,6 @@ class Encoder:
 
     def enqueue_frame(self, frame_id, frame, width, height, is_encoded):
         if is_encoded:
-            logger.warning(f"Received already encoded frame {frame_id}, dropping.")
             timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
             self.encode_ready.emit(frame_id, timestamp, frame)
         else:
