@@ -38,6 +38,8 @@ reactor Telemetry {
                 instruction, value = u.value
                 if instruction == "CHANGE_CURRENT_SPEED":
                     self.appcontext.telemetryObj.set_speed(value)
+                elif instruction == "CHANGE_TARGET_SPEED":
+                    pass  # Target speed is not part of telemetry updates, it's only a command to the motor
                 elif instruction == "CHANGE_DIRECTION":
                     self.appcontext.telemetryObj.set_direction(value)
                 elif instruction == "POWER_ON":

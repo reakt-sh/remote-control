@@ -1,6 +1,13 @@
-import RPi.GPIO as GPIO
+
+
 from globals import MAX_SPEED, SCALE_FACTOR_PWM
 from app_logger import logger
+
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    logger.error("RPi.GPIO library not found. MotorActuator will not function properly.")
+    GPIO = None  # Running on non-Pi hardware
 
 # Use bluetooth speaker
 import pygame
@@ -17,34 +24,41 @@ class MotorActuator:
         self.max_speed = MAX_SPEED * self.scale_factor
         self.current_speed = 0
 
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.input1_pin, GPIO.OUT)
-        GPIO.setup(self.input2_pin, GPIO.OUT)
-        GPIO.setup(self.enable_pin, GPIO.OUT)
-        GPIO.setup(self.led_pin, GPIO.OUT)
+        if GPIO:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(self.input1_pin, GPIO.OUT)
+            GPIO.setup(self.input2_pin, GPIO.OUT)
+            GPIO.setup(self.enable_pin, GPIO.OUT)
+            GPIO.setup(self.led_pin, GPIO.OUT)
 
         # initial state: motor stopped, LED off
-        GPIO.output(self.input1_pin, GPIO.LOW)
-        GPIO.output(self.input2_pin, GPIO.LOW)
-        GPIO.output(self.led_pin, GPIO.LOW)
-        self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
-        self.pwm.start(0)  # Default to speed 0
-        logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
+        if GPIO:
+            GPIO.output(self.input1_pin, GPIO.LOW)
+            GPIO.output(self.input2_pin, GPIO.LOW)
+            GPIO.output(self.led_pin, GPIO.LOW)
+            self.pwm = GPIO.PWM(self.enable_pin, self.pwm_freq)
+            self.pwm.start(0)  # Default to speed 0
+            logger.info(f"MotorActuator initialized with max speed: {self.max_speed}")
+        else:
+            logger.warning("GPIO not available. MotorActuator will not control hardware.")
 
         # Use bluetooth speaker for horn sound
         pygame.mixer.init()
         self.sound = pygame.mixer.Sound("./asset/train_horn_sample.wav")
     def start_motor(self):
         if self.direction == 1:
-            GPIO.output(self.input1_pin, GPIO.HIGH)
-            GPIO.output(self.input2_pin, GPIO.LOW)
+            if GPIO:
+                GPIO.output(self.input1_pin, GPIO.HIGH)
+                GPIO.output(self.input2_pin, GPIO.LOW)
         else:
-            GPIO.output(self.input1_pin, GPIO.LOW)
-            GPIO.output(self.input2_pin, GPIO.HIGH)
+            if GPIO:
+                GPIO.output(self.input1_pin, GPIO.LOW)
+                GPIO.output(self.input2_pin, GPIO.HIGH)
 
     def stop_motor(self):
-        GPIO.output(self.input1_pin, GPIO.LOW)
-        GPIO.output(self.input2_pin, GPIO.LOW)
+        if GPIO:
+            GPIO.output(self.input1_pin, GPIO.LOW)
+            GPIO.output(self.input2_pin, GPIO.LOW)
 
     def set_direction(self, d):
         self.direction = d
@@ -53,16 +67,19 @@ class MotorActuator:
     def set_speed(self, speed):
         self.current_speed = int(speed * self.scale_factor) # Scale speed to match PWM range
         self.current_speed = max(0, min(self.current_speed, self.max_speed))
-        self.pwm.ChangeDutyCycle(self.current_speed)
+        if GPIO:
+            self.pwm.ChangeDutyCycle(self.current_speed)
 
     def get_speed(self):
         return int(self.current_speed / self.scale_factor)  # Convert back to original speed scale
 
     def set_led_turn_on(self):
-        GPIO.output(self.led_pin, GPIO.HIGH)
+        if GPIO:
+            GPIO.output(self.led_pin, GPIO.HIGH)
 
     def set_led_turn_off(self):
-        GPIO.output(self.led_pin, GPIO.LOW)
+        if GPIO:
+            GPIO.output(self.led_pin, GPIO.LOW)
 
     def horn_on(self):
         logger.info("Playing horn sound.")
@@ -74,5 +91,6 @@ class MotorActuator:
 
     def cleanup(self):
         self.stop_motor()
-        self.pwm.stop()
-        GPIO.cleanup([self.input1_pin, self.input2_pin, self.enable_pin, self.led_pin])
+        if GPIO:
+            self.pwm.stop()
+            GPIO.cleanup([self.input1_pin, self.input2_pin, self.enable_pin, self.led_pin])

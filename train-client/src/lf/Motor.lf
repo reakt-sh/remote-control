@@ -25,23 +25,24 @@ reactor Motor {
 
     reaction (actuate) {=
         for a in actuate:
-            instruction, value = a.value
-            if instruction == "CHANGE_TARGET_SPEED":
-                self.logger.info(f"Setting target speed to: {value}")
-                self.motor_actuator.set_speed(value)
-                self.current_speed_value = value
-            elif instruction == "CHANGE_DIRECTION":
-                self.logger.info(f"Setting direction to: {value}")
-                self.motor_actuator.set_direction(value)
-            elif instruction == "POWER_ON":
-                self.logger.info("Powering on the motor.")
-                self.motor_actuator.start_motor()
-                self.current_speed_value = self.old_speed_value
-            elif instruction == "POWER_OFF":
-                self.logger.info("Powering off the motor.")
-                self.motor_actuator.stop_motor()
-                self.old_speed_value = self.current_speed_value
-                self.current_speed_value = 0
+            if a.is_present:
+                instruction, value = a.value
+                if instruction == "CHANGE_TARGET_SPEED":
+                    self.logger.info(f"Setting target speed to: {value}")
+                    self.motor_actuator.set_speed(value)
+                    self.current_speed_value = value
+                elif instruction == "CHANGE_DIRECTION":
+                    self.logger.info(f"Setting direction to: {value}")
+                    self.motor_actuator.set_direction(value)
+                elif instruction == "POWER_ON":
+                    self.logger.info("Powering on the motor.")
+                    self.motor_actuator.start_motor()
+                    self.current_speed_value = self.old_speed_value
+                elif instruction == "POWER_OFF":
+                    self.logger.info("Powering off the motor.")
+                    self.motor_actuator.stop_motor()
+                    self.old_speed_value = self.current_speed_value
+                    self.current_speed_value = 0
     =}
 
     reaction (current_speed_send_timer) -> current_speed {=
