@@ -105,11 +105,16 @@ class Encoder:
             logger.info(f"Encoder bitrate unchanged at {self.current_bitrate} bps")
 
 
-    def enqueue_frame(self, frame_id, frame, width, height):
-        try:
-            self._frame_queue.put_nowait((frame_id, frame, width, height))
-        except queue.Full:
-            logger.warning(f"Encoder queue full, dropping frame {frame_id}")
+    def enqueue_frame(self, frame_id, frame, width, height, is_encoded):
+        if is_encoded:
+            logger.warning(f"Received already encoded frame {frame_id}, dropping.")
+            timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+            self.encode_ready.emit(frame_id, timestamp, frame)
+        else:
+            try:
+                self._frame_queue.put_nowait((frame_id, frame, width, height))
+            except queue.Full:
+                logger.warning(f"Encoder queue full, dropping frame {frame_id}")
 
     def _encode_worker(self):
         while not self._stop_event.is_set():

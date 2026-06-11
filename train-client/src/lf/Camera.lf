@@ -1,12 +1,13 @@
 target Python {
   	keepalive: true,
-  	files: ["src/app_logger.py", "src/sensor/camera.py"]
+  	files: ["src/app_logger.py", "src/sensor/camera.py", "src/sensor/camera_rpi_5.py"]
 }
 
 reactor Camera {
     preamble {=
         from app_logger import logger
-        from camera import Camera as CameraImpl
+		from camera_rpi_5 import CameraRPI5 as CameraImpl
+        # from camera import Camera as CameraImpl
     =}
 
     output frame;
@@ -29,7 +30,7 @@ reactor Camera {
 	=}
 
 	reaction (capturing_data) -> frame{=
-		frame_count, frame_data, width, height, flag = self.current_frame
-		frame.set((frame_count, frame_data, width, height))
+		frame_count, frame_data, width, height, is_encoded = self.current_frame
+		frame.set((frame_count, frame_data, width, height, is_encoded))
 	=}
 }
