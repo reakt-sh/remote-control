@@ -12,7 +12,7 @@ class MotorActuator:
         self.enable_pin = enable_pin                # GPIO pin for EN, used for PWM control
         self.led_pin = led_pin                      # GPIO pin for LED indicator
         self.pwm_freq = pwm_freq                    # Frequency for PWM control
-        self.direction = 1                          # 1 for forward, 0 for backward
+        self.direction = 1                          # 1 for forward, -1 for backward
         self.scale_factor = SCALE_FACTOR_PWM        # Scale factor to convert speed to PWM duty cycle
         self.max_speed = MAX_SPEED * self.scale_factor
         self.current_speed = 0
@@ -46,12 +46,8 @@ class MotorActuator:
         GPIO.output(self.input1_pin, GPIO.LOW)
         GPIO.output(self.input2_pin, GPIO.LOW)
 
-    def move_forward(self):
-        self.direction = 1
-        self.start_motor()
-
-    def move_backward(self):
-        self.direction = 0
+    def set_direction(self, d):
+        self.direction = d
         self.start_motor()
 
     def set_speed(self, speed):

@@ -1,6 +1,6 @@
 target Python {
   keepalive: true,
-  files: ["src/app_logger.py", "src/app_context.py", "src/telemetry.py"]
+  files: ["src/app_logger.py", "src/app_context.py", "src/telemetry.py", "src/globals.py"]
 }
 
 reactor Telemetry {
@@ -8,14 +8,11 @@ reactor Telemetry {
         import json
         from app_logger import logger
         from app_context import AppContext
+        from globals import TRAIN_STATUS
         appcontext = AppContext()
     =}
 
-    input target_speed;
-    input direction;
-    input start;
-    input stop;
-    input current_speed;
+    input[5] update;
 
     output telemetry;
 
@@ -33,5 +30,21 @@ reactor Telemetry {
         data = act_receiving_data.value
         packet_data = self.json.dumps(data).encode("utf-8")
         telemetry.set(packet_data)
+    =}
+
+    reaction (update) -> act_receiving_data {=
+        for u in update:
+            if u.is_present:
+                instruction, value = u.value
+                if instruction == "CHANGE_CURRENT_SPEED":
+                    self.appcontext.telemetryObj.set_speed(value)
+                elif instruction == "CHANGE_DIRECTION":
+                    self.appcontext.telemetryObj.set_direction(value)
+                elif instruction == "POWER_ON":
+                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_ON"])
+                elif instruction == "POWER_OFF":
+                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_OFF"])
+                else:
+                    self.logger.warning(f"Unknown telemetry update instruction: {instruction}")
     =}
 }

@@ -29,7 +29,8 @@ reactor CommandProcessor {
 
             if message["instruction" ] == "CHANGE_TARGET_SPEED":
                 self.appcontext.target_speed_value = message["target_speed"]
-                target_speed.set(self.appcontext.target_speed_value)
+                self.appcontext.target_speed_value = min(self.appcontext.target_speed_value, self.MAX_SPEED)
+                target_speed.set((message["instruction"], self.appcontext.target_speed_value))
             elif message["instruction" ] == "STOP_SENDING_DATA":
                 # if self.is_sending:
                 #     self.toggle_sending()
@@ -39,14 +40,12 @@ reactor CommandProcessor {
                 #     self.toggle_sending()
                 pass
             elif message["instruction" ] == "POWER_ON":
-                self.appcontext.target_speed_value = max(self.appcontext.target_speed_value, self.MAX_SPEED)
-                start.set(True)
+                start.set((message["instruction"], True))
             elif message["instruction" ] == "POWER_OFF":
-                self.appcontext.target_speed_value = 0
-                stop.set(True)
+                stop.set((message["instruction"], True))
             elif message["instruction" ] == "CHANGE_DIRECTION":
                 direction_value = message.get("direction")
-                direction.set(direction_value)
+                direction.set((message["instruction"], direction_value))
             elif message["instruction" ] == "CALCULATE_NETWORK_SPEED":
                 # self.networkspeed.start()
                 pass
