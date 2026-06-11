@@ -44,7 +44,7 @@ reactor CommandProcessor {
             elif message["instruction" ] == "POWER_OFF":
                 stop.set((message["instruction"], True))
             elif message["instruction" ] == "CHANGE_DIRECTION":
-                direction_value = message.get("direction")
+                direction_value = self.DIRECTION[message.get("direction")]
                 direction.set((message["instruction"], direction_value))
             elif message["instruction" ] == "CALCULATE_NETWORK_SPEED":
                 # self.networkspeed.start()
