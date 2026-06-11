@@ -1,0 +1,16 @@
+target Python {
+  keepalive: true
+}
+
+import Camera from "Camera.lf";
+import Encoder from "Encoder.lf";
+
+reactor VideoStreamer {
+    camera = new Camera();
+    encoder = new Encoder();
+
+    output encoded_frame;
+
+    camera.frame -> encoder.raw_frame;
+    encoder.encoded_frame -> encoded_frame;
+}

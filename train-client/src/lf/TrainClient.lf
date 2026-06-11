@@ -5,7 +5,7 @@ target Python {
 
 import QUIC from "QUIC.lf";
 import WebSocket from "WebSocket.lf";
-import Camera from "Camera.lf";
+import VideoStreamer from "VideoStreamer.lf";
 import Motor from "Motor.lf";
 import LatencyCalculator from "LatencyCalculator.lf";
 import ClockSynchronizer from "ClockSynchronizer.lf";
@@ -13,7 +13,6 @@ import DataStorage from "DataStorage.lf";
 import Parser from "Parser.lf";
 import EmergencyBrake from "EmergencyBrake.lf";
 import HeartbeatHandler from "HeartbeatHandler.lf";
-import Encoder from "Encoder.lf";
 import CommandProcessor from "CommandProcessor.lf";
 import Telemetry from "Telemetry.lf";
 import MQTT from "MQTT.lf";
@@ -33,10 +32,9 @@ main reactor TrainClient {
 		logger.info(f"Assigned Train Client ID: {app_context.train_client_id}")
     =}
 
-    camera = new Camera();
 	parser = new Parser();
     motor = new Motor();
-    encoder = new Encoder();
+    video_streamer = new VideoStreamer();
     latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
@@ -62,9 +60,8 @@ main reactor TrainClient {
 	heartbeat_handler.heartbeat_timout -> emergency_brake.heartbeat_timeout;
 
     latency_calculator.latency -> data_storage.latency;
-	camera.frame -> encoder.raw_frame;
-	encoder.encoded_frame -> data_storage.frame;
-	encoder.encoded_frame -> quic.frame;
+	video_streamer.encoded_frame -> data_storage.frame;
+	video_streamer.encoded_frame -> quic.frame;
 
 	telemetry.telemetry -> mqtt.data;
 
