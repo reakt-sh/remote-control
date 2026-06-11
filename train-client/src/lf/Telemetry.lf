@@ -22,7 +22,7 @@ reactor Telemetry {
 
         _act = act_receiving_data
         self.appcontext.telemetryObj.telemetry_ready.connect(
-            lambda msg: _act.schedule(0, msg)
+            lambda msg: _act.schedule(MSEC(3), msg)
         )
     =}
 

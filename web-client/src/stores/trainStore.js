@@ -566,9 +566,8 @@ export const useTrainStore = defineStore('train', () => {
           // Currently not used in the client
           jsonString = new TextDecoder().decode(payload)
           jsonData = JSON.parse(jsonString)
-          // console.log('✅ Received keepalive packet from Train:', jsonData)
         } catch (error) {
-          console.error('❌ Error handling rtt_train packet:', error, payload)
+          console.error('❌ Error handling keepalive packet:', error, payload)
         }
         break
       }
@@ -604,6 +603,9 @@ export const useTrainStore = defineStore('train', () => {
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
         telemetryHistory.value.unshift({ ...data });
+        if (telemetryHistory.value.length > 300) {
+          telemetryHistory.value.pop()
+        }
 
         // Update power and direction states
         if (data.status === 'running') {

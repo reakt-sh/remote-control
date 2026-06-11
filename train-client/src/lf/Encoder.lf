@@ -18,7 +18,7 @@ reactor Encoder {
     reaction (startup) -> act_encoding {=
         _act = act_encoding
         self.encoder.encode_ready.connect(
-            lambda frame_id, timestamp, encoded_bytes: _act.schedule(0, (frame_id, timestamp, encoded_bytes))
+            lambda frame_id, timestamp, encoded_bytes: _act.schedule(MSEC(3), (frame_id, timestamp, encoded_bytes))
         )
     =}
 

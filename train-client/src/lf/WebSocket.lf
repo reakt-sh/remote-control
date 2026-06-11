@@ -23,7 +23,7 @@ reactor WebSocket {
 
         _act = act_receiving_data
         self.network_worker.recieved_data.connect(
-            lambda msg: _act.schedule(0, msg)
+            lambda msg: _act.schedule(MSEC(3), msg)
         )
         self.network_worker.start()
     =}

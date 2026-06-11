@@ -1,12 +1,14 @@
 target Python {
   	keepalive: true,
-  	files: ["src/app_logger.py", "src/sensor/camera.py", "src/sensor/camera_rpi_5.py"]
+  	files: ["src/app_logger.py", "src/sensor/camera.py", "src/sensor/camera_rpi_5.py", "src/sensor/file_processor.py"]
 }
 
 reactor Camera {
     preamble {=
         from app_logger import logger
-        from camera_rpi_5 import CameraRPi5 as CameraImpl
+        # from camera_rpi_5 import CameraRPi5 as CameraImpl
+        # from camera import Camera as CameraImpl
+        from file_processor import FileProcessor as CameraImpl
     =}
 
     output frame;
@@ -21,7 +23,7 @@ reactor Camera {
 
 		def on_frame_ready(frame_count, frame_data, width, height, flag):
 			self.current_frame = (frame_count, frame_data, width, height, flag)
-			capturing_data.schedule(0, None)  # Trigger the reaction to process the captured frame
+			capturing_data.schedule(MSEC(3), None)  # Trigger the reaction to process the captured frame
 			# self.logger.debug(f"Captured frame {frame_count} with dimensions {width}x{height}")
 
 		self.camera_impl.frame_ready.connect(on_frame_ready)

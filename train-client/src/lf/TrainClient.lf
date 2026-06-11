@@ -69,7 +69,24 @@ main reactor TrainClient {
 	telemetry.telemetry -> mqtt.data;
 
 
-	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, command_processor.headlight_on, command_processor.headlight_off, command_processor.horn_on, command_processor.horn_off, emergency_brake.stop -> motor.actuate;
+	command_processor.target_speed,
+	command_processor.direction,
+	command_processor.start,
+	command_processor.stop,
+	command_processor.headlight_on,
+	command_processor.headlight_off,
+	command_processor.horn_on,
+	command_processor.horn_off,
+	emergency_brake.stop -> motor.actuate;
 
-	command_processor.target_speed, command_processor.direction, command_processor.start, command_processor.stop, command_processor.headlight_on, command_processor.headlight_off, command_processor.horn_on, command_processor.horn_off, emergency_brake.stop, motor.current_speed -> telemetry.update;
+	command_processor.target_speed,
+	command_processor.direction,
+	command_processor.start,
+	command_processor.stop,
+	command_processor.headlight_on,
+	command_processor.headlight_off,
+	command_processor.horn_on,
+	command_processor.horn_off,
+	emergency_brake.stop,
+	motor.current_speed -> telemetry.update;
 }
