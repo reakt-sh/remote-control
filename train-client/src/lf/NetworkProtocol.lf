@@ -1,0 +1,25 @@
+target Python {
+  keepalive: true
+}
+
+import WebSocket from "WebSocket.lf";
+import QUIC from "QUIC.lf";
+import MQTT from "MQTT.lf";
+
+reactor NetworkProtocol {
+    ws = new WebSocket();
+    quic = new QUIC();
+    mqtt = new MQTT();
+
+    input[2] quic_sending;
+    input frame;
+    input telemetry;
+    output quic_received;
+    output ws_received;
+
+    quic_sending -> quic.sending_data;
+    frame -> quic.frame;
+    telemetry -> mqtt.data;
+    ws.receiving_data -> ws_received;
+    quic.receiving_data -> quic_received;
+}

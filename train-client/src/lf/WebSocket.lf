@@ -9,7 +9,6 @@ reactor WebSocket {
         from app_context import AppContext
         from network_worker_ws import NetworkWorkerWS
     =}
-
     output receiving_data;
 
     physical action act_receiving_data;

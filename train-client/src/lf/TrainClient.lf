@@ -3,8 +3,6 @@ target Python {
   files: ["src/app_logger.py", "src/helper.py", "src/app_context.py", "src/telemetry.py"]
 }
 
-import QUIC from "QUIC.lf";
-import WebSocket from "WebSocket.lf";
 import VideoStreamer from "VideoStreamer.lf";
 import Motor from "Motor.lf";
 import LatencyCalculator from "LatencyCalculator.lf";
@@ -15,7 +13,7 @@ import EmergencyBrake from "EmergencyBrake.lf";
 import HeartbeatHandler from "HeartbeatHandler.lf";
 import CommandProcessor from "CommandProcessor.lf";
 import Telemetry from "Telemetry.lf";
-import MQTT from "MQTT.lf";
+import NetworkProtocol from "NetworkProtocol.lf";
 
 
 main reactor TrainClient {
@@ -31,22 +29,20 @@ main reactor TrainClient {
 		app_context.init_telemetry()
 		logger.info(f"Assigned Train Client ID: {app_context.train_client_id}")
     =}
-
+	video_streamer = new VideoStreamer();
 	parser = new Parser();
     motor = new Motor();
-    video_streamer = new VideoStreamer();
     latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
     emergency_brake = new EmergencyBrake();
     heartbeat_handler = new HeartbeatHandler();
 	command_processor = new CommandProcessor();
-	quic = new QUIC();
-	ws = new WebSocket();
 	telemetry = new Telemetry();
-	mqtt = new MQTT();
+	network_protocol = new NetworkProtocol();
+	
 
-	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> quic.sending_data;
+	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> network_protocol.quic_sending;
 	parser.command -> latency_calculator.command;
 	parser.command -> command_processor.command;
 	parser.connect -> clock_synchronizer.clock_sync_init;
@@ -55,15 +51,15 @@ main reactor TrainClient {
 	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
 	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
 
-    quic.receiving_data, ws.receiving_data -> parser.data;
+    network_protocol.quic_received, network_protocol.ws_received -> parser.data;
 
 	heartbeat_handler.heartbeat_timout -> emergency_brake.heartbeat_timeout;
 
     latency_calculator.latency -> data_storage.latency;
 	video_streamer.encoded_frame -> data_storage.frame;
-	video_streamer.encoded_frame -> quic.frame;
+	video_streamer.encoded_frame -> network_protocol.frame;
 
-	telemetry.telemetry -> mqtt.data;
+	telemetry.telemetry -> network_protocol.telemetry;
 
 
 	command_processor.target_speed,
