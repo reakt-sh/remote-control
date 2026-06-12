@@ -5,7 +5,6 @@ target Python {
 
 import VideoStreamer from "VideoStreamer.lf";
 import Motor from "Motor.lf";
-import LatencyCalculator from "LatencyCalculator.lf";
 import ClockSynchronizer from "ClockSynchronizer.lf";
 import DataStorage from "DataStorage.lf";
 import Parser from "Parser.lf";
@@ -32,7 +31,6 @@ main reactor TrainClient {
 	video_streamer = new VideoStreamer();
 	parser = new Parser();
     motor = new Motor();
-    latency_calculator = new LatencyCalculator();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
     emergency_brake = new EmergencyBrake();
@@ -43,7 +41,7 @@ main reactor TrainClient {
 	
 
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> network_protocol.quic_sending;
-	parser.command -> latency_calculator.command;
+	parser.command -> data_storage.command;
 	parser.command -> command_processor.command;
 	parser.connect -> clock_synchronizer.clock_sync_init;
 	parser.connect -> heartbeat_handler.heartbeat_init;
@@ -55,7 +53,6 @@ main reactor TrainClient {
 
 	heartbeat_handler.heartbeat_timout -> emergency_brake.heartbeat_timeout;
 
-    latency_calculator.latency -> data_storage.latency;
 	video_streamer.encoded_frame -> data_storage.frame;
 	video_streamer.encoded_frame -> network_protocol.frame;
 
