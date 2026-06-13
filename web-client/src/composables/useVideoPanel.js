@@ -10,7 +10,8 @@ export function useVideoPanel(canvasRef, options = {}) {
     maxQueueSize = 60,
     latencyRef = null,
     fpsRef = null,
-    bandwidthRef = null
+    bandwidthRef = null,
+    last100frameLatenciesRef = null
   } = options
 
   const isFullScreen = ref(false)
@@ -62,7 +63,7 @@ export function useVideoPanel(canvasRef, options = {}) {
     )
 
     // Helper to stack overlays bottom-left, one after another (upwards)
-    const drawOverlayBL = (text) => {
+    const drawOverlayBL = (text, color = '#00ff00') => {
       ctx.font = 'bold 20px Arial'
       const padding = 12
       const textMetrics = ctx.measureText(text)
@@ -80,7 +81,7 @@ export function useVideoPanel(canvasRef, options = {}) {
       ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
 
       // text
-      ctx.fillStyle = '#00ff00'
+      ctx.fillStyle = color
       ctx.fillText(text, boxX + padding, boxY + boxHeight - 8)
 
       // move up for next overlay (with small gap)
@@ -101,6 +102,29 @@ export function useVideoPanel(canvasRef, options = {}) {
     if (bandwidthRef && bandwidthRef.value > 0) {
       const bandwidth = bandwidthRef.value.toFixed(2)
       drawOverlayBL(`Bandwidth Usage: ${bandwidth} Mbps`)
+    }
+
+    // Draw compact last-100-frame latency panel on the right side (oldest at top → newest at bottom)
+    if (last100frameLatenciesRef && last100frameLatenciesRef.value.length > 0) {
+      const entries = last100frameLatenciesRef.value
+      const canvasH = canvasRef.value.height
+      const canvasW = canvasRef.value.width
+      // Fit all entries into full canvas height
+      const rowHeight = Math.max(6, Math.floor(canvasH / 60))
+      const fontSize = rowHeight - 1
+      ctx.font = `bold ${fontSize}px monospace`
+      const panelWidth = ctx.measureText('999999 - 999.9 ms').width + 12
+      const panelX = canvasW - panelWidth - 5
+      // Single semi-transparent background panel
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+      ctx.fillRect(panelX, 0, panelWidth, entries.length * rowHeight)
+      // Draw each entry
+      for (let i = 0; i < entries.length; i++) {
+        const { frameId, latency } = entries[i]
+        ctx.fillStyle = latency == null ? '#ff9900' : latency > 150 ? '#ff3333' : '#00ff00'
+        const latencyText = latency == null ? '  N/A' : latency.toFixed(1).padStart(5)
+        ctx.fillText(`${frameId} - ${latencyText} ms`, panelX + 6, (i + 1) * rowHeight - 1)
+      }
     }
   }
 

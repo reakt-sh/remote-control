@@ -82,6 +82,9 @@ export const useTrainStore = defineStore('train', () => {
   const last1s_bytesHistory = ref([])
   const last1s_bandwidthMbps = ref(0)
 
+  const last_100_frame_latencies = ref([])
+  const last_frame_id_completed = ref(0)
+
   const {
     isWSConnected,
     connectWebSocket,
@@ -214,6 +217,32 @@ export const useTrainStore = defineStore('train', () => {
           let totalBytes = last1s_bytesHistory.value.reduce((sum, entry) => sum + entry.size, 0)
           last1s_bandwidthMbps.value = (totalBytes * 8) / (1024 * 1024) // Convert to Mbps
 
+          // calculate last 100 frame latencies for analysis
+          if (last_frame_id_completed.value == 0 || completedFrame.frameId == last_frame_id_completed.value + 1)
+          {
+            last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
+            if (last_100_frame_latencies.value.length > 100)
+            {
+              last_100_frame_latencies.value.shift()
+            }
+          }
+          else
+          {
+            for (let missingId = last_frame_id_completed.value + 1; missingId < completedFrame.frameId; missingId++) 
+            {
+              last_100_frame_latencies.value.push({ frameId: missingId, latency: null })
+              if (last_100_frame_latencies.value.length > 100)
+              {
+                last_100_frame_latencies.value.shift()
+              }
+            }
+            last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
+            if (last_100_frame_latencies.value.length > 100)
+            {
+              last_100_frame_latencies.value.shift()
+            }
+          }
+          last_frame_id_completed.value = completedFrame.frameId
         }
       })
     }
@@ -697,6 +726,7 @@ export const useTrainStore = defineStore('train', () => {
     last30_framesAverageLatency,
     last1s_framesFPS,
     last1s_bandwidthMbps,
+    last_100_frame_latencies,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
