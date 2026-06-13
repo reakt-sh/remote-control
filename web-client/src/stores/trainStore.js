@@ -166,8 +166,8 @@ export const useTrainStore = defineStore('train', () => {
           // Calculate latency with clock offset
           const frameLatency = completedFrame.latency + averageClockOffset.value
 
-          // Stop processing if latency exceeds 30 seconds (30000 ms)
-          if (frameLatency > 30000) {
+          // Stop processing if latency exceeds 1 seconds (1000 ms)
+          if (frameLatency > 1000) {
             console.warn(`⚠️ Frame ${completedFrame.frameId} skipped - latency too high: ${frameLatency.toFixed(0)} ms`)
             return
           }
@@ -602,10 +602,10 @@ export const useTrainStore = defineStore('train', () => {
 
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
-        telemetryHistory.value.unshift({ ...data });
-        if (telemetryHistory.value.length > 300) {
-          telemetryHistory.value.pop()
-        }
+        // telemetryHistory.value.unshift({ ...data });
+        // if (telemetryHistory.value.length > 300) {
+        //   telemetryHistory.value.pop()
+        // }
 
         // Update power and direction states
         if (data.status === 'running') {

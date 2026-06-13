@@ -1,0 +1,46 @@
+target Python {
+  keepalive: true
+}
+
+import EmergencyBrake from "EmergencyBrake.lf";
+import CommandProcessor from "CommandProcessor.lf";
+import Motor from "Motor.lf";
+import Telemetry from "Telemetry.lf";
+
+
+reactor Controller {
+    emergency_brake = new EmergencyBrake();
+    command_processor = new CommandProcessor();
+    motor = new Motor();
+    telemetryObj = new Telemetry();
+
+
+    input heartbeat_timeout;
+    input command;
+    output telemetry;
+
+    command -> command_processor.command;
+    telemetryObj.telemetry -> telemetry;
+    heartbeat_timeout -> emergency_brake.heartbeat_timeout;
+
+    command_processor.target_speed,
+	command_processor.direction,
+	command_processor.start,
+	command_processor.stop,
+	command_processor.headlight_on,
+	command_processor.headlight_off,
+	command_processor.horn_on,
+	command_processor.horn_off,
+	emergency_brake.stop -> motor.actuate;
+
+	command_processor.target_speed,
+	command_processor.direction,
+	command_processor.start,
+	command_processor.stop,
+	command_processor.headlight_on,
+	command_processor.headlight_off,
+	command_processor.horn_on,
+	command_processor.horn_off,
+	emergency_brake.stop,
+	motor.current_speed -> telemetryObj.update;
+}

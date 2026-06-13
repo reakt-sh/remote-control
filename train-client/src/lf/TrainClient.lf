@@ -4,16 +4,12 @@ target Python {
 }
 
 import VideoStreamer from "VideoStreamer.lf";
-import Motor from "Motor.lf";
 import ClockSynchronizer from "ClockSynchronizer.lf";
 import DataStorage from "DataStorage.lf";
 import Parser from "Parser.lf";
-import EmergencyBrake from "EmergencyBrake.lf";
 import HeartbeatHandler from "HeartbeatHandler.lf";
-import CommandProcessor from "CommandProcessor.lf";
-import Telemetry from "Telemetry.lf";
 import NetworkProtocol from "NetworkProtocol.lf";
-
+import Controller from "Controller.lf";
 
 main reactor TrainClient {
     preamble {=
@@ -30,19 +26,16 @@ main reactor TrainClient {
     =}
 	video_streamer = new VideoStreamer();
 	parser = new Parser();
-    motor = new Motor();
     clock_synchronizer = new ClockSynchronizer();
     data_storage = new DataStorage();
-    emergency_brake = new EmergencyBrake();
     heartbeat_handler = new HeartbeatHandler();
-	command_processor = new CommandProcessor();
-	telemetry = new Telemetry();
 	network_protocol = new NetworkProtocol();
+	controller = new Controller();
 	
 
 	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> network_protocol.quic_sending;
 	parser.command -> data_storage.command;
-	parser.command -> command_processor.command;
+	parser.command -> controller.command;
 	parser.connect -> clock_synchronizer.clock_sync_init;
 	parser.connect -> heartbeat_handler.heartbeat_init;
 	parser.disconnect -> heartbeat_handler.heartbeat_stop;
@@ -51,32 +44,10 @@ main reactor TrainClient {
 
     network_protocol.quic_received, network_protocol.ws_received -> parser.data;
 
-	heartbeat_handler.heartbeat_timout -> emergency_brake.heartbeat_timeout;
+	heartbeat_handler.heartbeat_timout -> controller.heartbeat_timeout;
 
 	video_streamer.encoded_frame -> data_storage.frame;
 	video_streamer.encoded_frame -> network_protocol.frame;
 
-	telemetry.telemetry -> network_protocol.telemetry;
-
-
-	command_processor.target_speed,
-	command_processor.direction,
-	command_processor.start,
-	command_processor.stop,
-	command_processor.headlight_on,
-	command_processor.headlight_off,
-	command_processor.horn_on,
-	command_processor.horn_off,
-	emergency_brake.stop -> motor.actuate;
-
-	command_processor.target_speed,
-	command_processor.direction,
-	command_processor.start,
-	command_processor.stop,
-	command_processor.headlight_on,
-	command_processor.headlight_off,
-	command_processor.horn_on,
-	command_processor.horn_off,
-	emergency_brake.stop,
-	motor.current_speed -> telemetry.update;
+	controller.telemetry -> network_protocol.telemetry;
 }
