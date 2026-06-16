@@ -1,13 +1,14 @@
 target Python {
   	keepalive: true,
-  		files: ["src/app_logger.py", "src/app_context.py", "src/helper.py", "src/globals.py", "src/motor_actuator.py"]
+  		files: ["src/app_logger.py", "src/app_context.py", "src/helper.py", "src/globals.py", "src/motor_actuator.py", "src/motor_actuator_real.py"]
 }
 
 reactor Motor {
     preamble {=
         from app_logger import logger
         from app_context import AppContext
-        from motor_actuator import MotorActuator
+        # from motor_actuator import MotorActuator
+        from motor_actuator_real import MotorActuator
 
         appcontext = AppContext()
         motor_actuator = MotorActuator()

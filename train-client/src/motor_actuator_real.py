@@ -62,8 +62,10 @@ class MotorActuator():
             current_mode = "NEUTRAL"
         else:
             current_mode = "UNKNOWN"
-        self.telemetry.set_mode(current_mode)
-        self.telemetry.set_speed(current_speed_kmh)
+
+        self.appcontext.telemetryObj.set_speed(current_speed_kmh)
+        self.appcontext.telemetryObj.set_mode(current_mode)
+        
 
     def set_speed(self, speed): # speed here in KM/H
         try:

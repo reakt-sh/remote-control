@@ -33,6 +33,9 @@ class AppContext:
         self.keepalive_sequence = 0  # Sequence number for keepalive packets
         self.target_speed_value = 0
 
+        self.current_speed_value = 0
+        self.current_mode_value = None
+
     def init_telemetry(self):
         self.telemetryObj = Telemetry(self.train_client_id)
         self.telemetryObj.start()
