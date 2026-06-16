@@ -67,7 +67,8 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
-  const indexedDBStorageEnabled = ref(false)
+  const indexedDBStorageEnabled = ref(true)
+  const showFramebyFrameLatency = ref(false)
   const commandCounter = ref(0)
 
   // Variables to calculate latency of last 30 frames
@@ -218,28 +219,31 @@ export const useTrainStore = defineStore('train', () => {
           last1s_bandwidthMbps.value = (totalBytes * 8) / (1024 * 1024) // Convert to Mbps
 
           // calculate last 100 frame latencies for analysis
-          if (last_frame_id_completed.value == 0 || completedFrame.frameId == last_frame_id_completed.value + 1)
-          {
-            last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
-            if (last_100_frame_latencies.value.length > 100)
+          if (showFramebyFrameLatency.value) {
+
+            if (last_frame_id_completed.value == 0 || completedFrame.frameId == last_frame_id_completed.value + 1)
             {
-              last_100_frame_latencies.value.shift()
-            }
-          }
-          else
-          {
-            for (let missingId = last_frame_id_completed.value + 1; missingId < completedFrame.frameId; missingId++) 
-            {
-              last_100_frame_latencies.value.push({ frameId: missingId, latency: null })
+              last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
               if (last_100_frame_latencies.value.length > 100)
               {
                 last_100_frame_latencies.value.shift()
               }
             }
-            last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
-            if (last_100_frame_latencies.value.length > 100)
+            else
             {
-              last_100_frame_latencies.value.shift()
+              for (let missingId = last_frame_id_completed.value + 1; missingId < completedFrame.frameId; missingId++) 
+              {
+                last_100_frame_latencies.value.push({ frameId: missingId, latency: null })
+                if (last_100_frame_latencies.value.length > 100)
+                {
+                  last_100_frame_latencies.value.shift()
+                }
+              }
+              last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
+              if (last_100_frame_latencies.value.length > 100)
+              {
+                last_100_frame_latencies.value.shift()
+              }
             }
           }
           last_frame_id_completed.value = completedFrame.frameId
@@ -651,7 +655,7 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
 
-      case 'CAU-8388': {
+      case 'rtsys-cau-01': {
           // Also store it to indexDB
           dataStorage.storeWANData({
             trainId: selectedTrainId.value,
