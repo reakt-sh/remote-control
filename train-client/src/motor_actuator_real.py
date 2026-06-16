@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import threading
 from app_logger import logger
 from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
 from app_context import AppContext
@@ -17,11 +18,26 @@ class MotorActuator():
         self.current_speed = 0
         self.status = None
         self.last_log_time = 0
+        self._loop = None
+        self._thread = None
 
         if IS_REAKTOR_DRIVER_ENABLED:
             logger.info("Reaktor driver enabled. Initializing connection.")
             self.connection = None
-            asyncio.run(self.setup_connection())
+            self._start_event_loop()
+
+    def _start_event_loop(self):
+        """Start a background daemon thread with a persistent event loop."""
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._run_event_loop, daemon=True, name="async-event-loop")
+        self._thread.start()
+        # Schedule the async setup on the persistent event loop
+        asyncio.run_coroutine_threadsafe(self.setup_connection(), self._loop)
+
+    def _run_event_loop(self):
+        """Run the event loop forever in the background thread."""
+        asyncio.set_event_loop(self._loop)
+        self._loop.run_forever()
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
