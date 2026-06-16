@@ -202,3 +202,24 @@ ros2 run demo_nodes_cpp talker
 ```
 
 
+### Install Lingua Franca
+```bash
+# debian 12
+sudo apt update
+sudo apt install openjdk-17-jdk -y
+
+# if debian 13
+sudo apt update
+sudo apt install -y wget gpg
+
+wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null
+
+echo "deb https://packages.adoptium.net/artifactory/deb trixie main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+
+sudo apt update
+sudo apt install temurin-17-jdk
+
+
+curl -Ls https://install.lf-lang.org | bash -s cli
+
+```

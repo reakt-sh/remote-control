@@ -20,7 +20,7 @@ class MotorActuator():
         self.last_log_time = 0
 
         if IS_REAKTOR_DRIVER_ENABLED:
-            loop = qasync.QEventLoop(self)
+            loop = qasync.QEventLoop()
             logger.info("Reaktor driver enabled. Initializing connection.")
             self.connection = None
             task = loop.create_task(self.setup_connection())
