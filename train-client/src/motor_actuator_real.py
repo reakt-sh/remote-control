@@ -133,3 +133,15 @@ class MotorActuator():
                 logger.info("Changing direction command received to BACKWARD.")
         except Exception as e:
             logger.error(f"Error changing direction: {e}")
+    
+    def horn_on(self):
+        logger.info("Horn honked!")
+    
+    def horn_off(self):
+        logger.info("Horn released!")
+    
+    def set_led_turn_on(self):
+        logger.info("LED turn signal ON!")
+    
+    def set_led_turn_off(self):
+        logger.info("LED turn signal OFF!")
