@@ -6,9 +6,9 @@ target Python {
 reactor Camera {
     preamble {=
         from app_logger import logger
-        # from camera_rpi_5 import CameraRPi5 as CameraImpl
+        from camera_rpi_5 import CameraRPi5 as CameraImpl
         # from camera import Camera as CameraImpl
-        from file_processor import FileProcessor as CameraImpl
+        # from file_processor import FileProcessor as CameraImpl
     =}
 
     output frame;
