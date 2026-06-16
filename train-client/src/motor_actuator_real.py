@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import qasync
 from app_logger import logger
 from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
 from app_context import AppContext
@@ -20,11 +19,9 @@ class MotorActuator():
         self.last_log_time = 0
 
         if IS_REAKTOR_DRIVER_ENABLED:
-            loop = qasync.QEventLoop()
             logger.info("Reaktor driver enabled. Initializing connection.")
             self.connection = None
-            task = loop.create_task(self.setup_connection())
-            loop.run_until_complete(task)
+            asyncio.run(self.setup_connection())
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
