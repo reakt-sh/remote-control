@@ -22,16 +22,14 @@ reactor HeartbeatHandler {
 	output heartbeat_timout;
 
     state rc_heartbeat_counter = 0;
-    state heartbeat_running = False;
 
     initial mode Init {
         reaction(heartbeat_init) -> reset(Send_and_Check) {=
-            self.heartbeat_running = True
-
             # Switch mode
             Send_and_Check.set()
         =}
     }
+
     mode Send_and_Check {
         timer heartbeat_act(0, 500 ms);
         logical action watchdog_act;
@@ -41,7 +39,6 @@ reactor HeartbeatHandler {
         =}
 
         reaction(heartbeat_stop) -> heartbeat_timout, Stopped {=
-            self.heartbeat_running = False
             self.logger.info("Heartbeat handler stopped")
             heartbeat_timout.set(True)
 
@@ -50,27 +47,22 @@ reactor HeartbeatHandler {
         =}
 
         reaction(heartbeat_recv) -> watchdog_act {=
-            # self.logger.debug("Checking heartbeat Received signal")
+            self.logger.info("Heartbeat received, resetting watchdog timer")
             self.rc_heartbeat_counter += 1
+            watchdog_act.schedule(SEC(3), self.rc_heartbeat_counter)
         =}
 
-        reaction(watchdog_act) -> heartbeat_timout {=
-            if not self.heartbeat_running:
-                return
-
-            if watchdog_act.value == self.rc_heartbeat_counter:
-                self.heartbeat_running = False
-                self.logger.warning("Heartbeat timeout — no heartbeat received for 3 seconds")
+        reaction(watchdog_act) -> heartbeat_timout, Stopped {=
+            self.logger.info("Watchdog timer expired, checking heartbeat counter")
+            if self.rc_heartbeat_counter == watchdog_act.value:
+                self.logger.error("Heartbeat timeout, no heartbeat received in time")
                 heartbeat_timout.set(True)
-            else:
-                self.logger.debug("Heartbeat received in time, resetting watchdog")
-                watchdog_act.schedule(SEC(3), self.rc_heartbeat_counter)
+
+                # Switch mode
+                Stopped.set()
         =}
 
         reaction(heartbeat_act) -> heartbeat_send {=
-            if not self.heartbeat_running:
-                return
-
             def create_keepalive_packet():
                 keepalive_packet = {
                     "type": "keepalive",
@@ -88,11 +80,11 @@ reactor HeartbeatHandler {
                 keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
                 return keepalive_packet
 
-            # self.logger.info("Checking heartbeat sending signal")
             if self.appcontext.clock_offset_calculated:
                 heartbeat_send.set(create_keepalive_packet())
         =}
     }
+
     mode Stopped {
     }
 }
