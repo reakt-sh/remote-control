@@ -48,6 +48,7 @@ export const useTrainStore = defineStore('train', () => {
   const remoteControlId = ref(null)
   const videoDatagramAssembler = ref(null)
   const keepaliveSequence = ref(0)
+  const keepaliveIntervalId = ref(null)
   const direction = ref('FORWARD')
   const isPoweredOn = ref(true)
   const router = useRouter()
@@ -66,7 +67,8 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
-  const indexedDBStorageEnabled = ref(false)
+  const indexedDBStorageEnabled = ref(true)
+  const showFramebyFrameLatency = ref(false)
   const commandCounter = ref(0)
 
   // Variables to calculate latency of last 30 frames
@@ -80,6 +82,9 @@ export const useTrainStore = defineStore('train', () => {
   // Variables to calculate bandwidth used last 1 second
   const last1s_bytesHistory = ref([])
   const last1s_bandwidthMbps = ref(0)
+
+  const last_100_frame_latencies = ref([])
+  const last_frame_id_completed = ref(0)
 
   const {
     isWSConnected,
@@ -142,7 +147,8 @@ export const useTrainStore = defineStore('train', () => {
     } catch (error) {
       console.error('❌ WebRTC connection failed:', error)
     }
-    setInterval(sendKeepAliveWebTransport, 200);
+    if (keepaliveIntervalId.value) clearInterval(keepaliveIntervalId.value)
+    keepaliveIntervalId.value = setInterval(sendKeepAliveWebTransport, 500);
     networkspeed.value = new useNetworkSpeed(onNetworkSpeedCalculated)
   }
 
@@ -164,8 +170,8 @@ export const useTrainStore = defineStore('train', () => {
           // Calculate latency with clock offset
           const frameLatency = completedFrame.latency + averageClockOffset.value
 
-          // Stop processing if latency exceeds 30 seconds (30000 ms)
-          if (frameLatency > 30000) {
+          // Stop processing if latency exceeds 1 seconds (1000 ms)
+          if (frameLatency > 1000) {
             console.warn(`⚠️ Frame ${completedFrame.frameId} skipped - latency too high: ${frameLatency.toFixed(0)} ms`)
             return
           }
@@ -212,6 +218,35 @@ export const useTrainStore = defineStore('train', () => {
           let totalBytes = last1s_bytesHistory.value.reduce((sum, entry) => sum + entry.size, 0)
           last1s_bandwidthMbps.value = (totalBytes * 8) / (1024 * 1024) // Convert to Mbps
 
+          // calculate last 100 frame latencies for analysis
+          if (showFramebyFrameLatency.value) {
+
+            if (last_frame_id_completed.value == 0 || completedFrame.frameId == last_frame_id_completed.value + 1)
+            {
+              last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
+              if (last_100_frame_latencies.value.length > 100)
+              {
+                last_100_frame_latencies.value.shift()
+              }
+            }
+            else
+            {
+              for (let missingId = last_frame_id_completed.value + 1; missingId < completedFrame.frameId; missingId++) 
+              {
+                last_100_frame_latencies.value.push({ frameId: missingId, latency: null })
+                if (last_100_frame_latencies.value.length > 100)
+                {
+                  last_100_frame_latencies.value.shift()
+                }
+              }
+              last_100_frame_latencies.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
+              if (last_100_frame_latencies.value.length > 100)
+              {
+                last_100_frame_latencies.value.shift()
+              }
+            }
+          }
+          last_frame_id_completed.value = completedFrame.frameId
         }
       })
     }
@@ -559,6 +594,16 @@ export const useTrainStore = defineStore('train', () => {
         }
         break
       }
+      case PACKET_TYPE.keepalive: {
+        try {
+          // Currently not used in the client
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+        } catch (error) {
+          console.error('❌ Error handling keepalive packet:', error, payload)
+        }
+        break
+      }
     }
   }
 
@@ -590,7 +635,10 @@ export const useTrainStore = defineStore('train', () => {
 
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
-        telemetryHistory.value.unshift({ ...data });
+        // telemetryHistory.value.unshift({ ...data });
+        // if (telemetryHistory.value.length > 300) {
+        //   telemetryHistory.value.pop()
+        // }
 
         // Update power and direction states
         if (data.status === 'running') {
@@ -607,7 +655,7 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
 
-      case 'CAU-8388': {
+      case 'rtsys-cau-01': {
           // Also store it to indexDB
           dataStorage.storeWANData({
             trainId: selectedTrainId.value,
@@ -682,6 +730,7 @@ export const useTrainStore = defineStore('train', () => {
     last30_framesAverageLatency,
     last1s_framesFPS,
     last1s_bandwidthMbps,
+    last_100_frame_latencies,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,

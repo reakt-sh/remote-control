@@ -19,14 +19,14 @@ import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import { useVideoPanel } from '@/composables/useVideoPanel'
 
-const { frameRef, last30_framesAverageLatency, last1s_framesFPS, last1s_bandwidthMbps } = storeToRefs(useTrainStore())
+const { frameRef, last30_framesAverageLatency, last1s_framesFPS, last1s_bandwidthMbps, last_100_frame_latencies } = storeToRefs(useTrainStore())
 const videoCanvas = ref(null)
 
 const {
   isFullScreen,
   toggleFullScreen,
   handleFrame
-} = useVideoPanel(videoCanvas, { latencyRef: last30_framesAverageLatency, fpsRef: last1s_framesFPS, bandwidthRef: last1s_bandwidthMbps })
+} = useVideoPanel(videoCanvas, { latencyRef: last30_framesAverageLatency, fpsRef: last1s_framesFPS, bandwidthRef: last1s_bandwidthMbps, last100frameLatenciesRef: last_100_frame_latencies })
 
 watch(frameRef, (newFrame) => {
   if (!newFrame || newFrame.length === 0) {

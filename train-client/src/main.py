@@ -64,11 +64,14 @@ def run_cli_client():
     client.start()
     sys.exit(app.exec_())
 
+"""
+# ROS2: Import ROS2 libraries and message types
 import rclpy
-
 if __name__ == "__main__":
     rclpy.init()
+"""
 
+if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "cli":
         run_cli_client()
     elif (len(sys.argv) > 1 and sys.argv[1] == "reaktor"):

@@ -50,6 +50,12 @@ export class VideoDecoderWrapper {
       return
     }
 
+    if (this.videoDecoder.decodeQueueSize > 5) {
+      // decoder backlogged — skip this tick
+      requestAnimationFrame(() => this.renderNextFrame());
+      return;
+    }
+
     if (this.isClosed) {
       this.initializeDecoder()
     }

@@ -1,0 +1,77 @@
+target Python {
+    keepalive: true,
+    files: ["src/app_logger.py", "src/globals.py", "src/app_context.py"]
+}
+
+reactor Parser {
+    preamble {=
+        import json
+        from app_logger import logger
+        from globals import PACKET_TYPE
+        from app_context import AppContext
+
+        appcontext = AppContext()
+    =}
+
+	input[2] data;
+
+	output command;
+    output connect;
+    output disconnect;
+	output clock_sync;
+	output heartbeat;
+
+
+    reaction (data) -> command, clock_sync, heartbeat, connect, disconnect {=
+        for d in data:
+            if d.is_present:
+                try:
+                    raw_data = d.value
+                    packet_type = raw_data[0]
+                    payload = raw_data[1:]
+
+                    if packet_type == self.PACKET_TYPE["command"]:
+                        command.set(payload)
+                    elif packet_type == self.PACKET_TYPE["map_connect"]:
+                        try:
+                            message = self.json.loads(payload.decode("utf-8"))
+                            remote_control_id = message.get("remote_control_id")
+                            self.appcontext.clock_offset_calculated = False  # Reset clock offset calculation on new map connect
+                            self.appcontext.keepalive_sequence = 0  # Reset keepalive sequence on new map connect
+                            self.appcontext.remote_control_client_id = remote_control_id
+                            self.appcontext.connected_remote_control_ids.add(remote_control_id)
+                            self.logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
+                            connect.set(True) # Trigger clock synchronization process on map connect
+                        except self.json.JSONDecodeError as e:
+                            self.logger.error(f"Failed to decode map connect message: {e}")
+                            return
+                    elif packet_type == self.PACKET_TYPE["map_disconnect"]:
+                        try:
+                            remote_control_id = self.json.loads(payload.decode("utf-8")).get("remote_control_id")
+                            self.logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
+                            if remote_control_id in self.appcontext.connected_remote_control_ids:
+                                self.appcontext.connected_remote_control_ids.remove(remote_control_id)
+                                self.logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
+                            else:
+                                self.logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
+
+                            self.appcontext.clock_offset_calculated = False  # Reset clock offset calculation on map disconnect
+                            self.appcontext.keepalive_sequence = 0  # Reset keepalive sequence on map disconnect
+                            # TODO: Stop Heartbeat handler timer
+                            disconnect.set(True) # Trigger any necessary cleanup on map disconnect, e.g., stopping heartbeat handler
+                            # TODO: self.stop_train_operations(), later we will introduce safe state
+                        except Exception as e:
+                            self.logger.error(f"Failed to parse map_disconnect JSON: {e}")
+                    elif packet_type == self.PACKET_TYPE["rtt"] or packet_type == self.PACKET_TYPE["rtt_train"]:
+                        clock_sync.set(payload)
+                    elif packet_type == self.PACKET_TYPE["keepalive"]:
+                        heartbeat.set(payload)
+                    elif packet_type == self.PACKET_TYPE["connect_response"]:
+                        self.logger.info(f"Connection established to the server, data = {payload}")
+                    else:
+                        self.logger.warning(f"Invalid data to Parse with packet type = {packet_type}, data: {payload}")
+                except Exception as e:
+                    self.logger.error(f"Failed to parse incoming data: {e}")
+                    return
+    =}
+}

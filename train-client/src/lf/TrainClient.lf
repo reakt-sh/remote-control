@@ -1,0 +1,53 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/helper.py", "src/app_context.py", "src/telemetry.py"]
+}
+
+import VideoStreamer from "VideoStreamer.lf";
+import ClockSynchronizer from "ClockSynchronizer.lf";
+import DataStorage from "DataStorage.lf";
+import Parser from "Parser.lf";
+import HeartbeatHandler from "HeartbeatHandler.lf";
+import NetworkProtocol from "NetworkProtocol.lf";
+import Controller from "Controller.lf";
+
+main reactor TrainClient {
+    preamble {=
+		from app_logger import logger
+		from helper import Helper
+		from app_context import AppContext
+
+		logger.info("TrainClient is starting up.")
+		app_context = AppContext()
+		helper = Helper()
+		app_context.train_client_id = helper.get_uuid()
+		app_context.init_telemetry()
+		logger.info(f"Assigned Train Client ID: {app_context.train_client_id}")
+    =}
+	video_streamer = new VideoStreamer();
+	parser = new Parser();
+    clock_synchronizer = new ClockSynchronizer();
+    data_storage = new DataStorage();
+    heartbeat_handler = new HeartbeatHandler();
+	network_protocol = new NetworkProtocol();
+	controller = new Controller();
+	
+
+	clock_synchronizer.clock_sync_send, heartbeat_handler.heartbeat_send -> network_protocol.quic_sending;
+	parser.command -> data_storage.command;
+	parser.command -> controller.command;
+	parser.connect -> clock_synchronizer.clock_sync_init;
+	parser.connect -> heartbeat_handler.heartbeat_init;
+	parser.disconnect -> heartbeat_handler.heartbeat_stop;
+	parser.clock_sync -> clock_synchronizer.clock_sync_recv;
+	parser.heartbeat -> heartbeat_handler.heartbeat_recv;
+
+    network_protocol.quic_received, network_protocol.ws_received -> parser.data;
+
+	heartbeat_handler.heartbeat_timout -> controller.heartbeat_timeout;
+
+	video_streamer.encoded_frame -> data_storage.frame;
+	video_streamer.encoded_frame -> network_protocol.frame;
+
+	controller.telemetry -> network_protocol.telemetry;
+}

@@ -1,13 +1,9 @@
 import asyncio
 import datetime
-import qasync
+import threading
 from app_logger import logger
-from sensor.camera import Camera
-from sensor.camera_rpi_5 import CameraRPi5
-from motor_actuator import MotorActuator
-from base_client import BaseClient
 from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
-from PyQt5.QtCore import QThread
+from app_context import AppContext
 
 # Connector related imports
 from connector.test.context import Connection, Status, Control, Mode
@@ -15,20 +11,33 @@ from connector.test.context import Connection, Status, Control, Mode
 INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
 MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
-class RPi5ReaktorClient(BaseClient, QThread):
+class MotorActuator():
     def __init__(self):
-        super().__init__(video_source=CameraRPi5(), has_motor=True)
+        self.appcontext = AppContext()
         self.current_mode = Mode.FORWARD
         self.current_speed = 0
         self.status = None
         self.last_log_time = 0
+        self._loop = None
+        self._thread = None
 
         if IS_REAKTOR_DRIVER_ENABLED:
-            loop = qasync.QEventLoop(self)
             logger.info("Reaktor driver enabled. Initializing connection.")
             self.connection = None
-            task = loop.create_task(self.setup_connection())
-            loop.run_until_complete(task)
+            self._start_event_loop()
+
+    def _start_event_loop(self):
+        """Start a background daemon thread with a persistent event loop."""
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._run_event_loop, daemon=True, name="async-event-loop")
+        self._thread.start()
+        # Schedule the async setup on the persistent event loop
+        asyncio.run_coroutine_threadsafe(self.setup_connection(), self._loop)
+
+    def _run_event_loop(self):
+        """Run the event loop forever in the background thread."""
+        asyncio.set_event_loop(self._loop)
+        self._loop.run_forever()
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
@@ -66,10 +75,12 @@ class RPi5ReaktorClient(BaseClient, QThread):
             current_mode = "NEUTRAL"
         else:
             current_mode = "UNKNOWN"
-        self.telemetry.set_mode(current_mode)
-        self.telemetry.set_speed(current_speed_kmh)
 
-    def update_speed(self, speed): # speed here in KM/H
+        self.appcontext.telemetryObj.set_speed(current_speed_kmh)
+        self.appcontext.telemetryObj.set_mode(current_mode)
+        
+
+    def set_speed(self, speed): # speed here in KM/H
         try:
             converted_speed = speed / 3.6 # convert to m/s
 
@@ -88,7 +99,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         except Exception as e:
             logger.error(f"Error updating speed: {e}")
 
-    def on_power_on(self):
+    def start_motor(self):
         try:
             # Start Command
             control = Control(
@@ -100,7 +111,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         except Exception as e:
             logger.error(f"Error powering ON motor: {e}")
 
-    def on_power_off(self):
+    def stop_motor(self):
         try:
             # Stop Command
             control = Control(
@@ -112,7 +123,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         except Exception as e:
             logger.error(f"Error powering OFF motor: {e}")
 
-    def on_change_direction(self, direction):
+    def set_direction(self, direction):
         try:
             if direction == DIRECTION["FORWARD"]:
                 self.current_mode = Mode.FORWARD
@@ -122,3 +133,15 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 logger.info("Changing direction command received to BACKWARD.")
         except Exception as e:
             logger.error(f"Error changing direction: {e}")
+    
+    def horn_on(self):
+        logger.info("Horn honked!")
+    
+    def horn_off(self):
+        logger.info("Horn released!")
+    
+    def set_led_turn_on(self):
+        logger.info("LED turn signal ON!")
+    
+    def set_led_turn_off(self):
+        logger.info("LED turn signal OFF!")

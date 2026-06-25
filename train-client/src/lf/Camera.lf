@@ -1,0 +1,37 @@
+target Python {
+  	keepalive: true,
+  	files: ["src/app_logger.py", "src/sensor/camera.py", "src/sensor/camera_rpi_5.py", "src/sensor/file_processor.py"]
+}
+
+reactor Camera {
+    preamble {=
+        from app_logger import logger
+        from camera_rpi_5 import CameraRPi5 as CameraImpl
+        # from camera import Camera as CameraImpl
+        # from file_processor import FileProcessor as CameraImpl
+    =}
+
+    output frame;
+
+	physical action capturing_data;
+
+	state current_frame;
+
+    reaction (startup) -> capturing_data {=
+		self.logger.info("Camera reactor started, beginning to capture frames.")
+		self.camera_impl = self.CameraImpl()
+
+		def on_frame_ready(frame_count, frame_data, width, height, flag):
+			self.current_frame = (frame_count, frame_data, width, height, flag)
+			capturing_data.schedule(MSEC(3), None)  # Trigger the reaction to process the captured frame
+			# self.logger.debug(f"Captured frame {frame_count} with dimensions {width}x{height}")
+
+		self.camera_impl.frame_ready.connect(on_frame_ready)
+		self.camera_impl.init_capture()
+	=}
+
+	reaction (capturing_data) -> frame{=
+		frame_count, frame_data, width, height, is_encoded = self.current_frame
+		frame.set((frame_count, frame_data, width, height, is_encoded))
+	=}
+}

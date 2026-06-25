@@ -1,0 +1,9 @@
+target Python {
+  keepalive: true
+}
+
+main reactor HelloWorld {
+    reaction(startup) {=
+        print("Hello, World!")
+    =}
+}

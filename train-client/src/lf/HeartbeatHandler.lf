@@ -1,0 +1,90 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/app_context.py", "src/helper.py", "src/globals.py"]
+}
+
+reactor HeartbeatHandler {
+    preamble {=
+        import json
+        import struct
+        from app_logger import logger
+        from app_context import AppContext
+        from globals import PACKET_TYPE
+        from helper import Helper
+        appcontext = AppContext()
+        helper = Helper()
+    =}
+
+	input heartbeat_init;
+	input heartbeat_recv;
+    input heartbeat_stop;
+  	output heartbeat_send;
+	output heartbeat_timout;
+
+    state rc_heartbeat_counter = 0;
+
+    initial mode Init {
+        reaction(heartbeat_init) -> reset(Send_and_Check) {=
+            # Switch mode
+            Send_and_Check.set()
+        =}
+    }
+
+    mode Send_and_Check {
+        timer heartbeat_act(0, 500 ms);
+        logical action watchdog_act;
+
+        reaction(startup) -> watchdog_act {=
+            watchdog_act.schedule(SEC(3), self.rc_heartbeat_counter)
+        =}
+
+        reaction(heartbeat_stop) -> heartbeat_timout, Stopped {=
+            self.logger.info("Heartbeat handler stopped")
+            heartbeat_timout.set(True)
+
+            # Switch mode
+            Stopped.set()
+        =}
+
+        reaction(heartbeat_recv) -> watchdog_act {=
+            self.logger.info("Heartbeat received, resetting watchdog timer")
+            self.rc_heartbeat_counter += 1
+            watchdog_act.schedule(SEC(3), self.rc_heartbeat_counter)
+        =}
+
+        reaction(watchdog_act) -> heartbeat_timout, Stopped {=
+            self.logger.info("Watchdog timer expired, checking heartbeat counter")
+            if self.rc_heartbeat_counter == watchdog_act.value:
+                self.logger.error("Heartbeat timeout, no heartbeat received in time")
+                heartbeat_timout.set(True)
+
+                # Switch mode
+                Stopped.set()
+        =}
+
+        reaction(heartbeat_act) -> heartbeat_send {=
+            def create_keepalive_packet():
+                keepalive_packet = {
+                    "type": "keepalive",
+                    "protocol": "quic",
+                    "train_id": self.appcontext.train_client_id,
+                    "timestamp": self.helper.get_timestamp(),
+                    "sequence": self.appcontext.keepalive_sequence,
+                }
+
+                # Increment the sequence for next time
+                self.appcontext.keepalive_sequence += 1
+
+                keepalive_packet = self.json.dumps(keepalive_packet).encode("utf-8")
+                keepalive_packet = self.struct.pack("B", self.PACKET_TYPE["keepalive"]) + keepalive_packet
+                keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
+                return keepalive_packet
+
+            if self.appcontext.clock_offset_calculated:
+                heartbeat_send.set(create_keepalive_packet())
+        =}
+    }
+
+    mode Stopped {
+    }
+}

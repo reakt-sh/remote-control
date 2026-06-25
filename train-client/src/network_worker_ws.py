@@ -3,25 +3,44 @@ import queue
 import json
 import struct
 import ssl
-from PyQt5.QtCore import QThread, pyqtSignal
+import threading
+from typing import Optional
 import websockets
-from utils.app_logger import logger
+from app_logger import logger
 
 from globals import *
 
-class NetworkWorkerWS(QThread):
-    process_command = pyqtSignal(object)
 
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
+
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class NetworkWorkerWS:
     def __init__(self, train_client_id, parent=None):
-        super().__init__(parent)
+        self.recieved_data = _Signal()
         self.packet_queue = queue.Queue()
         self.train_client_id = train_client_id
         self.train_client_id_bytes = train_client_id.encode('utf-8').ljust(36)[:36]  # Ensure 36 bytes
         self.running = False
         self.loop = None
+        self._thread: Optional[threading.Thread] = None
         self.server_url = f"{WEBSOCKET_URL}/train/{train_client_id}"
 
-    def run(self):
+    def start(self):
+        self._thread = threading.Thread(target=self._run, daemon=True, name='NetworkWorkerWS')
+        self._thread.start()
+
+    def _run(self):
         self.running = True
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -29,6 +48,7 @@ class NetworkWorkerWS(QThread):
             self.loop.run_until_complete(self.websocket_handler())
         finally:
             self.loop.close()
+            self.running = False
 
     async def websocket_handler(self):
         ssl_context = ssl._create_unverified_context()
@@ -82,7 +102,7 @@ class NetworkWorkerWS(QThread):
                         message = json.loads(payload.decode('utf-8'))
                         print(f"WebSocket: Keepalive message: {message}")
                     elif packet_type == PACKET_TYPE["command"]:
-                        self.process_command.emit(payload)
+                        self.recieved_data.emit(payload)
                     else:
                         print(f"WebSocket: Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:
@@ -112,6 +132,8 @@ class NetworkWorkerWS(QThread):
 
     def stop(self):
         self.running = False
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=4.0)
         logger.info("WebSocket connection closed")
 
     def create_packets(self, frame_id: int, timestamp: int, frame: bytes) -> list[bytes]:

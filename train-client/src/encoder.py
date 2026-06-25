@@ -3,14 +3,28 @@ import datetime
 import queue
 import threading
 from fractions import Fraction
-from PyQt5.QtCore import QObject, pyqtSignal
-from utils.app_logger import logger
+from app_logger import logger
 
 from globals import *
-class Encoder(QObject):
-    encode_ready = pyqtSignal(int, object, object)  # Emits frame_id, timestamp (as object to handle 64-bit), encoded_bytes
+
+
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
+
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class Encoder:
     def __init__(self, parent=None):
-        super().__init__(parent)
+        self.encode_ready = _Signal()  # Emits frame_id, timestamp (as object to handle 64-bit), encoded_bytes
         self.frame_rate = VIDEO_FPS
         self.pixel_format = VIDEO_FORMAT_FFMPEG
         self.h264_dump_path = H264_DUMP
@@ -91,11 +105,15 @@ class Encoder(QObject):
             logger.info(f"Encoder bitrate unchanged at {self.current_bitrate} bps")
 
 
-    def enqueue_frame(self, frame_id, frame, width, height):
-        try:
-            self._frame_queue.put_nowait((frame_id, frame, width, height))
-        except queue.Full:
-            logger.warning(f"Encoder queue full, dropping frame {frame_id}")
+    def enqueue_frame(self, frame_id, frame, width, height, is_encoded):
+        if is_encoded:
+            timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
+            self.encode_ready.emit(frame_id, timestamp, frame)
+        else:
+            try:
+                self._frame_queue.put_nowait((frame_id, frame, width, height))
+            except queue.Full:
+                logger.warning(f"Encoder queue full, dropping frame {frame_id}")
 
     def _encode_worker(self):
         while not self._stop_event.is_set():

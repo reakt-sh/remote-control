@@ -1,16 +1,30 @@
 import datetime
 import random
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QDateTime
+import threading
+import time
 from globals import *
 
-class Telemetry(QObject):
-    telemetry_ready = pyqtSignal(dict)  # Emits a dictionary with telemetry data
 
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
+
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class Telemetry:
     def __init__(self, train_id: str, poll_interval_ms=200, parent=None):
-        super().__init__(parent)
+        self.telemetry_ready = _Signal()
         self.sequence_number = 0
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll_telemetry)
+        self._running = False
+        self._thread = None
         self.poll_interval_ms = poll_interval_ms
 
         self.name = "Train"
@@ -36,7 +50,7 @@ class Telemetry(QObject):
         self.engine_temperature = random.randint(self.engine_temperature_min, self.engine_temperature_max)
 
         self.fuel_level = round(random.uniform(70, 99), 2)
-        self.network_signal_strength = random.randint(0,100)
+        self.network_signal_strength = random.randint(0, 100)
         self.last_simulation_at_frame = 0
         self.frame_counter = 0
 
@@ -47,12 +61,15 @@ class Telemetry(QObject):
 
         self.motor_mode = "UNKNOWN"
 
+        self.horn_status = "OFF"
+        self.headlight_status = "OFF"
+
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
 
     def get_speed(self):
         return self.speed
-    
+
     def set_mode(self, mode: str):
         self.motor_mode = mode
 
@@ -81,11 +98,34 @@ class Telemetry(QObject):
         self.jitter = jitter
         self.ping = ping
 
+    def set_horn_status(self, status: str):
+        self.horn_status = status
+
+    def set_headlight_status(self, status: str):
+        self.headlight_status = status
+
+    def _poll_loop(self):
+        interval = self.poll_interval_ms / 1000.0
+        while self._running:
+            t0 = time.monotonic()
+            self._poll_telemetry()
+            elapsed = time.monotonic() - t0
+            remaining = interval - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
+
     def start(self):
-        self.timer.start(self.poll_interval_ms)
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
+        self._thread.start()
 
     def stop(self):
-        self.timer.stop()
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=2.0)
+            self._thread = None
 
     def notify_new_frame_processed(self):
         self.frame_counter += 1
@@ -141,6 +181,8 @@ class Telemetry(QObject):
             "ping": self.ping,
             "sequence_number": self.sequence_number,
             "reaktor_motor_mode" : self.motor_mode,
+            "horn_status": self.horn_status,
+            "headlight_status": self.headlight_status,
         }
 
         self.simulate_data()

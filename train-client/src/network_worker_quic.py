@@ -4,11 +4,11 @@ import ssl
 import json
 import struct
 import datetime
+import threading
 from typing import Optional
 
 
-from utils.app_logger import logger
-from PyQt5.QtCore import QThread, pyqtSignal
+from app_logger import logger
 from aioquic.asyncio import connect
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import QuicConnection
@@ -30,16 +30,30 @@ def patched_stream_close(self):
             raise
 
 QuicStreamAdapter.close = patched_stream_close
-class NetworkWorkerQUIC(QThread):
-    # Signals for Qt integration
-    connection_established = pyqtSignal()
-    connection_failed = pyqtSignal(str)
-    connection_closed = pyqtSignal()
-    process_command = pyqtSignal(object)
-    data_received = pyqtSignal(bytes)  # Signal for received data
 
+
+class _Signal:
+    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
+
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for cb in self._callbacks:
+            cb(*args)
+
+
+class NetworkWorkerQUIC:
     def __init__(self, train_client_id: str, parent=None):
-        super().__init__(parent)
+        self.connection_established = _Signal()
+        self.connection_failed = _Signal()
+        self.connection_closed = _Signal()
+        self.stream_data = _Signal()
+
+        self._thread: Optional[threading.Thread] = None
         self.train_client_id = train_client_id
         self.train_client_id_bytes = train_client_id.encode('utf-8').ljust(36)[:36]  # Ensure 36 bytes
 
@@ -64,7 +78,11 @@ class NetworkWorkerQUIC(QThread):
         logger.info(f"QUIC client initialized for train {train_client_id}")
         logger.info(f"QUIC server URL: {self.server_host}:{self.server_port}")
 
-    def run(self):
+    def start(self):
+        self._thread = threading.Thread(target=self._run, daemon=True, name='NetworkWorkerQUIC')
+        self._thread.start()
+
+    def _run(self):
         self._running = True
         try:
             # Create a new event loop for this thread
@@ -107,7 +125,6 @@ class NetworkWorkerQUIC(QThread):
                 logger.info(f"QUIC handshake sent on stream {self._stream_id}")
 
                 asyncio.create_task(self.send_stream_reliable())  # Start sending stream packets
-                asyncio.create_task(self.send_keepalive())  # Start sending keepalive packets
 
                 # Main sending loop
                 await self.send_datagram_unreliable()
@@ -179,39 +196,6 @@ class NetworkWorkerQUIC(QThread):
                 logger.error(f"Error in send loop: {e}")
                 continue
 
-    async def send_keepalive(self):
-        while self._running:
-            try:
-                keepalive_packet = {
-                    "type": "keepalive",
-                    "protocol": "quic",
-                    "train_id": self.train_client_id,
-                    "timestamp": asyncio.get_event_loop().time(),
-                    "sequence": getattr(self, "keepalive_sequence", 1)
-                }
-                # Increment the sequence for next time
-                self.keepalive_sequence = keepalive_packet["sequence"] + 1
-
-                packet_data = json.dumps(keepalive_packet).encode('utf-8')
-                packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
-
-                # Add 2-byte length prefix (big-endian)
-                data_size = len(packet)
-                length_prefixed_packet = bytearray(2 + len(packet))
-                length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-                length_prefixed_packet[1] = data_size & 0xFF         # Low byte
-                length_prefixed_packet[2:] = packet # Final packet with length prefix
-
-                # Enqueue the keepalive packet to be sent reliably over the stream
-                self.enqueue_stream_packet(length_prefixed_packet)
-
-                logger.debug(f"Sent keepalive packet: {keepalive_packet}")
-
-                await asyncio.sleep(10)  # Send every 10 seconds
-            except Exception as e:
-                logger.error(f"Error sending keepalive: {e}")
-                await asyncio.sleep(10)
-
     def create_packets(self, frame_id: int, timestamp: int, frame: bytes) -> list[bytes]:
         packet_list = []
         frame_size = len(frame)
@@ -250,8 +234,8 @@ class NetworkWorkerQUIC(QThread):
 
     def stop(self):
         self._running = False
-        self.quit()
-        self.wait(4000)
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=4.0)
 
 class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnectionProtocol
     def __init__(self, *args, network_worker: NetworkWorkerQUIC, **kwargs):
@@ -272,33 +256,5 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
             return
 
         if isinstance(event, StreamDataReceived):
-            try:
-                packet_type = event.data[0]
-                payload = event.data[1:]
-                if packet_type == PACKET_TYPE["command"]:
-                    self.network_worker.process_command.emit(payload)
-                elif packet_type == PACKET_TYPE["map_connect"] or packet_type == PACKET_TYPE["map_disconnect"] or packet_type == PACKET_TYPE["keepalive"]:
-                    self.network_worker.data_received.emit(event.data)
-                elif packet_type == PACKET_TYPE["rtt"]:
-                    # just modify event data with current timestamp
-                    rtt_data = json.loads(payload.decode('utf-8'))
-                    rtt_data["train_timestamp"] = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
-                    rtt_packet = json.dumps(rtt_data).encode('utf-8')
-                    rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+            self.network_worker.stream_data.emit(event.data)  # Emit raw stream data for processing
 
-                    # Add 2-byte length prefix (big-endian)
-                    data_size = len(rtt_packet)
-                    length_prefixed_packet = bytearray(2 + len(rtt_packet))
-                    length_prefixed_packet[0] = (data_size >> 8) & 0xFF  # High byte
-                    length_prefixed_packet[1] = data_size & 0xFF         # Low byte
-                    length_prefixed_packet[2:] = rtt_packet
-
-                    self.network_worker.enqueue_stream_packet(length_prefixed_packet)
-                elif packet_type == PACKET_TYPE["rtt_train"]:
-                    self.network_worker.data_received.emit(event.data)
-                elif packet_type == PACKET_TYPE["connect_response"]:
-                    logger.info(f"Received connect response from server, data = {event.data}")
-                else:
-                    logger.warning(f"Invalid process command with packet type = {packet_type}, data: {event.data}")
-            except Exception as e:
-                logger.warning("There is no packet type in the received data")

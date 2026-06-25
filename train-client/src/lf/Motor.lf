@@ -1,0 +1,67 @@
+target Python {
+  	keepalive: true,
+  		files: ["src/app_logger.py", "src/app_context.py", "src/helper.py", "src/globals.py", "src/motor_actuator.py", "src/motor_actuator_real.py"]
+}
+
+reactor Motor {
+    preamble {=
+        from app_logger import logger
+        from app_context import AppContext
+        # from motor_actuator import MotorActuator
+        from motor_actuator_real import MotorActuator
+
+        appcontext = AppContext()
+        motor_actuator = MotorActuator()
+    =}
+
+  	input[9] actuate;
+
+    output current_speed;
+
+    state current_speed_value = 0;
+    state old_speed_value = 0;
+    state direction = 1 # DIRECTION = { "FORWARD": 1, "BACKWARD": -1, "STOPPED": 0}
+
+    timer current_speed_send_timer(0, 200ms);
+
+    reaction (actuate) {=
+        for a in actuate:
+            if a.is_present:
+                instruction, value = a.value
+                if instruction == "CHANGE_TARGET_SPEED":
+                    self.logger.info(f"Setting target speed to: {value}")
+                    self.motor_actuator.set_speed(value)
+                    self.current_speed_value = value
+                elif instruction == "CHANGE_DIRECTION":
+                    self.logger.info(f"Setting direction to: {value}")
+                    self.motor_actuator.set_direction(value)
+                elif instruction == "POWER_ON":
+                    self.logger.info("Powering on the motor.")
+                    self.motor_actuator.start_motor()
+                    self.current_speed_value = self.old_speed_value
+                elif instruction == "POWER_OFF":
+                    self.logger.info("Powering off the motor.")
+                    self.motor_actuator.stop_motor()
+                    self.old_speed_value = self.current_speed_value
+                    self.current_speed_value = 0
+                elif instruction == "HORN_ON":
+                    self.logger.info("Horn ON command received")
+                    self.motor_actuator.horn_on()
+                elif instruction == "HORN_OFF":
+                    self.logger.info("Horn OFF command received")
+                    self.motor_actuator.horn_off()
+                elif instruction == "HEADLIGHT_ON":
+                    self.logger.info("Headlight ON command received")
+                    self.motor_actuator.set_led_turn_on()
+                elif instruction == "HEADLIGHT_OFF":
+                    self.logger.info("Headlight OFF command received")
+                    self.motor_actuator.set_led_turn_off()
+                else:
+                    self.logger.warning(f"Unknown motor instruction received: {instruction}")
+    =}
+
+    reaction (current_speed_send_timer) -> current_speed {=
+        current_speed.set(("CHANGE_CURRENT_SPEED", self.current_speed_value))
+    =}
+
+}

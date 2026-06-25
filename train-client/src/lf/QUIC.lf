@@ -1,0 +1,54 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/network_worker_quic.py", "src/globals.py", "src/video_config.py", "src/app_context.py"]
+}
+
+reactor QUIC {
+    preamble {=
+        from app_logger import logger
+        from app_context import AppContext
+        from network_worker_quic import NetworkWorkerQUIC
+    =}
+
+    input frame;
+    input[2] sending_data;
+    output receiving_data;
+
+    physical action act_receiving_data;
+
+    reaction (startup) -> act_receiving_data {=
+        context = self.AppContext()
+        train_client_id = context.train_client_id
+
+        self.logger.info(f"NetworkQUIC reactor started for train client ID: {train_client_id}")
+        self.network_worker = self.NetworkWorkerQUIC(train_client_id)
+
+        _act = act_receiving_data
+        self.network_worker.stream_data.connect(
+            lambda msg: _act.schedule(MSEC(3), msg)
+        )
+        self.network_worker.start()
+    =}
+
+    reaction (act_receiving_data) -> receiving_data {=
+        data = act_receiving_data.value
+        # self.logger.info(f"Received data from network worker: {data}")
+        receiving_data.set(data)
+    =}
+
+    reaction (sending_data) {=
+        for data in sending_data:
+            if data.is_present:
+                self.network_worker.enqueue_stream_packet(data.value)
+    =}
+
+    reaction (frame) {=
+        frame_id, timestamp, encoded_bytes = frame.value
+
+        if frame_id % 100 == 0:
+            self.logger.info(f"Scheduling frame {frame_id} for network transmission.")
+
+        self.network_worker.enqueue_frame(frame_id, timestamp, encoded_bytes)
+    =}
+
+}

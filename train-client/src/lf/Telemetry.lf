@@ -1,0 +1,60 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/app_context.py", "src/telemetry.py", "src/globals.py"]
+}
+
+reactor Telemetry {
+    preamble {=
+        import json
+        from app_logger import logger
+        from app_context import AppContext
+        from globals import TRAIN_STATUS
+        appcontext = AppContext()
+    =}
+
+    input[10] update;
+
+    output telemetry;
+
+    physical action act_receiving_data;
+
+    reaction (startup) -> act_receiving_data {=
+
+        _act = act_receiving_data
+        self.appcontext.telemetryObj.telemetry_ready.connect(
+            lambda msg: _act.schedule(MSEC(3), msg)
+        )
+    =}
+
+    reaction (act_receiving_data) -> telemetry {=
+        data = act_receiving_data.value
+        packet_data = self.json.dumps(data).encode("utf-8")
+        telemetry.set(packet_data)
+    =}
+
+    reaction (update) -> act_receiving_data {=
+        for u in update:
+            if u.is_present:
+                instruction, value = u.value
+                if instruction == "CHANGE_CURRENT_SPEED":
+                    self.appcontext.telemetryObj.set_speed(value)
+                elif instruction == "CHANGE_TARGET_SPEED":
+                    pass  # Target speed is not part of telemetry updates, it's only a command to the motor
+                elif instruction == "CHANGE_DIRECTION":
+                    self.appcontext.telemetryObj.set_direction(value)
+                elif instruction == "POWER_ON":
+                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_ON"])
+                elif instruction == "POWER_OFF":
+                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_OFF"])
+                elif instruction == "HORN_ON":
+                    self.appcontext.telemetryObj.set_horn_status("ON")
+                elif instruction == "HORN_OFF":
+                    self.appcontext.telemetryObj.set_horn_status("OFF")
+                elif instruction == "HEADLIGHT_ON":
+                    self.appcontext.telemetryObj.set_headlight_status("ON")
+                elif instruction == "HEADLIGHT_OFF":
+                    self.appcontext.telemetryObj.set_headlight_status("OFF")
+                else:
+                    self.logger.warning(f"Unknown telemetry update instruction: {instruction}")
+    =}
+}

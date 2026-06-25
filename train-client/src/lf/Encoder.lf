@@ -1,0 +1,35 @@
+target Python {
+  keepalive: true,
+  files: ["src/app_logger.py", "src/encoder.py"]
+}
+
+reactor Encoder {
+    preamble {=
+        from app_logger import logger
+        from encoder import Encoder as EncoderImpl
+        encoder = EncoderImpl()
+    =}
+
+    input raw_frame;
+    output encoded_frame;
+
+    physical action act_encoding;
+
+    reaction (startup) -> act_encoding {=
+        _act = act_encoding
+        self.encoder.encode_ready.connect(
+            lambda frame_id, timestamp, encoded_bytes: _act.schedule(MSEC(3), (frame_id, timestamp, encoded_bytes))
+        )
+    =}
+
+    reaction (raw_frame) -> act_encoding {=
+        frame_id, frame_data, width, height, is_encoded = raw_frame.value
+        self.encoder.enqueue_frame(frame_id, frame_data, width, height, is_encoded)
+    =}
+
+    reaction(act_encoding) -> encoded_frame {=
+        frame_id, timestamp, encoded_bytes = act_encoding.value
+        encoded_frame.set((frame_id, timestamp, encoded_bytes))
+    =}
+
+}

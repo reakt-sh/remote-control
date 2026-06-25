@@ -157,7 +157,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
         return
       }
 
-      if (topicParts[0] == "captnfoerdeareal")
+      if (topicParts[0] == "rtsys")
       {
         const messageType = topicParts[2]
         if (messageHandler) {
@@ -265,7 +265,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
   function subscribeToTrain(trainId) {
     const topics = [
       `train/${trainId}/telemetry`,
-      "captnfoerdeareal/wan/CAU-8388"
+      "rtsys/wan/rtsys-cau-01"
     ]
 
     topics.forEach(topic => subscribe(topic))
