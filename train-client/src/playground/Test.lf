@@ -1,0 +1,19 @@
+target Python
+
+main reactor Test {
+    timer t(1 sec);
+    logical action act;
+
+    reaction(startup) -> act {=
+        act.schedule(SEC(3))
+    =}
+
+    reaction(act){=
+        print(f"Hello World")
+    =}
+
+    reaction(t) -> act {=
+        print(f"Scheduling again")
+        act.schedule(SEC(3))
+    =}
+}
