@@ -626,9 +626,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # logger.info(f"{timestamp} {message}")
 
     def stop_train_operations(self):
-        if self.is_sending:
-            self.toggle_sending()
-
         self.on_horn_off()
         self.on_headlight_off()
 
