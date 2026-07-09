@@ -13,3 +13,4 @@ pyserial-asyncio==0.6
 pydantic==2.12.5
 psutil
 qtawesome
+pygame

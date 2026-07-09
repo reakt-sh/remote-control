@@ -19,7 +19,7 @@ sudo apt install python3-pip
 sudo apt install python3-venv
 sudo apt install -y python3-pyqt5
 sudo apt install libcap-dev
-sudo apt install python3-picamera2 pSython3-libcamera libcamera-apps
+sudo apt install python3-picamera2 python3-libcamera libcamera-apps
 ```
 
 ### Python Virtual Environment Setup

@@ -1,4 +1,5 @@
 import json
+import ntplib
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -202,3 +203,18 @@ async def webrtc_ice_restart(restart_request: WebRTCIceRestart):
             "status": "error",
             "message": str(e)
         }
+
+@router.get("/api/ntp")
+async def get_ntp():
+    from datetime import datetime, timezone
+    logger.debug("HTTP: Fetching NTP time from pool.ntp.org")
+    server = "pool.ntp.org"
+    timeout = 5
+    client = ntplib.NTPClient()
+    response = client.request(server, version=3, timeout=timeout)
+    logger.debug(f"NTP response: tx_time={response.tx_time}, offset={response.offset}, delay={response.delay}")
+    return {
+        "utc_datetime": datetime.fromtimestamp(response.tx_time, tz=timezone.utc).isoformat(),
+        "offset": response.offset,
+        "delay": response.delay,
+    }

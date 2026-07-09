@@ -59,10 +59,14 @@ class Bridge(Node):
 class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source, has_motor=False):
         super().__init__()
+
         self.train_client_id = self.initialize_train_client_id()
         self.helper = Helper()
+        offset = self.helper.get_ntp_offset()
+        print(f"NTP offset: {int(offset)} ms")
+
         self.keepalive_sequence = 0
-        
+
         # FPS calculation variables
         self.last_few_frame_ids = []
         self.show_capture_frame_log = True

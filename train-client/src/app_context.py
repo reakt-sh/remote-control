@@ -36,6 +36,8 @@ class AppContext:
         self.current_speed_value = 0
         self.current_mode_value = None
 
+        self.ntp_offset = None
+
     def init_telemetry(self):
         self.telemetryObj = Telemetry(self.train_client_id)
         self.telemetryObj.start()

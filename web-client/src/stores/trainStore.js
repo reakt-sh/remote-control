@@ -11,6 +11,7 @@ import { useDataStorage } from '@/scripts/dataStorage'
 import { SERVER_URL } from '@/scripts/config'
 
 
+
 // Define server IP and host
 
 
@@ -125,7 +126,30 @@ export const useTrainStore = defineStore('train', () => {
       remoteControlId.value = generateUUID()
       console.log('✅ Remote control ID initialized:', remoteControlId.value)
     }
+
+    getClockOffset().then(({ offset, roundTrip }) => {
+      console.log(`Clock offset: ${offset.toFixed(3)} ms`);
+      console.log(`Round-trip: ${roundTrip.toFixed(3)} ms`);
+    }).catch((error) => {
+      console.warn("ClockOffset", error.message)
+    });
   }
+
+  async function getClockOffset() {
+    const t1 = Date.now(); // request sent
+    const res = await fetch(`${SERVER_URL}/api/ntp`);
+    const t4 = Date.now(); // response received
+    const data = await res.json();
+
+    const serverTime = new Date(data.utc_datetime).getTime();
+    const roundTrip = t4 - t1;
+    // estimate server time at midpoint of request
+    const estimatedServerTimeAtT1 = serverTime - roundTrip / 2;
+
+    const offset = (t1 - estimatedServerTimeAtT1); // milliseconds, positive if local clock is ahead of server clock
+    return { offset, roundTrip: roundTrip };
+  }
+
   async function fetchAvailableTrains() {
     try {
       const response = await fetch(`${SERVER_URL}/api/trains`)

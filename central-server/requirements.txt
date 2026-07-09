@@ -25,6 +25,7 @@ httpx
 
 # Utilities
 python-dotenv
+ntplib
 loguru  # Better logging
 orjson  # Faster JSON
 
