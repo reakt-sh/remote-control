@@ -223,3 +223,16 @@ sudo apt install temurin-17-jdk
 curl -Ls https://install.lf-lang.org | bash -s cli
 
 ```
+
+### Install MediaMTX
+
+```bash
+# Ubuntu 24.04, Kernel 6.17, Architecture: x86_64 (64-bit Intel/AMD)
+wget https://github.com/bluenviron/mediamtx/releases/download/v1.18.2/mediamtx_v1.18.2_linux_amd64.tar.gz
+
+# Raspberry Pi OS / Debian-based, Architecture: aarch64 (ARM 64-bit)
+wget https://github.com/bluenviron/mediamtx/releases/latest/download/mediamtx_v1.19.2_linux_arm64.tar.gz
+
+tar -xvzf mediamtx_v1.19.2_linux_arm64.tar.gz
+
+```
