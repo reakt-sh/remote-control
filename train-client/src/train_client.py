@@ -9,6 +9,8 @@ import numpy as np
 import time
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
+from sensor.rtsp_stream import RTSPStream
+
 from base_client import BaseClient
 from globals import *
 
@@ -17,7 +19,7 @@ class TrainClient(BaseClient, QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
+        BaseClient.__init__(self, video_source=RTSPStream(), has_motor=False)
         self.headlight_on = False
         self.horn_active = False
         self.horn_mutex = QMutex(QMutex.Recursive)  # Recursive mutex to allow re-locking in signal handlers

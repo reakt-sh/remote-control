@@ -23,7 +23,7 @@ class ClientManager:
 
     async def enqueue_video_packet(self, train_id: str, data: bytes):
         await self.packet_queue.put((train_id, data))
-        logger.info(f"Enqueuing video packet for train: {train_id}, Queue size: {self.packet_queue.qsize()}")
+        # logger.info(f"Enqueuing video packet for train: {train_id}, Queue size: {self.packet_queue.qsize()}")
 
     async def add_train_client(self, train_id: str, protocol: QuicConnectionProtocol):
         async with self.lock:
