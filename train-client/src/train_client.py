@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor, QColor
-from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, QMutex, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, pyqtSignal
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 import qtawesome as qta
 import cv2
@@ -16,13 +16,16 @@ from globals import *
 
 class TrainClient(BaseClient, QMainWindow):
     _frame_ready = pyqtSignal(object)
+    _headlight_on_signal = pyqtSignal()
+    _headlight_off_signal = pyqtSignal()
+    _horn_on_signal = pyqtSignal()
+    _horn_off_signal = pyqtSignal()
 
     def __init__(self):
         QMainWindow.__init__(self)
         BaseClient.__init__(self, video_source=RTSPStream(), has_motor=False)
         self.headlight_on = False
         self.horn_active = False
-        self.horn_mutex = QMutex(QMutex.Recursive)  # Recursive mutex to allow re-locking in signal handlers
         self.init_ui()
 
         # Initialize horn sound player
@@ -39,6 +42,10 @@ class TrainClient(BaseClient, QMainWindow):
             self.horn_player.setMedia(content)
 
         self._frame_ready.connect(self._render_frame, Qt.QueuedConnection)
+        self._headlight_on_signal.connect(self._do_headlight_on, Qt.QueuedConnection)
+        self._headlight_off_signal.connect(self._do_headlight_off, Qt.QueuedConnection)
+        self._horn_on_signal.connect(self._do_horn_on, Qt.QueuedConnection)
+        self._horn_off_signal.connect(self._do_horn_off, Qt.QueuedConnection)
 
 
 
@@ -365,48 +372,48 @@ class TrainClient(BaseClient, QMainWindow):
             self.horn_indicator.setGraphicsEffect(None)
 
     def on_headlight_on(self):
+        self._headlight_on_signal.emit()
+
+    def on_headlight_off(self):
+        self._headlight_off_signal.emit()
+
+    def _do_headlight_on(self):
         self.headlight_on = True
         self.update_headlight_display()
 
-    def on_headlight_off(self):
+    def _do_headlight_off(self):
         self.headlight_on = False
         self.update_headlight_display()
 
     def on_horn_media_status_changed(self, status):
-        self.horn_mutex.lock()
-        try:
-            if status == QMediaPlayer.EndOfMedia:
-                self.horn_player.setPosition(0)
-                self.horn_player.play()
-        finally:
-            self.horn_mutex.unlock()
+        if status == QMediaPlayer.EndOfMedia:
+            self.horn_player.setPosition(0)
+            self.horn_player.play()
 
 
     def on_horn_on(self):
-        """Activate horn - play sound and show visual indicator"""
-        self.horn_mutex.lock()
-        try:
-            self.horn_active = True
-            self.update_horn_display()
-
-            self.horn_player.play()
-            self.log_message(f"🔊 Horn activated")
-        finally:
-            self.horn_mutex.unlock()
+        """Activate horn - called from external thread, delegate to main thread"""
+        self._horn_on_signal.emit()
 
     def on_horn_off(self):
-        """Deactivate horn - stop sound and hide visual indicator"""
-        self.horn_mutex.lock()
-        try:
-            self.horn_active = False  # Set flag first to prevent any restart logic
-            self.update_horn_display()
+        """Deactivate horn - called from external thread, delegate to main thread"""
+        self._horn_off_signal.emit()
 
-            self.horn_player.pause()
-            self.horn_player.stop()
-            self.horn_player.setPosition(0)
-            self.log_message("🔇 Horn deactivated")
-        finally:
-            self.horn_mutex.unlock()
+    def _do_horn_on(self):
+        """Activate horn - play sound and show visual indicator (runs on main thread)"""
+        self.horn_active = True
+        self.update_horn_display()
+        self.horn_player.play()
+        self.log_message(f"🔊 Horn activated")
+
+    def _do_horn_off(self):
+        """Deactivate horn - stop sound and hide visual indicator (runs on main thread)"""
+        self.horn_active = False  # Set flag first to prevent any restart logic
+        self.update_horn_display()
+        self.horn_player.pause()
+        self.horn_player.stop()
+        self.horn_player.setPosition(0)
+        self.log_message("🔇 Horn deactivated")
 
     def closeEvent(self, event):
         self.close()
