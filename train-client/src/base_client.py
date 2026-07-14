@@ -57,7 +57,7 @@ class Bridge(Node):
             self._frame_callback(int(frame_count), frame, int(width), int(height), False)
 """
 class BaseClient(ABC, metaclass=QABCMeta):
-    def __init__(self, video_source, has_motor=False):
+    def __init__(self, video_source_front, video_source_rear, has_motor=False):
         super().__init__()
 
         self.train_client_id = self.initialize_train_client_id()
@@ -102,16 +102,20 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
         # self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
-        self.video_source = video_source
-        self.video_source.init_capture()
-        self.video_source.frame_ready.connect(self.on_new_frame)
+        self.video_source_front = video_source_front
+        self.video_source_front.init_capture()
+        self.video_source_front.frame_ready.connect(self.on_new_frame)
+
+        self.video_source_rear = video_source_rear
+        self.video_source_rear.init_capture()
+        self.video_source_rear.frame_ready.connect(self.on_new_frame)
 
         """
         # ROS2: Initialize node
         self.bridge = Bridge(frame_callback=self.on_new_frame)
 
         self.video_source_executor = SingleThreadedExecutor()
-        self.video_source_executor.add_node(self.video_source)
+        self.video_source_executor.add_node(self.video_source_front)
         threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
 
         self.bridge_executor = SingleThreadedExecutor()
@@ -560,8 +564,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
         except Exception as e:
             logger.error(f"Unexpected error processing command: {e}. Payload: {payload}")
 
-    def on_new_frame(self, frame_id, frame, width, height, is_encoded):
-        self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded)
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded, is_front_camera=True):
+        if is_front_camera and self.telemetry.get_direction() == DIRECTION["FORWARD"]:
+            self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded)
+
+        if not is_front_camera and self.telemetry.get_direction() == DIRECTION["BACKWARD"]:
+            self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded)
 
         # calculate continuous FPS
         self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
@@ -603,12 +611,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def toggle_capture(self):
         self.is_capturing = not self.is_capturing
         if self.is_capturing:
-            self.video_source.init_capture()
+            self.video_source_front.init_capture()
+            self.video_source_rear.init_capture()
             self.telemetry.start()
             self.imu.start()
             self.log_message("Capture started - camera active")
         else:
-            self.video_source.stop()
+            self.video_source_front.stop()
+            self.video_source_rear.stop()
             self.telemetry.stop()
             self.imu.stop()
             self.log_message("Capture stopped - camera released")
@@ -635,7 +645,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def close(self):
         self._running = False
-        self.video_source.stop()
+        self.video_source_front.stop()
+        self.video_source_rear.stop()
+        self.telemetry.stop()
         self.encoder.close()
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()

@@ -91,6 +91,9 @@ class Telemetry:
 
     def set_direction(self, direction: int):
         self.direction = direction
+    
+    def get_direction(self):
+        return self.direction
 
     def set_network_speed(self, download_speed: float, upload_speed: float, jitter: float, ping: float):
         self.download_speed = download_speed

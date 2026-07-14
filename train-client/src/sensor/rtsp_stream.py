@@ -4,7 +4,8 @@ import time
 from app_logger import logger
 
 
-RTSP_URL = "rtsp://reaktorpi2.local:8554/cam"
+RTSP_URL_FRONT = "rtsp://reaktorpi2.local:8554/cam"
+RTSP_URL_REAR = "rtsp://reaktorpi5.local:8554/cam"
 RECONNECT_DELAY = 2.0  # seconds between reconnect attempts
 
 
@@ -24,7 +25,7 @@ class _Signal:
 
 class RTSPStream:
 
-    def __init__(self, url: str = RTSP_URL):
+    def __init__(self, url: str = RTSP_URL_FRONT):
         self.frame_ready = _Signal()
         self.url = url
         self._thread = None
@@ -32,6 +33,7 @@ class RTSPStream:
         self.frame_count = 0
         self.width = 0
         self.height = 0
+        self.is_front_camera = True if url == RTSP_URL_FRONT else False
 
     def init_capture(self):
         self._running = True
@@ -71,9 +73,10 @@ class RTSPStream:
                 self.width = video_stream.width
                 self.height = video_stream.height
 
+                fps = float(video_stream.average_rate) if video_stream.average_rate else 0.0
                 logger.info(
                     f"RTSP stream opened: {self.width}x{self.height}"
-                    f" @ {float(video_stream.average_rate):.1f} fps"
+                    f" @ {fps:.1f} fps"
                 )
 
                 for packet in container.demux(video_stream):
@@ -82,18 +85,15 @@ class RTSPStream:
                     if packet.size == 0:
                         continue  # end-of-stream flush packet
 
-                    for av_frame in packet.decode():
-                        if not self._running:
-                            break
-                        bgr_frame = av_frame.to_ndarray(format="bgr24")
-                        self.frame_count += 1
-                        self.frame_ready.emit(
-                            self.frame_count,
-                            bgr_frame,
-                            self.width,
-                            self.height,
-                            False,
-                        )
+                    self.frame_count += 1
+                    self.frame_ready.emit(
+                        self.frame_count,
+                        bytes(packet),
+                        self.width,
+                        self.height,
+                        True,
+                        self.is_front_camera
+                    )
 
             except Exception as e:
                 if self._running:

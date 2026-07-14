@@ -9,7 +9,7 @@ import numpy as np
 import time
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
-from sensor.rtsp_stream import RTSPStream
+from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 
 from base_client import BaseClient
 from globals import *
@@ -23,7 +23,7 @@ class TrainClient(BaseClient, QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        BaseClient.__init__(self, video_source=RTSPStream(), has_motor=False)
+        BaseClient.__init__(self, video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=False)
         self.headlight_on = False
         self.horn_active = False
         self.init_ui()
@@ -209,9 +209,8 @@ class TrainClient(BaseClient, QMainWindow):
         )
         self.hw_info_label.setText(hw_text)
 
-    def on_new_frame(self, frame_id, frame, width, height, is_encoded):
-        super().on_new_frame(frame_id, frame, width, height, is_encoded)
-        self._frame_ready.emit(frame.copy())
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded, is_front_camera=True):
+        super().on_new_frame(frame_id, frame, width, height, is_encoded, is_front_camera)
 
     def _render_frame(self, frame):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
