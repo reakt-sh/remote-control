@@ -564,12 +564,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         except Exception as e:
             logger.error(f"Unexpected error processing command: {e}. Payload: {payload}")
 
-    def on_new_frame(self, frame_id, frame, width, height, is_encoded, is_front_camera=True):
-        if is_front_camera and self.telemetry.get_direction() == DIRECTION["FORWARD"]:
-            self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded)
-
-        if not is_front_camera and self.telemetry.get_direction() == DIRECTION["BACKWARD"]:
-            self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded)
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
+        self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded, camera_type)
 
         # calculate continuous FPS
         self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
@@ -596,14 +592,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_imu_data(self, data):
         pass
 
-    def on_encoded_frame(self, frame_id, timestamp, encoded_bytes):
+    def on_encoded_frame(self, frame_id, timestamp, encoded_bytes, camera_type):
         try:
             if self.write_to_file:
                 self.output_file.write(encoded_bytes)
                 self.output_file.flush()
             if self.is_sending:
                 # Send the encoded frame over the network
-                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes, camera_type)
                 self.telemetry.notify_new_frame_processed()
         except Exception as e:
             logger.error(f"Error writing on_encoded_frame: {e}")

@@ -209,8 +209,8 @@ class TrainClient(BaseClient, QMainWindow):
         )
         self.hw_info_label.setText(hw_text)
 
-    def on_new_frame(self, frame_id, frame, width, height, is_encoded, is_front_camera=True):
-        super().on_new_frame(frame_id, frame, width, height, is_encoded, is_front_camera)
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
+        super().on_new_frame(frame_id, frame, width, height, is_encoded, camera_type)
 
     def _render_frame(self, frame):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

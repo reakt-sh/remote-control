@@ -105,13 +105,13 @@ class Encoder:
             logger.info(f"Encoder bitrate unchanged at {self.current_bitrate} bps")
 
 
-    def enqueue_frame(self, frame_id, frame, width, height, is_encoded):
+    def enqueue_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
         if is_encoded:
             timestamp = int(datetime.datetime.now().timestamp() * 1000)  # Current timestamp in milliseconds
-            self.encode_ready.emit(frame_id, timestamp, frame)
+            self.encode_ready.emit(frame_id, timestamp, frame, camera_type)
         else:
             try:
-                self._frame_queue.put_nowait((frame_id, frame, width, height))
+                self._frame_queue.put_nowait((frame_id, frame, width, height, camera_type))
             except queue.Full:
                 logger.warning(f"Encoder queue full, dropping frame {frame_id}")
 
@@ -121,15 +121,15 @@ class Encoder:
                 item = self._frame_queue.get(timeout=0.01)
             except queue.Empty:
                 continue
-            frame_id, frame, width, height = item
+            frame_id, frame, width, height, camera_type = item
             try:
-                self.encode_frame(frame_id, frame, width, height)
+                self.encode_frame(frame_id, frame, width, height, camera_type)
             except Exception as e:
                 logger.error(f"Unhandled encoder error on frame {frame_id}: {e}")
             finally:
                 self._frame_queue.task_done()
 
-    def encode_frame(self, frame_id, frame, width, height):
+    def encode_frame(self, frame_id, frame, width, height, camera_type):
         # Lazy init or reinit if resolution changed or pending bitrate reinit
         if (self.stream is None or
             self.enc_width != width or
@@ -155,7 +155,7 @@ class Encoder:
                 if nal_type == 5:  # IDR frame
                     # Prepend SPS and PPS only if it is a IDR frame
                     encoded_frame = current_sps_pps + encoded_frame
-                self.encode_ready.emit(frame_id, timestamp, encoded_frame)
+                self.encode_ready.emit(frame_id, timestamp, encoded_frame, camera_type)
 
 
     def _close_av_resources(self):

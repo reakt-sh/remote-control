@@ -2,6 +2,7 @@ import av
 import threading
 import time
 from app_logger import logger
+from globals import CAMERA_TYPE
 
 
 RTSP_URL_FRONT = "rtsp://reaktorpi2.local:8554/cam"
@@ -33,7 +34,7 @@ class RTSPStream:
         self.frame_count = 0
         self.width = 0
         self.height = 0
-        self.is_front_camera = True if url == RTSP_URL_FRONT else False
+        self.camera_type = CAMERA_TYPE["FRONT"] if url == RTSP_URL_FRONT else CAMERA_TYPE["REAR"]
 
     def init_capture(self):
         self._running = True
@@ -92,7 +93,7 @@ class RTSPStream:
                         self.width,
                         self.height,
                         True,
-                        self.is_front_camera
+                        self.camera_type
                     )
 
             except Exception as e:

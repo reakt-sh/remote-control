@@ -23,6 +23,8 @@ LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_
 
 # Packet Types
 PACKET_TYPE = {
+    "video_front": 11,
+    "video_rear": 12,
     "video": 13,
     "audio": 14,
     "control": 15,
@@ -56,6 +58,11 @@ DIRECTION = {
     "FORWARD": 1,
     "BACKWARD": -1,
     "STOPPED": 0
+}
+
+CAMERA_TYPE = {
+    "FRONT": "FRONT",
+    "REAR": "REAR"
 }
 
 # overwrite for remote server

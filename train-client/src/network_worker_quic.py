@@ -171,13 +171,13 @@ class NetworkWorkerQUIC:
             try:
                 # Get frame from queue with timeout
                 try:
-                    frame_id, timestamp, frame = self.frame_queue.get_nowait()
+                    frame_id, timestamp, frame, camera_type = self.frame_queue.get_nowait()
                 except queue.Empty:
                     await asyncio.sleep(0.01)
                     continue
 
                 # Split frame into packets and send
-                packet_list = self.create_packets(frame_id, timestamp, frame)
+                packet_list = self.create_packets(frame_id, timestamp, frame, camera_type)
                 for packet in packet_list:
                     if not self._running:
                         break
@@ -196,7 +196,7 @@ class NetworkWorkerQUIC:
                 logger.error(f"Error in send loop: {e}")
                 continue
 
-    def create_packets(self, frame_id: int, timestamp: int, frame: bytes) -> list[bytes]:
+    def create_packets(self, frame_id: int, timestamp: int, frame: bytes, camera_type: str) -> list[bytes]:
         packet_list = []
         frame_size = len(frame)
         number_of_packets = (frame_size // MAX_PACKET_SIZE) + 1
@@ -204,7 +204,12 @@ class NetworkWorkerQUIC:
 
         for packet_id in range(1, number_of_packets + 1):
             header = bytearray()
-            header.append(PACKET_TYPE["video"])
+            if camera_type == CAMERA_TYPE["FRONT"]:
+                header.append(PACKET_TYPE["video_front"])
+            elif camera_type == CAMERA_TYPE["REAR"]:
+                header.append(PACKET_TYPE["video_rear"])
+            else:
+                pass
             header.extend(frame_id.to_bytes(4, byteorder='big'))
             header.extend(number_of_packets.to_bytes(2, byteorder='big'))
             header.extend(packet_id.to_bytes(2, byteorder='big'))
@@ -217,12 +222,12 @@ class NetworkWorkerQUIC:
 
         return packet_list
 
-    def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes):
+    def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes, camera_type: str):
         if not self._running or not self._loop:
             logger.warning("Cannot enqueue frame - client not running")
             return
         try:
-            self.frame_queue.put((frame_id, timestamp, frame))
+            self.frame_queue.put((frame_id, timestamp, frame, camera_type))
         except Exception as e:
             logger.error(f"Error enqueuing frame: {e}")
 
