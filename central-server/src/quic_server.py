@@ -89,7 +89,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         logger.debug(f"Stream reset: {event.stream_id}")
 
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
-        if self.client_type == CLIENT_TYPE_TRAIN and event.data and event.data[0] == PACKET_TYPE["video"]:
+        if self.client_type == CLIENT_TYPE_TRAIN and event.data and (
+            event.data[0] == PACKET_TYPE["video"] or
+            event.data[0] == PACKET_TYPE["video_front"] or
+            event.data[0] == PACKET_TYPE["video_rear"]):
+
             # Relay the video frame to all mapped remote controls
             asyncio.create_task(
                 self.client_manager.enqueue_video_packet(self.train_id, event.data)

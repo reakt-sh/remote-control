@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 # Packet Types
 PACKET_TYPE = {
+    "video_front": 11,
+    "video_rear": 12,
     "video": 13,
     "audio": 14,
     "control": 15,
