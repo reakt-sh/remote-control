@@ -15,9 +15,10 @@ export class useAssembler {
    * @param {number} options.maxFrames Maximum frames to track (default: 30)
    * @param {Function} options.onFrameComplete Callback when frame is complete
    */
-  constructor({ maxFrames = 30, onFrameComplete } = {}) {
+  constructor({ maxFrames = 30, onFrameComplete, cameraId = 'front' } = {}) {
     this.maxFrames = maxFrames
     this.onFrameComplete = onFrameComplete
+    this.cameraId = cameraId
     this.frameBuffer = new Map()
     this.frameOrderQueue = []
     
@@ -182,6 +183,7 @@ export class useAssembler {
         latency: frameLatency,
         created_at: frameState.createdAt,
         received_at: currentTime,
+        cameraId: this.cameraId,
       })
     }
   }
