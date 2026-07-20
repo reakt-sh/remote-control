@@ -834,7 +834,7 @@ paths:
     runOnInit: >
       ffmpeg -re -stream_loop -1
       -i ./video1.mp4
-      -vf fps=30
+      -vf fps=20
       -c:v libx264 -preset ultrafast -tune zerolatency
       -c:a copy
       -f rtsp
@@ -845,7 +845,7 @@ paths:
     runOnInit: >
       ffmpeg -re -stream_loop -1
       -i ./video2.mp4
-      -vf fps=30
+      -vf fps=20
       -c:v libx264 -preset ultrafast -tune zerolatency
       -c:a copy
       -f rtsp

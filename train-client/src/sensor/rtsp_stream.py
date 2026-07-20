@@ -53,6 +53,10 @@ class RTSPStream:
         """No-op: speed control is not applicable to an RTSP stream."""
         pass
 
+    def set_direction(self, direction: str):
+        """No-op: direction control is not applicable to an RTSP stream."""
+        pass
+
     def _open_stream(self):
         """Open RTSP stream with UDP transport, return (container, video_stream)."""
         container = av.open(

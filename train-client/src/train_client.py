@@ -284,7 +284,8 @@ class TrainClient(BaseClient, QMainWindow):
         self.console_log.setTextCursor(cursor)
 
     def update_speed(self, speed):
-        self.video_source.set_speed(speed)
+        self.video_source_front.set_speed(speed)
+        self.video_source_rear.set_speed(speed)
         self.telemetry.set_speed(speed)
 
     def on_power_on(self):
@@ -294,7 +295,8 @@ class TrainClient(BaseClient, QMainWindow):
         self.update_speed(0)
 
     def on_change_direction(self, direction):
-        self.video_source.set_direction(direction)
+        self.video_source_front.set_direction(direction)
+        self.video_source_rear.set_direction(direction)
 
     def update_headlight_display(self):
         if self.headlight_on:
