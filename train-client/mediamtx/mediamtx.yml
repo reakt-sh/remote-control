@@ -836,6 +836,7 @@ paths:
       -i ./video1.mp4
       -vf fps=20
       -c:v libx264 -preset ultrafast -tune zerolatency
+      -b:v 3M -maxrate 3M -bufsize 4M
       -c:a copy
       -f rtsp
       rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
@@ -847,6 +848,7 @@ paths:
       -i ./video2.mp4
       -vf fps=20
       -c:v libx264 -preset ultrafast -tune zerolatency
+      -b:v 3M -maxrate 3M -bufsize 4M
       -c:a copy
       -f rtsp
       rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
