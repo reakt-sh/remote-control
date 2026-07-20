@@ -830,38 +830,42 @@ paths:
   #   rpiCameraFPS: 25
   #   rpiCameraBitrate: 2000000
   #   rpiCameraCodec: hardwareH264
-  # cam1:
-  #   runOnInit: >
-  #     ffmpeg -re -stream_loop -1
-  #     -i ./video1.mp4
-  #     -c copy
-  #     -f rtsp
-  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
-  #   runOnInitRestart: yes
-
-  # cam2:
-  #   runOnInit: >
-  #     ffmpeg -re -stream_loop -1
-  #     -i ./video2.mp4
-  #     -c copy
-  #     -f rtsp
-  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
-  #   runOnInitRestart: yes
-
-  webcam:
+  cam1:
     runOnInit: >
-      ffmpeg
-      -f v4l2
-      -video_size 1280x720
-      -framerate 30
-      -i /dev/video0
-      -c:v libx264
-      -preset ultrafast
-      -tune zerolatency
-      -pix_fmt yuv420p
+      ffmpeg -re -stream_loop -1
+      -i ./video1.mp4
+      -vf fps=30
+      -c:v libx264 -preset ultrafast -tune zerolatency
+      -c:a copy
       -f rtsp
       rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
     runOnInitRestart: yes
+
+  cam2:
+    runOnInit: >
+      ffmpeg -re -stream_loop -1
+      -i ./video2.mp4
+      -vf fps=30
+      -c:v libx264 -preset ultrafast -tune zerolatency
+      -c:a copy
+      -f rtsp
+      rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+    runOnInitRestart: yes
+
+  # webcam:
+  #   runOnInit: >
+  #     ffmpeg
+  #     -f v4l2
+  #     -video_size 1280x720
+  #     -framerate 30
+  #     -i /dev/video0
+  #     -c:v libx264
+  #     -preset ultrafast
+  #     -tune zerolatency
+  #     -pix_fmt yuv420p
+  #     -f rtsp
+  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+  #   runOnInitRestart: yes
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.

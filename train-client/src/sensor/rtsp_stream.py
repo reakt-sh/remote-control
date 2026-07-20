@@ -49,6 +49,10 @@ class RTSPStream:
             self._thread.join(timeout=5.0)
             self._thread = None
 
+    def set_speed(self, speed: int):
+        """No-op: speed control is not applicable to an RTSP stream."""
+        pass
+
     def _open_stream(self):
         """Open RTSP stream with UDP transport, return (container, video_stream)."""
         container = av.open(
