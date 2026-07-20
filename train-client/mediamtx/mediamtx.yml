@@ -823,13 +823,30 @@ pathDefaults:
 # for example "~^(test1|test2)$" will match both "test1" and "test2",
 # for example "~^prefix" will match all paths that start with "prefix".
 paths:
-  cam:
-    source: rpiCamera
-    rpiCameraWidth: 1280
-    rpiCameraHeight: 720
-    rpiCameraFPS: 25
-    rpiCameraBitrate: 2000000
-    rpiCameraCodec: hardwareH264
+  # cam:
+  #   source: rpiCamera
+  #   rpiCameraWidth: 1280
+  #   rpiCameraHeight: 720
+  #   rpiCameraFPS: 25
+  #   rpiCameraBitrate: 2000000
+  #   rpiCameraCodec: hardwareH264
+  cam1:
+    runOnInit: >
+      ffmpeg -re -stream_loop -1
+      -i ./video1.mp4
+      -c copy
+      -f rtsp
+      rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+    runOnInitRestart: yes
+
+  cam2:
+    runOnInit: >
+      ffmpeg -re -stream_loop -1
+      -i ./video2.mp4
+      -c copy
+      -f rtsp
+      rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+    runOnInitRestart: yes
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.
