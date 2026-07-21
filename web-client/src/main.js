@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import '@fortawesome/fontawesome-free/css/all.css'
 import './styles/main.css'
+import './registerServiceWorker'
 
 // Disable all console logs in production
 // console.log = function () {};

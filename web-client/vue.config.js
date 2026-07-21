@@ -1,5 +1,4 @@
 // vue.config.js
-const fs = require('fs');
 const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
@@ -20,4 +19,17 @@ module.exports = defineConfig({
       },
     },
   },
+  pwa: {
+    name: 'Remote Control Interface',
+    themeColor: '#000000',
+    msTileColor: '#000000',
+
+    manifestOptions: {
+      short_name: 'Remote Control',
+      display: 'fullscreen',
+      orientation: 'landscape',
+      background_color: '#000000',
+      theme_color: '#000000'
+    }
+  }
 });

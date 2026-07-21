@@ -17,7 +17,6 @@
 *.m4a
 *.jpg
 *.jpeg
-*.png
 *.gif
 *.bmp
 *.tiff
@@ -44,3 +43,5 @@ include
 bin
 build
 .venv
+analysis/graphs
+analysis/2026_03_02
