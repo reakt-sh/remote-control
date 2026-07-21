@@ -16,7 +16,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
   const frameRefRear = ref(null)
 
   // Toggle per-frame latency recording for analysis
-  const showFramebyFrameLatency = ref(true)
+  const showFramebyFrameLatency = ref(false)
 
   // Per-camera latency tracking (last 30 frames)
   const last30_latencyHistory_front = ref([])
