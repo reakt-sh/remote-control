@@ -3,7 +3,7 @@
 		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-3)">-3</button>
 		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-1)">-1</button>
 
-		<div class="target-pill">Target Speed: {{ tempTargetSpeed }} km/h</div>
+		<div class="target-pill">{{ targetSpeed }} km/h</div>
 
 		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(1)">+1</button>
 		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(3)">+3</button>
@@ -11,8 +11,6 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-
 const props = defineProps({
 	targetSpeed: {
 		type: Number,
@@ -30,18 +28,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed'])
 
-const tempTargetSpeed = ref(props.targetSpeed)
-
-watch(
-	() => props.targetSpeed,
-	(newSpeed) => {
-		tempTargetSpeed.value = newSpeed
-	}
-)
-
 function adjustTarget(delta) {
-	const next = Math.max(0, Math.min(props.maxSpeed, tempTargetSpeed.value + delta))
-	tempTargetSpeed.value = next
+	const next = Math.max(0, Math.min(props.maxSpeed, props.targetSpeed + delta))
 	emit('update:targetSpeed', next)
 	emit('change:targetSpeed', next)
 }
