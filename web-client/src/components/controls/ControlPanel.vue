@@ -25,14 +25,15 @@
 
       <!-- Right side: Speedometer (40%) -->
       <div class="speedometer-section">
-        <Speedometer
-          :current-speed="currentSpeed"
-          :max-speed="maxSpeed"
-          :target-speed="targetSpeed"
-          :motor-mode="motorMode"
-          @update:targetSpeed="onTargetSpeedChange"
-          @change:targetSpeed="onTargetSpeedCommit"
-        />
+        <div class="speed-section-content">
+          <SpeedControl
+            :target-speed="targetSpeed"
+            :max-speed="maxSpeed"
+            @update:targetSpeed="onTargetSpeedChange"
+            @change:targetSpeed="onTargetSpeedCommit"
+          />
+          <Speedometer :current-speed="currentSpeed" />
+        </div>
       </div>
     </div>
 
@@ -50,6 +51,7 @@ import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
 import Speedometer from './Speedometer.vue'
+import SpeedControl from './SpeedControl.vue'
 import DriveDirectionControls from './DriveDirectionControls.vue'
 // import LightControl from './LightControl.vue'
 // import HornControl from './HornControl.vue'
@@ -64,11 +66,10 @@ const maxSpeed = ref(13)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
 // const videoQuality = ref('medium')
-const isScenarioRunning = ref(false)
+// const isScenarioRunning = ref(false)
 
 // Computed
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
-const motorMode = computed(() => telemetryData.value?.reaktor_motor_mode || '')
 
 // Handlers
 function handleStop() {
@@ -218,13 +219,22 @@ watch(
 .speedometer-section {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background: rgba(255, 255, 255, 0.6);
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   min-height: 400px;
+}
+
+.speed-section-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .scenario-controls {
@@ -276,6 +286,10 @@ watch(
     max-height: 200px;
   }
 
+  .speed-section-content {
+    gap: 8px;
+  }
+
   .control-item {
     min-height: 80px;
     padding: 0;
@@ -309,6 +323,10 @@ watch(
     padding: 8px;
     min-height: 180px;
     max-height: none;
+  }
+
+  .speed-section-content {
+    gap: 6px;
   }
 
   .control-item {
