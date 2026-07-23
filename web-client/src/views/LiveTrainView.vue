@@ -65,13 +65,7 @@ watch(() => route.params.trainId, (newId) => {
 
 .control-tab {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
-}
-
-@media (max-width: 1300px) {
-  .control-tab {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

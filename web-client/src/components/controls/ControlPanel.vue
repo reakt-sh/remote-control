@@ -167,7 +167,7 @@ watch(
   height: 100%;
   background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
   color: #2c3e50;
-  padding: 16px;
+  padding: 10px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -177,9 +177,9 @@ watch(
 
 .main-controls-wrapper {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   width: 100%;
-  min-height: 400px;
+  min-height: 210px;
   flex-wrap: nowrap;
   box-sizing: border-box;
 }
@@ -189,13 +189,14 @@ watch(
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 16px;
+  grid-template-rows: repeat(2, minmax(60px, auto));
+  gap: 10px;
   background: rgba(255, 255, 255, 0.6);
-  padding: 16px;
+  padding: 10px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  min-height: 400px;
+  min-height: 170px;
+  align-content: start;
 }
 
 .control-item {
@@ -206,7 +207,7 @@ watch(
   border-radius: 10px;
   padding: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  min-height: 100px;
+  min-height: 60px;
   overflow: hidden;
 }
 
@@ -222,10 +223,10 @@ watch(
   align-items: flex-start;
   justify-content: center;
   background: rgba(255, 255, 255, 0.6);
-  padding: 20px;
+  padding: 12px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  min-height: 400px;
+  min-height: 210px;
 }
 
 .speed-section-content {
@@ -234,7 +235,7 @@ watch(
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .scenario-controls {
@@ -267,23 +268,23 @@ watch(
 @media (min-width: 600px) and (max-width: 899px) {
   .main-controls-wrapper {
     gap: 2px;
-    min-height: 220px;
-    max-height: 220px;
+    min-height: 150px;
+    max-height: 150px;
   }
 
   .controls-grid {
     flex: 1;
     gap: 2px;
     padding: 2px;
-    min-height: 200px;
-    max-height: 200px;
+    min-height: 130px;
+    max-height: 130px;
   }
 
   .speedometer-section {
     flex: 1;
     padding: 2px;
-    min-height: 200px;
-    max-height: 200px;
+    min-height: 130px;
+    max-height: 130px;
   }
 
   .speed-section-content {
@@ -291,7 +292,7 @@ watch(
   }
 
   .control-item {
-    min-height: 80px;
+    min-height: 64px;
     padding: 0;
   }
 }
@@ -314,14 +315,14 @@ watch(
     width: 100%;
     gap: 4px;
     padding: 4px;
-    min-height: 180px;
+    min-height: 120px;
     max-height: none;
   }
 
   .speedometer-section {
     width: 100%;
     padding: 8px;
-    min-height: 180px;
+    min-height: 120px;
     max-height: none;
   }
 
