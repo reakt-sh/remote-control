@@ -36,11 +36,11 @@
       </div>
     </div>
 
-    <div class="scenario-controls">
+    <!-- <div class="scenario-controls">
       <ScenarioTestPanel
         @scenarioStateChange="handleScenarioStateChange"
       />
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -54,7 +54,7 @@ import DriveDirectionControls from './DriveDirectionControls.vue'
 // import LightControl from './LightControl.vue'
 // import HornControl from './HornControl.vue'
 // import VideoQuality from './VideoQuality.vue'
-import ScenarioTestPanel from './ScenarioTestPanel.vue'
+// import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
 const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
@@ -144,9 +144,9 @@ function onTargetSpeedCommit(val) {
 //   })
 // }
 
-function handleScenarioStateChange(running) {
-  isScenarioRunning.value = running
-}
+// function handleScenarioStateChange(running) {
+//   isScenarioRunning.value = running
+// }
 
 // Watchers
 watch(
