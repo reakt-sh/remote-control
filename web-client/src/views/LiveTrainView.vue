@@ -3,7 +3,7 @@
     <AppHeader />
 
     <main class="app-main">
-      <Tabs :tabs="tabs">
+      <!-- <Tabs :tabs="tabs">
         <template #control>
           <div class="control-tab">
             <VideoPanel />
@@ -16,22 +16,26 @@
         <template #network>
           <NetworkPanel />
         </template>
-      </Tabs>
+      </Tabs> -->
+      <div class="control-tab">
+        <VideoPanel />
+        <ControlPanel />
+      </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+// import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { onMounted, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
-import Tabs from '@/components/Tabs.vue'
+// import Tabs from '@/components/Tabs.vue'
 import VideoPanel from '@/components/VideoPanel.vue'
-import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
+// import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
 import { useTrainStore } from '@/stores/trainStore'
-import NetworkPanel from '@/components/network/NetworkPanel.vue'
+// import NetworkPanel from '@/components/network/NetworkPanel.vue'
 
 const route = useRoute()
 const trainId = route.params.trainId
@@ -39,11 +43,12 @@ const trainId = route.params.trainId
 const { mappingToTrain } = useTrainStore()
 const { fetchAvailableTrains, connectToServer, initializeRemoteControlId } = useTrainStore()
 
-const tabs = ref([
-  { id: 'control', label: 'Control Center', icon: 'fas fa-gamepad' },
-  { id: 'telemetry', label: 'Telemetry Data', icon: 'fas fa-chart-line' },
-  { id: 'network', label: 'Network', icon: 'fas fa-network-wired' }
-])
+// Temporarily disabled for conference demo - only showing video + control panel
+// const tabs = ref([
+//   { id: 'control', label: 'Control Center', icon: 'fas fa-gamepad' },
+//   { id: 'telemetry', label: 'Telemetry Data', icon: 'fas fa-chart-line' },
+//   { id: 'network', label: 'Network', icon: 'fas fa-network-wired' }
+// ])
 
 onMounted(() => {
   initializeRemoteControlId()

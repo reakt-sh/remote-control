@@ -23,7 +23,7 @@ function goToHome() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 0.25rem 2rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -31,14 +31,14 @@ function goToHome() {
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
 .clickable-title {
   cursor: pointer;
   transition: all 0.3s ease;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 8px;
 }
 
@@ -55,11 +55,11 @@ function goToHome() {
 
 @media (max-width: 768px) {
   .app-header {
-    padding: 1rem;
+    padding: 0.2rem 1rem;
   }
   
   .app-header h1 {
-    font-size: 1.1rem;
+    font-size: 0.85rem;
   }
   
   .header-controls {
