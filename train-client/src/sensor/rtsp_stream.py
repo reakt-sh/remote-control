@@ -5,10 +5,10 @@ from app_logger import logger
 from globals import CAMERA_TYPE
 
 
-RTSP_URL_FRONT = "rtsp://reaktorpi2.local:8554/cam"
-RTSP_URL_REAR = "rtsp://reaktorpi5.local:8554/cam"
-# RTSP_URL_FRONT = "rtsp://localhost:8554/cam1"
-# RTSP_URL_REAR = "rtsp://localhost:8554/cam2"
+# RTSP_URL_FRONT = "rtsp://reaktorpi2.local:8554/cam"
+# RTSP_URL_REAR = "rtsp://reaktorpi5.local:8554/cam"
+RTSP_URL_FRONT = "rtsp://localhost:8554/cam1"
+RTSP_URL_REAR = "rtsp://localhost:8554/cam2"
 RECONNECT_DELAY = 2.0  # seconds between reconnect attempts
 
 

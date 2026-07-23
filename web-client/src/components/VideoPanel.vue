@@ -5,13 +5,6 @@
       <div class="camera-label">Front Camera</div>
       <div class="video-container">
         <canvas ref="videoCanvasFront" class="video-feed"></canvas>
-        <button
-          class="fullscreen-btn"
-          @click="toggleFullScreenFront"
-          :title="isFullScreenFront ? 'Exit Full Screen' : 'Full Screen'"
-        >
-          <i :class="isFullScreenFront ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
-        </button>
       </div>
     </div>
 
@@ -20,13 +13,6 @@
       <div class="camera-label">Rear Camera</div>
       <div class="video-container">
         <canvas ref="videoCanvasRear" class="video-feed"></canvas>
-        <button
-          class="fullscreen-btn"
-          @click="toggleFullScreenRear"
-          :title="isFullScreenRear ? 'Exit Full Screen' : 'Full Screen'"
-        >
-          <i :class="isFullScreenRear ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
-        </button>
       </div>
     </div>
   </div>
@@ -55,8 +41,6 @@ const videoCanvasFront = ref(null)
 const videoCanvasRear  = ref(null)
 
 const {
-  isFullScreen: isFullScreenFront,
-  toggleFullScreen: toggleFullScreenFront,
   handleFrame: handleFrameFront,
 } = useVideoPanel(videoCanvasFront, {
   latencyRef:              last30_framesAverageLatency_front,
@@ -66,8 +50,6 @@ const {
 })
 
 const {
-  isFullScreen: isFullScreenRear,
-  toggleFullScreen: toggleFullScreenRear,
   handleFrame: handleFrameRear,
 } = useVideoPanel(videoCanvasRear, {
   latencyRef:              last30_framesAverageLatency_rear,
@@ -128,32 +110,5 @@ watch(frameRefRear, (newFrame) => {
   transform: translate(-50%, -50%);
   max-width: 100%;
   max-height: 100%;
-}
-
-.fullscreen-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 10;
-  background: rgba(30, 30, 30, 0.7);
-  border: none;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-size: 1.3em;
-}
-
-.fullscreen-btn:hover {
-  background: rgba(60, 60, 60, 0.85);
-}
-
-.fullscreen-btn i {
-  pointer-events: none;
 }
 </style>
