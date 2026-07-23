@@ -1,16 +1,22 @@
 <template>
   <div class="video-panels">
     <!-- Front camera -->
-    <div class="video-panel">
-      <div class="camera-label">Front Camera</div>
+    <div
+      class="video-panel"
+      :class="isForward ? 'video-panel--big' : 'video-panel--small'"
+      :style="{ order: isForward ? 0 : 1 }"
+    >
       <div class="video-container">
         <canvas ref="videoCanvasFront" class="video-feed"></canvas>
       </div>
     </div>
 
     <!-- Rear camera -->
-    <div class="video-panel">
-      <div class="camera-label">Rear Camera</div>
+    <div
+      class="video-panel"
+      :class="isForward ? 'video-panel--small' : 'video-panel--big'"
+      :style="{ order: isForward ? 1 : 0 }"
+    >
       <div class="video-container">
         <canvas ref="videoCanvasRear" class="video-feed"></canvas>
       </div>
@@ -19,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import { useVideoPanel } from '@/composables/useVideoPanel'
@@ -27,6 +33,7 @@ import { useVideoPanel } from '@/composables/useVideoPanel'
 const {
   frameRefFront,
   frameRefRear,
+  direction,
   last30_framesAverageLatency_front,
   last30_framesAverageLatency_rear,
   last1s_framesFPS_front,
@@ -36,6 +43,10 @@ const {
   last_100_frame_latencies_front,
   last_100_frame_latencies_rear,
 } = storeToRefs(useTrainStore())
+
+// Front camera is the "big" feed while the train moves forward, rear camera
+// takes over the big spot once the train switches to backward direction.
+const isForward = computed(() => direction.value === 'FORWARD')
 
 const videoCanvasFront = ref(null)
 const videoCanvasRear  = ref(null)
@@ -72,16 +83,29 @@ watch(frameRefRear, (newFrame) => {
 <style scoped>
 .video-panels {
   display: flex;
+  align-items: flex-start;
   gap: 8px;
   width: 100%;
 }
 
 .video-panel {
-  flex: 1;
-  min-width: 0;
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
   border-radius: 5px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: flex-grow 0.2s ease;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+}
+
+/* Split the available width proportionally (roughly 81% / 19%, matching the
+   previous 2000px / 470px sizing) instead of hard-coding pixel dimensions, so
+   the panels scale with whatever display/container size they're rendered in. */
+.video-panel--big {
+  flex: 81 1 0%;
+}
+
+.video-panel--small {
+  flex: 19 1 0%;
 }
 
 .camera-label {
@@ -97,7 +121,7 @@ watch(frameRefRear, (newFrame) => {
 .video-container {
   position: relative;
   width: 100%;
-  padding-top: 56.25%; /* 16:9 aspect ratio */
+  height: 100%;
   background: #000;
   border-radius: 4px;
   overflow: hidden;

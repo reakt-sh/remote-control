@@ -17,6 +17,7 @@ export function useVideoPanel(canvasRef, options = {}) {
   const isFullScreen = ref(false)
   let videoDecoder = null
   let isCanvasInitialized = false
+  let resizeObserver = null
 
   function initializeDecoder() {
     videoDecoder = new VideoDecoderWrapper({
@@ -201,6 +202,18 @@ export function useVideoPanel(canvasRef, options = {}) {
     updateCanvasSize()
     window.addEventListener('resize', handleResize)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+    // The canvas's own container can change size independently of the
+    // window (e.g. the front/rear panel swapping between the "big" and
+    // "small" flex-grow layouts when train direction changes). Watch the
+    // container itself so the canvas is always re-sized to match, instead
+    // of keeping stale dimensions from whichever layout it was created in.
+    if (typeof ResizeObserver !== 'undefined' && canvasRef.value?.parentElement) {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize()
+      })
+      resizeObserver.observe(canvasRef.value.parentElement)
+    }
   })
 
   onUnmounted(() => {
@@ -209,6 +222,10 @@ export function useVideoPanel(canvasRef, options = {}) {
     }
     window.removeEventListener('resize', handleResize)
     document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+      resizeObserver = null
+    }
   })
 
   return {
