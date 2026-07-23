@@ -1,15 +1,6 @@
 <template>
   <div class="power-controls">
     <button
-      class="control-button start-button"
-      @click="handleStart"
-      :disabled="disabled"
-    >
-      <span class="icon">▶</span>
-      <span class="label">START</span>
-    </button>
-
-    <button
       class="control-button stop-button active"
       @click="handleStop"
       :disabled="disabled"

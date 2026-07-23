@@ -101,6 +101,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
             logger.error(f"Error powering ON motor: {e}")
 
     def on_power_off(self):
+        # this is our emergency stop command, we set the speed to 0 and send it to the motor
         try:
             # Stop Command
             control = Control(

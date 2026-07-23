@@ -3,15 +3,11 @@
     <div class="main-controls-wrapper">
       <!-- Left side: 2x2 Control Grid (60%) -->
       <div class="controls-grid">
-        <div class="control-item control-item--power">
-          <PowerControls
-            @stop="handleStop"
-          />
-        </div>
-        <div class="control-item control-item--direction">
-          <DirectionControl
+        <div class="control-item control-item--drive">
+          <DriveDirectionControls
             :direction="direction"
             @change="handleDirectionChange"
+            @stop="handleStop"
           />
         </div>
         <!-- <div class="control-item control-item--light">
@@ -54,8 +50,7 @@ import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
 import Speedometer from './Speedometer.vue'
-import DirectionControl from './DirectionControl.vue'
-import PowerControls from './PowerControls.vue'
+import DriveDirectionControls from './DriveDirectionControls.vue'
 // import LightControl from './LightControl.vue'
 // import HornControl from './HornControl.vue'
 // import VideoQuality from './VideoQuality.vue'
@@ -212,6 +207,11 @@ watch(
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   min-height: 100px;
   overflow: hidden;
+}
+
+.control-item--drive {
+  grid-column: 1 / span 2;
+  grid-row: 1 / span 2;
 }
 
 /* Right side: Speedometer (40%) */
