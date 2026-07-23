@@ -54,7 +54,6 @@ export const useTrainStore = defineStore('train', () => {
   const keepaliveSequence = ref(0)
   const keepaliveIntervalId = ref(null)
   const direction = ref('FORWARD')
-  const isPoweredOn = ref(true)
   const router = useRouter()
   const download_start_time = ref(0)
   const download_end_time = ref(0)
@@ -318,8 +317,6 @@ export const useTrainStore = defineStore('train', () => {
     command["remote_control_id"] = remoteControlId.value
 
     switch (command.instruction) {
-      case "POWER_ON": isPoweredOn.value = true; break
-      case "POWER_OFF": isPoweredOn.value = false; break
       case "CHANGE_DIRECTION": direction.value = command.direction; break
     }
 
@@ -459,13 +456,6 @@ export const useTrainStore = defineStore('train', () => {
             })
           }
 
-          // also update isPoweredOn and direction
-          if (jsonData.status === 'running'){
-            isPoweredOn.value = true
-          } else {
-            isPoweredOn.value = false
-          }
-
           if (jsonData.direction === 1) {
             direction.value = 'FORWARD'
           } else {
@@ -600,13 +590,6 @@ export const useTrainStore = defineStore('train', () => {
         //   telemetryHistory.value.pop()
         // }
 
-        // Update power and direction states
-        if (data.status === 'running') {
-          isPoweredOn.value = true
-        } else {
-          isPoweredOn.value = false
-        }
-
         if (data.direction === 1) {
           direction.value = 'FORWARD'
         } else if (data.direction === -1) {
@@ -675,7 +658,6 @@ export const useTrainStore = defineStore('train', () => {
     frameRefFront,
     frameRefRear,
     remoteControlId,
-    isPoweredOn,
     direction,
     isWSConnected,
     isWTConnected,

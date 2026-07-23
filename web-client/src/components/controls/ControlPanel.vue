@@ -5,7 +5,6 @@
       <div class="controls-grid">
         <div class="control-item control-item--power">
           <PowerControls
-            @start="handleStart"
             @stop="handleStop"
           />
         </div>
@@ -15,7 +14,7 @@
             @change="handleDirectionChange"
           />
         </div>
-        <div class="control-item control-item--light">
+        <!-- <div class="control-item control-item--light">
           <LightControl
             @toggle="handleLightToggle"
           />
@@ -25,7 +24,7 @@
             @press="handleHornPress"
             @release="handleHornRelease"
           />
-        </div>
+        </div> -->
       </div>
 
       <!-- Right side: Speedometer (40%) -->
@@ -57,8 +56,8 @@ import { useTrainStore } from '@/stores/trainStore'
 import Speedometer from './Speedometer.vue'
 import DirectionControl from './DirectionControl.vue'
 import PowerControls from './PowerControls.vue'
-import LightControl from './LightControl.vue'
-import HornControl from './HornControl.vue'
+// import LightControl from './LightControl.vue'
+// import HornControl from './HornControl.vue'
 // import VideoQuality from './VideoQuality.vue'
 import ScenarioTestPanel from './ScenarioTestPanel.vue'
 
@@ -77,13 +76,6 @@ const currentSpeed = computed(() => telemetryData.value?.speed || 0)
 const motorMode = computed(() => telemetryData.value?.reaktor_motor_mode || '')
 
 // Handlers
-function handleStart() {
-  trainStore.sendCommand({
-    "instruction": 'POWER_ON',
-    "train_id": telemetryData.value.train_id
-  })
-}
-
 function handleStop() {
   targetSpeed.value = 0
   powerLevel.value = 0
@@ -101,13 +93,13 @@ function handleDirectionChange(newDirection) {
   })
 }
 
-function handleLightToggle(isOn) {
-  if (isOn) {
-    onHeadlightOn()
-  } else {
-    onHeadlightOff()
-  }
-}
+// function handleLightToggle(isOn) {
+//   if (isOn) {
+//     onHeadlightOn()
+//   } else {
+//     onHeadlightOff()
+//   }
+// }
 
 function onTargetSpeedChange(val) {
   targetSpeed.value = val
@@ -121,33 +113,33 @@ function onTargetSpeedCommit(val) {
   })
 }
 
-function onHeadlightOn() {
-  trainStore.sendCommand({
-    "instruction": 'HEADLIGHT_ON',
-    "train_id": telemetryData.value.train_id
-  })
-}
+// function onHeadlightOn() {
+//   trainStore.sendCommand({
+//     "instruction": 'HEADLIGHT_ON',
+//     "train_id": telemetryData.value.train_id
+//   })
+// }
 
-function onHeadlightOff() {
-  trainStore.sendCommand({
-    "instruction": 'HEADLIGHT_OFF',
-    "train_id": telemetryData.value.train_id
-  })
-}
+// function onHeadlightOff() {
+//   trainStore.sendCommand({
+//     "instruction": 'HEADLIGHT_OFF',
+//     "train_id": telemetryData.value.train_id
+//   })
+// }
 
-function handleHornPress() {
-  trainStore.sendCommand({
-    "instruction": 'HORN_ON',
-    "train_id": telemetryData.value.train_id
-  })
-}
+// function handleHornPress() {
+//   trainStore.sendCommand({
+//     "instruction": 'HORN_ON',
+//     "train_id": telemetryData.value.train_id
+//   })
+// }
 
-function handleHornRelease() {
-  trainStore.sendCommand({
-    "instruction": 'HORN_OFF',
-    "train_id": telemetryData.value.train_id
-  })
-}
+// function handleHornRelease() {
+//   trainStore.sendCommand({
+//     "instruction": 'HORN_OFF',
+//     "train_id": telemetryData.value.train_id
+//   })
+// }
 
 // function handleQualityChange(quality) {
 //   trainStore.sendCommand({
