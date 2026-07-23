@@ -23,7 +23,7 @@
         </div> -->
       </div>
 
-      <!-- Right side: Speedometer (40%) -->
+      <!-- Right side: Speed control (40%) -->
       <div class="speedometer-section">
         <div class="speed-section-content">
           <SpeedControl
@@ -32,7 +32,6 @@
             @update:targetSpeed="onTargetSpeedChange"
             @change:targetSpeed="onTargetSpeedCommit"
           />
-          <Speedometer :current-speed="currentSpeed" />
         </div>
       </div>
     </div>
@@ -46,11 +45,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 
-import Speedometer from './Speedometer.vue'
 import SpeedControl from './SpeedControl.vue'
 import DriveDirectionControls from './DriveDirectionControls.vue'
 // import LightControl from './LightControl.vue'
@@ -67,9 +65,6 @@ const targetSpeed = ref(0)
 const powerLevel = ref(0)
 // const videoQuality = ref('medium')
 // const isScenarioRunning = ref(false)
-
-// Computed
-const currentSpeed = computed(() => telemetryData.value?.speed || 0)
 
 // Handlers
 function handleStop() {

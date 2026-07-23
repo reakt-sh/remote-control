@@ -2,23 +2,34 @@
   <div class="video-panels">
     <!-- Front camera -->
     <div
-      class="video-panel"
-      :class="isForward ? 'video-panel--big' : 'video-panel--small'"
+      class="video-column"
+      :class="isForward ? 'video-column--big' : 'video-column--small'"
       :style="{ order: isForward ? 0 : 1 }"
     >
-      <div class="video-container">
-        <canvas ref="videoCanvasFront" class="video-feed"></canvas>
+      <div class="video-panel">
+        <div class="video-container">
+          <canvas ref="videoCanvasFront" class="video-feed"></canvas>
+        </div>
+      </div>
+      <!-- Fills the leftover space below the smaller (non-active-direction) panel -->
+      <div v-if="!isForward" class="video-column__extra">
+        <Speedometer :current-speed="currentSpeed" />
       </div>
     </div>
 
     <!-- Rear camera -->
     <div
-      class="video-panel"
-      :class="isForward ? 'video-panel--small' : 'video-panel--big'"
+      class="video-column"
+      :class="isForward ? 'video-column--small' : 'video-column--big'"
       :style="{ order: isForward ? 1 : 0 }"
     >
-      <div class="video-container">
-        <canvas ref="videoCanvasRear" class="video-feed"></canvas>
+      <div class="video-panel">
+        <div class="video-container">
+          <canvas ref="videoCanvasRear" class="video-feed"></canvas>
+        </div>
+      </div>
+      <div v-if="isForward" class="video-column__extra">
+        <Speedometer :current-speed="currentSpeed" />
       </div>
     </div>
   </div>
@@ -29,11 +40,13 @@ import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import { useVideoPanel } from '@/composables/useVideoPanel'
+import Speedometer from '@/components/controls/Speedometer.vue'
 
 const {
   frameRefFront,
   frameRefRear,
   direction,
+  telemetryData,
   last30_framesAverageLatency_front,
   last30_framesAverageLatency_rear,
   last1s_framesFPS_front,
@@ -47,6 +60,8 @@ const {
 // Front camera is the "big" feed while the train moves forward, rear camera
 // takes over the big spot once the train switches to backward direction.
 const isForward = computed(() => direction.value === 'FORWARD')
+
+const currentSpeed = computed(() => telemetryData.value?.speed || 0)
 
 const videoCanvasFront = ref(null)
 const videoCanvasRear  = ref(null)
@@ -83,9 +98,27 @@ watch(frameRefRear, (newFrame) => {
 <style scoped>
 .video-panels {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 8px;
   width: 100%;
+}
+
+.video-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Split the available width proportionally (roughly 81% / 19%, matching the
+   previous 2000px / 470px sizing) instead of hard-coding pixel dimensions, so
+   the panels scale with whatever display/container size they're rendered in. */
+.video-column--big {
+  flex: 81 1 0%;
+}
+
+.video-column--small {
+  flex: 19 1 0%;
 }
 
 .video-panel {
@@ -94,18 +127,19 @@ watch(frameRefRear, (newFrame) => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: flex-grow 0.2s ease;
   min-width: 0;
+  width: 100%;
   aspect-ratio: 16 / 9;
 }
 
-/* Split the available width proportionally (roughly 81% / 19%, matching the
-   previous 2000px / 470px sizing) instead of hard-coding pixel dimensions, so
-   the panels scale with whatever display/container size they're rendered in. */
-.video-panel--big {
-  flex: 81 1 0%;
-}
-
-.video-panel--small {
-  flex: 19 1 0%;
+/* Fills the leftover height below the small panel (the column is stretched
+   to match the big column's height, but the small panel itself is shorter
+   since it keeps the same 16:9 ratio at a narrower width). */
+.video-column__extra {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 .camera-label {
