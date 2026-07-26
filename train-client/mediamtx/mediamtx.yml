@@ -831,45 +831,45 @@ paths:
   #   rpiCameraBitrate: 2000000
   #   rpiCameraCodec: hardwareH264
 
+  # cam1:
+  #   runOnInit: >
+  #     ffmpeg -re -stream_loop -1
+  #     -i ./Train_view_01_1280x720_30FPS_3Mbps.mp4
+  #     -c copy
+  #     -f rtsp
+  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+
+  # cam2:
+  #   runOnInit: >
+  #     ffmpeg -re -stream_loop -1
+  #     -i ./Train_view_02_1280x720_30FPS_3Mbps.mp4
+  #     -c copy
+  #     -f rtsp
+  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+
   cam1:
     runOnInit: >
       ffmpeg -re -stream_loop -1
       -i ./Train_view_01_1280x720_30FPS_3Mbps.mp4
-      -c copy
+      -vf fps=30
+      -c:v libx264
+      -b:v 3M -maxrate 3M -bufsize 4M
+      -c:a copy
       -f rtsp
       rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
+    runOnInitRestart: yes
 
   cam2:
     runOnInit: >
       ffmpeg -re -stream_loop -1
       -i ./Train_view_02_1280x720_30FPS_3Mbps.mp4
-      -c copy
+      -vf fps=30
+      -c:v libx264
+      -b:v 3M -maxrate 3M -bufsize 4M
+      -c:a copy
       -f rtsp
       rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
-
-  # cam1:
-  #   runOnInit: >
-  #     ffmpeg -re -stream_loop -1
-  #     -i ./video1.mp4
-  #     -vf fps=20
-  #     -c:v libx264 -preset ultrafast -tune zerolatency
-  #     -b:v 3M -maxrate 3M -bufsize 4M
-  #     -c:a copy
-  #     -f rtsp
-  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
-  #   runOnInitRestart: yes
-
-  # cam2:
-  #   runOnInit: >
-  #     ffmpeg -re -stream_loop -1
-  #     -i ./video2.mp4
-  #     -vf fps=20
-  #     -c:v libx264 -preset ultrafast -tune zerolatency
-  #     -b:v 3M -maxrate 3M -bufsize 4M
-  #     -c:a copy
-  #     -f rtsp
-  #     rtsp://127.0.0.1:$RTSP_PORT/$MTX_PATH
-  #   runOnInitRestart: yes
+    runOnInitRestart: yes
 
   # webcam:
   #   runOnInit: >

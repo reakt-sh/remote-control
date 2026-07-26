@@ -67,8 +67,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
         self.keepalive_sequence = 0
 
-        # FPS calculation variables
-        self.last_few_frame_ids = []
+        # FPS calculation variables (per camera type)
+        self.last_few_frame_ids = {}  # dict[camera_type -> list[(frame_id, timestamp_ms)]]
         self.show_capture_frame_log = True
 
         self.has_motor = has_motor
@@ -567,18 +567,19 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_new_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
         self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded, camera_type)
 
-        # calculate continuous FPS
-        self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
+        # calculate continuous FPS per camera
+        frames = self.last_few_frame_ids.setdefault(camera_type, [])
+        frames.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
         while True:
-            first_frame_time = self.last_few_frame_ids[0][1]
-            last_frame_time = self.last_few_frame_ids[-1][1]
+            first_frame_time = frames[0][1]
+            last_frame_time = frames[-1][1]
             if last_frame_time - first_frame_time > 1000:
-                self.last_few_frame_ids.pop(0)
+                frames.pop(0)
             else:
                 break
-        current_fps = len(self.last_few_frame_ids)
+        current_fps = len(frames)
         if self.show_capture_frame_log and frame_id % 30 == 0:
-            logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}")
+            logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}, Camera: {camera_type}")
 
     def on_telemetry_data(self, data):
         if self.is_sending:
