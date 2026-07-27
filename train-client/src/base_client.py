@@ -75,7 +75,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.write_to_file = True
         self.is_capturing = True
         self.is_sending = False
-        self.target_speed = MAX_SPEED
+        self.target_speed = 0
         self._running = True
         self.connected_remote_control_ids = set()
         self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
@@ -435,14 +435,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
             keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
 
             self.network_worker_quic.enqueue_stream_packet(keepalive_packet)
-            logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence} to all connected remote controls")
+            logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence}")
 
         def _sender():
             import time
             while True:
-                if self.is_sending and self.clock_offset_calculation_completed == True:
-                    send_packet()
-                time.sleep(10)  # 10 seconds between packets
+                send_packet()
+                time.sleep(10)
 
         threading.Thread(target=_sender, daemon=True, name="KeepaliveSender").start()
 
