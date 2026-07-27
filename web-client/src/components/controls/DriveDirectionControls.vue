@@ -73,7 +73,8 @@ function handleStop() {
 
   --btn-height: clamp(54px, min(9cqw, 34cqh), 96px);
   --arrow-width: clamp(112px, min(22cqw, 84cqh), 200px);
-  --stop-size: clamp(64px, min(12cqw, 44cqh), 130px);
+  --stop-width: clamp(112px, min(22cqw, 84cqh), 200px);
+  --stop-height: clamp(54px, min(9cqw, 34cqh), 96px);
 }
 
 .control-button {
@@ -117,13 +118,13 @@ function handleStop() {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 4px 14px rgba(21, 199, 36, 0.45);
 }
 
-/* Hexagonal stop button, centered above the arrows */
+/* Rectangular stop button, same height as direction buttons */
 .stop-button {
-  width: var(--stop-size);
-  height: var(--stop-size);
+  width: var(--stop-width);
+  height: var(--stop-height);
+  border-radius: 10px;
   z-index: 1;
   background: linear-gradient(145deg, #f0564a, #b8291f);
-  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   box-shadow:
     0 4px 14px rgba(184, 41, 31, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
@@ -149,11 +150,11 @@ function handleStop() {
 }
 
 .label {
-  font-size: clamp(0.56rem, 3cqh, 0.85rem);
+  font-size: clamp(0.75rem, 3.8cqh, 1.05rem);
 }
 
 .stop-button .label {
-  font-size: clamp(0.62rem, 3.4cqh, 0.9rem);
+  font-size: clamp(0.82rem, 4.2cqh, 1.15rem);
 }
 
 /* Landscape has more headroom (the control panel gets a taller share of
@@ -170,16 +171,16 @@ function handleStop() {
   }
 
   .stop-button {
-    width: clamp(95px, 28cqh, 210px);
-    height: clamp(95px, 28cqh, 210px);
+    width: clamp(140px, 40cqh, 280px);
+    height: clamp(68px, 22cqh, 150px);
   }
 
   .label {
-    font-size: clamp(0.72rem, 4cqh, 1.05rem);
+    font-size: clamp(0.95rem, 5cqh, 1.35rem);
   }
 
   .stop-button .label {
-    font-size: clamp(0.78rem, 4.4cqh, 1.15rem);
+    font-size: clamp(1rem, 5.4cqh, 1.45rem);
   }
 }
 </style>

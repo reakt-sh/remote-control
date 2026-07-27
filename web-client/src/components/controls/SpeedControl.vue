@@ -91,7 +91,7 @@ function adjustTarget(delta) {
 }
 
 .speed-btn .label {
-	font-size: clamp(0.6rem, 3cqh, 0.85rem);
+	font-size: clamp(0.75rem, 3.8cqh, 1.05rem);
 }
 
 .target-pill {
@@ -110,13 +110,13 @@ function adjustTarget(delta) {
 }
 
 .target-value {
-	font-size: clamp(0.82rem, 3.6cqh, 1.15rem);
+	font-size: clamp(1rem, 4.5cqh, 1.4rem);
 	font-weight: 700;
 	line-height: 1.1;
 }
 
 .target-unit {
-	font-size: clamp(0.5rem, 1.6cqh, 0.65rem);
+	font-size: clamp(0.65rem, 2.2cqh, 0.85rem);
 	font-weight: 600;
 	letter-spacing: 0.5px;
 	opacity: 0.75;
@@ -137,7 +137,7 @@ function adjustTarget(delta) {
 	}
 
 	.speed-btn .label {
-		font-size: clamp(0.78rem, 4cqh, 1.1rem);
+		font-size: clamp(0.95rem, 5cqh, 1.35rem);
 	}
 
 	.target-pill {
@@ -146,11 +146,11 @@ function adjustTarget(delta) {
 	}
 
 	.target-value {
-		font-size: clamp(1.05rem, 4.8cqh, 1.5rem);
+		font-size: clamp(1.25rem, 5.8cqh, 1.8rem);
 	}
 
 	.target-unit {
-		font-size: clamp(0.6rem, 2.2cqh, 0.85rem);
+		font-size: clamp(0.75rem, 2.8cqh, 1.05rem);
 	}
 }
 </style>

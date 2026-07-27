@@ -94,15 +94,6 @@
       <circle cx="100" cy="100" r="4.5" fill="#374151" />
       <circle cx="100" cy="100" r="2" fill="#ffffff" />
 
-      <!-- Max speed label -->
-      <text
-        x="100"
-        y="114"
-        fill="#9ca3af"
-        font-size="5"
-        font-family="'Inter', 'Segoe UI', sans-serif"
-        text-anchor="middle"
-      >MAX 15</text>
     </svg>
 
     <!-- Digital readout overlay -->
@@ -123,7 +114,7 @@ const props = defineProps({
   }
 })
 
-const MAX_SPEED = 15
+const MAX_SPEED = 13
 const ARC_LENGTH = 251.2 // Approximate length of the arc path (80px radius, 180° arc)
 
 const formattedSpeed = computed(() => {
