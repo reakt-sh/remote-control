@@ -5,6 +5,7 @@
       @change="handleDirectionChange"
       @stop="handleStop"
     />
+    <div class="control-divider" aria-hidden="true"></div>
     <!-- <LightControl @toggle="handleLightToggle" /> -->
     <!-- <HornControl @press="handleHornPress" @release="handleHornRelease" /> -->
     <SpeedControl
@@ -148,6 +149,13 @@ watch(
   overflow-x: hidden;
 }
 
+.control-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 10px;
+  background: rgba(44, 62, 80, 0.15);
+}
+
 /* Tablets/portrait: stop relying on a fixed row width, stack instead so
    nothing gets clipped regardless of the device's raw pixel width. */
 @media (max-width: 899px), (orientation: portrait) {
@@ -156,6 +164,13 @@ watch(
     gap: 8px;
     padding: 8px;
     max-width: 100%;
+  }
+
+  .control-divider {
+    width: 60%;
+    height: 1px;
+    margin: 2px 0;
+    align-self: center;
   }
 }
 
@@ -166,4 +181,5 @@ watch(
     padding: 4px;
   }
 }
+
 </style>

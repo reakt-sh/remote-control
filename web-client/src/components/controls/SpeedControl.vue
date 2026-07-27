@@ -1,12 +1,23 @@
 <template>
 	<div class="speed-control" role="group" aria-label="Target speed control">
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-3)">-3</button>
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-1)">-1</button>
+		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-3)">
+			<span class="label">-3</span>
+		</button>
+		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-1)">
+			<span class="label">-1</span>
+		</button>
 
-		<div class="target-pill">{{ targetSpeed }} km/h</div>
+		<div class="target-pill">
+			<span class="target-value">{{ targetSpeed }}</span>
+			<span class="target-unit">km/h</span>
+		</div>
 
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(1)">+1</button>
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(3)">+3</button>
+		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(1)">
+			<span class="label">+1</span>
+		</button>
+		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(3)">
+			<span class="label">+3</span>
+		</button>
 	</div>
 </template>
 
@@ -37,66 +48,131 @@ function adjustTarget(delta) {
 
 <style scoped>
 .speed-control {
-	width: 100%;
-	max-width: 420px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 8px;
-	flex-wrap: nowrap;
+	gap: 22px;
 }
 
 .speed-btn {
-	min-width: 52px;
-	height: 36px;
-	border: 1px solid #d6dbdf;
-	border-radius: 8px;
-	background: #f8f9fa;
-	color: #2c3e50;
-	font-weight: 600;
+	position: relative;
+	width: 70px;
+	height: 58px;
+	border: none;
+	border-radius: 10px;
 	cursor: pointer;
-	transition: all 0.2s;
+	font-family: inherit;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+	color: #dde4e8;
+	background: linear-gradient(145deg, #7a7f7a, #565e5b);
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+	transition: filter 0.15s ease, transform 0.15s ease;
 }
 
-.speed-btn:hover:not(:disabled) {
-	background: #e7edf2;
-	border-color: #c8d1d9;
+.speed-btn:not(:disabled):hover {
+	filter: brightness(1.12);
+	transform: translateY(-2px);
 }
 
-.speed-btn:active:not(:disabled) {
-	transform: scale(0.98);
+.speed-btn:not(:disabled):active {
+	filter: brightness(0.95);
+	transform: translateY(0);
 }
 
 .speed-btn:disabled {
-	opacity: 0.5;
+	opacity: 0.4;
 	cursor: not-allowed;
+	transform: none;
+	filter: none;
+}
+
+.speed-btn .label {
+	font-size: 0.85rem;
 }
 
 .target-pill {
-	min-width: 170px;
-	text-align: center;
-	padding: 8px 12px;
-	border-radius: 999px;
-	background: #2c3e50;
-	color: #fff;
-	font-size: 0.9rem;
-	font-weight: 600;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 130px;
+	height: 58px;
+	border-radius: 12px;
+	background: linear-gradient(145deg, #33404d, #202a33);
+	color: #eefbe4;
+	box-shadow:
+		0 4px 14px rgba(0, 0, 0, 0.35),
+		inset 0 1px 1px rgba(255, 255, 255, 0.08);
 }
 
-@media (max-width: 599px) {
+.target-value {
+	font-size: 1.15rem;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.target-unit {
+	font-size: 0.62rem;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	opacity: 0.75;
+	text-transform: uppercase;
+}
+
+@media (max-width: 700px) {
 	.speed-control {
-		gap: 6px;
+		gap: 14px;
 	}
 
 	.speed-btn {
-		min-width: 46px;
-		height: 34px;
+		width: 54px;
+		height: 46px;
+	}
+
+	.speed-btn .label {
+		font-size: 0.7rem;
 	}
 
 	.target-pill {
-		min-width: 150px;
+		width: 106px;
+		height: 46px;
+	}
+
+	.target-value {
+		font-size: 0.95rem;
+	}
+
+	.target-unit {
+		font-size: 0.56rem;
+	}
+}
+
+@media (max-height: 700px) {
+	.speed-control {
+		gap: 10px;
+	}
+
+	.speed-btn {
+		width: 46px;
+		height: 38px;
+	}
+
+	.speed-btn .label {
+		font-size: 0.6rem;
+	}
+
+	.target-pill {
+		width: 92px;
+		height: 38px;
+	}
+
+	.target-value {
 		font-size: 0.82rem;
-		padding: 7px 10px;
+	}
+
+	.target-unit {
+		font-size: 0.5rem;
 	}
 }
 </style>
