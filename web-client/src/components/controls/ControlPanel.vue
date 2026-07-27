@@ -1,46 +1,19 @@
 <template>
   <div class="driver-console">
-    <div class="main-controls-wrapper">
-      <!-- Left side: 2x2 Control Grid (60%) -->
-      <div class="controls-grid">
-        <div class="control-item control-item--drive">
-          <DriveDirectionControls
-            :direction="direction"
-            @change="handleDirectionChange"
-            @stop="handleStop"
-          />
-        </div>
-        <!-- <div class="control-item control-item--light">
-          <LightControl
-            @toggle="handleLightToggle"
-          />
-        </div>
-        <div class="control-item control-item--horn">
-          <HornControl
-            @press="handleHornPress"
-            @release="handleHornRelease"
-          />
-        </div> -->
-      </div>
-
-      <!-- Right side: Speed control (40%) -->
-      <div class="speedometer-section">
-        <div class="speed-section-content">
-          <SpeedControl
-            :target-speed="targetSpeed"
-            :max-speed="maxSpeed"
-            @update:targetSpeed="onTargetSpeedChange"
-            @change:targetSpeed="onTargetSpeedCommit"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- <div class="scenario-controls">
-      <ScenarioTestPanel
-        @scenarioStateChange="handleScenarioStateChange"
-      />
-    </div> -->
+    <DriveDirectionControls
+      :direction="direction"
+      @change="handleDirectionChange"
+      @stop="handleStop"
+    />
+    <!-- <LightControl @toggle="handleLightToggle" /> -->
+    <!-- <HornControl @press="handleHornPress" @release="handleHornRelease" /> -->
+    <SpeedControl
+      :target-speed="targetSpeed"
+      :max-speed="maxSpeed"
+      @update:targetSpeed="onTargetSpeedChange"
+      @change:targetSpeed="onTargetSpeedCommit"
+    />
+    <!-- <ScenarioTestPanel @scenarioStateChange="handleScenarioStateChange" /> -->
   </div>
 </template>
 
@@ -158,7 +131,11 @@ watch(
 <style scoped>
 .driver-console {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   height: 100%;
   background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
   color: #2c3e50;
@@ -168,169 +145,24 @@ watch(
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
-.main-controls-wrapper {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  min-height: 210px;
-  flex-wrap: nowrap;
-  box-sizing: border-box;
-}
-
-/* Left side: 2x2 Control Grid (60%) */
-.controls-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(2, minmax(60px, auto));
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.6);
-  padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  min-height: 170px;
-  align-content: start;
-}
-
-.control-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border-radius: 10px;
-  padding: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  min-height: 60px;
-  overflow: hidden;
-}
-
-.control-item--drive {
-  grid-column: 1 / span 2;
-  grid-row: 1 / span 2;
-}
-
-/* Right side: Speedometer (40%) */
-.speedometer-section {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.6);
-  padding: 12px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  min-height: 210px;
-}
-
-.speed-section-content {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.scenario-controls {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.6);
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
-}
-
-/* Desktop layout: 40/60 split */
-@media (min-width: 900px) {
-  .main-controls-wrapper {
-    flex-wrap: nowrap;
-  }
-
-  .controls-grid {
-    flex: 1;
-  }
-
-  .speedometer-section {
-    flex: 1;
-  }
-}
-
-/* Tablet adjustments */
-@media (min-width: 600px) and (max-width: 899px) {
-  .main-controls-wrapper {
-    gap: 2px;
-    min-height: 150px;
-    max-height: 150px;
-  }
-
-  .controls-grid {
-    flex: 1;
-    gap: 2px;
-    padding: 2px;
-    min-height: 130px;
-    max-height: 130px;
-  }
-
-  .speedometer-section {
-    flex: 1;
-    padding: 2px;
-    min-height: 130px;
-    max-height: 130px;
-  }
-
-  .speed-section-content {
+/* Tablets/portrait: stop relying on a fixed row width, stack instead so
+   nothing gets clipped regardless of the device's raw pixel width. */
+@media (max-width: 899px), (orientation: portrait) {
+  .driver-console {
+    flex-direction: column;
     gap: 8px;
-  }
-
-  .control-item {
-    min-height: 64px;
-    padding: 0;
+    padding: 8px;
+    max-width: 100%;
   }
 }
 
-/* Mobile adjustments */
+/* Phones */
 @media (max-width: 599px) {
   .driver-console {
-    padding: 4px;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  .main-controls-wrapper {
-    flex-direction: column;
     gap: 4px;
-    min-height: auto;
-  }
-
-  .controls-grid {
-    width: 100%;
-    gap: 4px;
-    padding: 4px;
-    min-height: 120px;
-    max-height: none;
-  }
-
-  .speedometer-section {
-    width: 100%;
-    padding: 8px;
-    min-height: 120px;
-    max-height: none;
-  }
-
-  .speed-section-content {
-    gap: 6px;
-  }
-
-  .control-item {
-    min-height: 50px;
-    padding: 0;
-  }
-  
-  .scenario-controls {
     padding: 4px;
   }
 }

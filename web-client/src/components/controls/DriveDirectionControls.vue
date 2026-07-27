@@ -1,31 +1,29 @@
 <template>
-  <div class="drive-direction-controls">
-    <button
-      class="control-button direction-button reverse"
-      :class="{ active: direction === 'BACKWARD' }"
-      :disabled="disabled"
-      @click="setDirection('BACKWARD')"
-    >
-      <span class="label">BACKWARD</span>
-    </button>
+  <button
+    class="control-button direction-button reverse"
+    :class="{ active: direction === 'BACKWARD' }"
+    :disabled="disabled"
+    @click="setDirection('BACKWARD')"
+  >
+    <span class="label">BACKWARD</span>
+  </button>
 
-    <button
-      class="control-button stop-button"
-      :disabled="disabled"
-      @click="handleStop"
-    >
-      <span class="label">STOP</span>
-    </button>
+  <button
+    class="control-button stop-button"
+    :disabled="disabled"
+    @click="handleStop"
+  >
+    <span class="label">STOP</span>
+  </button>
 
-    <button
-      class="control-button direction-button forward"
-      :class="{ active: direction === 'FORWARD' }"
-      :disabled="disabled"
-      @click="setDirection('FORWARD')"
-    >
-      <span class="label">FORWARD</span>
-    </button>
-  </div>
+  <button
+    class="control-button direction-button forward"
+    :class="{ active: direction === 'FORWARD' }"
+    :disabled="disabled"
+    @click="setDirection('FORWARD')"
+  >
+    <span class="label">FORWARD</span>
+  </button>
 </template>
 
 <script setup>
@@ -57,20 +55,6 @@ function handleStop() {
 </script>
 
 <style scoped>
-.drive-direction-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 520px;
-  padding: 10px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
-  border: 1px solid #e0e4e7;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
 .control-button {
   min-width: 110px;
   height: 52px;
@@ -118,11 +102,6 @@ function handleStop() {
 }
 
 @media (max-width: 700px) {
-  .drive-direction-controls {
-    gap: 6px;
-    padding: 6px;
-  }
-
   .control-button {
     min-width: 84px;
     height: 42px;
