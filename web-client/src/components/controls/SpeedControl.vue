@@ -1,9 +1,15 @@
 <template>
 	<div class="speed-control" role="group" aria-label="Target speed control">
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-3)">
+		<button
+			class="speed-btn"
+			:disabled="disabled || targetSpeed + (-3) < 0"
+			@click="adjustTarget(-3)">
 			<span class="label">-3</span>
 		</button>
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(-1)">
+		<button
+			class="speed-btn"
+			:disabled="disabled || targetSpeed + (-1) < 0"
+			@click="adjustTarget(-1)">
 			<span class="label">-1</span>
 		</button>
 
@@ -12,10 +18,16 @@
 			<span class="target-unit">km/h</span>
 		</div>
 
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(1)">
+		<button
+			class="speed-btn"
+			:disabled="disabled || targetSpeed + 1 > maxSpeed"
+			@click="adjustTarget(1)">
 			<span class="label">+1</span>
 		</button>
-		<button class="speed-btn" :disabled="disabled" @click="adjustTarget(3)">
+		<button
+			class="speed-btn"
+			:disabled="disabled || targetSpeed + 3 > maxSpeed"
+			@click="adjustTarget(3)">
 			<span class="label">+3</span>
 		</button>
 	</div>
@@ -95,31 +107,35 @@ function adjustTarget(delta) {
 }
 
 .target-pill {
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	width: clamp(92px, 28cqh, 210px);
 	height: clamp(38px, 12cqh, 90px);
+	background: none;
 	border-radius: 12px;
-	background: linear-gradient(145deg, #33404d, #202a33);
-	color: #eefbe4;
-	box-shadow:
-		0 4px 14px rgba(0, 0, 0, 0.35),
-		inset 0 1px 1px rgba(255, 255, 255, 0.08);
+	border: none;
+	box-shadow: none;
+	user-select: none;
 }
 
 .target-value {
-	font-size: clamp(1rem, 4.5cqh, 1.4rem);
-	font-weight: 700;
+	font-size: clamp(1.35rem, 6cqh, 2rem);
+	font-weight: 800;
 	line-height: 1.1;
+	letter-spacing: 2px;
+	color: #2c3e50;
+	text-shadow: none;
+	margin-bottom: 2px;
 }
 
 .target-unit {
-	font-size: clamp(0.65rem, 2.2cqh, 0.85rem);
-	font-weight: 600;
-	letter-spacing: 0.5px;
-	opacity: 0.75;
+	font-size: clamp(0.6rem, 2cqh, 0.8rem);
+	font-weight: 500;
+	letter-spacing: 2px;
+	opacity: 0.4;
 	text-transform: uppercase;
 }
 
