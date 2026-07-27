@@ -68,10 +68,20 @@ watch(() => route.params.trainId, (newId) => {
 
 <style scoped>
 
+/* This view should feel like a full-screen activity: no reserved bottom
+   space, and the control panel below the video grows to fill whatever
+   room is left instead of leaving an empty gap. */
+.app-main {
+  padding: 4px 8px;
+  min-height: 0;
+}
+
 .control-tab {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
 }
 
 @media (max-width: 900px), (orientation: portrait) {

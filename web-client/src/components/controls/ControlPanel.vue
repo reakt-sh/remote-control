@@ -137,7 +137,10 @@ watch(
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 100%;
+  /* Grow to consume whatever vertical space is left under the video panel,
+     rather than only taking the height of its own content. */
+  flex: 1 1 auto;
+  min-height: 0;
   background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
   color: #2c3e50;
   padding: 10px;
@@ -147,6 +150,11 @@ watch(
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  /* Establish a query container so child controls (direction/speed buttons)
+     can size themselves off the panel's actual rendered size instead of the
+     raw viewport. */
+  container-type: size;
+  container-name: control-panel;
 }
 
 .control-divider {

@@ -61,7 +61,7 @@ function handleStop() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: clamp(10px, 4cqh, 22px);
 }
 
 .control-button {
@@ -75,10 +75,13 @@ function handleStop() {
   transition: filter 0.15s ease, transform 0.15s ease;
 }
 
-/* Triangular / arrow-shaped direction buttons */
+/* Triangular / arrow-shaped direction buttons.
+   Sized off the control panel's own height (cqh) so they scale up to fill
+   leftover space on tall/short screens alike, instead of relying on fixed
+   viewport breakpoints. */
 .direction-button {
-  width: 120px;
-  height: 58px;
+  width: clamp(78px, 25cqh, 180px);
+  height: clamp(38px, 12cqh, 90px);
   background: linear-gradient(145deg, #7a7f7a, #565e5b);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
@@ -101,8 +104,8 @@ function handleStop() {
 
 /* Hexagonal stop button, centered above the arrows */
 .stop-button {
-  width: 86px;
-  height: 86px;
+  width: clamp(56px, 17.5cqh, 130px);
+  height: clamp(56px, 17.5cqh, 130px);
   z-index: 1;
   background: linear-gradient(145deg, #f0564a, #b8291f);
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
@@ -130,58 +133,37 @@ function handleStop() {
 }
 
 .label {
-  font-size: 0.72rem;
+  font-size: clamp(0.56rem, 3cqh, 0.85rem);
 }
 
 .stop-button .label {
-  font-size: 0.85rem;
+  font-size: clamp(0.62rem, 3.4cqh, 0.9rem);
 }
 
-@media (max-width: 700px) {
+/* Landscape has more headroom (the control panel gets a taller share of
+   the viewport), so let the buttons scale up further before hitting their
+   caps instead of staying capped at the portrait-friendly sizes. */
+@media (orientation: landscape) {
   .drive-controls {
-    gap: 14px;
+    gap: clamp(12px, 5cqh, 28px);
   }
 
   .direction-button {
-    width: 92px;
-    height: 46px;
+    width: clamp(90px, 30cqh, 230px);
+    height: clamp(46px, 15cqh, 115px);
   }
 
   .stop-button {
-    width: 66px;
-    height: 66px;
+    width: clamp(66px, 21cqh, 165px);
+    height: clamp(66px, 21cqh, 165px);
   }
 
   .label {
-    font-size: 0.6rem;
+    font-size: clamp(0.62rem, 3.6cqh, 1rem);
   }
 
   .stop-button .label {
-    font-size: 0.7rem;
-  }
-}
-
-@media (max-height: 700px) {
-  .drive-controls {
-    gap: 10px;
-  }
-
-  .direction-button {
-    width: 80px;
-    height: 38px;
-  }
-
-  .stop-button {
-    width: 56px;
-    height: 56px;
-  }
-
-  .label {
-    font-size: 0.56rem;
-  }
-
-  .stop-button .label {
-    font-size: 0.62rem;
+    font-size: clamp(0.68rem, 4cqh, 1.05rem);
   }
 }
 </style>

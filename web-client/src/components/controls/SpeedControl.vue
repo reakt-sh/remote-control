@@ -51,13 +51,16 @@ function adjustTarget(delta) {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 22px;
+	gap: clamp(10px, 4cqh, 22px);
 }
 
+/* Sized off the control panel's own height (cqh) so buttons scale up to
+   fill leftover space on tall/short screens alike, instead of relying on
+   fixed viewport breakpoints. */
 .speed-btn {
 	position: relative;
-	width: 70px;
-	height: 58px;
+	width: clamp(46px, 14cqh, 108px);
+	height: clamp(38px, 12cqh, 90px);
 	border: none;
 	border-radius: 10px;
 	cursor: pointer;
@@ -88,7 +91,7 @@ function adjustTarget(delta) {
 }
 
 .speed-btn .label {
-	font-size: 0.85rem;
+	font-size: clamp(0.6rem, 3cqh, 0.85rem);
 }
 
 .target-pill {
@@ -96,8 +99,8 @@ function adjustTarget(delta) {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 130px;
-	height: 58px;
+	width: clamp(92px, 28cqh, 210px);
+	height: clamp(38px, 12cqh, 90px);
 	border-radius: 12px;
 	background: linear-gradient(145deg, #33404d, #202a33);
 	color: #eefbe4;
@@ -107,72 +110,47 @@ function adjustTarget(delta) {
 }
 
 .target-value {
-	font-size: 1.15rem;
+	font-size: clamp(0.82rem, 3.6cqh, 1.15rem);
 	font-weight: 700;
 	line-height: 1.1;
 }
 
 .target-unit {
-	font-size: 0.62rem;
+	font-size: clamp(0.5rem, 1.6cqh, 0.65rem);
 	font-weight: 600;
 	letter-spacing: 0.5px;
 	opacity: 0.75;
 	text-transform: uppercase;
 }
 
-@media (max-width: 700px) {
+/* Landscape has more headroom (the control panel gets a taller share of
+   the viewport), so let the buttons scale up further before hitting their
+   caps instead of staying capped at the portrait-friendly sizes. */
+@media (orientation: landscape) {
 	.speed-control {
-		gap: 14px;
+		gap: clamp(12px, 5cqh, 28px);
 	}
 
 	.speed-btn {
-		width: 54px;
-		height: 46px;
+		width: clamp(54px, 17cqh, 130px);
+		height: clamp(46px, 15cqh, 115px);
 	}
 
 	.speed-btn .label {
-		font-size: 0.7rem;
+		font-size: clamp(0.68rem, 3.6cqh, 1rem);
 	}
 
 	.target-pill {
-		width: 106px;
-		height: 46px;
+		width: clamp(108px, 33cqh, 250px);
+		height: clamp(46px, 15cqh, 115px);
 	}
 
 	.target-value {
-		font-size: 0.95rem;
+		font-size: clamp(0.95rem, 4.2cqh, 1.35rem);
 	}
 
 	.target-unit {
-		font-size: 0.56rem;
-	}
-}
-
-@media (max-height: 700px) {
-	.speed-control {
-		gap: 10px;
-	}
-
-	.speed-btn {
-		width: 46px;
-		height: 38px;
-	}
-
-	.speed-btn .label {
-		font-size: 0.6rem;
-	}
-
-	.target-pill {
-		width: 92px;
-		height: 38px;
-	}
-
-	.target-value {
-		font-size: 0.82rem;
-	}
-
-	.target-unit {
-		font-size: 0.5rem;
+		font-size: clamp(0.56rem, 1.9cqh, 0.75rem);
 	}
 }
 </style>
