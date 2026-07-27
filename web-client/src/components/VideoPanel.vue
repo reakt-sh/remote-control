@@ -103,6 +103,12 @@ watch(frameRefRear, (newFrame) => {
   width: 100%;
 }
 
+@media (max-width: 900px), (orientation: portrait) {
+  .video-panels {
+    gap: 4px;
+  }
+}
+
 .video-column {
   display: flex;
   flex-direction: column;

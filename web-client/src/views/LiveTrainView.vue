@@ -73,4 +73,10 @@ watch(() => route.params.trainId, (newId) => {
   grid-template-columns: 1fr;
   gap: 20px;
 }
+
+@media (max-width: 900px), (orientation: portrait) {
+  .control-tab {
+    gap: 8px;
+  }
+}
 </style>
