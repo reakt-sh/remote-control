@@ -57,11 +57,23 @@ function handleStop() {
 </script>
 
 <style scoped>
+/* Sizing tokens for the whole row.
+   - The clamp() *minimums* are the real touch guarantee: they keep every
+     control at a comfortable finger size (>= 48px per WCAG 2.5.5 / mobile
+     HIG) even when the panel is squeezed flat.
+   - The preferred value now also tracks the panel's *width* (cqw), not just
+     its height, because in landscape the panel is wide but short - relying on
+     cqh alone is exactly why the buttons used to collapse to their minimum.
+   - min(..., Ncqh) keeps the row from spilling out of a short panel. */
 .drive-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: clamp(10px, 4cqh, 22px);
+
+  --btn-height: clamp(54px, min(9cqw, 34cqh), 96px);
+  --arrow-width: clamp(112px, min(22cqw, 84cqh), 200px);
+  --stop-size: clamp(64px, min(12cqw, 44cqh), 130px);
 }
 
 .control-button {
@@ -73,18 +85,21 @@ function handleStop() {
   letter-spacing: 0.5px;
   color: #dde4e8;
   transition: filter 0.15s ease, transform 0.15s ease;
+  /* Removes the ~300ms tap delay and the grey flash so presses feel
+     immediate on touchscreens. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-/* Triangular / arrow-shaped direction buttons.
-   Sized off the control panel's own height (cqh) so they scale up to fill
-   leftover space on tall/short screens alike, instead of relying on fixed
-   viewport breakpoints. */
+/* Triangular / arrow-shaped direction buttons. */
 .direction-button {
-  width: clamp(78px, 25cqh, 180px);
-  height: clamp(38px, 12cqh, 90px);
+  width: var(--arrow-width);
+  height: var(--btn-height);
   background: linear-gradient(145deg, #7a7f7a, #565e5b);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
+
 
 .direction-button.reverse {
   clip-path: polygon(30% 0, 100% 0, 100% 100%, 30% 100%, 0 50%);
@@ -104,8 +119,8 @@ function handleStop() {
 
 /* Hexagonal stop button, centered above the arrows */
 .stop-button {
-  width: clamp(56px, 17.5cqh, 130px);
-  height: clamp(56px, 17.5cqh, 130px);
+  width: var(--stop-size);
+  height: var(--stop-size);
   z-index: 1;
   background: linear-gradient(145deg, #f0564a, #b8291f);
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
@@ -114,6 +129,7 @@ function handleStop() {
     inset 0 1px 1px rgba(255, 255, 255, 0.25);
   color: #fff;
 }
+
 
 .control-button:disabled {
   opacity: 0.4;
@@ -145,25 +161,25 @@ function handleStop() {
    caps instead of staying capped at the portrait-friendly sizes. */
 @media (orientation: landscape) {
   .drive-controls {
-    gap: clamp(12px, 5cqh, 28px);
+    gap: clamp(14px, 6cqh, 32px);
   }
 
   .direction-button {
-    width: clamp(90px, 30cqh, 230px);
-    height: clamp(46px, 15cqh, 115px);
+    width: clamp(140px, 40cqh, 280px);
+    height: clamp(68px, 22cqh, 150px);
   }
 
   .stop-button {
-    width: clamp(66px, 21cqh, 165px);
-    height: clamp(66px, 21cqh, 165px);
+    width: clamp(95px, 28cqh, 210px);
+    height: clamp(95px, 28cqh, 210px);
   }
 
   .label {
-    font-size: clamp(0.62rem, 3.6cqh, 1rem);
+    font-size: clamp(0.72rem, 4cqh, 1.05rem);
   }
 
   .stop-button .label {
-    font-size: clamp(0.68rem, 4cqh, 1.05rem);
+    font-size: clamp(0.78rem, 4.4cqh, 1.15rem);
   }
 }
 </style>

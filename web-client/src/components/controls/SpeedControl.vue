@@ -128,29 +128,29 @@ function adjustTarget(delta) {
    caps instead of staying capped at the portrait-friendly sizes. */
 @media (orientation: landscape) {
 	.speed-control {
-		gap: clamp(12px, 5cqh, 28px);
+		gap: clamp(14px, 6cqh, 32px);
 	}
 
 	.speed-btn {
-		width: clamp(54px, 17cqh, 130px);
-		height: clamp(46px, 15cqh, 115px);
+		width: clamp(70px, 22cqh, 160px);
+		height: clamp(60px, 19cqh, 140px);
 	}
 
 	.speed-btn .label {
-		font-size: clamp(0.68rem, 3.6cqh, 1rem);
+		font-size: clamp(0.78rem, 4cqh, 1.1rem);
 	}
 
 	.target-pill {
-		width: clamp(108px, 33cqh, 250px);
-		height: clamp(46px, 15cqh, 115px);
+		width: clamp(130px, 38cqh, 300px);
+		height: clamp(60px, 19cqh, 140px);
 	}
 
 	.target-value {
-		font-size: clamp(0.95rem, 4.2cqh, 1.35rem);
+		font-size: clamp(1.05rem, 4.8cqh, 1.5rem);
 	}
 
 	.target-unit {
-		font-size: clamp(0.56rem, 1.9cqh, 0.75rem);
+		font-size: clamp(0.6rem, 2.2cqh, 0.85rem);
 	}
 }
 </style>
