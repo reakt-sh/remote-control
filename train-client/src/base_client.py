@@ -637,6 +637,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
         self.target_speed = 0
         self.on_power_off()
+        logger.warning("Train operations stopped due to safety concerns (keepalive timeout or RC disconnect).")
 
 
     def close(self):

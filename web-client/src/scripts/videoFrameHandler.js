@@ -16,7 +16,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
   const frameRefRear = ref(null)
 
   // Toggle per-frame latency recording for analysis
-  const showFramebyFrameLatency = ref(false)
+  const enableStatistics = ref(false)
 
   // Per-camera latency tracking (last 30 frames)
   const last30_latencyHistory_front = ref([])
@@ -84,7 +84,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
       })
     }
 
-    if(showFramebyFrameLatency.value) {
+    if(enableStatistics.value) {
       // Average latency of last 30 frames
       if (latencyHistory.value.length >= 30) {
         latencyHistory.value.shift()
@@ -109,7 +109,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
    }
 
     // Per-frame latency history (last 100) for analysis
-    if (showFramebyFrameLatency.value) {
+    if (enableStatistics.value) {
       if (lastFrameIdRef.value === 0 || completedFrame.frameId === lastFrameIdRef.value + 1) {
         frameLatenciesRef.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
         if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
@@ -129,7 +129,6 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
   return {
     frameRefFront,
     frameRefRear,
-    showFramebyFrameLatency,
     last30_framesAverageLatency_front,
     last30_framesAverageLatency_rear,
     last1s_framesFPS_front,

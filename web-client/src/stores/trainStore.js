@@ -102,7 +102,6 @@ export const useTrainStore = defineStore('train', () => {
   const {
     frameRefFront,
     frameRefRear,
-    showFramebyFrameLatency,
     last30_framesAverageLatency_front,
     last30_framesAverageLatency_rear,
     last1s_framesFPS_front,
@@ -678,7 +677,6 @@ export const useTrainStore = defineStore('train', () => {
     last1s_bandwidthMbps_rear,
     last_100_frame_latencies_front,
     last_100_frame_latencies_rear,
-    showFramebyFrameLatency,
     initializeRemoteControlId,
     fetchAvailableTrains,
     connectToServer,
