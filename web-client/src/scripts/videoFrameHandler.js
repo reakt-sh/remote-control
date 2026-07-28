@@ -16,7 +16,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
   const frameRefRear = ref(null)
 
   // Toggle per-frame latency recording for analysis
-  const showFramebyFrameLatency = ref(true)
+  const showFramebyFrameLatency = ref(false)
 
   // Per-camera latency tracking (last 30 frames)
   const last30_latencyHistory_front = ref([])
@@ -84,27 +84,29 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
       })
     }
 
-    // Average latency of last 30 frames
-    if (latencyHistory.value.length >= 30) {
-      latencyHistory.value.shift()
-    }
-    latencyHistory.value.push(frameLatency)
-    avgLatencyRef.value = latencyHistory.value.reduce((a, b) => a + b, 0) / latencyHistory.value.length
+    if(showFramebyFrameLatency.value) {
+      // Average latency of last 30 frames
+      if (latencyHistory.value.length >= 30) {
+        latencyHistory.value.shift()
+      }
+      latencyHistory.value.push(frameLatency)
+      avgLatencyRef.value = latencyHistory.value.reduce((a, b) => a + b, 0) / latencyHistory.value.length
 
-    // FPS over the last 1 second
-    const currentTime = performance.now()
-    frameTimestamps.value.push(currentTime)
-    while (frameTimestamps.value.length > 0 && currentTime - frameTimestamps.value[0] > 1000) {
-      frameTimestamps.value.shift()
-    }
-    framesFPSRef.value = frameTimestamps.value.length
+      // FPS over the last 1 second
+      const currentTime = performance.now()
+      frameTimestamps.value.push(currentTime)
+      while (frameTimestamps.value.length > 0 && currentTime - frameTimestamps.value[0] > 1000) {
+        frameTimestamps.value.shift()
+      }
+      framesFPSRef.value = frameTimestamps.value.length
 
-    // Bandwidth over the last 1 second
-    bytesHistory.value.push({ timestamp: currentTime, size: completedFrame.data.length })
-    while (bytesHistory.value.length > 0 && currentTime - bytesHistory.value[0].timestamp > 1000) {
-      bytesHistory.value.shift()
-    }
-    bandwidthRef.value = (bytesHistory.value.reduce((sum, e) => sum + e.size, 0) * 8) / (1024 * 1024)
+      // Bandwidth over the last 1 second
+      bytesHistory.value.push({ timestamp: currentTime, size: completedFrame.data.length })
+      while (bytesHistory.value.length > 0 && currentTime - bytesHistory.value[0].timestamp > 1000) {
+        bytesHistory.value.shift()
+      }
+      bandwidthRef.value = (bytesHistory.value.reduce((sum, e) => sum + e.size, 0) * 8) / (1024 * 1024)
+   }
 
     // Per-frame latency history (last 100) for analysis
     if (showFramebyFrameLatency.value) {
