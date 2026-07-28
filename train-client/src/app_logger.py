@@ -1,9 +1,15 @@
-from loguru import logger
+import os
 import sys
+import datetime
+from loguru import logger
 from pathlib import Path
 
+# Create a session-specific log directory with timestamp
+SESSION_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+LOG_DIR = Path("logs") / SESSION_TIMESTAMP
+
 # Create logs directory if it doesn't exist
-Path("logs").mkdir(exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Clear any existing handlers (default is stdout)
 logger.remove()
@@ -38,7 +44,7 @@ logger.add(
 
 # Debug log file
 logger.add(
-    "logs/debug.log",
+    LOG_DIR / "debug.log",
     level="DEBUG",
     format=FILE_FORMAT,
     rotation="10 MB",
@@ -51,7 +57,7 @@ logger.add(
 
 # Info log file (only INFO)
 logger.add(
-    "logs/info.log",
+    LOG_DIR / "info.log",
     level="INFO",
     format=FILE_FORMAT,
     rotation="10 MB",
@@ -63,7 +69,7 @@ logger.add(
 
 # Warning log file (WARNING and above, but not ERROR/CRITICAL)
 logger.add(
-    "logs/warning.log",
+    LOG_DIR / "warning.log",
     level="WARNING",
     format=FILE_FORMAT,
     rotation="5 MB",
@@ -75,7 +81,7 @@ logger.add(
 
 # Error log file (ERROR and above)
 logger.add(
-    "logs/error.log",
+    LOG_DIR / "error.log",
     level="ERROR",
     format=FILE_FORMAT,
     rotation="5 MB",
@@ -84,5 +90,5 @@ logger.add(
     enqueue=True
 )
 
-# Expose logger for import
-__all__ = ["logger"]
+# Expose logger + session log dir for import
+__all__ = ["logger", "SESSION_TIMESTAMP", "LOG_DIR"]
