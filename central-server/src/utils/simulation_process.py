@@ -18,13 +18,19 @@ class SimulationProcess:
         # Create log file path for subprocess
         subprocess_log_path = os.path.join(logs_dir, 'train_client_subprocess.log')
 
+        # Pass the central-server's SESSION_TIMESTAMP to the subprocess so it uses the same log folder
+        from utils.app_logger import SESSION_TIMESTAMP as CENTRAL_SESSION_TIMESTAMP
+        subprocess_env = os.environ.copy()
+        subprocess_env['SESSION_TIMESTAMP'] = CENTRAL_SESSION_TIMESTAMP
+
         try:
             # Redirect subprocess logs to a separate file
             with open(subprocess_log_path, 'a') as log_file:
                 self.simulation_process = subprocess.Popen(
                     [python_executable, train_client_path, 'cli'],
                     stdout=log_file,
-                    stderr=subprocess.STDOUT  # Redirect stderr to stdout (the log file)
+                    stderr=subprocess.STDOUT,  # Redirect stderr to stdout (the log file)
+                    env=subprocess_env
                 )
             logger.info(f"Spawned train client subprocess: {python_executable} {train_client_path} cli (logs redirected to {subprocess_log_path})")
         except Exception as e:

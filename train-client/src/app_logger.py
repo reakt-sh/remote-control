@@ -5,7 +5,8 @@ from loguru import logger
 from pathlib import Path
 
 # Create a session-specific log directory with timestamp
-SESSION_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+# If SESSION_TIMESTAMP env var is set (e.g. from central-server subprocess), use it to keep logs in one folder
+SESSION_TIMESTAMP = os.environ.get("SESSION_TIMESTAMP") or datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 LOG_DIR = Path("logs") / SESSION_TIMESTAMP
 
 # Create logs directory if it doesn't exist
