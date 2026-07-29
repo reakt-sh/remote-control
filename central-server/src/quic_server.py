@@ -22,17 +22,15 @@ from utils.app_logger import logger
 from utils.video_datagram_assembler import VideoDatagramAssembler
 from utils.calculator import Calculator
 from managers.client_manager import ClientManager
-from utils.simulation_process import SimulationProcess
 from globals import *
 
 from server_controller import ServerController
 s_controller = ServerController()
 
 class QUICRelayProtocol(QuicConnectionProtocol):
-    def __init__(self, *args, client_manager: ClientManager, calculator: Calculator, sim_process: SimulationProcess, **kwargs):
+    def __init__(self, *args, client_manager: ClientManager, calculator: Calculator, **kwargs):
         super().__init__(*args, **kwargs)
         self.client_manager = client_manager
-        self.sim_process = sim_process
         self.calculator = calculator
         self.client_type: Optional[str] = None
         self.train_id: Optional[str] = None
@@ -300,8 +298,6 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 await self.client_manager.remove_train_client(self.train_id)
             elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
                 await self.client_manager.remove_remote_control_client(self.remote_control_id)
-                if not self.client_manager.remote_control_clients:
-                    self.sim_process.destroy_simulation_process()
         except Exception as e:
             logger.error(f"Error cleaning up client: {e}")
 
@@ -383,13 +379,6 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 self.remote_control_id = message.get("remote_control_id")
                 asyncio.create_task(self.client_manager.add_remote_control_client(self.remote_control_id, self))
 
-                # If no train clients are connected, spawn a subprocess to run a simulated train client
-                logger.info(f"Check self.client_manager.train_clients = {self.client_manager.train_clients}")
-                if not self.client_manager.train_clients:
-                    logger.info("No train clients connected. here we can spawn a simulated train client subprocess.")
-                    # Currently simulation process creation is stopped temporarily
-                    # self.sim_process.create_simulation_process()
-
                 # try send Stream hello world message to the remote control
                 connect_response_msg = {
                     "type" : "connect_response",
@@ -421,9 +410,6 @@ async def run_quic_server():
         # Create a shared client manager
         client_manager = ClientManager()
 
-        # Create a shared train simulation process
-        sim_process = SimulationProcess()
-
         # create a shared Calculator instance
         calculator = Calculator()
 
@@ -432,7 +418,7 @@ async def run_quic_server():
             QUIC_PORT,
             configuration=quic_config,
             create_protocol=lambda *args, **kwargs: QUICRelayProtocol(
-                *args, client_manager=client_manager, calculator=calculator, sim_process=sim_process, **kwargs
+                *args, client_manager=client_manager, calculator=calculator, **kwargs
             )
         )
 
