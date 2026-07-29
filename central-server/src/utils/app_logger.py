@@ -1,10 +1,21 @@
 from loguru import logger
+import os
 import sys
 import datetime
 from pathlib import Path
 
-# Create a session-specific log directory with timestamp
-SESSION_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+# Create a session-specific log directory with timestamp.
+#
+# NOTE: uvicorn's reload=True runs the app in a separate worker subprocess
+# that re-imports this module from scratch. That second import would
+# otherwise generate a brand-new timestamp (and log folder) for what is
+# really the same session. Sharing the timestamp via an environment
+# variable ensures the supervisor process and its reload worker(s) agree
+# on a single session folder.
+SESSION_TIMESTAMP = os.environ.setdefault(
+    "APP_LOG_SESSION_TIMESTAMP",
+    datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
+)
 LOG_DIR = Path("logs") / SESSION_TIMESTAMP
 
 # Create logs directory if it doesn't exist
