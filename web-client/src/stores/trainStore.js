@@ -315,10 +315,6 @@ export const useTrainStore = defineStore('train', () => {
     command["remote_control_timestamp"] = Date.now()
     command["remote_control_id"] = remoteControlId.value
 
-    switch (command.instruction) {
-      case "CHANGE_DIRECTION": direction.value = command.direction; break
-    }
-
     // Convert command object to JSON and then to Uint8Array
     const jsonBytes = new TextEncoder().encode(JSON.stringify(command))
     const packet = new Uint8Array(1 + jsonBytes.length)
