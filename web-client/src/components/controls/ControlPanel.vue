@@ -1,19 +1,23 @@
 <template>
   <div class="driver-console">
-    <DriveDirectionControls
-      :direction="direction"
-      @change="handleDirectionChange"
-      @stop="handleStop"
-    />
+    <div class="control-half">
+      <DriveDirectionControls
+        :direction="direction"
+        @change="handleDirectionChange"
+        @stop="handleStop"
+      />
+    </div>
     <div class="control-divider" aria-hidden="true"></div>
     <!-- <LightControl @toggle="handleLightToggle" /> -->
     <!-- <HornControl @press="handleHornPress" @release="handleHornRelease" /> -->
-    <SpeedControl
-      :target-speed="targetSpeed"
-      :max-speed="maxSpeed"
-      @update:targetSpeed="onTargetSpeedChange"
-      @change:targetSpeed="onTargetSpeedCommit"
-    />
+    <div class="control-half">
+      <SpeedControl
+        :target-speed="targetSpeed"
+        :max-speed="maxSpeed"
+        @update:targetSpeed="onTargetSpeedChange"
+        @change:targetSpeed="onTargetSpeedCommit"
+      />
+    </div>
     <!-- <ScenarioTestPanel @scenarioStateChange="handleScenarioStateChange" /> -->
   </div>
 </template>
@@ -157,6 +161,16 @@ watch(
   container-name: control-panel;
 }
 
+/* Equal-width halves so the divider sits at the true midpoint of the
+   panel, with each half centering its own control group. */
+.control-half {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
 .control-divider {
   width: 1px;
   align-self: stretch;
@@ -172,6 +186,11 @@ watch(
     gap: 8px;
     padding: 8px;
     max-width: 100%;
+  }
+
+  .control-half {
+    flex: 0 0 auto;
+    width: 100%;
   }
 
   .control-divider {
