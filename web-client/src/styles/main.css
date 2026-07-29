@@ -50,7 +50,7 @@ body, #app {
   min-height: 100vh;
   height: 100vh;
   margin: 0;
-  background: linear-gradient(120deg, #eed2ee 0%, #99d4e9 50%, #cdf5e4 100%);
+  background: #cdc3ff;
 }
 
 .app-header {

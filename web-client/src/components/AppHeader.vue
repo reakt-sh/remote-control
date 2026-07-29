@@ -24,7 +24,7 @@ function goToHome() {
   justify-content: space-between;
   align-items: center;
   padding: 0.25rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1C3647; /* Indigo selected from the style guide REAKT */
   color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
