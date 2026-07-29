@@ -198,8 +198,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         dump_dir = os.path.dirname(H264_DUMP)
         if dump_dir and not os.path.exists(dump_dir):
             os.makedirs(dump_dir, exist_ok=True)
-        output_filename = f"{H264_DUMP}_{timestamp}.h264"
-        self.output_file = open(output_filename, 'wb')
+        output_filename_front = f"{H264_DUMP}_front_{timestamp}.h264"
+        output_filename_rear = f"{H264_DUMP}_rear_{timestamp}.h264"
+        self.output_file_front = open(output_filename_front, 'wb')
+        self.output_file_rear = open(output_filename_rear, 'wb')
 
     def create_dump_file_for_latency(self, file_prefix):
         dump_dir = os.path.dirname(file_prefix)
@@ -595,8 +597,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_encoded_frame(self, frame_id, timestamp, encoded_bytes, camera_type):
         try:
             if self.write_to_file:
-                self.output_file.write(encoded_bytes)
-                self.output_file.flush()
+                if camera_type == CAMERA_TYPE["FRONT"]:
+                    self.output_file_front.write(encoded_bytes)
+                    self.output_file_front.flush()
+                elif camera_type == CAMERA_TYPE["REAR"]:
+                    self.output_file_rear.write(encoded_bytes)
+                    self.output_file_rear.flush()
             if self.is_sending:
                 # Send the encoded frame over the network
                 self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes, camera_type)
@@ -648,7 +654,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.encoder.close()
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
-        self.output_file.close()
+        self.output_file_front.close()
+        self.output_file_rear.close()
         # self.hw_info_generator_timer.stop()
         logger.info("BaseClient closed.")
 
