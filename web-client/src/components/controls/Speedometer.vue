@@ -58,7 +58,7 @@
           :y="tick.labelY"
           fill="#6b7280"
           font-size="6.5"
-          font-family="'Inter', 'Segoe UI', sans-serif"
+          font-family="'Be Vietnam Pro', sans-serif"
           font-weight="600"
           text-anchor="middle"
           dominant-baseline="central"
@@ -256,7 +256,7 @@ const needleCounter = computed(() => {
 .speed-value {
   font-size: 2.2rem;
   font-weight: 700;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   color: #111827;
   line-height: 1;
   letter-spacing: -0.02em;

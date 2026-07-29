@@ -150,7 +150,7 @@ watch(
   padding: 10px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
