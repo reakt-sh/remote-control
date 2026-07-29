@@ -7,8 +7,11 @@ from globals import CAMERA_TYPE
 
 # RTSP_URL_FRONT = "rtsp://reaktorpi2.local:8554/cam"
 # RTSP_URL_REAR = "rtsp://reaktorpi5.local:8554/cam"
-RTSP_URL_FRONT = "rtsp://localhost:8554/cam1"
-RTSP_URL_REAR = "rtsp://localhost:8554/cam2"
+# RTSP_URL_FRONT = "rtsp://localhost:8554/cam1"
+# RTSP_URL_REAR = "rtsp://localhost:8554/cam2"
+RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.1.42:554/H264/ch1/main/av_stream"
+RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.1.30:554/H264/ch1/main/av_stream"
+
 RECONNECT_DELAY = 2.0  # seconds between reconnect attempts
 
 
@@ -58,11 +61,11 @@ class RTSPStream:
         pass
 
     def _open_stream(self):
-        """Open RTSP stream with UDP transport, return (container, video_stream)."""
+        """Open RTSP stream with TCP transport, return (container, video_stream)."""
         container = av.open(
             self.url,
             options={
-                "rtsp_transport": "udp",
+                "rtsp_transport": "tcp",
                 "stimeout": "5000000",        # socket timeout 5 s (µs)
                 "max_delay": "500000",         # max mux delay 0.5 s (µs)
                 "fflags": "nobuffer",

@@ -63,7 +63,22 @@ function adjustTarget(delta) {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: clamp(10px, 4cqh, 22px);
+}
+
+.speed-btn:nth-child(1) {
+	margin-right: clamp(2px, 0.6cqh, 4px);
+}
+
+.speed-btn:nth-child(2) {
+	margin-right: clamp(1px, 0.25cqh, 2px);
+}
+
+.target-pill {
+	margin-right: clamp(1px, 0.25cqh, 2px);
+}
+
+.speed-btn:nth-child(4) {
+	margin-right: clamp(2px, 0.6cqh, 4px);
 }
 
 /* Sized off the control panel's own height (cqh) so buttons scale up to
@@ -71,10 +86,10 @@ function adjustTarget(delta) {
    fixed viewport breakpoints. */
 .speed-btn {
 	position: relative;
-	width: clamp(46px, 14cqh, 108px);
-	height: clamp(38px, 12cqh, 90px);
+	width: clamp(50px, 15.5cqh, 118px);
+	height: clamp(42px, 13.5cqh, 100px);
 	border: none;
-	border-radius: 10px;
+	border-radius: 0;
 	cursor: pointer;
 	font-family: inherit;
 	font-weight: 700;
@@ -83,6 +98,14 @@ function adjustTarget(delta) {
 	background: linear-gradient(145deg, #7a7f7a, #565e5b);
 	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 	transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.speed-btn:first-child {
+	border-radius: 10px 0 0 10px;
+}
+
+.speed-btn:last-child {
+	border-radius: 0 10px 10px 0;
 }
 
 .speed-btn:not(:disabled):hover {
@@ -103,7 +126,7 @@ function adjustTarget(delta) {
 }
 
 .speed-btn .label {
-	font-size: clamp(0.75rem, 3.8cqh, 1.05rem);
+	font-size: clamp(1rem, 5cqh, 1.4rem);
 }
 
 .target-pill {
@@ -143,17 +166,23 @@ function adjustTarget(delta) {
    the viewport), so let the buttons scale up further before hitting their
    caps instead of staying capped at the portrait-friendly sizes. */
 @media (orientation: landscape) {
-	.speed-control {
-		gap: clamp(14px, 6cqh, 32px);
+	.speed-btn:nth-child(1),
+	.speed-btn:nth-child(4) {
+		margin-right: clamp(3px, 0.8cqh, 5px);
+	}
+
+	.speed-btn:nth-child(2),
+	.target-pill {
+		margin-right: clamp(1.5px, 0.35cqh, 3px);
 	}
 
 	.speed-btn {
-		width: clamp(70px, 22cqh, 160px);
-		height: clamp(60px, 19cqh, 140px);
+		width: clamp(76px, 23.5cqh, 172px);
+		height: clamp(64px, 20.5cqh, 150px);
 	}
 
 	.speed-btn .label {
-		font-size: clamp(0.95rem, 5cqh, 1.35rem);
+		font-size: clamp(1.2rem, 6.5cqh, 1.7rem);
 	}
 
 	.target-pill {

@@ -100,6 +100,7 @@
     <div class="digital-display">
       <div class="speed-value">{{ formattedSpeed }}</div>
       <div class="speed-unit">km/h</div>
+      <div class="speed-label">Current Speed</div>
     </div>
   </div>
 </template>
@@ -272,7 +273,7 @@ const needleCounter = computed(() => {
 }
 
 .speed-label {
-  font-size: 0.65rem;
+  font-size: 1.0rem;
   font-weight: 500;
   color: #9ca3af;
   text-transform: uppercase;
