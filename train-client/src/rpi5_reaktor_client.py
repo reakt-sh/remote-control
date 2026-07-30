@@ -11,7 +11,10 @@ from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 
 # Connector related imports
-from connector.test.context import Connection, Status, Control, Mode
+# from connector.test.context import Connection, Status, Control, Mode
+
+from connector.connector.connection import Connection
+from connector.connector.data import Status, Control, Mode
 
 INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
 MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
