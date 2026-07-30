@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-import qasync
+import threading
 from app_logger import logger
 from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
@@ -30,11 +30,15 @@ class RPi5ReaktorClient(BaseClient, QThread):
         logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.INFO)
 
         if IS_REAKTOR_DRIVER_ENABLED:
-            loop = qasync.QEventLoop(self)
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
             logger.info("Reaktor driver enabled. Initializing connection.")
             self.connection = None
-            task = loop.create_task(self.setup_connection())
-            loop.run_until_complete(task)
+            self._loop.run_until_complete(self.setup_connection())
+            # Keep the event loop running in a background thread to maintain
+            # async operations (e.g. connection read/write callbacks)
+            self._event_loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+            self._event_loop_thread.start()
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
@@ -57,8 +61,6 @@ class RPi5ReaktorClient(BaseClient, QThread):
         if current_time - self.last_log_time > 3000:
             self.last_log_time = current_time
             logger.info(f"New status: {s}")
-
-        logger.info(f"New status: {s}")
 
         current_speed_kmh = s.motor_speed * 3.6
         current_mode = ""
