@@ -9,6 +9,7 @@ from base_client import BaseClient
 from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
 from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
+import logging
 
 # Connector related imports
 # from connector.test.context import Connection, Status, Control, Mode
@@ -26,6 +27,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         self.current_speed = 0
         self.status = None
         self.last_log_time = 0
+        logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.INFO)
 
         if IS_REAKTOR_DRIVER_ENABLED:
             loop = qasync.QEventLoop(self)
@@ -55,6 +57,8 @@ class RPi5ReaktorClient(BaseClient, QThread):
         if current_time - self.last_log_time > 3000:
             self.last_log_time = current_time
             logger.info(f"New status: {s}")
+
+        logger.info(f"New status: {s}")
 
         current_speed_kmh = s.motor_speed * 3.6
         current_mode = ""
