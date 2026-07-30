@@ -9,9 +9,11 @@ from globals import CAMERA_TYPE
 # RTSP_URL_REAR = "rtsp://reaktorpi5.local:8554/cam"
 # RTSP_URL_FRONT = "rtsp://localhost:8554/cam1"
 # RTSP_URL_REAR = "rtsp://localhost:8554/cam2"
-RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.1.42:554/H264/ch1/main/av_stream"
-RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.1.30:554/H264/ch1/main/av_stream"
+# RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.1.42:554/H264/ch1/main/av_stream"
+# RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.1.30:554/H264/ch1/main/av_stream"
 
+RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.88.248:554/H264/ch1/main/av_stream"
+RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.88.249:554/H264/ch1/main/av_stream"
 RECONNECT_DELAY = 2.0  # seconds between reconnect attempts
 
 
