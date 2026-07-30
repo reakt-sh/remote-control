@@ -34,8 +34,9 @@ async def main():
         await asyncio.sleep(.1)
 
     # Test state
-    if not status.remote_control:
+    while not status.remote_control:
         print("Warning: Driver not in remote control mode.")
+        await asyncio.sleep(.5)
 
     # Testing
     try:

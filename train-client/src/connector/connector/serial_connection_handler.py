@@ -1,3 +1,7 @@
+"""
+INTERNAL serial connection handler.
+"""
+
 import logging
 import asyncio
 from serial_asyncio import SerialTransport

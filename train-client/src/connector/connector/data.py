@@ -1,3 +1,7 @@
+"""
+User facing data classes for vehicle control and status.
+"""
+
 from datetime import datetime
 from enum import IntEnum, unique
 from typing import Annotated, Optional, List

@@ -1,3 +1,6 @@
+"""
+Connector package initialization.
+"""
 from .connection import Connection
 from .data import Control, Status, Mode, ErrorState, InternalState
 

@@ -1,3 +1,7 @@
+"""
+User-facing connectoion for managing communication with the vehicle.
+"""
+
 import logging
 import asyncio
 from typing import Callable
@@ -11,6 +15,8 @@ from .data import Control, Status
 logger = logging.getLogger("connector:connection")
 
 class Connection:
+    """Connection to the REAKTOR."""
+
     _serial: SerialConnectionHandler # Internal serial connection handler
     _decoder: MessageHandler # Message handler for en/decoding messages
     _heartbeat_task: asyncio.Task # Background task for automatic heartbeat

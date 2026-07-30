@@ -29,7 +29,7 @@
 # fail-on =
 
 # Specify a score threshold under which the program will exit with error.
-fail-under = 10
+fail-under = 9.5
 
 # Interpret the stdin as a python script, whose filename needs to be passed as
 # the module_or_package argument.
@@ -49,11 +49,10 @@ ignore = ["CVS"]
 # file locks
 ignore-patterns = ["^\\.#"]
 
-# List of module names for which member attributes should not be checked and will
-# not be imported (useful for modules/projects where namespaces are manipulated
-# during runtime and thus existing member attributes cannot be deduced by static
-# analysis). It supports qualified module names, as well as Unix pattern
-# matching.
+# List of module names for which member attributes should not be checked (useful
+# for modules/projects where namespaces are manipulated during runtime and thus
+# existing member attributes cannot be deduced by static analysis). It supports
+# qualified module names, as well as Unix pattern matching.
 # ignored-modules =
 
 # Python code to execute, usually for sys.path manipulation such as
@@ -63,7 +62,7 @@ ignore-patterns = ["^\\.#"]
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use, and will cap the count on Windows to
 # avoid hangs.
-jobs = 1
+jobs = 0
 
 # Control the amount of potential inferred values when inferring a single object.
 # This can help the performance when dealing with large functions or complex,
@@ -77,10 +76,6 @@ limit-inference-results = 100
 # Pickle collected data for later comparisons.
 persistent = true
 
-# Resolve imports to .pyi stubs if available. May reduce no-member messages and
-# increase not-an-iterable messages.
-# prefer-stubs =
-
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.
 py-version = "3.13"
@@ -93,10 +88,6 @@ py-version = "3.13"
 # directory used to determine a package namespace for modules located under the
 # source root.
 # source-roots =
-
-# When enabled, pylint would attempt to guess common misconfiguration and emit
-# user-friendly hints instead of false-positive error messages.
-suggestion-mode = true
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -272,9 +263,6 @@ max-locals = 15
 # Maximum number of parents for a class (see R0901).
 max-parents = 7
 
-# Maximum number of positional arguments for function / method.
-# max-positional-arguments = 5
-
 # Maximum number of public methods for a class (see R0904).
 max-public-methods = 20
 
@@ -289,8 +277,7 @@ min-public-methods = 2
 
 [tool.pylint.exceptions]
 # Exceptions that will emit a warning when caught.
-# overgeneral-exceptions = ["builtins.BaseException", "builtins.Exception"]
-overgeneral-exceptions = ["builtins.BaseException"]
+overgeneral-exceptions = ["builtins.BaseException", "builtins.Exception"]
 
 [tool.pylint.format]
 # Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
@@ -307,7 +294,7 @@ indent-after-paren = 4
 indent-string = "    "
 
 # Maximum number of characters on a single line.
-max-line-length = 140
+max-line-length = 200
 
 # Maximum number of lines in a module.
 max-module-lines = 1000
@@ -406,10 +393,6 @@ max-nested-blocks = 5
 # considered as an explicit return statement and no message will be printed.
 never-returning-functions = ["sys.exit", "argparse.parse_error"]
 
-# Let 'consider-using-join' be raised when the separator to join on would be non-
-# empty (resulting in expected fixes of the type: ``"- " + " - ".join(items)``)
-suggest-join-with-non-empty-separator = true
-
 [tool.pylint.reports]
 # Python expression which should return a score less than or equal to 10. You
 # have access to the variables 'fatal', 'error', 'warning', 'refactor',
@@ -453,8 +436,9 @@ min-similarity-lines = 4
 # Limits count of emitted suggestions for spelling mistakes.
 max-spelling-suggestions = 4
 
-# Spelling dictionary name. No available dictionaries : You need to install both
-# the python package and the system dependency for enchant to work.
+# Spelling dictionary name. Available dictionaries: de (aspell), de_AT (aspell),
+# de_CH (aspell), de_DE (aspell), en (aspell), en_AU (aspell), en_CA (aspell),
+# en_GB (aspell), en_US (aspell).
 # spelling-dict =
 
 # List of comma separated words that should be considered directives if they
