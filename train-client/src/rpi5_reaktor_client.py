@@ -8,6 +8,7 @@ from motor_actuator import MotorActuator
 from base_client import BaseClient
 from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
 from PyQt5.QtCore import QThread
+from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 
 # Connector related imports
 from connector.test.context import Connection, Status, Control, Mode
@@ -17,7 +18,7 @@ MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
-        super().__init__(video_source=CameraRPi5(), has_motor=True)
+        super().__init__(video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=True)
         self.current_mode = Mode.FORWARD
         self.current_speed = 0
         self.status = None
