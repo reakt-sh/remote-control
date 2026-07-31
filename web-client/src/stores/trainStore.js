@@ -41,6 +41,7 @@ export const PACKET_TYPE = {
   map_disconnect: 31,
   connect: 32,
   connect_response: 33,
+  error_msg: 34,
 }
 
 
@@ -484,6 +485,9 @@ export const useTrainStore = defineStore('train', () => {
       case PACKET_TYPE.connect_response: {
         console.log('✅ Received connect response from server via WebTransport, data = ', new TextDecoder().decode(payload))
         break
+      }
+      case PACKET_TYPE.error_msg: {
+        console.error('❌ Received error message from server via WebTransport, data = ', new TextDecoder().decode(payload))
       }
       case PACKET_TYPE.rtt: {
         try {

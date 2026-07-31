@@ -636,6 +636,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
         # logger.info(f"{timestamp} {message}")
 
+    def send_error_message(self, error_code: str):
+        error_msg_packet = {
+            "type": "error_message",
+            "error_code": error_code,
+        }
+        error_msg_packet = json.dumps(error_msg_packet).encode('utf-8')
+        error_msg_packet = struct.pack("B", PACKET_TYPE.ERROR_MSG) + error_msg_packet
+        error_msg_packet = self.helper.get_length_prefixed_packet(error_msg_packet)
+
+        self.network_worker_quic.enqueue_stream_packet(error_msg_packet)
+        logger.info(f"Sent error message packet with error_code: {error_code}")
+
     def stop_train_operations(self):
         self.on_horn_off()
         self.on_headlight_off()

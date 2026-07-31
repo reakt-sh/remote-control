@@ -26,6 +26,7 @@ class TrainClient(BaseClient, QMainWindow):
         BaseClient.__init__(self, video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=False)
         self.headlight_on = False
         self.horn_active = False
+        self.actual_speed = 0
         self.init_ui()
 
         # Initialize horn sound player
@@ -287,16 +288,22 @@ class TrainClient(BaseClient, QMainWindow):
         self.video_source_front.set_speed(speed)
         self.video_source_rear.set_speed(speed)
         self.telemetry.set_speed(speed)
+        self.actual_speed = speed
 
     def on_power_on(self):
-        self.update_speed(self.target_speed)
+        self.update_speed(self.actual_speed)
 
     def on_power_off(self):
+        self.actual_speed = 0
         self.update_speed(0)
 
     def on_change_direction(self, direction):
+        if self.actual_speed > 0:
+            super().send_error_message(ERROR_CODES.CHANGE_DIRECTION_WHILE_MOVING)
+            return
         self.video_source_front.set_direction(direction)
         self.video_source_rear.set_direction(direction)
+        self.telemetry.set_direction(direction)
 
     def update_headlight_display(self):
         if self.headlight_on:

@@ -221,7 +221,11 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         if self.client_type is None and packet and packet[0] == PACKET_TYPE.CONNECT:
             self.create_new_connection(packet, stream_id)
         elif self.client_type == CLIENT_TYPE_TRAIN:
-            if packet and (packet[0] == PACKET_TYPE.TELEMETRY or packet[0] == PACKET_TYPE.RTT or packet[0] == PACKET_TYPE.RTT_TRAIN or packet[0] == PACKET_TYPE.KEEPALIVE):
+            if packet and (packet[0] == PACKET_TYPE.TELEMETRY or
+                           packet[0] == PACKET_TYPE.RTT or
+                           packet[0] == PACKET_TYPE.RTT_TRAIN or
+                           packet[0] == PACKET_TYPE.KEEPALIVE or
+                           packet[0] == PACKET_TYPE.ERROR_MSG):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_remote_controls(self.train_id, packet)
                 )
