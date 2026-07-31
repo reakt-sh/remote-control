@@ -70,10 +70,10 @@ class RPi5ReaktorClient(BaseClient, QThread):
             self.actual_mode = "STOP"
         elif s.mode == Mode.FORWARD:
             self.actual_mode = "FORWARD"
-            self.telemetry.set_direction(DIRECTION["FORWARD"])
+            self.telemetry.set_direction(DIRECTION.FORWARD)
         elif s.mode == Mode.REVERSE:
             self.actual_mode = "REVERSE"
-            self.telemetry.set_direction(DIRECTION["BACKWARD"])
+            self.telemetry.set_direction(DIRECTION.BACKWARD)
         elif s.mode == Mode.PARKING:
             self.actual_mode = "PARKING"
         elif s.mode == Mode.NEUTRAL:
@@ -136,10 +136,10 @@ class RPi5ReaktorClient(BaseClient, QThread):
             return
 
         try:
-            if direction == DIRECTION["FORWARD"]:
+            if direction == DIRECTION.FORWARD:
                 self.mode = Mode.FORWARD
                 self.speed = 0
-            elif direction == DIRECTION["BACKWARD"]:
+            elif direction == DIRECTION.BACKWARD:
                 self.mode = Mode.REVERSE
                 self.speed = 0
             else:

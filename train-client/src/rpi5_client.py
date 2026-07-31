@@ -30,11 +30,10 @@ class RPi5Client(BaseClient, QThread):
 
     def on_change_direction(self, direction):
         logger.info(f"Changing direction to: {direction}")
-        if direction == DIRECTION["FORWARD"]:
+        if direction == DIRECTION.FORWARD:
             self.motor_actuator.move_forward()
-        elif direction == DIRECTION["BACKWARD"]:
+        elif direction == DIRECTION.BACKWARD:
             self.motor_actuator.move_backward()
-        self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
 
     def on_headlight_on(self):
         logger.info("Turning on headlights.")

@@ -162,7 +162,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Apply current direction & speed to new source before starting
             if hasattr(new_source, 'set_direction'):
                 try:
-                    new_source.set_direction(DIRECTION["FORWARD"])
+                    new_source.set_direction(DIRECTION.FORWARD)
                 except Exception:
                     pass
             if hasattr(new_source, 'set_speed'):
@@ -510,17 +510,17 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 if not self.is_sending:
                     self.toggle_sending()
             elif message['instruction'] == 'POWER_ON':
-                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+                self.telemetry.set_status(TRAIN_STATUS.POWER_ON)
                 self.target_speed = max(self.target_speed, MAX_SPEED)
                 self.on_power_on()
             elif message['instruction'] == 'POWER_OFF':
-                self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
+                self.telemetry.set_status(TRAIN_STATUS.POWER_OFF)
                 self.target_speed = 0
                 self.on_power_off()
             elif message['instruction'] == 'CHANGE_DIRECTION':
                 direction = message.get('direction')
-                if direction in ("FORWARD", "BACKWARD"):
-                    self.on_change_direction(DIRECTION[direction])
+                if direction in (DIRECTION.FORWARD, DIRECTION.BACKWARD):
+                    self.on_change_direction(direction)
                 else:
                     logger.warning(f"Unknown direction: {direction}")
             elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
@@ -596,10 +596,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_encoded_frame(self, frame_id, timestamp, encoded_bytes, camera_type):
         try:
             if self.write_to_file:
-                if camera_type == CAMERA_TYPE["FRONT"]:
+                if camera_type == CAMERA_TYPE.FRONT:
                     self.output_file_front.write(encoded_bytes)
                     self.output_file_front.flush()
-                elif camera_type == CAMERA_TYPE["REAR"]:
+                elif camera_type == CAMERA_TYPE.REAR:
                     self.output_file_rear.write(encoded_bytes)
                     self.output_file_rear.flush()
             if self.is_sending:

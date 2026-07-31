@@ -451,11 +451,7 @@ export const useTrainStore = defineStore('train', () => {
             })
           }
 
-          if (jsonData.direction === 1) {
-            direction.value = 'FORWARD'
-          } else {
-            direction.value = 'BACKWARD'
-          }
+          direction.value = jsonData.direction
 
         } catch (error) {
           console.error('❌ Error parsing telemetry data:', error)
@@ -584,12 +580,7 @@ export const useTrainStore = defineStore('train', () => {
         // if (telemetryHistory.value.length > 300) {
         //   telemetryHistory.value.pop()
         // }
-
-        if (data.direction === 1) {
-          direction.value = 'FORWARD'
-        } else if (data.direction === -1) {
-          direction.value = 'BACKWARD'
-        }
+        direction.value = data.direction
         break
       }
 

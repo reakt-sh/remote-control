@@ -54,10 +54,10 @@ class TRAIN_STATUS(StrEnum):
     POWER_OFF = "stopped"
     UNKNOWN = "unknown"
 
-class DIRECTION(IntEnum):
-    FORWARD = 1
-    BACKWARD = -1
-    STOPPED = 0
+class DIRECTION(StrEnum):
+    FORWARD = "FORWARD"
+    BACKWARD = "BACKWARD"
+
 
 class CAMERA_TYPE(StrEnum):
     FRONT = "FRONT"

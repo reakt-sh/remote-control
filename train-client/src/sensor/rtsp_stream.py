@@ -41,7 +41,7 @@ class RTSPStream:
         self.frame_count = 0
         self.width = 0
         self.height = 0
-        self.camera_type = CAMERA_TYPE["FRONT"] if url == RTSP_URL_FRONT else CAMERA_TYPE["REAR"]
+        self.camera_type = CAMERA_TYPE.FRONT if url == RTSP_URL_FRONT else CAMERA_TYPE.REAR
 
     def init_capture(self):
         self._running = True

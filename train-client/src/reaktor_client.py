@@ -274,7 +274,7 @@ class ReaktorClient(BaseClient, QMainWindow):
         self.connection.send_control(control)
 
     def on_change_direction(self, direction):
-        if direction == DIRECTION["FORWARD"]:
+        if direction == DIRECTION.FORWARD:
             logger.info("Changing direction command received to FORWARD.")
-        elif direction == DIRECTION["BACKWARD"]:
+        elif direction == DIRECTION.BACKWARD:
             logger.info("Changing direction command received to BACKWARD.")

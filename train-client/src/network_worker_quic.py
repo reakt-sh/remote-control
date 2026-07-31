@@ -204,9 +204,9 @@ class NetworkWorkerQUIC:
 
         for packet_id in range(1, number_of_packets + 1):
             header = bytearray()
-            if camera_type == CAMERA_TYPE["FRONT"]:
+            if camera_type == CAMERA_TYPE.FRONT:
                 header.append(PACKET_TYPE.VIDEO_FRONT)
-            elif camera_type == CAMERA_TYPE["REAR"]:
+            elif camera_type == CAMERA_TYPE.REAR:
                 header.append(PACKET_TYPE.VIDEO_REAR)
             else:
                 pass

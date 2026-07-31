@@ -29,8 +29,8 @@ class Telemetry:
 
         self.name = "Train"
         self.train_id = train_id
-        self.status = TRAIN_STATUS["POWER_ON"]
-        self.direction = DIRECTION["FORWARD"]
+        self.status = TRAIN_STATUS.POWER_OFF
+        self.direction = DIRECTION.FORWARD
         self.speed = 0
         self.max_speed = MAX_SPEED
         self.brake_status = "released"
