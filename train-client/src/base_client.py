@@ -520,7 +520,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
             elif message['instruction'] == 'CHANGE_DIRECTION':
                 direction = message.get('direction')
                 if direction in ("FORWARD", "BACKWARD"):
-                    self.telemetry.set_direction(DIRECTION[direction])
                     self.on_change_direction(DIRECTION[direction])
                 else:
                     logger.warning(f"Unknown direction: {direction}")
