@@ -10,6 +10,7 @@ import { useMqttClient } from '@/scripts/mqtt-paho'
 import { useDataStorage } from '@/scripts/dataStorage'
 import { SERVER_URL } from '@/scripts/config'
 import { useVideoFrameHandler } from '@/scripts/videoFrameHandler'
+import { useNotificationStore } from '@/stores/notificationStore'
 
 
 
@@ -487,7 +488,12 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
       case PACKET_TYPE.error_msg: {
-        console.error('❌ Received error message from server via WebTransport, data = ', new TextDecoder().decode(payload))
+        const errorMessage = new TextDecoder().decode(payload)
+        console.error('❌ Received error message from server via WebTransport, data = ', errorMessage)
+        // Show a professional error notification to the user
+        const notificationStore = useNotificationStore()
+        notificationStore.addNotification(errorMessage)
+        break
       }
       case PACKET_TYPE.rtt: {
         try {
