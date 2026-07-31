@@ -3,6 +3,7 @@ import platform
 import datetime
 import os
 from video_config import *
+from enum import Enum, IntEnum, StrEnum
 # some configuration for components
 
 START_X = 100
@@ -22,48 +23,50 @@ HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIM
 LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency_keepalive')
 
 # Packet Types
-PACKET_TYPE = {
-    "video_front": 11,
-    "video_rear": 12,
-    "video": 13,
-    "audio": 14,
-    "control": 15,
-    "command": 16,
-    "telemetry": 17,
-    "imu": 18,
-    "lidar": 19,
-    "keepalive": 20,
-    "notification": 21,
-    "download_start": 22,
-    "downloading": 23,
-    "download_end": 24,
-    "upload_start": 25,
-    "uploading": 26,
-    "upload_end": 27,
-    "rtt": 28,
-    "map_connect": 29,
-    "rtt_train": 30,
-    "map_disconnect": 31,
-    "connect": 32,
-    "connect_response": 33,
-}
+class PACKET_TYPE(IntEnum):
+    VIDEO_FRONT = 11
+    VIDEO_REAR = 12
+    VIDEO = 13
+    AUDIO = 14
+    CONTROL = 15
+    COMMAND = 16
+    TELEMETRY = 17
+    IMU = 18
+    LIDAR = 19
+    KEEPALIVE = 20
+    NOTIFICATION = 21
+    DOWNLOAD_START = 22
+    DOWNLOADING = 23
+    DOWNLOAD_END = 24
+    UPLOAD_START = 25
+    UPLOADING = 26
+    UPLOAD_END = 27
+    RTT = 28
+    MAP_CONNECT = 29
+    RTT_TRAIN = 30
+    MAP_DISCONNECT = 31
+    CONNECT = 32
+    CONNECT_RESPONSE = 33
+    ERROR_MSG = 34
 
-TRAIN_STATUS = {
-    "POWER_ON": "running",
-    "POWER_OFF": "stopped",
-    "UNKNOWN": "unknown"
-}
+class TRAIN_STATUS(StrEnum):
+    POWER_ON = "running"
+    POWER_OFF = "stopped"
+    UNKNOWN = "unknown"
 
-DIRECTION = {
-    "FORWARD": 1,
-    "BACKWARD": -1,
-    "STOPPED": 0
-}
+class DIRECTION(IntEnum):
+    FORWARD = 1
+    BACKWARD = -1
+    STOPPED = 0
 
-CAMERA_TYPE = {
-    "FRONT": "FRONT",
-    "REAR": "REAR"
-}
+class CAMERA_TYPE(StrEnum):
+    FRONT = "FRONT"
+    REAR = "REAR"
+
+
+class ERROR_CODES(StrEnum):
+    CHANGE_DIRECTION_WHILE_MOVING = "E101"
+
 
 # overwrite for remote server
 SERVER = 'wt.rtsys-lab.de'

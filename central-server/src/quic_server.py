@@ -88,9 +88,9 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
     def _handle_datagram_frame(self, event: DatagramFrameReceived) -> None:
         if self.client_type == CLIENT_TYPE_TRAIN and event.data and (
-            event.data[0] == PACKET_TYPE["video"] or
-            event.data[0] == PACKET_TYPE["video_front"] or
-            event.data[0] == PACKET_TYPE["video_rear"]):
+            event.data[0] == PACKET_TYPE.VIDEO or
+            event.data[0] == PACKET_TYPE.VIDEO_FRONT or
+            event.data[0] == PACKET_TYPE.VIDEO_REAR):
 
             # Relay the video frame to all mapped remote controls
             asyncio.create_task(
@@ -119,7 +119,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 "remote_control_id": self.remote_control_id,
             }
             packet_data = json.dumps(data).encode('utf-8')
-            packet = struct.pack("B", PACKET_TYPE["map_disconnect"]) + packet_data
+            packet = struct.pack("B", PACKET_TYPE.MAP_DISCONNECT) + packet_data
             await self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
         self._close_connection()
 
@@ -131,7 +131,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
         if self.client_type is None:
             # wait for first connect message to determine client type
-            if len(event.data) > 3 and event.data[2] == PACKET_TYPE["connect"]:
+            if len(event.data) > 3 and event.data[2] == PACKET_TYPE.CONNECT:
                 self.construct_stream_packet(event.data, event.stream_id)
             else:
                 # ignore any data received before the connect message
@@ -218,15 +218,15 @@ class QUICRelayProtocol(QuicConnectionProtocol):
 
     def process_stream_packet(self, packet: bytes, stream_id: int):
         message = self.decode_packet(packet)
-        if self.client_type is None and packet and packet[0] == PACKET_TYPE["connect"]:
+        if self.client_type is None and packet and packet[0] == PACKET_TYPE.CONNECT:
             self.create_new_connection(packet, stream_id)
         elif self.client_type == CLIENT_TYPE_TRAIN:
-            if packet and (packet[0] == PACKET_TYPE["telemetry"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"] or packet[0] == PACKET_TYPE["keepalive"]):
+            if packet and (packet[0] == PACKET_TYPE.TELEMETRY or packet[0] == PACKET_TYPE.RTT or packet[0] == PACKET_TYPE.RTT_TRAIN or packet[0] == PACKET_TYPE.KEEPALIVE):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_remote_controls(self.train_id, packet)
                 )
         elif self.client_type == CLIENT_TYPE_REMOTE_CONTROL:
-            if packet and packet[0] == PACKET_TYPE["map_connect"]:
+            if packet and packet[0] == PACKET_TYPE.MAP_CONNECT:
                 remote_control_id = message.get("remote_control_id")
                 train_id = message.get("train_id")
                 asyncio.create_task(
@@ -236,7 +236,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(remote_control_id, packet)
                 )
-            elif packet and (packet[0] == PACKET_TYPE["command"] or packet[0] == PACKET_TYPE["rtt"] or packet[0] == PACKET_TYPE["rtt_train"] or packet[0] == PACKET_TYPE["keepalive"]):
+            elif packet and (packet[0] == PACKET_TYPE.COMMAND or packet[0] == PACKET_TYPE.RTT or packet[0] == PACKET_TYPE.RTT_TRAIN or packet[0] == PACKET_TYPE.KEEPALIVE):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
                 )
@@ -319,29 +319,29 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         data = bytearray(os.urandom(10 * 1024 * 1024))  # 10 MB of random data
 
         packet = data[:1024]  # 1 KB of random data
-        packet[0] = PACKET_TYPE["download_start"]
+        packet[0] = PACKET_TYPE.DOWNLOAD_START
         self.h3_connection.send_datagram(self.session_id, packet)
         totalBytes += len(packet)
 
         while totalBytes < 10 * 1024 * 1024:
             packet = data[totalBytes:totalBytes + 1024]  # 1 KB of random data
-            packet[0] = PACKET_TYPE["downloading"]
+            packet[0] = PACKET_TYPE.DOWNLOADING
             self.h3_connection.send_datagram(self.session_id, packet)
             totalBytes += len(packet)
 
         packet = bytearray(10)
-        packet[0] = PACKET_TYPE["download_end"]
+        packet[0] = PACKET_TYPE.DOWNLOAD_END
         self.h3_connection.send_datagram(self.session_id, packet)
         self.transmit()
 
     async def measure_upload_speed(self, data):
         packet_type = data[0]
-        if packet_type == PACKET_TYPE["upload_start"]:
+        if packet_type == PACKET_TYPE.UPLOAD_START:
             totalBytes = len(data)
             self.upload_start_time = asyncio.get_event_loop().time()
-        elif packet_type == PACKET_TYPE["uploading"]:
+        elif packet_type == PACKET_TYPE.UPLOADING:
             totalBytes += len(data)
-        elif packet_type == PACKET_TYPE["upload_end"]:
+        elif packet_type == PACKET_TYPE.UPLOAD_END:
             self.upload_end_time = asyncio.get_event_loop().time()
             elapsed_time = self.upload_end_time - self.upload_start_time
             self.upload_speed = totalBytes / elapsed_time / 1024 / 1024
@@ -368,7 +368,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     "train_id": self.train_id,
                 }
                 connect_response_packet = json.dumps(connect_response_msg).encode('utf-8')
-                connect_response_packet = struct.pack("B", PACKET_TYPE["connect_response"]) + connect_response_packet
+                connect_response_packet = struct.pack("B", PACKET_TYPE.CONNECT_RESPONSE) + connect_response_packet
                 self._quic.send_stream_data(stream_id, connect_response_packet, end_stream=False)
                 self.transmit()
                 return
@@ -385,7 +385,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                     "remote_control_id": self.remote_control_id,
                 }
                 connect_response_packet = json.dumps(connect_response_msg).encode('utf-8')
-                connect_response_packet = struct.pack("B", PACKET_TYPE["connect_response"]) + connect_response_packet
+                connect_response_packet = struct.pack("B", PACKET_TYPE.CONNECT_RESPONSE) + connect_response_packet
 
                 self._quic.send_stream_data(stream_id, connect_response_packet, end_stream=False)
                 self.transmit()

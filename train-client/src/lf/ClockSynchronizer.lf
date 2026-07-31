@@ -38,7 +38,7 @@ reactor ClockSynchronizer {
                 "train_timestamp": self.helper.get_timestamp()
             }
             rtt_train_data = self.json.dumps(rtt_train_Packet).encode("utf-8")
-            rtt_train_packet = self.struct.pack("B", self.PACKET_TYPE["rtt_train"]) + rtt_train_data
+            rtt_train_packet = self.struct.pack("B", self.PACKET_TYPE.RTT_TRAIN) + rtt_train_data
             rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
             return rtt_train_packet
 
@@ -64,7 +64,7 @@ reactor ClockSynchronizer {
                     rtt_data = self.json.loads(payload.decode("utf-8"))
                     rtt_data["train_timestamp"] = self.helper.get_timestamp()
                     rtt_packet = self.json.dumps(rtt_data).encode("utf-8")
-                    rtt_packet = self.struct.pack("B", self.PACKET_TYPE["rtt"]) + rtt_packet
+                    rtt_packet = self.struct.pack("B", self.PACKET_TYPE.RTT) + rtt_packet
                     rtt_packet = self.helper.get_length_prefixed_packet(rtt_packet)
                     self.logger.info(f"Sending RTT response packet with updated train timestamp: {rtt_data['train_timestamp']}")
                     clock_sync_send.set(rtt_packet)

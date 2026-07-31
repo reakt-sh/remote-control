@@ -176,7 +176,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             self._identify_client(event.data)
             return
 
-        if self.client_type == 'train' and event.data[0] == PACKET_TYPE["video"]:
+        if self.client_type == 'train' and event.data[0] == PACKET_TYPE.VIDEO:
             self._process_video_data(event)
         else:
             logger.debug(f"Unhandled data received from {self.client_type} client")

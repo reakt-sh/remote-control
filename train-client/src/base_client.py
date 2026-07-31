@@ -270,9 +270,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         try:
             packet_type = data[0]
             payload = data[1:]
-            if packet_type == PACKET_TYPE["command"]:
+            if packet_type == PACKET_TYPE.COMMAND:
                 self.on_new_command(payload)
-            elif packet_type == PACKET_TYPE["map_connect"]:
+            elif packet_type == PACKET_TYPE.MAP_CONNECT:
                 ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
@@ -288,7 +288,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.info("Keepalive timer started (on map_connect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_connect JSON: {e}")
-            elif packet_type == PACKET_TYPE["map_disconnect"]:
+            elif packet_type == PACKET_TYPE.MAP_DISCONNECT:
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
                     logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
@@ -306,7 +306,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         logger.info("Keepalive timer stopped (on map_disconnect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_disconnect JSON: {e}")
-            elif packet_type == PACKET_TYPE["rtt_train"]:
+            elif packet_type == PACKET_TYPE.RTT_TRAIN:
                 try:
                     jsonString = payload.decode('utf-8')
                     jsonData = json.loads(jsonString)
@@ -352,7 +352,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         self.clock_offset_samples[remote_control_id] = []
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse rtt_train JSON: {e}")
-            elif packet_type == PACKET_TYPE["keepalive"]:
+            elif packet_type == PACKET_TYPE.KEEPALIVE:
                 try:
                     message = json.loads(payload.decode('utf-8'))
                     remote_control_id = message.get('remote_control_id', 0)
@@ -375,18 +375,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         self.latency_output_file_for_keepalive.flush()
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse keepalive JSON: {e}")
-            elif packet_type == PACKET_TYPE["rtt"]:
+            elif packet_type == PACKET_TYPE.RTT:
                 try:
                     # just modify event data with current timestamp
                     rtt_data = json.loads(payload.decode('utf-8'))
                     rtt_data["train_timestamp"] = self.helper.get_timestamp()
                     rtt_packet = json.dumps(rtt_data).encode('utf-8')
-                    rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+                    rtt_packet = struct.pack("B", PACKET_TYPE.RTT) + rtt_packet
                     rtt_packet = self.helper.get_length_prefixed_packet(rtt_packet)
                     self.network_worker_quic.enqueue_stream_packet(rtt_packet)
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse rtt JSON: {e}")
-            elif packet_type == PACKET_TYPE["connect_response"]:
+            elif packet_type == PACKET_TYPE.CONNECT_RESPONSE:
                 logger.info(f"Received connect response from server, data = {data}")
             else:
                 logger.warning(f"Invalid process command with packet type = {packet_type}, data: {data}")
@@ -404,9 +404,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 "train_timestamp": self.helper.get_timestamp(),
             }
             rtt_train_packet = json.dumps(rtt_train_packet).encode('utf-8')
-            rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_packet
+            rtt_train_packet = struct.pack("B", PACKET_TYPE.RTT_TRAIN) + rtt_train_packet
             rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
-            
+
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
 
@@ -433,7 +433,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.keepalive_sequence += 1
 
             keepalive_packet = json.dumps(keepalive_packet).encode('utf-8')
-            keepalive_packet = struct.pack("B", PACKET_TYPE["keepalive"]) + keepalive_packet
+            keepalive_packet = struct.pack("B", PACKET_TYPE.KEEPALIVE) + keepalive_packet
             keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
 
             self.network_worker_quic.enqueue_stream_packet(keepalive_packet)
@@ -584,7 +584,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_telemetry_data(self, data):
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
-            packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
+            packet = struct.pack("B", PACKET_TYPE.TELEMETRY) + packet_data
             # Send telemetry on all active connections
             # self.network_worker_quic.enqueue_stream_packet(packet)
             # self.network_worker_ws.enqueue_packet(packet)

@@ -10,12 +10,17 @@ from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
 from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 import logging
+import json
+import struct
+
 
 # Connector related imports
 # from connector.test.context import Connection, Status, Control, Mode
 
 from connector.connector.connection import Connection
 from connector.connector.data import Status, Control, Mode
+
+from globals import PACKET_TYPE
 
 MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
@@ -149,3 +154,15 @@ class RPi5ReaktorClient(BaseClient, QThread):
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error changing direction: {e}")
+
+    def send_error_message(self, error_code: str):
+        error_msg_packet = {
+            "type": "error_message",
+            "error_code": error_code,
+        }
+        error_msg_packet = json.dumps(error_msg_packet).encode('utf-8')
+        error_msg_packet = struct.pack("B", PACKET_TYPE.ERROR_MSG) + error_msg_packet
+        error_msg_packet = super().helper.get_length_prefixed_packet(error_msg_packet)
+
+        super().network_worker_quic.enqueue_stream_packet(error_msg_packet)
+        logger.info(f"Sent error message packet with error_code: {error_code}")

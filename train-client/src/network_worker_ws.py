@@ -98,10 +98,10 @@ class NetworkWorkerWS:
                     print(f"WebSocket: Received packet of size {len(packet)}")
                     packet_type = packet[0]
                     payload = packet[1:]
-                    if packet_type == PACKET_TYPE["keepalive"]:
+                    if packet_type == PACKET_TYPE.KEEPALIVE:
                         message = json.loads(payload.decode('utf-8'))
                         print(f"WebSocket: Keepalive message: {message}")
-                    elif packet_type == PACKET_TYPE["command"]:
+                    elif packet_type == PACKET_TYPE.COMMAND:
                         self.recieved_data.emit(payload)
                     else:
                         print(f"WebSocket: Received packet type {packet_type}, not handled")
@@ -123,7 +123,7 @@ class NetworkWorkerWS:
                     "sequence": self.keepalive_sequence
                 }
                 packet_data = json.dumps(keepalive_packet).encode('utf-8')
-                packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
+                packet = struct.pack("B", PACKET_TYPE.KEEPALIVE) + packet_data
                 await websocket.send(packet)
                 await asyncio.sleep(25)
             except Exception as e:
@@ -144,7 +144,7 @@ class NetworkWorkerWS:
 
         for packet_id in range(1, number_of_packets + 1):
             header = bytearray()
-            header.append(PACKET_TYPE["video"])
+            header.append(PACKET_TYPE.VIDEO)
             header.extend(frame_id.to_bytes(4, byteorder='big'))
             header.extend(number_of_packets.to_bytes(2, byteorder='big'))
             header.extend(packet_id.to_bytes(2, byteorder='big'))
@@ -160,7 +160,7 @@ class NetworkWorkerWS:
     def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes):
         packets = self.create_packets(frame_id, timestamp, frame)
         for packet in packets:
-            packet_with_type = struct.pack("B", PACKET_TYPE["video"]) + packet
+            packet_with_type = struct.pack("B", PACKET_TYPE.VIDEO) + packet
             self.enqueue_packet(packet_with_type)
 
     def enqueue_packet(self, packet):

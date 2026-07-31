@@ -32,4 +32,4 @@ class PacketBuilder:
             "event": event
         }
         packet_data = json.dumps(notify_message).encode('utf-8')
-        return struct.pack("B", PACKET_TYPE["notification"]) + packet_data
+        return struct.pack("B", PACKET_TYPE.NOTIFICATION) + packet_data

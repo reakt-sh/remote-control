@@ -30,9 +30,9 @@ reactor Parser {
                     packet_type = raw_data[0]
                     payload = raw_data[1:]
 
-                    if packet_type == self.PACKET_TYPE["command"]:
+                    if packet_type == self.PACKET_TYPE.COMMAND:
                         command.set(payload)
-                    elif packet_type == self.PACKET_TYPE["map_connect"]:
+                    elif packet_type == self.PACKET_TYPE.MAP_CONNECT:
                         try:
                             message = self.json.loads(payload.decode("utf-8"))
                             remote_control_id = message.get("remote_control_id")
@@ -45,7 +45,7 @@ reactor Parser {
                         except self.json.JSONDecodeError as e:
                             self.logger.error(f"Failed to decode map connect message: {e}")
                             return
-                    elif packet_type == self.PACKET_TYPE["map_disconnect"]:
+                    elif packet_type == self.PACKET_TYPE.MAP_DISCONNECT:
                         try:
                             remote_control_id = self.json.loads(payload.decode("utf-8")).get("remote_control_id")
                             self.logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
@@ -62,11 +62,11 @@ reactor Parser {
                             # TODO: self.stop_train_operations(), later we will introduce safe state
                         except Exception as e:
                             self.logger.error(f"Failed to parse map_disconnect JSON: {e}")
-                    elif packet_type == self.PACKET_TYPE["rtt"] or packet_type == self.PACKET_TYPE["rtt_train"]:
+                    elif packet_type == self.PACKET_TYPE.RTT or packet_type == self.PACKET_TYPE.RTT_TRAIN:
                         clock_sync.set(payload)
-                    elif packet_type == self.PACKET_TYPE["keepalive"]:
+                    elif packet_type == self.PACKET_TYPE.KEEPALIVE:
                         heartbeat.set(payload)
-                    elif packet_type == self.PACKET_TYPE["connect_response"]:
+                    elif packet_type == self.PACKET_TYPE.CONNECT_RESPONSE:
                         self.logger.info(f"Connection established to the server, data = {payload}")
                     else:
                         self.logger.warning(f"Invalid data to Parse with packet type = {packet_type}, data: {payload}")

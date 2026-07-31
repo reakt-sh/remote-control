@@ -88,7 +88,7 @@ class ClientManager:
                                         "instruction": "STOP_SENDING_DATA",
                                     }
                                     packet_data = json.dumps(instruction_packet).encode('utf-8')
-                                    packet = struct.pack("B", PACKET_TYPE["command"]) + packet_data
+                                    packet = struct.pack("B", PACKET_TYPE.COMMAND) + packet_data
                                     protocol._quic.send_stream_data(protocol.stream_id, packet, end_stream=False)
                                     protocol.transmit()
                                     logger.info(f"Sent STOP_STREAM to train {existing_train_id} for remote control {remote_control_id}")
@@ -113,7 +113,7 @@ class ClientManager:
                         "instruction": "START_SENDING_DATA",
                     }
                     packet_data = json.dumps(instruction_packet).encode('utf-8')
-                    packet = struct.pack("B", PACKET_TYPE["command"]) + packet_data
+                    packet = struct.pack("B", PACKET_TYPE.COMMAND) + packet_data
                     protocol._quic.send_stream_data(protocol.stream_id, packet, end_stream=False)
                     protocol.transmit()
                     logger.info(f"QUIC: Sending instruction START_SENDING_DATA to train {train_id}")

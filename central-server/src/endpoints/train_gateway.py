@@ -38,7 +38,7 @@ async def train_interface(websocket: WebSocket, train_id: str):
                     "sequence": keepalive_sequence
                 }
                 packet_data = json.dumps(keepalive_packet).encode('utf-8')
-                packet = struct.pack("B", PACKET_TYPE["keepalive"]) + packet_data
+                packet = struct.pack("B", PACKET_TYPE.KEEPALIVE) + packet_data
                 await websocket.send_bytes(packet)
                 logger.debug(f"WebSocket: Sent keepalive packet to train {train_id}")
                 await asyncio.sleep(25)  # Send keepalive every 5 seconds
@@ -55,16 +55,16 @@ async def train_interface(websocket: WebSocket, train_id: str):
             packet_type = data[0]
             payload = data[1:]
 
-            if packet_type == PACKET_TYPE["video"] or packet_type == PACKET_TYPE["telemetry"]:
+            if packet_type == PACKET_TYPE.VIDEO or packet_type == PACKET_TYPE.TELEMETRY:
                 await s_controller.send_data_to_clients(train_id, data)
-            elif packet_type == PACKET_TYPE["keepalive"]:
+            elif packet_type == PACKET_TYPE.KEEPALIVE:
                 message = json.loads(payload.decode('utf-8'))
                 logger.debug(f"WebSocket: {message}")
             else:
                 logger.debug(f"WebSocket: Received unknown packet type {packet_type} from train {train_id}")
 
             # calculate number of frames per seconds for video packets
-            if packet_type == PACKET_TYPE["video"]:
+            if packet_type == PACKET_TYPE.VIDEO:
                 frame_counter += 1
                 # difference of current frame_counter and frame_counter received 1 second ago
                 if time.time() - last_time > 1:

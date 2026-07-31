@@ -141,7 +141,7 @@ class NetworkWorkerQUIC:
         packet_data = json.dumps(connect_packet).encode('utf-8')
 
         # Create packet with type byte + data
-        packet = struct.pack("B", PACKET_TYPE["connect"]) + packet_data
+        packet = struct.pack("B", PACKET_TYPE.CONNECT) + packet_data
 
         # Add 2-byte length prefix (big-endian)
         data_size = len(packet)
@@ -205,9 +205,9 @@ class NetworkWorkerQUIC:
         for packet_id in range(1, number_of_packets + 1):
             header = bytearray()
             if camera_type == CAMERA_TYPE["FRONT"]:
-                header.append(PACKET_TYPE["video_front"])
+                header.append(PACKET_TYPE.VIDEO_FRONT)
             elif camera_type == CAMERA_TYPE["REAR"]:
-                header.append(PACKET_TYPE["video_rear"])
+                header.append(PACKET_TYPE.VIDEO_REAR)
             else:
                 pass
             header.extend(frame_id.to_bytes(4, byteorder='big'))
