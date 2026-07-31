@@ -45,6 +45,10 @@ export const PACKET_TYPE = {
   error_msg: 34,
 }
 
+export const ErrorCodes = {
+  "E101": 'Changing direction is not allowed while the train is moving.',
+}
+
 
 export const useTrainStore = defineStore('train', () => {
   const availableTrains = ref({})
@@ -488,11 +492,18 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
       case PACKET_TYPE.error_msg: {
-        const errorMessage = new TextDecoder().decode(payload)
-        console.error('❌ Received error message from server via WebTransport, data = ', errorMessage)
-        // Show a professional error notification to the user
-        const notificationStore = useNotificationStore()
-        notificationStore.addNotification(errorMessage)
+        try{
+          jsonString = new TextDecoder().decode(payload)
+          jsonData = JSON.parse(jsonString)
+          console.log('❌ Received error message from server via WebTransport, data = ', jsonData)
+          console.log(jsonData.error_code, ErrorCodes[jsonData.error_code])
+          let msg = ErrorCodes[jsonData.error_code]
+          // Show a error notification to the user
+          const notificationStore = useNotificationStore()
+          notificationStore.addNotification(msg)
+        } catch (error) {
+          console.error('❌ Error parsing error message:', error)
+        }
         break
       }
       case PACKET_TYPE.rtt: {
