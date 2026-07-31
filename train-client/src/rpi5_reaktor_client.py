@@ -155,3 +155,9 @@ class RPi5ReaktorClient(BaseClient, QThread):
         except Exception as e:
             logger.error(f"Error changing direction: {e}")
 
+    def on_horn_off(self):
+        pass
+
+    def on_headlight_off(self):
+        pass
+
