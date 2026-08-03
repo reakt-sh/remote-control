@@ -108,6 +108,7 @@ export const useTrainStore = defineStore('train', () => {
   const {
     frameRefFront,
     frameRefRear,
+    enableStatistics,
     last30_framesAverageLatency_front,
     last30_framesAverageLatency_rear,
     last1s_framesFPS_front,
@@ -664,6 +665,7 @@ export const useTrainStore = defineStore('train', () => {
     telemetryData,
     frameRefFront,
     frameRefRear,
+    enableStatistics,
     remoteControlId,
     direction,
     isWSConnected,
