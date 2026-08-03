@@ -11,7 +11,8 @@ export function useVideoPanel(canvasRef, options = {}) {
     latencyRef = null,
     fpsRef = null,
     bandwidthRef = null,
-    last100frameLatenciesRef = null
+    last100frameLatenciesRef = null,
+    enableStatisticsRef = null
   } = options
 
   const isFullScreen = ref(false)
@@ -89,24 +90,28 @@ export function useVideoPanel(canvasRef, options = {}) {
       drawOverlayBL.nextY = boxY - 6
     }
 
+    // Statistics overlays are only drawn while enabled, so toggling the
+    // feature off hides them on the very next rendered frame.
+    const statisticsEnabled = !enableStatisticsRef || enableStatisticsRef.value
+
     // Draw overlays in bottom-left: latency then FPS stacked above
-    if (latencyRef && latencyRef.value > 0) {
+    if (statisticsEnabled && latencyRef && latencyRef.value > 0) {
       const latency = latencyRef.value.toFixed(1)
       drawOverlayBL(`Average Latency (last 30 frames): ${latency} ms`)
     }
 
-    if (fpsRef && fpsRef.value > 0) {
+    if (statisticsEnabled && fpsRef && fpsRef.value > 0) {
       const fps = fpsRef.value.toFixed(1)
       drawOverlayBL(`Live FPS: ${fps}`)
     }
 
-    if (bandwidthRef && bandwidthRef.value > 0) {
+    if (statisticsEnabled && bandwidthRef && bandwidthRef.value > 0) {
       const bandwidth = bandwidthRef.value.toFixed(2)
       drawOverlayBL(`Bandwidth Usage: ${bandwidth} Mbps`)
     }
 
     // Draw compact last-100-frame latency panel on the right side (oldest at top → newest at bottom)
-    if (last100frameLatenciesRef && last100frameLatenciesRef.value.length > 0) {
+    if (statisticsEnabled && last100frameLatenciesRef && last100frameLatenciesRef.value.length > 0) {
       const entries = last100frameLatenciesRef.value
       const canvasH = canvasRef.value.height
       const canvasW = canvasRef.value.width

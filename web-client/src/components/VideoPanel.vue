@@ -47,6 +47,7 @@ const {
   frameRefRear,
   direction,
   telemetryData,
+  enableStatistics,
   last30_framesAverageLatency_front,
   last30_framesAverageLatency_rear,
   last1s_framesFPS_front,
@@ -73,6 +74,7 @@ const {
   fpsRef:                  last1s_framesFPS_front,
   bandwidthRef:            last1s_bandwidthMbps_front,
   last100frameLatenciesRef: last_100_frame_latencies_front,
+  enableStatisticsRef:      enableStatistics,
 })
 
 const {
@@ -82,6 +84,7 @@ const {
   fpsRef:                  last1s_framesFPS_rear,
   bandwidthRef:            last1s_bandwidthMbps_rear,
   last100frameLatenciesRef: last_100_frame_latencies_rear,
+  enableStatisticsRef:      enableStatistics,
 })
 
 watch(frameRefFront, (newFrame) => {
