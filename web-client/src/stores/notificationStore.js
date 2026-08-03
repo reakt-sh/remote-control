@@ -24,7 +24,7 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {number} duration - Auto-dismiss duration in ms (0 = no auto-dismiss)
    * @returns {number} notification id
    */
-  function addNotification(message, severity = 'warning', duration = 3000) {
+  function addNotification(message, severity = 'info', duration = 3000) {
     const id = ++nextId
     const notification = {
       id,
