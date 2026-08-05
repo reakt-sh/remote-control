@@ -14,6 +14,7 @@
       <!-- Fills the leftover space below the smaller (non-active-direction) panel -->
       <div v-if="!isForward" class="video-column__extra">
         <Speedometer :current-speed="currentSpeed" />
+        <div class="motor-mode-badge" :class="motorModeClass">Mode: {{ motorMode || 'UNKNOWN' }}</div>
       </div>
     </div>
 
@@ -30,6 +31,7 @@
       </div>
       <div v-if="isForward" class="video-column__extra">
         <Speedometer :current-speed="currentSpeed" />
+        <div class="motor-mode-badge" :class="motorModeClass">Mode: {{ motorMode || 'UNKNOWN' }}</div>
       </div>
     </div>
   </div>
@@ -63,6 +65,22 @@ const {
 const isForward = computed(() => direction.value === 'FORWARD')
 
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
+const motorMode = computed(() => telemetryData.value?.reaktor_motor_mode || '')
+
+const motorModeClass = computed(() => {
+  switch (motorMode.value) {
+    case 'FORWARD':
+    case 'REVERSE':
+      return 'motor-mode-badge--active'
+    case 'PARKING':
+    case 'NEUTRAL':
+      return 'motor-mode-badge--idle'
+    case 'STOP':
+      return 'motor-mode-badge--stop'
+    default:
+      return 'motor-mode-badge--unknown'
+  }
+})
 
 const videoCanvasFront = ref(null)
 const videoCanvasRear  = ref(null)
@@ -146,9 +164,49 @@ watch(frameRefRear, (newFrame) => {
 .video-column__extra {
   flex: 1 1 auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   min-height: 0;
+}
+
+.motor-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.motor-mode-badge--active {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.motor-mode-badge--idle {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.motor-mode-badge--stop {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.motor-mode-badge--unknown {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
 }
 
 .camera-label {

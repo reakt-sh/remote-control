@@ -305,6 +305,11 @@ class TrainClient(BaseClient, QMainWindow):
         self.video_source_rear.set_direction(direction)
         self.telemetry.set_direction(direction)
 
+        if direction == DIRECTION.FORWARD:
+            self.telemetry.set_mode("FORWARD")
+        elif direction == DIRECTION.BACKWARD:
+            self.telemetry.set_mode("REVERSE")
+
     def update_headlight_display(self):
         if self.headlight_on:
             # Bright white headlight (on) with outer glow effect
