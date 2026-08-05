@@ -14,7 +14,14 @@
       <!-- Fills the leftover space below the smaller (non-active-direction) panel -->
       <div v-if="!isForward" class="video-column__extra">
         <Speedometer :current-speed="currentSpeed" />
-        <div class="motor-mode-badge" :class="motorModeClass">Mode: {{ motorMode || 'UNKNOWN' }}</div>
+        <div class="mode-card">
+          <span class="mode-label">Motor Mode</span>
+          <span class="mode-value" :class="motorModeClass">{{ motorMode || 'UNKNOWN' }}</span>
+        </div>
+        <div class="mode-card">
+          <span class="mode-label">Control Mode</span>
+          <span class="mode-value" :class="controlModeClass">{{ controlMode || 'UNKNOWN' }}</span>
+        </div>
       </div>
     </div>
 
@@ -31,7 +38,14 @@
       </div>
       <div v-if="isForward" class="video-column__extra">
         <Speedometer :current-speed="currentSpeed" />
-        <div class="motor-mode-badge" :class="motorModeClass">Mode: {{ motorMode || 'UNKNOWN' }}</div>
+        <div class="mode-card">
+          <span class="mode-label">Motor Mode</span>
+          <span class="mode-value" :class="motorModeClass">{{ motorMode || 'UNKNOWN' }}</span>
+        </div>
+        <div class="mode-card">
+          <span class="mode-label">Control Mode</span>
+          <span class="mode-value" :class="controlModeClass">{{ controlMode || 'UNKNOWN' }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -66,19 +80,31 @@ const isForward = computed(() => direction.value === 'FORWARD')
 
 const currentSpeed = computed(() => telemetryData.value?.speed || 0)
 const motorMode = computed(() => telemetryData.value?.reaktor_motor_mode || '')
+const controlMode = computed(() => telemetryData.value?.reaktor_control_mode || '')
 
 const motorModeClass = computed(() => {
   switch (motorMode.value) {
     case 'FORWARD':
     case 'REVERSE':
-      return 'motor-mode-badge--active'
+      return 'mode-value--active'
     case 'PARKING':
     case 'NEUTRAL':
-      return 'motor-mode-badge--idle'
+      return 'mode-value--idle'
     case 'STOP':
-      return 'motor-mode-badge--stop'
+      return 'mode-value--stop'
     default:
-      return 'motor-mode-badge--unknown'
+      return ''
+  }
+})
+
+const controlModeClass = computed(() => {
+  switch (controlMode.value) {
+    case 'MANUAL':
+      return 'mode-value--active'
+    case 'REMOTE':
+      return 'mode-value--idle'
+    default:
+      return ''
   }
 })
 
@@ -171,42 +197,49 @@ watch(frameRefRear, (newFrame) => {
   min-height: 0;
 }
 
-.motor-mode-badge {
-  display: inline-flex;
+.mode-card {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  gap: 7px;
+  width: 100%;
+  max-width: 300px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 14px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+.mode-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #9ca3af;
   text-transform: uppercase;
-  border: 1px solid transparent;
-  white-space: nowrap;
+  letter-spacing: 0.08em;
 }
 
-.motor-mode-badge--active {
-  background: #dcfce7;
-  color: #15803d;
-  border-color: #86efac;
+.mode-value {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  color: #111827;
+  letter-spacing: 0.02em;
 }
 
-.motor-mode-badge--idle {
-  background: #fef9c3;
-  color: #a16207;
-  border-color: #fde68a;
+.mode-value--active {
+  color: #16a34a;
 }
 
-.motor-mode-badge--stop {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
+.mode-value--idle {
+  color: #ca8a04;
 }
 
-.motor-mode-badge--unknown {
-  background: #f3f4f6;
-  color: #6b7280;
-  border-color: #e5e7eb;
+.mode-value--stop {
+  color: #dc2626;
 }
 
 .camera-label {

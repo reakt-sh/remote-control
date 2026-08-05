@@ -6,7 +6,7 @@ from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES
+from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES
 from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 import logging
@@ -66,21 +66,27 @@ class RPi5ReaktorClient(BaseClient, QThread):
         self.actual_speed_kmh = s.motor_speed * 3.6
         self.actual_mode = ""
         if s.mode == Mode.EMERGENCY_STOP:
-            self.actual_mode = "STOP"
+            self.actual_mode = MOTOR_MODE.EMERGENCY_STOP
         elif s.mode == Mode.FORWARD:
-            self.actual_mode = "FORWARD"
+            self.actual_mode = MOTOR_MODE.FORWARD
             self.telemetry.set_direction(DIRECTION.FORWARD)
         elif s.mode == Mode.REVERSE:
-            self.actual_mode = "REVERSE"
+            self.actual_mode = MOTOR_MODE.REVERSE
             self.telemetry.set_direction(DIRECTION.BACKWARD)
         elif s.mode == Mode.PARKING:
-            self.actual_mode = "PARKING"
+            self.actual_mode = MOTOR_MODE.PARKING
         elif s.mode == Mode.NEUTRAL:
-            self.actual_mode = "NEUTRAL"
+            self.actual_mode = MOTOR_MODE.NEUTRAL
         else:
-            self.actual_mode = "UNKNOWN"
+            self.actual_mode = MOTOR_MODE.UNKNOWN
+
         self.telemetry.set_mode(self.actual_mode)
         self.telemetry.set_speed(self.actual_speed_kmh)
+
+        if s.remote_control:
+            self.telemetry.set_control_mode(CONTROL_MODE.REMOTE)
+        else
+            self.telemetry.set_control_mode(CONTROL_MODE.MANUAL)
 
     def update_speed(self, speed): # speed here in KM/H
         try:

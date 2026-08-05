@@ -165,6 +165,17 @@ class TrainClient(BaseClient, QMainWindow):
         self.source_button.clicked.connect(self.toggle_video_source)
         self.using_file_source = True
 
+        # Control mode toggle button (teal): MANUAL vs REMOTE
+        self.mode_button = QPushButton(f"  Mode: {self.telemetry.get_control_mode()}")
+        self.mode_button.setMinimumWidth(BUTTON_WIDTH)
+        self.mode_button.setMaximumWidth(BUTTON_WIDTH)
+        self.mode_button_style = self.button_style.replace("#2d89ef", "#009688").replace("#1b5fa7", "#00695c").replace("#174c88", "#004d40")
+        self.mode_button_style_manual = self.button_style.replace("#2d89ef", "#ff5722").replace("#1b5fa7", "#c41c00").replace("#174c88", "#9a0007")
+        self.mode_button.setStyleSheet(self.mode_button_style_manual if self.telemetry.get_control_mode() == CONTROL_MODE.MANUAL else self.mode_button_style)
+        self.mode_button.setIcon(qta.icon('fa5s.exchange-alt', color='white'))
+        self.mode_button.setIconSize(QSize(24, 24))
+        self.mode_button.clicked.connect(self.toggle_control_mode)
+
         # Headlight indicator (round)
         self.headlight_indicator = QLabel()
         self.headlight_indicator.setFixedSize(120, 120)
@@ -184,6 +195,7 @@ class TrainClient(BaseClient, QMainWindow):
         button_layout.addWidget(self.sending_button)
         button_layout.addWidget(self.write_button)
         button_layout.addWidget(self.source_button)
+        button_layout.addWidget(self.mode_button)
         button_layout.addSpacing(20)
         button_layout.addWidget(self.headlight_indicator, alignment=Qt.AlignCenter)
         button_layout.addSpacing(10)
@@ -276,6 +288,13 @@ class TrainClient(BaseClient, QMainWindow):
             self.source_button.setText("  Camera Source")
         self.switch_video_source(new_source)
         self.using_file_source = not self.using_file_source
+
+    def toggle_control_mode(self):
+        new_mode = CONTROL_MODE.MANUAL if self.telemetry.get_control_mode() == CONTROL_MODE.REMOTE else CONTROL_MODE.REMOTE
+        self.telemetry.set_control_mode(new_mode)
+        self.mode_button.setText(f"  Mode: {new_mode}")
+        self.mode_button.setStyleSheet(self.mode_button_style_manual if new_mode == CONTROL_MODE.MANUAL else self.mode_button_style)
+        self.log_message(f"Control mode switched to {new_mode}")
 
     def log_message(self, message):
         super().log_message(message)

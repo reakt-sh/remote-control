@@ -60,6 +60,7 @@ class Telemetry:
         self.ping = 0.0
 
         self.motor_mode = "UNKNOWN"
+        self.control_mode = CONTROL_MODE.REMOTE
 
         self.horn_status = "OFF"
         self.headlight_status = "OFF"
@@ -72,6 +73,12 @@ class Telemetry:
 
     def set_mode(self, mode: str):
         self.motor_mode = mode
+
+    def set_control_mode(self, mode: str):
+        self.control_mode = mode
+
+    def get_control_mode(self):
+        return self.control_mode
 
     def get_mode(self):
         return self.motor_mode
@@ -184,6 +191,7 @@ class Telemetry:
             "ping": self.ping,
             "sequence_number": self.sequence_number,
             "reaktor_motor_mode" : self.motor_mode,
+            "reaktor_control_mode" : self.control_mode,
             "horn_status": self.horn_status,
             "headlight_status": self.headlight_status,
         }
