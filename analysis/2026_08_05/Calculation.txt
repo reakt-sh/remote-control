@@ -1,0 +1,76 @@
+
+Train (Clock)               :  100          101         102            103          104         105
+Remote(Clock)               : 5000         5001        5002           5003         5004        5005
+
+   clock_offset = remote_timestamp - train_timestamp
+                = 5000 - 100
+                = 4900
+
+
+Example:
+   remote_timestamp = 5003 (when the remote sends a message)
+   train_timestamp = 105 (when the train receives the message)
+
+   adjusted_remote_timestamp = remote_timestamp - clock_offset
+                             = 5003 - 4900
+                             = 103
+
+   latency = train_timestamp - adjusted_remote_timestamp
+           = 105 - 103
+           = 2
+
+
+
+Train  (Clock)               : 5000         5001        5002           5003         5004        5005
+Remote (Clock)               :  100          101         102            103          104         105
+
+
+   clock_offset = remote_timestamp - train_timestamp
+                = 100 - 5000
+                = -4900
+
+   remote_timestamp = 103
+   train_timestamp = 5005
+   adjusted_remote_timestamp = remote_timestamp - clock_offset
+                             = 103 - (-4900) = 5003
+
+   latency = train_timestamp - adjusted_remote_timestamp
+           = 5005 - 5003
+           = 2
+
+
+
+
+sending:
+------------------------------------
+current_timestamp = 100
+{
+   train_timestamp = 100
+   remote_timestamp = None
+}
+
+
+
+
+receiving:
+------------------------------------
+current_timestamp = 106
+{
+   train_timestamp = 100
+   remote_timestamp = 5003
+}
+
+RTT = current_timestamp - train_timestamp
+    = 106 - 100
+    = 6
+
+
+clock_offset = remote_timestamp - (train_timestamp + RTT / 2)
+             = 5003 - (100 + 6 / 2)
+             = 5003 - (100 + 3)
+             = 5003 - 103
+             = 4900
+
+
+
+
