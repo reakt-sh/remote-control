@@ -54,22 +54,24 @@ current_timestamp = 100
 
 receiving:
 ------------------------------------
-current_timestamp = 106
+current_timestamp = 220
 {
    train_timestamp = 100
-   remote_timestamp = 5003
+   remote_timestamp = 5064
 }
 
 RTT = current_timestamp - train_timestamp
-    = 106 - 100
-    = 6
+    = 220 - 100
+    = 120
 
 
 clock_offset = remote_timestamp - (train_timestamp + RTT / 2)
-             = 5003 - (100 + 6 / 2)
-             = 5003 - (100 + 3)
-             = 5003 - 103
-             = 4900
+             = 5064 - (100 + 120 / 2)
+             = 5064 - (100 + 60)
+             = 5064 - 160
+             = 4904
+
+Here we have an ERROR of 4ms
 
 
 
