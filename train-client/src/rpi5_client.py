@@ -2,7 +2,7 @@ from sensor.camera_rpi_5 import CameraRPi5
 from sensor.camera import Camera
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS
+from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS, ERROR_CODES
 from PyQt5.QtCore import QThread
 from app_logger import logger
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
@@ -31,10 +31,21 @@ class RPi5Client(BaseClient, QThread):
 
     def on_change_direction(self, direction):
         logger.info(f"Changing direction to: {direction}")
+        if self.actual_speed > 0:
+            super().send_error_message(ERROR_CODES.CHANGE_DIRECTION_WHILE_MOVING)
+            return
+        self.telemetry.set_direction(direction)
+
         if direction == DIRECTION.FORWARD:
-            self.motor_actuator.move_forward()
+            self.telemetry.set_mode("FORWARD")
         elif direction == DIRECTION.BACKWARD:
-            self.motor_actuator.move_backward()
+            self.telemetry.set_mode("REVERSE")
+        self.motor_actuator.set_direction(direction)
+
+        # if direction == DIRECTION.FORWARD:
+        #     self.motor_actuator.move_forward()
+        # elif direction == DIRECTION.BACKWARD:
+        #     self.motor_actuator.move_backward()
 
     def on_headlight_on(self):
         logger.info("Turning on headlights.")
