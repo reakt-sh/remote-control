@@ -5,10 +5,11 @@ from base_client import BaseClient
 from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS
 from PyQt5.QtCore import QThread
 from app_logger import logger
+from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 
 class RPi5Client(BaseClient, QThread):
     def __init__(self):
-        super().__init__(video_source=CameraRPi5(), has_motor=True)
+        super().__init__(video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=True)
         self.motor_actuator = MotorActuator()
         self.motor_actuator.start_motor()
         self.target_speed = MAX_SPEED
