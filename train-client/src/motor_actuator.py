@@ -9,8 +9,8 @@ except ImportError:
     logger.error("RPi.GPIO library not found. MotorActuator will not function properly.")
     GPIO = None  # Running on non-Pi hardware
 
-# Use bluetooth speaker
-import pygame
+# # Use bluetooth speaker
+# import pygame
 
 class MotorActuator:
     def __init__(self, input1_pin=19, input2_pin=26, enable_pin=13, pwm_freq=1000, led_pin=17):
@@ -42,9 +42,9 @@ class MotorActuator:
         else:
             logger.warning("GPIO not available. MotorActuator will not control hardware.")
 
-        # Use bluetooth speaker for horn sound
-        pygame.mixer.init()
-        self.sound = pygame.mixer.Sound("./asset/train_horn_sample.wav")
+        # # Use bluetooth speaker for horn sound
+        # pygame.mixer.init()
+        # self.sound = pygame.mixer.Sound("./asset/train_horn_sample.wav")
     def start_motor(self):
         if self.direction == DIRECTION.FORWARD:
             if GPIO:
