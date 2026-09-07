@@ -12,14 +12,15 @@ class RPi5Client(BaseClient, QThread):
         super().__init__(video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=True)
         self.motor_actuator = MotorActuator()
         self.motor_actuator.start_motor()
-        self.target_speed = MAX_SPEED
-        self.telemetry.set_speed(self.target_speed)
+        self.actual_speed = MAX_SPEED
+        self.telemetry.set_speed(self.actual_speed)
         logger.info("RPi5Client initialized.")
 
     def update_speed(self, speed):
         logger.info(f"Updating speed to: {speed}")
         self.motor_actuator.set_speed(speed)
         self.telemetry.set_speed(speed)
+        self.actual_speed = speed
 
     def on_power_on(self):
         logger.info("Powering on the motor.")
