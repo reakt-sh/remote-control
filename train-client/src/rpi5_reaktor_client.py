@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 import datetime
 import threading
@@ -87,6 +88,11 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 if error in ERROR_MESSAGE_CODE_MAP:
                     error_code = ERROR_MESSAGE_CODE_MAP[error]
                     super().send_error_message(error_code)
+                    if error_code == ERROR_CODES.WHILE_IN_REMOTE_CONTROL_MODE_NO_CONTROL_MESSAGE_RECEIVED:
+                        logger.error("No control message received in remote control mode. Stopping train and terminating application.")
+                        self.stop_train_operations()
+                        os._exit(1)
+
 
 
         # current_time = datetime.datetime.now().timestamp() * 1000
