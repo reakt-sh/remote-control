@@ -85,7 +85,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
         if s.remote_control:
             self.telemetry.set_control_mode(CONTROL_MODE.REMOTE)
-        else
+        else:
             self.telemetry.set_control_mode(CONTROL_MODE.MANUAL)
 
     def update_speed(self, speed): # speed here in KM/H
