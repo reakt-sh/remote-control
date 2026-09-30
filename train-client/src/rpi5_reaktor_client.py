@@ -6,7 +6,7 @@ from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES
+from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES, ERROR_MESSAGE_CODE_MAP
 from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 import logging
@@ -62,6 +62,12 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
         if isinstance(s, ConnectionProblem):
             logger.error(f"ConnectionProblem: {s}")
+
+        if len(s.errors) > 0:
+            for error in s.errors:
+                if error in ERROR_MESSAGE_CODE_MAP:
+                    error_code = ERROR_MESSAGE_CODE_MAP[error]
+                    super().send_error_message(error_code)
 
 
         # current_time = datetime.datetime.now().timestamp() * 1000
