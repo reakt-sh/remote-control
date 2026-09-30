@@ -47,6 +47,11 @@ export const PACKET_TYPE = {
 
 export const ErrorCodes = {
   "E101": 'Changing direction is not allowed while the train is moving.',
+  "E102": "Connection refused due to protocol version mismatch between driver and remote control.",
+  "E103": "A control message was received without a successful connection handshake beforehand.",
+  "E104": "While in active remote control mode, no control (or heartbeat) message was received in the expected interval.",
+  "E105": "No connection to motor throttle control component (DAC via I2C).",
+  "E106": "Control mode switch attempted while in unsafe driving mode.",
 }
 
 

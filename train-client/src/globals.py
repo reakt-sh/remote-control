@@ -78,6 +78,21 @@ class MOTOR_MODE(StrEnum):
 
 class ERROR_CODES(StrEnum):
     CHANGE_DIRECTION_WHILE_MOVING = "E101"
+    CONNCECTION_PROTOCOL_VERSION_MISMATCH = "E102"
+    CONTROL_MESSAGE_RECEIVED_WITHOUT_HANDSHAKE = "E103"
+    WHILE_IN_REMOTE_CONTROL_MODE_NO_CONTROL_MESSAGE_RECEIVED = "E104"
+    NO_CONNECTION_TO_MOTOR_THROTTLE = "E105"
+    CONTROL_MODE_SWITCH_ATTEMPTED_WHILE_IN_UNSAFE_DRIVING_MODE = "E106"
+
+# Mapping of error codes to human-readable messages.
+ERROR_MESSAGE_CODE_MAP = {
+    "Changing direction is not allowed while the train is moving." : ERROR_CODES.CHANGE_DIRECTION_WHILE_MOVING,
+    "Connection refused due to protocol version mismatch between driver and remote control." : ERROR_CODES.CONNCECTION_PROTOCOL_VERSION_MISMATCH,
+    "A control message was received without a successful connection handshake beforehand." : ERROR_CODES.CONTROL_MESSAGE_RECEIVED_WITHOUT_HANDSHAKE,
+    "While in active remote control mode, no control (or heartbeat) message was received in the expected interval." : ERROR_CODES.WHILE_IN_REMOTE_CONTROL_MODE_NO_CONTROL_MESSAGE_RECEIVED,
+    "No connection to motor throttle control component (DAC via I2C)." : ERROR_CODES.NO_CONNECTION_TO_MOTOR_THROTTLE,
+    "Control mode switch attempted while in unsafe driving mode." : ERROR_CODES.CONTROL_MODE_SWITCH_ATTEMPTED_WHILE_IN_UNSAFE_DRIVING_MODE
+}
 
 
 # overwrite for remote server
