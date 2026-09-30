@@ -10,9 +10,10 @@ from serial_asyncio import create_serial_connection
 from .generated.config_communication import COMM_SERIAL_BAUDRATE, COMM_CONTROL_MESSAGE_HEARTBEAT_TIME
 from .serial_connection_handler import SerialConnectionHandler
 from .message_handler import MessageHandler
-from .data import Control, Status
+from .data import ConnectionProblem, Control, Status
+from . import CONNECTOR_ROOT_LOGGER
 
-logger = logging.getLogger("connector:connection")
+logger = CONNECTOR_ROOT_LOGGER.getChild("connection")
 
 class Connection:
     """Connection to the REAKTOR."""
@@ -24,6 +25,7 @@ class Connection:
     _listener_futures: list[asyncio.Future] # Futures for one-time status listeners
     _listener_tasks: set # Background tasks for async listeners
     _opened: bool # Connection established
+    _problems: list[ConnectionProblem] # List of connection problems
     current_status: Status # Latest received status
 
     def __init__(self):
@@ -34,27 +36,37 @@ class Connection:
         self._listeners = []
         self._listener_futures = []
         self._listener_tasks = set()
+        self._problems = []
         self.current_status = None
 
     # Internal API
 
+    def _handle_error(self, problem: ConnectionProblem):
+        """Register a connection problem."""
+        self._problems.append(problem)
+        self._notify_listeners(problem)
+
     def _handle_status(self, status: Status):
-        """Notify all registered listeners about a new status."""
+        """Store status and notify all registered listeners about a new status."""
         self.current_status = status
+        self._notify_listeners(status)
+
+    def _notify_listeners(self, event: Status | ConnectionProblem):
+        """Notify all registered listeners about a new status or problem."""
         # One-time listeners
         for listener in self._listener_futures:
             if asyncio.isfuture(listener) and not listener.done():
-                listener.set_result(status)
+                listener.set_result(event)
         self._listener_futures = []
         # Persistent listeners
         for listener in self._listeners:
             try:
                 if iscoroutinefunction(listener):
-                    task = asyncio.create_task(listener(status))
+                    task = asyncio.create_task(listener(event))
                     self._listener_tasks.add(task)
                     task.add_done_callback(self._listener_tasks.discard)
                 else:
-                    listener(status)
+                    listener(event)
             except Exception as e:
                 logger.error("Failed to notify status listener: %s", e)
 
@@ -78,28 +90,35 @@ class Connection:
         # Create serial connection
         _, protocol = await create_serial_connection(asyncio.get_event_loop(), SerialConnectionHandler, port, baudrate=COMM_SERIAL_BAUDRATE)
         self._serial = protocol
-        self._decoder = MessageHandler(protocol, self._handle_status)
-        # Wait until the connection is fully established (ping-pong complete)
-        await self._decoder.start_processing()
-        self._opened = True
-        logger.info("Communication established on port %s", port)
-        # Start automatic heartbeat to detect connection loss
-        if not manual_heartbeat:
-            self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        self._decoder = MessageHandler(protocol, self._handle_status, self._handle_error)
+        # Wait until the connection is fully established (driver indicates connected)
+        if await self._decoder.start_processing():
+            self._opened = True
+            logger.info("Communication established on port %s", port)
+            # Start automatic heartbeat to detect connection loss
+            if not manual_heartbeat:
+                self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        else:
+            logger.error("Failed to establish communication on port %s", port)
+            raise ConnectionProblem("Failed to establish communication")
 
-    async def get_next_status(self) -> Status:
+    async def get_next_status(self) -> Status | ConnectionProblem:
         """Get the next status when received. ASYNC! If you do not want to miss status messages, add a listener."""
         collector = asyncio.get_running_loop().create_future()
         self._listener_futures.append(collector)
         return await collector
 
     def get_current_status(self) -> Status:
-        """Get the latest received status."""
+        """Get the latest received status. If you do not want to miss status messages, add a listener."""
         return self.current_status
 
-    def add_status_listener(self, listener: Callable[[Status], None]):
-        """Add a listener for status updates. Callback can be sync or async function."""
+    def add_status_listener(self, listener: Callable[[Status | ConnectionProblem], None]):
+        """Add a listener for status updates. Callback can be sync or async function. The pace of status updates is determined by control command responses and heartbeats. If you want to increase status updates send additional controls/heartbeats or switch to manual heartbeat mode."""
         self._listeners.append(listener)
+
+    def get_problems(self) -> list[ConnectionProblem]:
+        """Get the (mutable) list of connection problems."""
+        return self._problems
 
     def send_control(self, control: Control) -> bool:
         """Send a control command."""
@@ -121,3 +140,10 @@ class Connection:
             self._heartbeat_task.cancel()
         if self._serial:
             self._serial.close()
+
+    def activate_file_logging(self, file_path: str, level: int = logging.WARNING):
+        """Activate logging to a file."""
+        file_handler = logging.FileHandler(file_path)
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        CONNECTOR_ROOT_LOGGER.addHandler(file_handler)
+        CONNECTOR_ROOT_LOGGER.setLevel(level)

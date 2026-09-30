@@ -2,11 +2,11 @@
 INTERNAL serial connection handler.
 """
 
-import logging
 import asyncio
 from serial_asyncio import SerialTransport
+from . import CONNECTOR_ROOT_LOGGER
 
-logger = logging.getLogger("connector:internal:serial")
+logger = CONNECTOR_ROOT_LOGGER.getChild("internal.serial")
 
 class SerialConnectionHandler(asyncio.Protocol):
     """Internal serial connection to the REAKTOR driver."""
