@@ -58,10 +58,10 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     def set_status(self, s: Status):
         self.status = s
-        logging.info(f"New status: {s}")
+        logger.info(f"New status: {s}")
 
         if isinstance(s, ConnectionProblem):
-            logging.error(f"ConnectionProblem: {s}")
+            logger.error(f"ConnectionProblem: {s}")
 
 
         # current_time = datetime.datetime.now().timestamp() * 1000
