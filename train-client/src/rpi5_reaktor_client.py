@@ -14,13 +14,13 @@ import logging
 import json
 import struct
 
-error_message_test = [
-    "Connection refused due to protocol version mismatch between driver and remote control.",
-    "A control message was received without a successful connection handshake beforehand.",
-    "While in active remote control mode, no control (or heartbeat) message was received in the expected interval.",
-    "No connection to motor throttle control component (DAC via I2C).",
-    "Control mode switch attempted while in unsafe driving mode."
-]
+# error_message_test = [
+#     "Connection refused due to protocol version mismatch between driver and remote control.",
+#     "A control message was received without a successful connection handshake beforehand.",
+#     "While in active remote control mode, no control (or heartbeat) message was received in the expected interval.",
+#     "No connection to motor throttle control component (DAC via I2C).",
+#     "Control mode switch attempted while in unsafe driving mode."
+# ]
 
 # Connector related imports
 # from connector.test.context import Connection, Status, Control, Mode
@@ -74,13 +74,13 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
 
         # randomly inject errors after each 5 seconds for testing
-        current_time = datetime.datetime.now().timestamp() * 1000
-        if current_time - self.last_log_time > 5000:
-            self.last_log_time = current_time
-            number_of_errors = random.randint(1, 3)
-            for _ in range(number_of_errors):
-                error_message = random.choice(error_message_test)
-                s.errors.append(error_message)
+        # current_time = datetime.datetime.now().timestamp() * 1000
+        # if current_time - self.last_log_time > 5000:
+        #     self.last_log_time = current_time
+        #     number_of_errors = random.randint(1, 3)
+        #     for _ in range(number_of_errors):
+        #         error_message = random.choice(error_message_test)
+        #         s.errors.append(error_message)
 
         if len(s.errors) > 0:
             for error in s.errors:
