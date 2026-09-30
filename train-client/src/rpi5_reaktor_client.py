@@ -18,7 +18,7 @@ import struct
 # from connector.test.context import Connection, Status, Control, Mode
 
 from connector.connector.connection import Connection
-from connector.connector.data import Status, Control, Mode
+from connector.connector.data import Status, Control, Mode, ConnectionProblem
 
 
 MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
@@ -58,10 +58,16 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     def set_status(self, s: Status):
         self.status = s
-        current_time = datetime.datetime.now().timestamp() * 1000
-        if current_time - self.last_log_time > 3000:
-            self.last_log_time = current_time
-            logger.info(f"New status: {s}")
+        logging.info(f"New status: {s}")
+
+        if isinstance(s, ConnectionProblem):
+            logging.error(f"ConnectionProblem: {s}")
+
+
+        # current_time = datetime.datetime.now().timestamp() * 1000
+        # if current_time - self.last_log_time > 3000:
+        #     self.last_log_time = current_time
+        #     logger.info(f"New status: {s}")
 
         self.actual_speed_kmh = s.motor_speed * 3.6
         self.actual_mode = ""
