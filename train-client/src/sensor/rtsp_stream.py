@@ -13,8 +13,8 @@ from globals import CAMERA_TYPE
 # RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.1.30:554/H264/ch1/main/av_stream"
 
 
-RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.88.245:554/H264/ch1/main/av_stream"
-RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.88.246:554/H264/ch1/main/av_stream"
+RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.88.245:554/H264/ch1/main/av_stream"
+RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.88.246:554/H264/ch1/main/av_stream"
 RECONNECT_DELAY = 2.0  # seconds between reconnect attempts
 
 
