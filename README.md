@@ -73,17 +73,6 @@ The following publication is currently associated with this project:
 >
 > [https://doi.org/10.1109/LES.2026.3727940](https://doi.org/10.1109/LES.2026.3727940)
 
-## Repository components
-
-- **`train-client`** — train-side client software.
-- **`central-server`** — server-side communication and coordination
-  components.
-- **`web-client`** — browser-based remote client and interface.
-
-These components form the software context for the research. Their presence
-does not imply that the complete system satisfies railway safety, security, or
-real-time certification requirements.
-
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for
