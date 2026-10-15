@@ -43,9 +43,9 @@ reactor Telemetry {
                 elif instruction == "CHANGE_DIRECTION":
                     self.appcontext.telemetryObj.set_direction(value)
                 elif instruction == "POWER_ON":
-                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_ON"])
+                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS.POWER_ON)
                 elif instruction == "POWER_OFF":
-                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS["POWER_OFF"])
+                    self.appcontext.telemetryObj.set_status(self.TRAIN_STATUS.POWER_OFF)
                 elif instruction == "HORN_ON":
                     self.appcontext.telemetryObj.set_horn_status("ON")
                 elif instruction == "HORN_OFF":

@@ -76,7 +76,7 @@ reactor HeartbeatHandler {
                 self.appcontext.keepalive_sequence += 1
 
                 keepalive_packet = self.json.dumps(keepalive_packet).encode("utf-8")
-                keepalive_packet = self.struct.pack("B", self.PACKET_TYPE["keepalive"]) + keepalive_packet
+                keepalive_packet = self.struct.pack("B", self.PACKET_TYPE.KEEPALIVE) + keepalive_packet
                 keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
                 return keepalive_packet
 

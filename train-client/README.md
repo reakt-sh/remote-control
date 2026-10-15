@@ -19,7 +19,7 @@ sudo apt install python3-pip
 sudo apt install python3-venv
 sudo apt install -y python3-pyqt5
 sudo apt install libcap-dev
-sudo apt install python3-picamera2 pSython3-libcamera libcamera-apps
+sudo apt install python3-picamera2 python3-libcamera libcamera-apps
 ```
 
 ### Python Virtual Environment Setup
@@ -221,5 +221,18 @@ sudo apt install temurin-17-jdk
 
 
 curl -Ls https://install.lf-lang.org | bash -s cli
+
+```
+
+### Install MediaMTX
+
+```bash
+# Ubuntu 24.04, Kernel 6.17, Architecture: x86_64 (64-bit Intel/AMD)
+wget https://github.com/bluenviron/mediamtx/releases/latest/download/mediamtx_v1.19.2_linux_amd64.tar.gz
+
+# Raspberry Pi OS / Debian-based, Architecture: aarch64 (ARM 64-bit)
+wget https://github.com/bluenviron/mediamtx/releases/latest/download/mediamtx_v1.19.2_linux_arm64.tar.gz
+
+tar -xvzf mediamtx_v1.19.2_linux_arm64.tar.gz
 
 ```

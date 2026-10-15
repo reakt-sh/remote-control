@@ -202,7 +202,7 @@ watch(
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 32, 128, 0.08), 0 1.5px 4px rgba(0,0,0,0.04);
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .network-grid {

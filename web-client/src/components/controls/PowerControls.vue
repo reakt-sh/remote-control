@@ -1,20 +1,9 @@
 <template>
   <div class="power-controls">
     <button
-      class="control-button start-button"
-      :class="{ active: !isPoweredOn }"
-      @click="handleStart"
-      :disabled="isPoweredOn || disabled"
-    >
-      <span class="icon">▶</span>
-      <span class="label">START</span>
-    </button>
-
-    <button
-      class="control-button stop-button"
-      :class="{ active: isPoweredOn }"
+      class="control-button stop-button active"
       @click="handleStop"
-      :disabled="!isPoweredOn || disabled"
+      :disabled="disabled"
     >
       <span class="icon">■</span>
       <span class="label">STOP</span>
@@ -23,11 +12,6 @@
 </template>
 
 <script setup>
-import { storeToRefs } from 'pinia'
-import { useTrainStore } from '@/stores/trainStore'
-
-const trainStore = useTrainStore()
-const { isPoweredOn } = storeToRefs(trainStore)
 const emit = defineEmits(['start', 'stop'])
 
 defineProps({

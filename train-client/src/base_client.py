@@ -57,21 +57,25 @@ class Bridge(Node):
             self._frame_callback(int(frame_count), frame, int(width), int(height), False)
 """
 class BaseClient(ABC, metaclass=QABCMeta):
-    def __init__(self, video_source, has_motor=False):
+    def __init__(self, video_source_front, video_source_rear, has_motor=False):
         super().__init__()
+
         self.train_client_id = self.initialize_train_client_id()
         self.helper = Helper()
+        offset = self.helper.get_ntp_offset()
+        print(f"NTP offset: {int(offset)} ms")
+
         self.keepalive_sequence = 0
-        
-        # FPS calculation variables
-        self.last_few_frame_ids = []
+
+        # FPS calculation variables (per camera type)
+        self.last_few_frame_ids = {}  # dict[camera_type -> list[(frame_id, timestamp_ms)]]
         self.show_capture_frame_log = True
 
         self.has_motor = has_motor
         self.write_to_file = True
         self.is_capturing = True
         self.is_sending = False
-        self.target_speed = MAX_SPEED
+        self.target_speed = 0
         self._running = True
         self.connected_remote_control_ids = set()
         self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
@@ -98,16 +102,20 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # self.hw_info_generator_timer.timeout.connect(self.generate_hw_info)
         # self.hw_info_generator_timer.start(1000)  # every 1 seconds
 
-        self.video_source = video_source
-        self.video_source.init_capture()
-        self.video_source.frame_ready.connect(self.on_new_frame)
+        self.video_source_front = video_source_front
+        self.video_source_front.init_capture()
+        self.video_source_front.frame_ready.connect(self.on_new_frame)
+
+        self.video_source_rear = video_source_rear
+        self.video_source_rear.init_capture()
+        self.video_source_rear.frame_ready.connect(self.on_new_frame)
 
         """
         # ROS2: Initialize node
         self.bridge = Bridge(frame_callback=self.on_new_frame)
 
         self.video_source_executor = SingleThreadedExecutor()
-        self.video_source_executor.add_node(self.video_source)
+        self.video_source_executor.add_node(self.video_source_front)
         threading.Thread(target=self.video_source_executor.spin, daemon=True).start()
 
         self.bridge_executor = SingleThreadedExecutor()
@@ -154,7 +162,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Apply current direction & speed to new source before starting
             if hasattr(new_source, 'set_direction'):
                 try:
-                    new_source.set_direction(DIRECTION["FORWARD"])
+                    new_source.set_direction(DIRECTION.FORWARD)
                 except Exception:
                     pass
             if hasattr(new_source, 'set_speed'):
@@ -190,8 +198,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         dump_dir = os.path.dirname(H264_DUMP)
         if dump_dir and not os.path.exists(dump_dir):
             os.makedirs(dump_dir, exist_ok=True)
-        output_filename = f"{H264_DUMP}_{timestamp}.h264"
-        self.output_file = open(output_filename, 'wb')
+        output_filename_front = f"{H264_DUMP}_front_{timestamp}.h264"
+        output_filename_rear = f"{H264_DUMP}_rear_{timestamp}.h264"
+        self.output_file_front = open(output_filename_front, 'wb')
+        self.output_file_rear = open(output_filename_rear, 'wb')
 
     def create_dump_file_for_latency(self, file_prefix):
         dump_dir = os.path.dirname(file_prefix)
@@ -260,9 +270,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         try:
             packet_type = data[0]
             payload = data[1:]
-            if packet_type == PACKET_TYPE["command"]:
+            if packet_type == PACKET_TYPE.COMMAND:
                 self.on_new_command(payload)
-            elif packet_type == PACKET_TYPE["map_connect"]:
+            elif packet_type == PACKET_TYPE.MAP_CONNECT:
                 ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
@@ -278,7 +288,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.info("Keepalive timer started (on map_connect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_connect JSON: {e}")
-            elif packet_type == PACKET_TYPE["map_disconnect"]:
+            elif packet_type == PACKET_TYPE.MAP_DISCONNECT:
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
                     logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
@@ -296,7 +306,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         logger.info("Keepalive timer stopped (on map_disconnect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_disconnect JSON: {e}")
-            elif packet_type == PACKET_TYPE["rtt_train"]:
+            elif packet_type == PACKET_TYPE.RTT_TRAIN:
                 try:
                     jsonString = payload.decode('utf-8')
                     jsonData = json.loads(jsonString)
@@ -342,7 +352,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         self.clock_offset_samples[remote_control_id] = []
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse rtt_train JSON: {e}")
-            elif packet_type == PACKET_TYPE["keepalive"]:
+            elif packet_type == PACKET_TYPE.KEEPALIVE:
                 try:
                     message = json.loads(payload.decode('utf-8'))
                     remote_control_id = message.get('remote_control_id', 0)
@@ -365,18 +375,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         self.latency_output_file_for_keepalive.flush()
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse keepalive JSON: {e}")
-            elif packet_type == PACKET_TYPE["rtt"]:
+            elif packet_type == PACKET_TYPE.RTT:
                 try:
                     # just modify event data with current timestamp
                     rtt_data = json.loads(payload.decode('utf-8'))
                     rtt_data["train_timestamp"] = self.helper.get_timestamp()
                     rtt_packet = json.dumps(rtt_data).encode('utf-8')
-                    rtt_packet = struct.pack("B", PACKET_TYPE["rtt"]) + rtt_packet
+                    rtt_packet = struct.pack("B", PACKET_TYPE.RTT) + rtt_packet
                     rtt_packet = self.helper.get_length_prefixed_packet(rtt_packet)
                     self.network_worker_quic.enqueue_stream_packet(rtt_packet)
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse rtt JSON: {e}")
-            elif packet_type == PACKET_TYPE["connect_response"]:
+            elif packet_type == PACKET_TYPE.CONNECT_RESPONSE:
                 logger.info(f"Received connect response from server, data = {data}")
             else:
                 logger.warning(f"Invalid process command with packet type = {packet_type}, data: {data}")
@@ -394,9 +404,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 "train_timestamp": self.helper.get_timestamp(),
             }
             rtt_train_packet = json.dumps(rtt_train_packet).encode('utf-8')
-            rtt_train_packet = struct.pack("B", PACKET_TYPE["rtt_train"]) + rtt_train_packet
+            rtt_train_packet = struct.pack("B", PACKET_TYPE.RTT_TRAIN) + rtt_train_packet
             rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
-            
+
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
 
@@ -423,18 +433,17 @@ class BaseClient(ABC, metaclass=QABCMeta):
             self.keepalive_sequence += 1
 
             keepalive_packet = json.dumps(keepalive_packet).encode('utf-8')
-            keepalive_packet = struct.pack("B", PACKET_TYPE["keepalive"]) + keepalive_packet
+            keepalive_packet = struct.pack("B", PACKET_TYPE.KEEPALIVE) + keepalive_packet
             keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
 
             self.network_worker_quic.enqueue_stream_packet(keepalive_packet)
-            logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence} to all connected remote controls")
+            logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence}")
 
         def _sender():
             import time
             while True:
-                if self.is_sending and self.clock_offset_calculation_completed == True:
-                    send_packet()
-                time.sleep(10)  # 10 seconds between packets
+                send_packet()
+                time.sleep(10)
 
         threading.Thread(target=_sender, daemon=True, name="KeepaliveSender").start()
 
@@ -501,18 +510,17 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 if not self.is_sending:
                     self.toggle_sending()
             elif message['instruction'] == 'POWER_ON':
-                self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+                self.telemetry.set_status(TRAIN_STATUS.POWER_ON)
                 self.target_speed = max(self.target_speed, MAX_SPEED)
                 self.on_power_on()
             elif message['instruction'] == 'POWER_OFF':
-                self.telemetry.set_status(TRAIN_STATUS["POWER_OFF"])
+                self.telemetry.set_status(TRAIN_STATUS.POWER_OFF)
                 self.target_speed = 0
                 self.on_power_off()
             elif message['instruction'] == 'CHANGE_DIRECTION':
                 direction = message.get('direction')
-                if direction in ("FORWARD", "BACKWARD"):
-                    self.telemetry.set_direction(DIRECTION[direction])
-                    self.on_change_direction(DIRECTION[direction])
+                if direction in (DIRECTION.FORWARD, DIRECTION.BACKWARD):
+                    self.on_change_direction(direction)
                 else:
                     logger.warning(f"Unknown direction: {direction}")
             elif message['instruction'] == 'CALCULATE_NETWORK_SPEED':
@@ -556,26 +564,27 @@ class BaseClient(ABC, metaclass=QABCMeta):
         except Exception as e:
             logger.error(f"Unexpected error processing command: {e}. Payload: {payload}")
 
-    def on_new_frame(self, frame_id, frame, width, height, is_encoded):
-        self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded)
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
+        self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded, camera_type)
 
-        # calculate continuous FPS
-        self.last_few_frame_ids.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
+        # calculate continuous FPS per camera
+        frames = self.last_few_frame_ids.setdefault(camera_type, [])
+        frames.append((frame_id, int(datetime.datetime.now().timestamp() * 1000)))
         while True:
-            first_frame_time = self.last_few_frame_ids[0][1]
-            last_frame_time = self.last_few_frame_ids[-1][1]
+            first_frame_time = frames[0][1]
+            last_frame_time = frames[-1][1]
             if last_frame_time - first_frame_time > 1000:
-                self.last_few_frame_ids.pop(0)
+                frames.pop(0)
             else:
                 break
-        current_fps = len(self.last_few_frame_ids)
+        current_fps = len(frames)
         if self.show_capture_frame_log and frame_id % 30 == 0:
-            logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}")
+            logger.debug(f"FrameID: {frame_id}, FPS: {current_fps}, Width: {width}, Height: {height}, Camera: {camera_type}")
 
     def on_telemetry_data(self, data):
         if self.is_sending:
             packet_data = json.dumps(data).encode('utf-8')
-            packet = struct.pack("B", PACKET_TYPE["telemetry"]) + packet_data
+            packet = struct.pack("B", PACKET_TYPE.TELEMETRY) + packet_data
             # Send telemetry on all active connections
             # self.network_worker_quic.enqueue_stream_packet(packet)
             # self.network_worker_ws.enqueue_packet(packet)
@@ -584,14 +593,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_imu_data(self, data):
         pass
 
-    def on_encoded_frame(self, frame_id, timestamp, encoded_bytes):
+    def on_encoded_frame(self, frame_id, timestamp, encoded_bytes, camera_type):
         try:
             if self.write_to_file:
-                self.output_file.write(encoded_bytes)
-                self.output_file.flush()
+                if camera_type == CAMERA_TYPE.FRONT:
+                    self.output_file_front.write(encoded_bytes)
+                    self.output_file_front.flush()
+                elif camera_type == CAMERA_TYPE.REAR:
+                    self.output_file_rear.write(encoded_bytes)
+                    self.output_file_rear.flush()
             if self.is_sending:
                 # Send the encoded frame over the network
-                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes)
+                self.network_worker_quic.enqueue_frame(frame_id, timestamp, encoded_bytes, camera_type)
                 self.telemetry.notify_new_frame_processed()
         except Exception as e:
             logger.error(f"Error writing on_encoded_frame: {e}")
@@ -599,12 +612,14 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def toggle_capture(self):
         self.is_capturing = not self.is_capturing
         if self.is_capturing:
-            self.video_source.init_capture()
+            self.video_source_front.init_capture()
+            self.video_source_rear.init_capture()
             self.telemetry.start()
             self.imu.start()
             self.log_message("Capture started - camera active")
         else:
-            self.video_source.stop()
+            self.video_source_front.stop()
+            self.video_source_rear.stop()
             self.telemetry.stop()
             self.imu.stop()
             self.log_message("Capture stopped - camera released")
@@ -621,24 +636,37 @@ class BaseClient(ABC, metaclass=QABCMeta):
         timestamp = QDateTime.currentDateTime().toString("[hh:mm:ss.zzz]")
         # logger.info(f"{timestamp} {message}")
 
-    def stop_train_operations(self):
-        if self.is_sending:
-            self.toggle_sending()
+    def send_error_message(self, error_code: str):
+        error_msg_packet = {
+            "type": "error_message",
+            "error_code": error_code,
+        }
+        error_msg_packet = json.dumps(error_msg_packet).encode('utf-8')
+        error_msg_packet = struct.pack("B", PACKET_TYPE.ERROR_MSG) + error_msg_packet
+        error_msg_packet = self.helper.get_length_prefixed_packet(error_msg_packet)
 
+        self.network_worker_quic.enqueue_stream_packet(error_msg_packet)
+        logger.info(f"Sent error message packet with error_code: {error_code}")
+
+    def stop_train_operations(self):
         self.on_horn_off()
         self.on_headlight_off()
 
         self.target_speed = 0
         self.on_power_off()
+        logger.warning("Train operations stopped due to safety concerns (keepalive timeout or RC disconnect).")
 
 
     def close(self):
         self._running = False
-        self.video_source.stop()
+        self.video_source_front.stop()
+        self.video_source_rear.stop()
+        self.telemetry.stop()
         self.encoder.close()
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
-        self.output_file.close()
+        self.output_file_front.close()
+        self.output_file_rear.close()
         # self.hw_info_generator_timer.stop()
         logger.info("BaseClient closed.")
 

@@ -11,12 +11,14 @@ export function useVideoPanel(canvasRef, options = {}) {
     latencyRef = null,
     fpsRef = null,
     bandwidthRef = null,
-    last100frameLatenciesRef = null
+    last100frameLatenciesRef = null,
+    enableStatisticsRef = null
   } = options
 
   const isFullScreen = ref(false)
   let videoDecoder = null
   let isCanvasInitialized = false
+  let resizeObserver = null
 
   function initializeDecoder() {
     videoDecoder = new VideoDecoderWrapper({
@@ -88,24 +90,28 @@ export function useVideoPanel(canvasRef, options = {}) {
       drawOverlayBL.nextY = boxY - 6
     }
 
+    // Statistics overlays are only drawn while enabled, so toggling the
+    // feature off hides them on the very next rendered frame.
+    const statisticsEnabled = !enableStatisticsRef || enableStatisticsRef.value
+
     // Draw overlays in bottom-left: latency then FPS stacked above
-    if (latencyRef && latencyRef.value > 0) {
+    if (statisticsEnabled && latencyRef && latencyRef.value > 0) {
       const latency = latencyRef.value.toFixed(1)
       drawOverlayBL(`Average Latency (last 30 frames): ${latency} ms`)
     }
 
-    if (fpsRef && fpsRef.value > 0) {
+    if (statisticsEnabled && fpsRef && fpsRef.value > 0) {
       const fps = fpsRef.value.toFixed(1)
       drawOverlayBL(`Live FPS: ${fps}`)
     }
 
-    if (bandwidthRef && bandwidthRef.value > 0) {
+    if (statisticsEnabled && bandwidthRef && bandwidthRef.value > 0) {
       const bandwidth = bandwidthRef.value.toFixed(2)
       drawOverlayBL(`Bandwidth Usage: ${bandwidth} Mbps`)
     }
 
     // Draw compact last-100-frame latency panel on the right side (oldest at top → newest at bottom)
-    if (last100frameLatenciesRef && last100frameLatenciesRef.value.length > 0) {
+    if (statisticsEnabled && last100frameLatenciesRef && last100frameLatenciesRef.value.length > 0) {
       const entries = last100frameLatenciesRef.value
       const canvasH = canvasRef.value.height
       const canvasW = canvasRef.value.width
@@ -201,6 +207,18 @@ export function useVideoPanel(canvasRef, options = {}) {
     updateCanvasSize()
     window.addEventListener('resize', handleResize)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+    // The canvas's own container can change size independently of the
+    // window (e.g. the front/rear panel swapping between the "big" and
+    // "small" flex-grow layouts when train direction changes). Watch the
+    // container itself so the canvas is always re-sized to match, instead
+    // of keeping stale dimensions from whichever layout it was created in.
+    if (typeof ResizeObserver !== 'undefined' && canvasRef.value?.parentElement) {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize()
+      })
+      resizeObserver.observe(canvasRef.value.parentElement)
+    }
   })
 
   onUnmounted(() => {
@@ -209,6 +227,10 @@ export function useVideoPanel(canvasRef, options = {}) {
     }
     window.removeEventListener('resize', handleResize)
     document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+      resizeObserver = null
+    }
   })
 
   return {

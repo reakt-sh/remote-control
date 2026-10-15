@@ -2,23 +2,25 @@ from sensor.camera_rpi_5 import CameraRPi5
 from sensor.camera import Camera
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS
+from globals import DIRECTION, MAX_SPEED, TRAIN_STATUS, ERROR_CODES
 from PyQt5.QtCore import QThread
-from utils.app_logger import logger
+from app_logger import logger
+from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 
 class RPi5Client(BaseClient, QThread):
     def __init__(self):
-        super().__init__(video_source=CameraRPi5(), has_motor=True)
+        super().__init__(video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=True)
         self.motor_actuator = MotorActuator()
         self.motor_actuator.start_motor()
-        self.target_speed = MAX_SPEED
-        self.telemetry.set_speed(self.target_speed)
+        self.actual_speed = MAX_SPEED
+        self.telemetry.set_speed(self.actual_speed)
         logger.info("RPi5Client initialized.")
 
     def update_speed(self, speed):
         logger.info(f"Updating speed to: {speed}")
         self.motor_actuator.set_speed(speed)
         self.telemetry.set_speed(speed)
+        self.actual_speed = speed
 
     def on_power_on(self):
         logger.info("Powering on the motor.")
@@ -27,14 +29,25 @@ class RPi5Client(BaseClient, QThread):
     def on_power_off(self):
         logger.info("Powering off the motor.")
         self.motor_actuator.stop_motor()
+        self.actual_speed = 0
 
     def on_change_direction(self, direction):
         logger.info(f"Changing direction to: {direction}")
-        if direction == DIRECTION["FORWARD"]:
-            self.motor_actuator.move_forward()
-        elif direction == DIRECTION["BACKWARD"]:
-            self.motor_actuator.move_backward()
-        self.telemetry.set_status(TRAIN_STATUS["POWER_ON"])
+        if self.actual_speed > 0:
+            super().send_error_message(ERROR_CODES.CHANGE_DIRECTION_WHILE_MOVING)
+            return
+        self.telemetry.set_direction(direction)
+
+        if direction == DIRECTION.FORWARD:
+            self.telemetry.set_mode("FORWARD")
+        elif direction == DIRECTION.BACKWARD:
+            self.telemetry.set_mode("REVERSE")
+        self.motor_actuator.set_direction(direction)
+
+        # if direction == DIRECTION.FORWARD:
+        #     self.motor_actuator.move_forward()
+        # elif direction == DIRECTION.BACKWARD:
+        #     self.motor_actuator.move_backward()
 
     def on_headlight_on(self):
         logger.info("Turning on headlights.")

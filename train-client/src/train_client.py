@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QVBoxLayout, QWidget, QTextEdit, QPushButton, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QTextCursor, QColor
-from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, QMutex, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QDateTime, QTimer, QUrl, pyqtSignal
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 import qtawesome as qta
 import cv2
@@ -9,18 +9,24 @@ import numpy as np
 import time
 from sensor.file_processor import FileProcessor
 from sensor.camera import Camera
+from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
+
 from base_client import BaseClient
 from globals import *
 
 class TrainClient(BaseClient, QMainWindow):
     _frame_ready = pyqtSignal(object)
+    _headlight_on_signal = pyqtSignal()
+    _headlight_off_signal = pyqtSignal()
+    _horn_on_signal = pyqtSignal()
+    _horn_off_signal = pyqtSignal()
 
     def __init__(self):
         QMainWindow.__init__(self)
-        BaseClient.__init__(self, video_source=FileProcessor(), has_motor=False)
+        BaseClient.__init__(self, video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=False)
         self.headlight_on = False
         self.horn_active = False
-        self.horn_mutex = QMutex(QMutex.Recursive)  # Recursive mutex to allow re-locking in signal handlers
+        self.actual_speed = 0
         self.init_ui()
 
         # Initialize horn sound player
@@ -37,6 +43,10 @@ class TrainClient(BaseClient, QMainWindow):
             self.horn_player.setMedia(content)
 
         self._frame_ready.connect(self._render_frame, Qt.QueuedConnection)
+        self._headlight_on_signal.connect(self._do_headlight_on, Qt.QueuedConnection)
+        self._headlight_off_signal.connect(self._do_headlight_off, Qt.QueuedConnection)
+        self._horn_on_signal.connect(self._do_horn_on, Qt.QueuedConnection)
+        self._horn_off_signal.connect(self._do_horn_off, Qt.QueuedConnection)
 
 
 
@@ -155,6 +165,17 @@ class TrainClient(BaseClient, QMainWindow):
         self.source_button.clicked.connect(self.toggle_video_source)
         self.using_file_source = True
 
+        # Control mode toggle button (teal): MANUAL vs REMOTE
+        self.mode_button = QPushButton(f"  Mode: {self.telemetry.get_control_mode()}")
+        self.mode_button.setMinimumWidth(BUTTON_WIDTH)
+        self.mode_button.setMaximumWidth(BUTTON_WIDTH)
+        self.mode_button_style = self.button_style.replace("#2d89ef", "#009688").replace("#1b5fa7", "#00695c").replace("#174c88", "#004d40")
+        self.mode_button_style_manual = self.button_style.replace("#2d89ef", "#ff5722").replace("#1b5fa7", "#c41c00").replace("#174c88", "#9a0007")
+        self.mode_button.setStyleSheet(self.mode_button_style_manual if self.telemetry.get_control_mode() == CONTROL_MODE.MANUAL else self.mode_button_style)
+        self.mode_button.setIcon(qta.icon('fa5s.exchange-alt', color='white'))
+        self.mode_button.setIconSize(QSize(24, 24))
+        self.mode_button.clicked.connect(self.toggle_control_mode)
+
         # Headlight indicator (round)
         self.headlight_indicator = QLabel()
         self.headlight_indicator.setFixedSize(120, 120)
@@ -174,6 +195,7 @@ class TrainClient(BaseClient, QMainWindow):
         button_layout.addWidget(self.sending_button)
         button_layout.addWidget(self.write_button)
         button_layout.addWidget(self.source_button)
+        button_layout.addWidget(self.mode_button)
         button_layout.addSpacing(20)
         button_layout.addWidget(self.headlight_indicator, alignment=Qt.AlignCenter)
         button_layout.addSpacing(10)
@@ -200,9 +222,8 @@ class TrainClient(BaseClient, QMainWindow):
         )
         self.hw_info_label.setText(hw_text)
 
-    def on_new_frame(self, frame_id, frame, width, height, is_encoded):
-        super().on_new_frame(frame_id, frame, width, height, is_encoded)
-        self._frame_ready.emit(frame.copy())
+    def on_new_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
+        super().on_new_frame(frame_id, frame, width, height, is_encoded, camera_type)
 
     def _render_frame(self, frame):
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -268,6 +289,13 @@ class TrainClient(BaseClient, QMainWindow):
         self.switch_video_source(new_source)
         self.using_file_source = not self.using_file_source
 
+    def toggle_control_mode(self):
+        new_mode = CONTROL_MODE.MANUAL if self.telemetry.get_control_mode() == CONTROL_MODE.REMOTE else CONTROL_MODE.REMOTE
+        self.telemetry.set_control_mode(new_mode)
+        self.mode_button.setText(f"  Mode: {new_mode}")
+        self.mode_button.setStyleSheet(self.mode_button_style_manual if new_mode == CONTROL_MODE.MANUAL else self.mode_button_style)
+        self.log_message(f"Control mode switched to {new_mode}")
+
     def log_message(self, message):
         super().log_message(message)
         self.console_log.append(f"{QDateTime.currentDateTime().toString('[hh:mm:ss.zzz]')} {message}")
@@ -276,17 +304,30 @@ class TrainClient(BaseClient, QMainWindow):
         self.console_log.setTextCursor(cursor)
 
     def update_speed(self, speed):
-        self.video_source.set_speed(speed)
+        self.video_source_front.set_speed(speed)
+        self.video_source_rear.set_speed(speed)
         self.telemetry.set_speed(speed)
+        self.actual_speed = speed
 
     def on_power_on(self):
-        self.update_speed(self.target_speed)
+        self.update_speed(self.actual_speed)
 
     def on_power_off(self):
+        self.actual_speed = 0
         self.update_speed(0)
 
     def on_change_direction(self, direction):
-        self.video_source.set_direction(direction)
+        if self.actual_speed > 0:
+            super().send_error_message(ERROR_CODES.CHANGE_DIRECTION_WHILE_MOVING)
+            return
+        self.video_source_front.set_direction(direction)
+        self.video_source_rear.set_direction(direction)
+        self.telemetry.set_direction(direction)
+
+        if direction == DIRECTION.FORWARD:
+            self.telemetry.set_mode("FORWARD")
+        elif direction == DIRECTION.BACKWARD:
+            self.telemetry.set_mode("REVERSE")
 
     def update_headlight_display(self):
         if self.headlight_on:
@@ -363,48 +404,48 @@ class TrainClient(BaseClient, QMainWindow):
             self.horn_indicator.setGraphicsEffect(None)
 
     def on_headlight_on(self):
+        self._headlight_on_signal.emit()
+
+    def on_headlight_off(self):
+        self._headlight_off_signal.emit()
+
+    def _do_headlight_on(self):
         self.headlight_on = True
         self.update_headlight_display()
 
-    def on_headlight_off(self):
+    def _do_headlight_off(self):
         self.headlight_on = False
         self.update_headlight_display()
 
     def on_horn_media_status_changed(self, status):
-        self.horn_mutex.lock()
-        try:
-            if status == QMediaPlayer.EndOfMedia:
-                self.horn_player.setPosition(0)
-                self.horn_player.play()
-        finally:
-            self.horn_mutex.unlock()
+        if status == QMediaPlayer.EndOfMedia:
+            self.horn_player.setPosition(0)
+            self.horn_player.play()
 
 
     def on_horn_on(self):
-        """Activate horn - play sound and show visual indicator"""
-        self.horn_mutex.lock()
-        try:
-            self.horn_active = True
-            self.update_horn_display()
-
-            self.horn_player.play()
-            self.log_message(f"🔊 Horn activated")
-        finally:
-            self.horn_mutex.unlock()
+        """Activate horn - called from external thread, delegate to main thread"""
+        self._horn_on_signal.emit()
 
     def on_horn_off(self):
-        """Deactivate horn - stop sound and hide visual indicator"""
-        self.horn_mutex.lock()
-        try:
-            self.horn_active = False  # Set flag first to prevent any restart logic
-            self.update_horn_display()
+        """Deactivate horn - called from external thread, delegate to main thread"""
+        self._horn_off_signal.emit()
 
-            self.horn_player.pause()
-            self.horn_player.stop()
-            self.horn_player.setPosition(0)
-            self.log_message("🔇 Horn deactivated")
-        finally:
-            self.horn_mutex.unlock()
+    def _do_horn_on(self):
+        """Activate horn - play sound and show visual indicator (runs on main thread)"""
+        self.horn_active = True
+        self.update_horn_display()
+        self.horn_player.play()
+        self.log_message(f"🔊 Horn activated")
+
+    def _do_horn_off(self):
+        """Deactivate horn - stop sound and hide visual indicator (runs on main thread)"""
+        self.horn_active = False  # Set flag first to prevent any restart logic
+        self.update_horn_display()
+        self.horn_player.pause()
+        self.horn_player.stop()
+        self.horn_player.setPosition(0)
+        self.log_message("🔇 Horn deactivated")
 
     def closeEvent(self, event):
         self.close()

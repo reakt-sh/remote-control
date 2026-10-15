@@ -29,9 +29,9 @@ class Telemetry:
 
         self.name = "Train"
         self.train_id = train_id
-        self.status = TRAIN_STATUS["POWER_ON"]
-        self.direction = DIRECTION["FORWARD"]
-        self.speed = MAX_SPEED
+        self.status = TRAIN_STATUS.POWER_OFF
+        self.direction = DIRECTION.FORWARD
+        self.speed = 0
         self.max_speed = MAX_SPEED
         self.brake_status = "released"
         self.location_index = random.randint(0, len(STATION_LIST) - 1)
@@ -60,6 +60,7 @@ class Telemetry:
         self.ping = 0.0
 
         self.motor_mode = "UNKNOWN"
+        self.control_mode = CONTROL_MODE.REMOTE
 
         self.horn_status = "OFF"
         self.headlight_status = "OFF"
@@ -72,6 +73,12 @@ class Telemetry:
 
     def set_mode(self, mode: str):
         self.motor_mode = mode
+
+    def set_control_mode(self, mode: str):
+        self.control_mode = mode
+
+    def get_control_mode(self):
+        return self.control_mode
 
     def get_mode(self):
         return self.motor_mode
@@ -91,6 +98,9 @@ class Telemetry:
 
     def set_direction(self, direction: int):
         self.direction = direction
+    
+    def get_direction(self):
+        return self.direction
 
     def set_network_speed(self, download_speed: float, upload_speed: float, jitter: float, ping: float):
         self.download_speed = download_speed
@@ -181,6 +191,7 @@ class Telemetry:
             "ping": self.ping,
             "sequence_number": self.sequence_number,
             "reaktor_motor_mode" : self.motor_mode,
+            "reaktor_control_mode" : self.control_mode,
             "horn_status": self.horn_status,
             "headlight_status": self.headlight_status,
         }

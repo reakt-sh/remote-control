@@ -137,7 +137,7 @@ const selectTrain = (id) => {
 }
 
 .train-id-value {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1.1rem;
   font-weight: 600;
   color: #212121;

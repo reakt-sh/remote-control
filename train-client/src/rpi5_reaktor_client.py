@@ -1,39 +1,59 @@
 import asyncio
+import os
+import random
 import datetime
-import qasync
+import threading
 from app_logger import logger
 from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
+from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES, ERROR_MESSAGE_CODE_MAP
 from PyQt5.QtCore import QThread
+from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
+import logging
+import json
+import struct
+
+# error_message_test = [
+#     "Connection refused due to protocol version mismatch between driver and remote control.",
+#     "A control message was received without a successful connection handshake beforehand.",
+#     "While in active remote control mode, no control (or heartbeat) message was received in the expected interval.",
+#     "No connection to motor throttle control component (DAC via I2C).",
+#     "Control mode switch attempted while in unsafe driving mode."
+# ]
 
 # Connector related imports
-from connector.test.context import Connection, Status, Control, Mode
+# from connector.test.context import Connection, Status, Control, Mode
 
-INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
+from connector.connector.connection import Connection
+from connector.connector.data import Status, Control, Mode, ConnectionProblem
+
+
 MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
-        super().__init__(video_source=CameraRPi5(), has_motor=True)
-        self.current_mode = Mode.FORWARD
-        self.current_speed = 0
+        super().__init__(video_source_front=RTSPStream(RTSP_URL_FRONT), video_source_rear=RTSPStream(RTSP_URL_REAR), has_motor=True)
+        self.mode = Mode.FORWARD
+        self.actual_mode = "UNKNOWN"
+        self.speed = 0
+        self.actual_speed_kmh = 0
         self.status = None
         self.last_log_time = 0
+        self.connection = None
+        logging.basicConfig(filename='reaktor_driver.log', encoding='utf-8', level=logging.INFO)
 
         if IS_REAKTOR_DRIVER_ENABLED:
-            loop = qasync.QEventLoop(self)
-            logger.info("Reaktor driver enabled. Initializing connection.")
-            self.connection = None
-            task = loop.create_task(self.setup_connection())
-            loop.run_until_complete(task)
+            self.reaktor_driver_event = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.reaktor_driver_event)
+            self.reaktor_driver_event.run_until_complete(self.setup_connection())
+
+            self.reaktor_driver_thread = threading.Thread(target=self.reaktor_driver_event.run_forever, daemon=True)
+            self.reaktor_driver_thread.start()
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
-        # logging.basicConfig(level=logging.DEBUG)
-        # Open connection
         self.connection = Connection()
         self.connection.add_status_listener(lambda x: self.set_status(x))
         await self.connection.open("/dev/ttyUSB0")
@@ -47,27 +67,65 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     def set_status(self, s: Status):
         self.status = s
-        current_time = datetime.datetime.now().timestamp() * 1000
-        if current_time - self.last_log_time > 3000:
-            self.last_log_time = current_time
-            logger.info(f"New status: {s}")
+        logger.info(f"New status: {s}")
 
-        current_speed_kmh = s.motor_speed * 3.6
-        current_mode = ""
+
+        if isinstance(s, ConnectionProblem):
+            logger.error(f"ConnectionProblem: {s}")
+
+
+        # randomly inject errors after each 5 seconds for testing
+        # current_time = datetime.datetime.now().timestamp() * 1000
+        # if current_time - self.last_log_time > 5000:
+        #     self.last_log_time = current_time
+        #     number_of_errors = random.randint(1, 3)
+        #     for _ in range(number_of_errors):
+        #         error_message = random.choice(error_message_test)
+        #         s.errors.append(error_message)
+
+        if len(s.errors) > 0:
+            for error in s.errors:
+                if error in ERROR_MESSAGE_CODE_MAP:
+                    error_code = ERROR_MESSAGE_CODE_MAP[error]
+                    super().send_error_message(error_code)
+                    if error_code == ERROR_CODES.WHILE_IN_REMOTE_CONTROL_MODE_NO_CONTROL_MESSAGE_RECEIVED:
+                        logger.error("No control message received in remote control mode. Stopping train and terminating application.")
+                        self.stop_train_operations()
+                        os._exit(1)
+
+
+
+        # current_time = datetime.datetime.now().timestamp() * 1000
+        # if current_time - self.last_log_time > 3000:
+        #     self.last_log_time = current_time
+        #     logger.info(f"New status: {s}")
+
+
+
+        self.actual_speed_kmh = s.motor_speed * 3.6
+        self.actual_mode = ""
         if s.mode == Mode.EMERGENCY_STOP:
-            current_mode = "STOP"
+            self.actual_mode = MOTOR_MODE.EMERGENCY_STOP
         elif s.mode == Mode.FORWARD:
-            current_mode = "FORWARD"
+            self.actual_mode = MOTOR_MODE.FORWARD
+            self.telemetry.set_direction(DIRECTION.FORWARD)
         elif s.mode == Mode.REVERSE:
-            current_mode = "REVERSE"
+            self.actual_mode = MOTOR_MODE.REVERSE
+            self.telemetry.set_direction(DIRECTION.BACKWARD)
         elif s.mode == Mode.PARKING:
-            current_mode = "PARKING"
+            self.actual_mode = MOTOR_MODE.PARKING
         elif s.mode == Mode.NEUTRAL:
-            current_mode = "NEUTRAL"
+            self.actual_mode = MOTOR_MODE.NEUTRAL
         else:
-            current_mode = "UNKNOWN"
-        self.telemetry.set_mode(current_mode)
-        self.telemetry.set_speed(current_speed_kmh)
+            self.actual_mode = MOTOR_MODE.UNKNOWN
+
+        self.telemetry.set_mode(self.actual_mode)
+        self.telemetry.set_speed(self.actual_speed_kmh)
+
+        if s.remote_control:
+            self.telemetry.set_control_mode(CONTROL_MODE.REMOTE)
+        else:
+            self.telemetry.set_control_mode(CONTROL_MODE.MANUAL)
 
     def update_speed(self, speed): # speed here in KM/H
         try:
@@ -77,11 +135,11 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 logger.warning(f"Requested speed {converted_speed} m/s exceeds MAX_SPEED {MAX_SPEED_REAKTOR} m/s. Capping to MAX_SPEED.")
                 converted_speed = MAX_SPEED_REAKTOR
 
-            self.current_speed = converted_speed
+            self.speed = converted_speed
 
             control = Control(
-                mode = self.current_mode,
-                target_speed = self.current_speed
+                mode = self.mode,
+                target_speed = self.speed
             )
             logger.info(f"Sending new target speed: {control.target_speed}")
             self.connection.send_control(control)
@@ -92,8 +150,8 @@ class RPi5ReaktorClient(BaseClient, QThread):
         try:
             # Start Command
             control = Control(
-                mode = self.current_mode,
-                target_speed = self.current_speed
+                mode = self.mode,
+                target_speed = self.speed
             )
             logger.info(f"Powering on motor with target speed: {control.target_speed}")
             self.connection.send_control(control)
@@ -101,24 +159,50 @@ class RPi5ReaktorClient(BaseClient, QThread):
             logger.error(f"Error powering ON motor: {e}")
 
     def on_power_off(self):
+        # this is our stop command, we set the speed to 0 and send it to the motor
         try:
             # Stop Command
+            self.speed = 0
             control = Control(
-                mode = self.current_mode,
-                target_speed = 0
+                mode = self.mode,
+                target_speed = self.speed
             )
-            logger.info("Powering off motor.")
+            logger.info("Stopping the REAKTOR")
             self.connection.send_control(control)
         except Exception as e:
-            logger.error(f"Error powering OFF motor: {e}")
+            logger.error(f"Error Stopping motor: {e}")
 
     def on_change_direction(self, direction):
+        # here we need a safety check,
+        # if the train is moving, we should not allow changing direction
+        if self.actual_speed_kmh > 0 and self.speed > 0:
+            logger.warning("Cannot change direction while the train is moving. Please stop the train first.")
+            super().send_error_message(ERROR_CODES.CHANGE_DIRECTION_WHILE_MOVING)
+            return
+
         try:
-            if direction == DIRECTION["FORWARD"]:
-                self.current_mode = Mode.FORWARD
-                logger.info("Changing direction command received to FORWARD.")
-            elif direction == DIRECTION["BACKWARD"]:
-                self.current_mode = Mode.REVERSE
-                logger.info("Changing direction command received to BACKWARD.")
+            if direction == DIRECTION.FORWARD:
+                self.mode = Mode.FORWARD
+                self.speed = 0
+            elif direction == DIRECTION.BACKWARD:
+                self.mode = Mode.REVERSE
+                self.speed = 0
+            else:
+                logger.warning(f"Unknown direction: {direction}")
+                return
+
+            control = Control(
+                mode = self.mode,
+                target_speed = self.speed
+            )
+            logger.info(f"Changing direction to: {self.mode}. Sending control: {control}")
+            self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error changing direction: {e}")
+
+    def on_horn_off(self):
+        pass
+
+    def on_headlight_off(self):
+        pass
+

@@ -32,30 +32,30 @@ const { isWSConnected, isWTConnected, isMqttConnected, isRTCConnected } = storeT
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  padding: 12px 20px;
-  border-radius: 14px;
+  padding: 4px 10px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .status-text {
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
 }
 
 .connection-details {
   display: flex;
-  gap: 16px;
+  gap: 8px;
 }
 
 .connection-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  gap: 4px;
+  font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.6);
   transition: color 0.3s ease;
 }
@@ -71,7 +71,7 @@ const { isWSConnected, isWTConnected, isMqttConnected, isRTCConnected } = storeT
 }
 
 .connection-item i {
-  font-size: 0.75rem;
+  font-size: 0.6rem;
 }
 
 @keyframes pulse-red {

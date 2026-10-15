@@ -1,56 +1,79 @@
-# Remote Control System
+# Research on Remote Control System
 
-Welcome to the **Remote Control System** by reakt-sh, a robust solution designed to manage and control train operations remotely. This repository contains three core modules: `train-client`, `central-server`, and `web-client`. Each module serves a distinct purpose in enabling seamless communication, control, and monitoring of train systems. Below, you'll find a detailed overview of the features for each module.
+## Project overview
 
-## Table of Contents
-- [Overview](#overview)
-- [Languages and Frameworks](#languages-and-frameworks)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+This project researches the design and evaluation of real-time, safety-critical
+remote train control systems. It investigates how control commands, sensor
+measurements, telemetry, and video can be communicated between train-side
+equipment, infrastructure, and a remote operator interface while meeting
+stringent timing and dependability requirements.
 
-## Overview
-The Remote Control System is designed to facilitate real-time monitoring, control, and data exchange for train operations. It comprises:
-- **Train Client**: Runs on train hardware to manage onboard operations and communicate with the central server.
-- **Central Server**: Acts as the backbone, handling data aggregation, command processing, and communication between trains and web clients.
-- **Web Client**: Provides a user-friendly interface for operators to monitor and control train operations remotely.
+The work examines network protocols and transport technologies including
+**WebTransport**, **QUIC**, **WebRTC**, **WebSocket**, and **MQTT over TCP**,
+among others. The research focuses on their communication characteristics,
+timing constraints, and suitability for transmitting control and sensor data
+in cyber-physical systems (CPS).
 
-This system ensures reliability, scalability, and security for modern railway management.
+An additional research question is the feasibility of using **Lingua Franca**
+to coordinate and orchestrate components in such CPS, particularly where
+time-sensitive interactions and predictable behavior are important.
 
-## Languages and Frameworks
+This research is a product of the **REAKT-DataTrain Project**. The software and
+test platforms described here support research and evaluation; they are not,
+by themselves, evidence of certification or approval for operational railway
+use.
 
-The Remote Control System is built using a modern, heterogeneous technology stack optimized for real-time communication and performance across distributed components.
+## Research scope
 
-### Train Client
-The train client is developed in **Python 3**, leveraging **PyQt5** for the graphical user interface and system event handling. Video processing and encoding are handled through **OpenCV**, **PyAV**, and **FFmpeg**, enabling efficient H.264 video stream encoding from onboard cameras. The client supports multiple communication protocols including **QUIC** (via `aioquic` library), **WebSocket** (`websockets`), and **MQTT** (`paho-mqtt`) for reliable, low-latency data transmission under varying network conditions. **NumPy** is utilized for numerical computations related to sensor data processing.
+The project investigates:
 
-### Central Server
-The central server is implemented in **Python 3** using the **FastAPI** framework, which provides high-performance asynchronous HTTP and WebSocket capabilities through **Uvicorn** ASGI server. The server architecture supports multiple concurrent communication protocols: **WebRTC** (implemented via `aiortc` and `aioice` libraries) for peer-to-peer video streaming, **QUIC** protocol for low-latency transport, and **MQTT** (using `paho-mqtt`) for message brokering. The server integrates **NanoMQ** (version 0.19.0) as a lightweight MQTT broker, deployed via Docker containers for easy scalability. Video processing capabilities are provided through **OpenCV** and **NumPy**, while **Loguru** handles structured logging. For production deployment, the server utilizes **Gunicorn** with **uvloop** for enhanced event loop performance on Linux systems.
+- Communication architectures for remote train control.
+- Protocol behavior and trade-offs across WebTransport, QUIC, WebRTC,
+  WebSocket, MQTT over TCP, and other relevant technologies.
+- Timing constraints for control, telemetry, sensor-data, and video
+  transmission.
+- The feasibility of applying Lingua Franca to orchestration in real-time CPS.
+- The design of a remote control interface for monitoring and controlling
+  train systems.
 
-### Web Client
-The web client is a modern single-page application built with **Vue.js 3** and managed through **Vue CLI**. The application uses **Pinia** for state management and **Vue Router** for client-side routing. Real-time communication is achieved through **WebSocket** connections and **MQTT** (via `paho-mqtt` browser library). Video streaming utilizes the **H.264 Live Player** library for efficient decoding and rendering of H.264 video streams directly in the browser. The UI is enhanced with **Font Awesome** icons, and **Axios** handles HTTP requests to the central server. The client employs **Dexie.js** for IndexedDB-based local storage of recorded sessions and telemetry data. Network performance monitoring is integrated using the **Fast Speedtest API**. The build process uses **Babel** for JavaScript transpilation and **ESLint** for code quality enforcement, ensuring cross-browser compatibility and maintainable code.
+The repository contains software for train-side, server-side, and web-client
+components that can be used in these research activities. Specific protocol
+support and behavior depend on the component and its configuration.
 
-This multi-layered architecture ensures optimal performance, real-time responsiveness, and maintainability while supporting diverse deployment scenarios from embedded systems to web browsers.
+## Test platforms
 
-## Usage
-1. **Train Client**:
-   - Deploy on train hardware and configure to connect to the central server.
-   - Monitor logs for telemetry data and command execution status.
+The research is designed for testing on **REAKTOR** and **REAKTiny**.
 
-2. **Central Server**:
-   - Server prepared with WebSocket, QUIC and WebTransport Connection
-   - Use API endpoints to connect with clients.
+### REAKTOR
 
-3. **Web Client**:
-   - Open the web interface in a browser (e.g., `http://localhost:8080`).
-   - Watch video and telemetry data to monitor and control trains.
+Test platform reference dated **29 June 2026**.
 
-## Contributing
-We welcome contributions to improve the Remote Control System! To contribute:
-1. Create a feature branch (`git checkout -b your-feature`).
-2. Commit your changes (`git commit -m "Add your feature"`).
-3. Push to the branch (`git push origin your-feature`).
-4. Open a pull request to main branch on GitHub.
+![REAKTOR test platform](images/REAKTOR.jpg)
+
+### REAKTiny
+
+Test platform reference dated **4 September 2025**.
+
+![REAKTiny test platform](images/REAKTiny.jpg)
+
+## Remote control interface
+
+The project also researches how a remote control interface can present
+operational information and support remote interaction with train systems.
+
+![Remote control interface](images/remote_control_interface.png)
+
+## Publication
+
+The following publication is currently associated with this project:
+
+> **“Remote Train Control over WebTransport Orchestrated by Lingua Franca”**
+>
+> *IEEE Embedded Systems Letters*
+>
+> [https://doi.org/10.1109/LES.2026.3727940](https://doi.org/10.1109/LES.2026.3727940)
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for
+details.

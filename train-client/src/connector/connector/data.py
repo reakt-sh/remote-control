@@ -1,3 +1,7 @@
+"""
+User facing data classes for vehicle control and status.
+"""
+
 from datetime import datetime
 from enum import IntEnum, unique
 from typing import Annotated, Optional, List
@@ -12,7 +16,6 @@ class Mode(IntEnum):
     REVERSE = MessageMode.DRIVE_MODE_REVERSE
     PARKING = MessageMode.DRIVE_MODE_PARKING
     EMERGENCY_STOP = MessageMode.DRIVE_MODE_EMERGENCY_STOP
-
 type SpeedType = Annotated[float, Field(ge=0, allow_inf_nan=False, description="Speed in m/s")]
 
 class Control(BaseModel):
@@ -23,6 +26,7 @@ class Control(BaseModel):
 class InternalState(BaseModel):
     """Internal state of the driver."""
     time_ms: int
+    connection_established: bool
     control_rpm: int
     target_rpm: int
     motor_rpm: int
@@ -41,3 +45,16 @@ class Status(BaseModel):
     motor_speed: float # in m/s
     # Internal state
     internal_state: Optional[InternalState] = None
+
+class ConnectionProblem(Exception):
+    """Base class for connection problems."""
+    def __init__(self, message, cause=None):
+        super().__init__(message)
+        self.message = message
+        self.cause = cause
+
+    def __str__(self):
+        if self.cause:
+            return f"{self.message} (Caused by: {self.cause})"
+        else:
+            return f"{self.message}"

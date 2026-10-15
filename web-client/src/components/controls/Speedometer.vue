@@ -1,406 +1,299 @@
 <template>
-  <div class="speedometer">
-    <div class="speed-display">
-      <div class="speed-row">
-        <div class="current-speed">{{ formattedSpeed }}</div>
-        <div class="speed-unit">km/h</div>
-        <div class="motor-mode">{{ formattedMotorMode }}</div>
-      </div>
-      <div class="target-speed">
-        <div class="target-speed-value" :class="{ invisible: !showTargetLabel }">Target: {{ tempTargetSpeed }} km/h</div>
-        <button class="toggle-input-btn" @click="toggleInputMode" :disabled="disabled" :title="showSlider ? 'Switch to button input' : 'Switch to slider input'">
-          <i :class="showSlider ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"></i>
-        </button>
-        <div v-if="showSlider" class="slider-container">
-          <input
-            type="range"
-            min="0"
-            :max="maxSpeed"
-            :value="tempTargetSpeed"
-            :disabled="disabled"
-            @input="e => {tempTargetSpeed = Number(e.target.value); emit('update:targetSpeed', Number(e.target.value)); showTargetLabel = true}"
-            @change="e => {tempTargetSpeed = Number(e.target.value); emit('change:targetSpeed', Number(e.target.value)); showTargetLabel = false}"
-            class="target-slider"
-          />
-        </div>
-        <div v-else class="target-speed-buttons">
-          <div class="button-row">
-            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(-10)">-10</button>
-            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(-1)">-1</button>
-            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(1)">+1</button>
-            <button class="change-speed-button" :disabled="disabled" @click="changeTargetSpeed(10)">+10</button>
-          </div>
-          <button class="done-btn" :disabled="disabled" @click="doneTargetSpeed">Apply</button>
-        </div>
-      </div>
+  <div class="speedometer" :style="{ '--speed-ratio': speedRatio }">
+    <svg
+      class="gauge-svg"
+      viewBox="0 0 200 120"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <!-- Background arc (full gauge track) -->
+      <path
+        d="M 20 100 A 80 80 0 0 1 180 100"
+        fill="none"
+        stroke="#e5e7eb"
+        stroke-width="12"
+        stroke-linecap="round"
+      />
+
+      <!-- Colored arc sections -->
+      <path
+        d="M 20 100 A 80 80 0 0 1 180 100"
+        fill="none"
+        stroke="url(#gaugeGradient)"
+        stroke-width="12"
+        stroke-linecap="round"
+        :stroke-dasharray="dashArray"
+        stroke-dashoffset="dashOffset"
+        class="gauge-fill"
+      />
+
+      <!-- Gradient definition -->
+      <defs>
+        <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#22c55e" />
+          <stop offset="50%" stop-color="#22c55e" />
+          <stop offset="70%" stop-color="#eab308" />
+          <stop offset="85%" stop-color="#f97316" />
+          <stop offset="100%" stop-color="#ef4444" />
+        </linearGradient>
+      </defs>
+
+      <!-- Tick marks -->
+      <g class="ticks">
+        <line
+          v-for="tick in ticks"
+          :key="tick.index"
+          :x1="tick.x1"
+          :y1="tick.y1"
+          :x2="tick.x2"
+          :y2="tick.y2"
+          :stroke="tick.isMajor ? '#6b7280' : '#d1d5db'"
+          :stroke-width="tick.isMajor ? 2 : 1"
+          stroke-linecap="round"
+        />
+        <!-- Speed labels on major ticks -->
+        <text
+          v-for="tick in majorTicks"
+          :key="'label-' + tick.index"
+          :x="tick.labelX"
+          :y="tick.labelY"
+          fill="#6b7280"
+          font-size="6.5"
+          font-family="'Be Vietnam Pro', sans-serif"
+          font-weight="600"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >{{ tick.value }}</text>
+      </g>
+
+      <!-- Needle -->
+      <g class="needle-group">
+        <line
+          x1="100"
+          y1="100"
+          :x2="needleEnd.x"
+          :y2="needleEnd.y"
+          stroke="#374151"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          class="needle"
+        />
+        <!-- Needle counterweight -->
+        <line
+          x1="100"
+          y1="100"
+          :x2="needleCounter.x"
+          :y2="needleCounter.y"
+          stroke="#374151"
+          stroke-width="2"
+          stroke-linecap="round"
+          opacity="0.3"
+        />
+      </g>
+
+      <!-- Center dot -->
+      <circle cx="100" cy="100" r="4.5" fill="#374151" />
+      <circle cx="100" cy="100" r="2" fill="#ffffff" />
+
+    </svg>
+
+    <!-- Digital readout overlay -->
+    <div class="digital-display">
+      <div class="speed-value">{{ formattedSpeed }}</div>
+      <div class="speed-unit">km/h</div>
+      <div class="speed-label">Current Speed</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed } from 'vue'
 
 const props = defineProps({
   currentSpeed: {
     type: Number,
     default: 0
-  },
-  targetSpeed: {
-    type: Number,
-    default: 0
-  },
-  maxSpeed: {
-    type: Number,
-    default: 13
-  },
-  motorMode: {
-    type: String,
-    default: ''
-  },
-  disabled: {
-    type: Boolean,
-    default: false
   }
-});
-const emit = defineEmits(['update:targetSpeed', 'change:targetSpeed']);
+})
 
-const tempTargetSpeed = ref(props.targetSpeed);
-const showTargetLabel = ref(false);
+const MAX_SPEED = 13
+const ARC_LENGTH = 251.2 // Approximate length of the arc path (80px radius, 180° arc)
 
 const formattedSpeed = computed(() => {
-  return props.currentSpeed.toFixed(2);
-});
+  return props.currentSpeed.toFixed(1)
+})
 
-const formattedMotorMode = computed(() => {
-  if (props.motorMode === '') {
-    return '';
+const speedRatio = computed(() => {
+  return Math.min(props.currentSpeed / MAX_SPEED, 1)
+})
+
+// Arc path: (80 * PI) ≈ 251.33 for a semicircle of radius 80
+const dashArray = computed(() => {
+  return `${ARC_LENGTH} ${ARC_LENGTH}`
+})
+
+// eslint-disable-next-line no-unused-vars
+const dashOffset = computed(() => {
+  return ARC_LENGTH * (1 - speedRatio.value)
+})
+
+// Generate tick marks along the arc
+const ticks = computed(() => {
+  const cx = 100, cy = 100, r = 80
+  const startAngle = -180 // degrees (left side)
+  const endAngle = 0       // degrees (right side)
+  const totalTicks = 20
+
+  return Array.from({ length: totalTicks + 1 }, (_, i) => {
+    const fraction = i / totalTicks
+    const angle = startAngle + fraction * (endAngle - startAngle)
+    const angleRad = (angle * Math.PI) / 180
+    const isMajor = i % 4 === 0
+    const tickLen = isMajor ? 8 : 4
+    const innerR = r - tickLen
+
+    return {
+      index: i,
+      isMajor,
+      x1: cx + innerR * Math.cos(angleRad),
+      y1: cy + innerR * Math.sin(angleRad),
+      x2: cx + (r - 2) * Math.cos(angleRad),
+      y2: cy + (r - 2) * Math.sin(angleRad),
+    }
+  })
+})
+
+const majorTicks = computed(() => {
+  const cx = 100, cy = 100, r = 80
+  const totalSteps = 5 // 0, 3, 6, 9, 12, 15
+
+  return Array.from({ length: totalSteps + 1 }, (_, i) => {
+    const fraction = i / totalSteps
+    const angle = -180 + fraction * 180
+    const angleRad = (angle * Math.PI) / 180
+    const labelR = r - 14
+    const value = Math.round(fraction * MAX_SPEED)
+
+    return {
+      index: i,
+      value,
+      labelX: cx + labelR * Math.cos(angleRad),
+      labelY: cy + labelR * Math.sin(angleRad),
+    }
+  })
+})
+
+// Needle position
+const needleEnd = computed(() => {
+  const cx = 100, cy = 100, r = 72
+  const angle = -180 + speedRatio.value * 180
+  const angleRad = (angle * Math.PI) / 180
+
+  return {
+    x: cx + r * Math.cos(angleRad),
+    y: cy + r * Math.sin(angleRad),
   }
-  // return props.motorMode with bracketes inside
-  return `[${props.motorMode}]`;
-});
+})
 
-const showSlider = ref(true);
+const needleCounter = computed(() => {
+  const cx = 100, cy = 100, r = 16
+  const angle = -180 + speedRatio.value * 180
+  const angleRad = (angle * Math.PI) / 180
 
-function toggleInputMode() {
-  showSlider.value = !showSlider.value;
-}
-
-function changeTargetSpeed(delta) {
-  let newSpeed = tempTargetSpeed.value + delta;
-  newSpeed = Math.max(0, Math.min(props.maxSpeed, newSpeed));
-  tempTargetSpeed.value = newSpeed;
-  showTargetLabel.value = true;
-}
-
-function doneTargetSpeed() {
-  emit('update:targetSpeed', tempTargetSpeed.value);
-  emit('change:targetSpeed', tempTargetSpeed.value);
-  showTargetLabel.value = false;
-}
+  return {
+    x: cx + r * Math.cos(angleRad + Math.PI),
+    y: cy + r * Math.sin(angleRad + Math.PI),
+  }
+})
 </script>
 
 <style scoped>
-/* Base styles (mobile first) */
 .speedometer {
-  background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
-  border-radius: 10px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-  border: 1px solid #e0e4e7;
-  max-width: 280px;
-  margin: 0 auto;
-}
-
-.speed-display {
-  text-align: center;
-  color: #333;
+  --speed-ratio: 0;
+  position: relative;
   width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 16px 20px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
 }
 
-.speed-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 6px;
+.gauge-svg {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-.current-speed {
-  font-size: 1.3rem;
-  font-weight: bold;
-  font-family: 'Segment7', monospace;
-  color: #2c3e50;
-  margin-bottom: 0;
+.gauge-fill {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ticks text {
+  user-select: none;
+}
+
+.needle-group {
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.needle {
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Digital display overlay */
+.digital-display {
+  text-align: center;
+  margin-top: -12px;
+  position: relative;
+  z-index: 2;
+}
+
+.speed-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  color: #111827;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition: color 0.4s ease;
 }
 
 .speed-unit {
-  font-size: 0.95rem;
-  color: #7f8c8d;
-  margin-bottom: 0;
-}
-
-.motor-mode {
-  font-size: 0.95rem;
-  color: #e67e22;
-  font-weight: 600;
-  margin-bottom: 0;
-}
-
-.target-speed {
-  position: relative;
-  background: #f8f9fa;
-  padding: 7px;
-  border-radius: 10px;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
-  border: 1px solid #e0e4e7;
-}
-
-.target-speed-value {
-  display: inline-block;
-  background: #2c3e50;
-  color: white;
+  font-size: 0.75rem;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 0.85em;
-  margin-bottom: 8px;
-  margin-right: 22px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
 }
 
-.target-speed-value.invisible {
-  visibility: hidden;
+.speed-label {
+  font-size: 1.0rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 4px;
 }
 
-.toggle-input-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: #7f8c8d;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: all 0.2s;
-  font-size: 1.2em;
-}
-
-.toggle-input-btn:hover {
-  background: #e0e4e7;
-  color: #2c3e50;
-}
-
-.slider-container {
-  width: 100%;
-  padding: 6px 0;
-}
-
-.target-slider {
-  width: 100%;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #e0e4e7;
-  border-radius: 3px;
-  outline: none;
-  margin: 6px 0;
-}
-
-.target-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: #2c3e50;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.target-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  background: #e67e22;
-}
-
-.target-speed-buttons {
-  flex-direction: column;
-  gap: 5px;
-}
-
-.button-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 3px;
-}
-
-.change-speed-button {
-  max-width: 80px;
-  min-width: 40px;
-  font-size: 0.85em;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid #d6dbdf;
-  background: #f8f9fa;
-  color: #2c3e50;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.done-btn {
-  font-size: 0.9em;
-  padding: 6px 16px;
-  background: #27ae60;
-  color: white;
-  border-color: #219955;
-  border-radius: 8px;
-  margin-top: 5px;
-}
-
-button:hover {
-  background: #e0e4e7;
-  border-color: #c8d1d9;
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-/* Medium screens: iPad Portrait and similar */
-@media (min-width: 430px) {
+/* Responsive adjustments */
+@media (max-width: 599px) {
   .speedometer {
-    max-width: 290px;
-    padding: 8px;
+    padding: 12px 12px 16px;
+    max-width: 100%;
   }
-  
-  .current-speed {
-    font-size: 1.4rem;
-  }
-  
-  .speed-unit {
-    font-size: 1.0rem;
-  }
-  
-  .motor-mode {
-    font-size: 1.0rem;
-  }
-  
-  .target-speed {
-    padding: 7px;
-  }
-  
-  .target-speed-value {
-    padding: 6px 14px;
-  }
-  
-  .toggle-input-btn {
-    width: 30px;
-    height: 30px;
-    top: 8px;
-    right: 8px;
-    font-size: 1.25em;
-  }
-  
-  .button-row {
-    gap: 5px;
-  }
-  
-  .change-speed-button {
-    max-width: 85px;
-    min-width: 42px;
-    font-size: 0.9em;
-    padding: 4px 11px;
-  }
-  
-  .done-btn {
-    font-size: 0.95em;
-    padding: 6px 16px;
-  }
-}
 
-@media (min-width: 700px) {
-  .speedometer {
-    max-width: 300px;
-    width: 300px;
-    padding: 8px; /* reduced for height */
+  .speed-value {
+    font-size: 1.8rem;
   }
-  
-  .current-speed {
-    font-size: 1.5rem; /* reduced for height */
-  }
-  
+
   .speed-unit {
-    font-size: 1.1rem; /* reduced for height */
-  }
-  
-  .motor-mode {
-    font-size: 1.1rem; /* reduced for height */
-  }
-  
-  .speed-row {
-    gap: 12px; /* reduced for height */
-    margin-bottom: 6px; /* reduced for height */
-  }
-  
-  .target-speed {
-    padding: 8px; /* reduced for height */
-    border-radius: 12px; /* reduced for height */
-  }
-  
-  .target-speed-value {
-    font-size: 0.95em; /* reduced for height */
-    padding: 8px 18px; /* reduced for height */
-    border-radius: 18px; /* reduced for height */
-    margin-bottom: 10px; /* reduced for height */
-    margin-right: 24px; /* reduced for height */
-  }
-  
-  .toggle-input-btn {
-    width: 32px; /* reduced for height */
-    height: 32px; /* reduced for height */
-    top: 10px; /* reduced for height */
-    right: 10px; /* reduced for height */
-    font-size: 1.4em; /* reduced for height */
-  }
-  
-  .target-slider {
-    height: 7px; /* reduced for height */
-    border-radius: 3px; /* reduced for height */
-    margin: 8px 0; /* reduced for height */
-  }
-  
-  .target-slider::-webkit-slider-thumb {
-    width: 20px; /* reduced for height */
-    height: 20px; /* reduced for height */
-  }
-  
-  .button-row {
-    gap: 6px; /* reduced for height */
-    margin-bottom: 4px; /* reduced for height */
-  }
-  
-  .change-speed-button {
-    max-width: 100px;
-    min-width: 45px;
-    font-size: 0.95em; /* reduced for height */
-    padding: 4px 12px; /* reduced for height */
-    border-radius: 8px; /* reduced for height */
-  }
-  
-  .done-btn {
-    font-size: 1.05em; /* reduced for height */
-    padding: 7px 18px; /* reduced for height */
-    border-radius: 8px; /* reduced for height */
+    font-size: 0.65rem;
   }
 }
 </style>

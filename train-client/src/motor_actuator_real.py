@@ -125,10 +125,10 @@ class MotorActuator():
 
     def set_direction(self, direction):
         try:
-            if direction == DIRECTION["FORWARD"]:
+            if direction == DIRECTION.FORWARD:
                 self.current_mode = Mode.FORWARD
                 logger.info("Changing direction command received to FORWARD.")
-            elif direction == DIRECTION["BACKWARD"]:
+            elif direction == DIRECTION.BACKWARD:
                 self.current_mode = Mode.REVERSE
                 logger.info("Changing direction command received to BACKWARD.")
         except Exception as e:
