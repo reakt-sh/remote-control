@@ -1,4 +1,4 @@
-# REAKT-DataTrain: Real-Time Remote Train Control Research
+# Research on Remote Control System
 
 ## Project overview
 
