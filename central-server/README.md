@@ -91,17 +91,24 @@ server {
     # Security headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
+    # Point directly to your compiled build output directory
+    root /home/rcd/Desktop/Workspace/remote-control/web-client/dist;
+    index index.html;
+
     location / {
-        proxy_pass https://127.0.0.1:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        # Serve static files directly; fall back to index.html for Vue Router history mode
+        try_files $uri $uri/ /index.html;
 
         # WebSocket support
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+    }
+
+    # Cache static assets aggressively for performance
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 }
 
