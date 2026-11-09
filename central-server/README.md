@@ -76,50 +76,6 @@ sudo nginx -t  # Test the config
 sudo systemctl restart nginx
 ```
 
-### Run OpenSpeedTest service
-```
- sudo apt update
- sudo apt install docker.io -y
- sudo systemctl enable docker
- sudo systemctl start docker
-
- # Without CORS
- sudo docker run --restart=unless-stopped --name=openspeedtest -d -p 3000:3000 -p 3001:3001 openspeedtest/latest
-
- # Enable CORS
- sudo docker run --restart=unless-stopped \
-  --name=openspeedtest \
-  -d \
-  -p 3000:3000 \
-  -p 3001:3001 \
-  -e ENABLE_CORS=true \
-  -e CORS_ORIGINS="https://localhost:8080,https://rtsys-lab.de,https://localhost:3000,https://speedtest.rtsys-lab.de" \
-  openspeedtest/latest
-
- sudo ufw allow 3000/tcp
- sudo ufw allow 3001/tcp
- sudo ufw reload
- ```
-
-### Run MQTT Broker
-```
-docker run -d \
-  --name nanomq \
-  -p 1883:1883 \
-  -p 8081:8081 \
-  -p 8083:8083 \
-  -p 8084:8084 \
-  -p 8883:8883 \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain6.pem:/etc/fullchain1.pem \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/chain6.pem:/etc/chain1.pem \
-  -v /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey6.pem:/etc/privkey1.pem \
-  -v /home/rcd/Desktop/Workspace/remote-control/central-server/NanoMQ/nanomq.conf:/etc/nanomq.conf \
-  --cpus=0.5 \
-  --memory=100m \
-  --memory-swap=200m \
-  emqx/nanomq:latest-full \
-  nanomq start --conf /etc/nanomq.conf
-```
 ### Setup Venv
 ```
 # Setup venv
