@@ -38,6 +38,21 @@ services:
     volumes:
       - ./data/mongodb:/data/db
 
+  mongo-express:
+    image: mongo-express:1.0.2
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_URL: ${MONGO_EXPRESS_MONGODB_URL:?Set MONGO_EXPRESS_MONGODB_URL}
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:?Set MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:?Set MONGO_EXPRESS_PASSWORD}
+      PORT: "27018"
+    ports:
+      - "127.0.0.1:27018:27018"
+
   influxdb:
     image: influxdb:2.7
     container_name: rtsys-influxdb
