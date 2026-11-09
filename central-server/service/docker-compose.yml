@@ -57,6 +57,17 @@ services:
     volumes:
       - ./data/influxdb:/var/lib/influxdb2
 
+  openspeedtest:
+    build:
+      context: /home/rcd/Desktop/Workspace/OpenSpeedTest
+    image: custom-openspeedtest
+    container_name: custom-openspeedtest
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+
 # to Run the services, execute the following commands in the terminal:
 # mkdir -p data/mongodb data/influxdb
-# docker compose up -d
+# docker compose up -d --build
