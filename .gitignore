@@ -43,3 +43,4 @@ build
 .venv
 analysis/graphs
 analysis/2026_03_02
+.env
