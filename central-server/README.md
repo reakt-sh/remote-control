@@ -56,7 +56,7 @@ sudo certbot renew --force-renewal
 sudo systemctl start nginx
 
 // Or Create new certificates
-sudo certbot certonly --standalone -d rtsys-lab.de -d www.rtsys-lab.de -d speedtest.rtsys-lab.de -d wt.rtsys-lab.de -d influxdb.rtsys-lab.de
+sudo certbot certonly --standalone -d rtsys-lab.de -d www.rtsys-lab.de -d speedtest.rtsys-lab.de -d wt.rtsys-lab.de -d influxdb.rtsys-lab.de -d mongodb.rtsys-lab.de
 
 // Check the expiry dates
 sudo openssl x509 -in ./fullchain.pem -noout -dates
