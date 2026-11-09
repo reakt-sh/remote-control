@@ -17,7 +17,7 @@ services:
       - /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain6.pem:/etc/fullchain1.pem:ro
       - /etc/letsencrypt/archive/wt.rtsys-lab.de/chain6.pem:/etc/chain1.pem:ro
       - /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey6.pem:/etc/privkey1.pem:ro
-      - ./NanoMQ/nanomq.conf:/etc/nanomq.conf:ro
+      - /home/rcd/Desktop/Workspace/remote-control/central-server/NanoMQ/nanomq.conf:/etc/nanomq.conf:ro
 
     cpus: 0.5
     mem_limit: 100m
