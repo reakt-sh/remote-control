@@ -3,20 +3,13 @@ import threading
 import time
 from app_logger import logger
 from globals import CAMERA_TYPE
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
-
-# RTSP_URL_FRONT = "rtsp://reaktorpi2.local:8554/cam"
-# RTSP_URL_REAR = "rtsp://reaktorpi5.local:8554/cam"
-# RTSP_URL_FRONT = "rtsp://localhost:8554/cam1"
-# RTSP_URL_REAR = "rtsp://localhost:8554/cam2"
-# RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.1.42:554/H264/ch1/main/av_stream"
-# RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.1.30:554/H264/ch1/main/av_stream"
-
-
-RTSP_URL_FRONT = "rtsp://admin:rtsysrocks42@192.168.88.245:554/H264/ch1/main/av_stream"
-RTSP_URL_REAR = "rtsp://admin:rtsysrocks42@192.168.88.246:554/H264/ch1/main/av_stream"
-RECONNECT_DELAY = 2.0  # seconds between reconnect attempts
-
+RTSP_URL_FRONT = os.getenv("RTSP_URL_FRONT")
+RTSP_URL_REAR = os.getenv("RTSP_URL_REAR")
+RECONNECT_DELAY = os.getenv("RECONNECT_DELAY")
 
 class _Signal:
     """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
