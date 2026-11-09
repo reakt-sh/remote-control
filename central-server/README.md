@@ -56,7 +56,7 @@ sudo certbot renew --force-renewal
 sudo systemctl start nginx
 
 // Or Create new certificates
-sudo certbot certonly --standalone -d rtsys-lab.de -d www.rtsys-lab.de -d speedtest.rtsys-lab.de -d wt.rtsys-lab.de
+sudo certbot certonly --standalone -d rtsys-lab.de -d www.rtsys-lab.de -d speedtest.rtsys-lab.de -d wt.rtsys-lab.de -d influxdb.rtsys-lab.de
 
 // Check the expiry dates
 sudo openssl x509 -in ./fullchain.pem -noout -dates
@@ -68,102 +68,9 @@ sudo apt update
 sudo apt install nginx -y
 
 sudo nano /etc/nginx/sites-available/rtsys-lab.de
-# add following code to that file
---------------------------------------------------------------------
-# HTTP to HTTPS redirect for all domains
-server {
-    listen 80;
-    listen [::]:80;
-    server_name rtsys-lab.de www.rtsys-lab.de speedtest.rtsys-lab.de;
-    return 301 https://$host$request_uri;
-}
 
-# Main Vue.js application (HTTPS + HTTP/2)
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+# Now Copy the content from nginx/rtsys-lab.de
 
-    server_name rtsys-lab.de www.rtsys-lab.de;
-
-    ssl_certificate /etc/letsencrypt/live/rtsys-lab.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/rtsys-lab.de/privkey.pem;
-
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
-    # Point directly to your compiled build output directory
-    root /home/rcd/Desktop/Workspace/remote-control/web-client/dist;
-    index index.html;
-
-    location / {
-        # Serve static files directly; fall back to index.html for Vue Router history mode
-        try_files $uri $uri/ /index.html;
-
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-
-    # Cache static assets aggressively for performance
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
-
-# OpenSpeedTest Server
-server {
-    listen 443 ssl http2;
-    server_name speedtest.rtsys-lab.de;
-
-    ssl_certificate /etc/letsencrypt/live/rtsys-lab.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/rtsys-lab.de/privkey.pem;
-
-    client_max_body_size 100m; # Allow large POST requests
-    gzip off; # Disable compression
-    proxy_buffering off; # Disable proxy buffering
-
-    # CORS headers - must be in server or location context
-    location / {
-        # CORS headers
-        add_header 'Access-Control-Allow-Origin' 'https://localhost:8080' always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
-        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
-
-        # Handle preflight requests
-        if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Max-Age' 1728000;
-            add_header 'Content-Type' 'text/plain; charset=utf-8';
-            add_header 'Content-Length' 0;
-            return 204;
-        }
-
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-
-        # Disable caching
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-        add_header Pragma "no-cache";
-        add_header Expires "0";
-    }
-
-    # API routes
-    location /api {
-        proxy_pass http://127.0.0.1:3000/api;
-        proxy_set_header Host $host;
-    }
-}
-----------------------------------------------------------------------
 sudo ln -s /etc/nginx/sites-available/vue-app /etc/nginx/sites-enabled
 sudo nginx -t  # Test the config
 sudo systemctl restart nginx
