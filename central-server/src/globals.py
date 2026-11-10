@@ -38,8 +38,13 @@ CLIENT_TYPE_REMOTE_CONTROL = "REMOTE_CONTROL"
 
 STREAM_MESSAGE_SIZE_LIMIT = 300  # bytes, will adjust if needed after testing
 
-MQTT_WAN_TOPIC = "rtsys/wan/rtsys-cau-01"
-MQTT_TELEMETRY_TOPIC = "train/+/telemetry"
+class MQTT_TOPICS(StrEnum):
+    WAN             = "rtsys/wan/rtsys-cau-01"
+    TELEMETRY       = "rtsys/telemetry"
+    FRAME_LATENCY   = "rtsys/frame_latency"
+    COMMAND_LATENCY = "rtsys/command_latency"
+    CLOCK_TRAIN     = "rtsys/clockoffset_train"
+    CLOCK_RC        = "rtsys/clockoffset_rc"
 
 
 @dataclass

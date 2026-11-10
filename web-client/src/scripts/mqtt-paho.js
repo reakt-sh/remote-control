@@ -2,6 +2,15 @@ import { ref } from 'vue'
 import { Client, Message } from 'paho-mqtt'
 import { MQTT_BROKER_URL } from '@/scripts/config'
 
+export const MQTT_TOPICS = {
+  WAN: "rtsys/wan/rtsys-cau-01",
+  TELEMETRY: "rtsys/telemetry",
+  FRAME_LATENCY: "rtsys/frame_latency",
+  COMMAND_LATENCY: "rtsys/command_latency",
+  CLOCK_TRAIN: "rtsys/clockoffset_train",
+  CLOCK_RC: "rtsys/clockoffset_rc"
+}
+
 /**
  * MQTT Client for Web Browser using Paho MQTT JavaScript library
  */
@@ -145,48 +154,45 @@ export function useMqttClient(remoteControlId, messageHandler) {
    * Handle parsed MQTT messages
    */
   function handleMqttMessage(topic, payload) {
-    // Parse topic to extract train_id and message type
-    const topicParts = topic.split('/')
-    try {
-      // Parse JSON payload
-      let data
-      try {
-        data = typeof payload === 'string' ? JSON.parse(payload) : payload
-      } catch (e) {
-        console.error('Failed to parse MQTT payload:', e)
-        return
-      }
 
-      if (topicParts[0] == "rtsys")
-      {
-        const messageType = topicParts[2]
-        if (messageHandler) {
-          messageHandler({
-            topic,
-            trainId: '',
-            messageType,
-            data,
-            timestamp: Date.now()
-          })
-        }
-        return
-      }
-      const trainId = topicParts[1]
-      const messageType = topicParts[2]
-
-      // Call the message handler with structured data
-      if (messageHandler) {
-        messageHandler({
-          topic,
-          trainId,
-          messageType,
-          data,
-          timestamp: Date.now()
-        })
-      }
-    } catch (error) {
-      console.error('Error handling MQTT message:', error)
+    if (topic == MQTT_TOPICS.TELEMETRY)
+    {
+      console.log('📥 Received telemetry message:', payload)
+      messageHandler({
+        messageType: 'telemetry',
+        payload: payload,
+        timestamp: Date.now()
+      })
     }
+
+    // const topicParts = topic.split('/')
+    // try {
+    //   // Parse JSON payload
+    //   let data
+    //   try {
+    //     data = typeof payload === 'string' ? JSON.parse(payload) : payload
+    //   } catch (e) {
+    //     console.error('Failed to parse MQTT payload:', e)
+    //     return
+    //   }
+    //   const trainId = topicParts[1]
+    //   const messageType = topicParts[2]
+
+    //   // Call the message handler with structured data
+    //   if (messageHandler) {
+    //     messageHandler({
+    //       topic,
+    //       trainId,
+    //       messageType,
+    //       data,
+    //       timestamp: Date.now()
+    //     })
+    //   }
+    // }
+
+    // } catch (error) {
+    //   console.error('Error handling MQTT message:', error)
+    // }
   }
 
   /**
@@ -262,10 +268,9 @@ export function useMqttClient(remoteControlId, messageHandler) {
   /**
    * Subscribe to telemetry from a specific train
    */
-  function subscribeToTrain(trainId) {
+  function subscribeToTrain() {
     const topics = [
-      `train/${trainId}/telemetry`,
-      "rtsys/wan/rtsys-cau-01"
+      MQTT_TOPICS.TELEMETRY,
     ]
 
     topics.forEach(topic => subscribe(topic))
@@ -274,10 +279,9 @@ export function useMqttClient(remoteControlId, messageHandler) {
   /**
    * Unsubscribe from telemetry from a specific train
    */
-  function unsubscribeFromTrain(trainId) {
+  function unsubscribeFromTrain() {
     const topics = [
-      `train/${trainId}/telemetry`,
-      `captnfoerdeareal/wan/CAU-8388`
+      MQTT_TOPICS.TELEMETRY,
     ]
 
     topics.forEach(topic => unsubscribe(topic))

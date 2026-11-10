@@ -22,6 +22,15 @@ LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME
 HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
 LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency_keepalive')
 
+class MQTT_TOPICS(StrEnum):
+    WAN             = "rtsys/wan/rtsys-cau-01"
+    TELEMETRY       = "rtsys/telemetry"
+    FRAME_LATENCY   = "rtsys/frame_latency"
+    COMMAND_LATENCY = "rtsys/command_latency"
+    CLOCK_TRAIN     = "rtsys/clockoffset_train"
+    CLOCK_RC        = "rtsys/clockoffset_rc"
+
+
 # Packet Types
 class PACKET_TYPE(IntEnum):
     VIDEO_FRONT = 11

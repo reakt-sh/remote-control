@@ -10,7 +10,7 @@ class NetworkWorkerMqtt:
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1
         )
         self.train_id = train_id
-        self.topic = f"train/{train_id}/telemetry"
+        self.topic = MQTT_TOPICS.TELEMETRY  # Default topic for telemetry data
         self.is_connected = False
 
         # Set up callbacks
@@ -31,7 +31,6 @@ class NetworkWorkerMqtt:
             self.is_connected = False
 
     def _on_connect(self, client, userdata, flags, rc):
-        """Callback for when the client connects to the broker"""
         if rc == 0:
             self.is_connected = True
             logger.success(f"Connected to MQTT broker with result code {rc}")
@@ -40,7 +39,6 @@ class NetworkWorkerMqtt:
             logger.error(f"Failed to connect to MQTT broker with result code {rc}")
 
     def _on_disconnect(self, client, userdata, rc):
-        """Callback for when the client disconnects from the broker"""
         self.is_connected = False
         if rc != 0:
             logger.warning(f"Unexpected disconnection from MQTT broker (code: {rc})")
@@ -48,7 +46,6 @@ class NetworkWorkerMqtt:
             logger.info("Disconnected from MQTT broker")
 
     def _on_publish(self, client, userdata, mid):
-        """Callback for when a message is successfully published"""
         pass
 
     def send_data(self, data):

@@ -192,7 +192,7 @@ export const useTrainStore = defineStore('train', () => {
     if (!trainId) return
     telemetryData.value = {}
     if (selectedTrainId.value !== trainId) {
-      unsubscribeFromTrain(selectedTrainId.value)
+      unsubscribeFromTrain()
 
       // also reset telemetry history
       telemetryHistory.value = []
@@ -242,7 +242,7 @@ export const useTrainStore = defineStore('train', () => {
     await sendWtMessage(prepareMapConnectionMessage(remoteControlId.value, trainId));
 
     // Subscribe to MQTT telemetry for this specific train
-    subscribeToTrain(trainId)
+    subscribeToTrain()
 
     // Send multiple RTT messages to calibrate clock offset
     await performRTTCalibration()
@@ -424,7 +424,7 @@ export const useTrainStore = defineStore('train', () => {
         const notification = JSON.parse(new TextDecoder().decode(payload))
         if (notification.train_id === selectedTrainId.value && notification.event === 'disconnected') {
           router.push('/')
-          unsubscribeFromTrain(selectedTrainId.value)
+          unsubscribeFromTrain()
         }
         fetchAvailableTrains()
         break
@@ -582,14 +582,20 @@ export const useTrainStore = defineStore('train', () => {
   }
 
   function handleMqttMessage(mqttMessage) {
-    const { trainId, messageType, data } = mqttMessage
+    const { messageType, payload, timestamp } = mqttMessage
 
     switch (messageType) {
       case 'telemetry': {
 
-        // get system timestamp
-        const timestamp = Date.now()
+        let data
+        try {
+          data = typeof payload === 'string' ? JSON.parse(payload) : payload
+        } catch (e) {
+          console.error('Failed to parse MQTT payload:', e)
+          return
+        }
         const latency = timestamp - data.timestamp + averageClockOffset.value
+        let trainId = data.train_id
 
         if (indexedDBStorageEnabled.value) {
           // Also store it to indexDB
@@ -611,18 +617,9 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
 
-      case 'rtsys-cau-01': {
-          // Also store it to indexDB
-          dataStorage.storeWANData({
-            trainId: selectedTrainId.value,
-            data: data,
-          })
-        break
-      }
-
       case 'onConnect':
         if (selectedTrainId.value) {
-          subscribeToTrain(selectedTrainId.value)
+          subscribeToTrain()
         }
         break
 

@@ -5,7 +5,7 @@ import time
 from typing import Dict, Callable, Optional
 import paho.mqtt.client as mqtt
 from loguru import logger
-from globals import MQTT_WAN_TOPIC, MQTT_TELEMETRY_TOPIC
+from globals import MQTT_TOPICS, MQTT_WAN_TOPIC, MQTT_TELEMETRY_TOPIC
 
 class MqttBridge:
 
@@ -98,21 +98,19 @@ class MqttBridge:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
 
-            if topic == MQTT_WAN_TOPIC:
+            if topic == MQTT_TOPICS.WAN:
                 logger.debug(f"Received WAN message: {payload}")
-                return
 
-            # Parse topic to extract train_id and message type
-            topic_parts = topic.split('/')
-            if len(topic_parts) >= 3:
-                train_id = topic_parts[1]
-                message_type = topic_parts[2]
-
-                # Route message based on type
-                if message_type == "telemetry":
-                    logger.debug(f"Received telemetry from train {train_id}: {payload}")
-                else:
-                    logger.warning(f"Unknown message type: {message_type} from train {train_id}")
+            elif topic == MQTT_TOPICS.TELEMETRY:
+                logger.debug(f"Received Telemetry message: {payload}")
+            elif topic == MQTT_TOPICS.FRAME_LATENCY:
+                logger.debug(f"Received Frame Latency message: {payload}")
+            elif topic == MQTT_TOPICS.COMMAND_LATENCY:
+                logger.debug(f"Received Command Latency message: {payload}")
+            elif topic == MQTT_TOPICS.CLOCK_TRAIN:
+                logger.debug(f"Received Clock Offset (Train) message: {payload}")
+            elif topic == MQTT_TOPICS.CLOCK_RC:
+                logger.debug(f"Received Clock Offset (Remote Control) message: {payload}")
             else:
                 logger.warning(f"Invalid topic format: {topic}")
 
@@ -121,8 +119,12 @@ class MqttBridge:
 
     def _subscribe_to_topics(self):
         topics = [
-            (MQTT_TELEMETRY_TOPIC, 1),  # (topic, qos)
-            (MQTT_WAN_TOPIC, 1), # (topic, qos)
+            (MQTT_TOPICS.WAN, 1), # (topic, qos)
+            (MQTT_TOPICS.TELEMETRY, 1),  # (topic, qos)
+            (MQTT_TOPICS.FRAME_LATENCY, 1), # (topic, qos)
+            (MQTT_TOPICS.COMMAND_LATENCY, 1), # (topic, qos)
+            (MQTT_TOPICS.CLOCK_TRAIN, 1), # (topic, qos)
+            (MQTT_TOPICS.CLOCK_RC, 1), # (topic, qos)
         ]
 
         for topic, qos in topics:
