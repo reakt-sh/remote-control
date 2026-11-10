@@ -5,7 +5,7 @@ import time
 from typing import Dict, Callable, Optional
 import paho.mqtt.client as mqtt
 from loguru import logger
-from globals import MQTT_TOPICS, MQTT_WAN_TOPIC, MQTT_TELEMETRY_TOPIC
+from globals import MQTT_TOPICS
 
 class MqttBridge:
 
