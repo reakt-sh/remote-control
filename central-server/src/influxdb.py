@@ -38,7 +38,7 @@ class InfluxDBWriter:
     def write_wan(self, data: Dict[str, Any]) -> None:
         """Store a WAN status message in database 'rtsys', measurement 'wan'."""
         identity = str(data.get("identity", "unknown"))
-        fields = _to_fields(_flatten(data))
+        fields = _to_fields(_flatten(data, exclude={"identity"}))
 
         if not fields:
             logger.warning(f"WAN message from {identity} has no storable fields")
@@ -60,10 +60,12 @@ class InfluxDBWriter:
             self._client = None
 
 
-def _flatten(data: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
-    """Flatten nested dicts into 'parent_child' keys."""
+def _flatten(data: Dict[str, Any], prefix: str = "", exclude: set = frozenset()) -> Dict[str, Any]:
+    """Flatten nested dicts into 'parent_child' keys, skipping excluded top-level keys."""
     flat = {}
     for key, value in data.items():
+        if not prefix and key in exclude:
+            continue
         name = f"{prefix}_{key}" if prefix else key
         if isinstance(value, dict):
             flat.update(_flatten(value, name))
