@@ -1,10 +1,14 @@
 import math
 import os
+from pathlib import Path
 from typing import Any, Dict
 
+from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from loguru import logger
+
+load_dotenv()
 
 INFLUX_URL = os.getenv("INFLUX_URL")
 INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
