@@ -22,6 +22,7 @@ from utils.app_logger import logger
 from utils.video_datagram_assembler import VideoDatagramAssembler
 from utils.calculator import Calculator
 from managers.client_manager import ClientManager
+import globals as app_globals
 from globals import *
 
 from server_controller import ServerController
@@ -233,6 +234,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             if packet and packet[0] == PACKET_TYPE.MAP_CONNECT:
                 remote_control_id = message.get("remote_control_id")
                 train_id = message.get("train_id")
+                app_globals.set_control_session_state(True)
                 asyncio.create_task(
                     self.client_manager.connect_remote_control_to_train(remote_control_id, train_id)
                 )
@@ -240,6 +242,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(remote_control_id, packet)
                 )
+            elif packet and packet[0] == PACKET_TYPE.MAP_DISCONNECT:
+                app_globals.set_control_session_state(False)
             elif packet and (packet[0] == PACKET_TYPE.COMMAND or packet[0] == PACKET_TYPE.RTT or packet[0] == PACKET_TYPE.RTT_TRAIN or packet[0] == PACKET_TYPE.KEEPALIVE):
                 asyncio.create_task(
                     self.client_manager.relay_stream_to_train(self.remote_control_id, packet)
@@ -294,6 +298,8 @@ class QUICRelayProtocol(QuicConnectionProtocol):
             self.is_closed = True
 
     def _cleanup(self) -> None:
+        if self.client_type in (CLIENT_TYPE_REMOTE_CONTROL, CLIENT_TYPE_TRAIN):
+            app_globals.set_control_session_state(False)
         asyncio.create_task(self._remove_client_from_manager())
 
     async def _remove_client_from_manager(self) -> None:

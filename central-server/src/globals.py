@@ -1,6 +1,16 @@
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum, IntEnum, StrEnum
+
+def set_control_session_state(active: bool) -> None:
+    global control_session_id
+    state = "active" if active else "inactive"
+    control_session_id = f"{datetime.now():%Y%m%d_%H%M%S}_{state}"
+
+
+control_session_id = ""
+set_control_session_state(False)
 
 # Packet Types
 class PACKET_TYPE(IntEnum):
