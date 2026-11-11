@@ -135,8 +135,8 @@
 :local pubMessage \
   "{
     \"identity\": \"$lIdentity\",
-    \"time\": \"$lTime\",
-    \"date\": \"$lDate\",
+    \"router_time\": \"$lTime\",
+    \"router_date\": \"$lDate\",
     \"RouterboardModel\": \"$lRouterboardModel\",
     \"CurrentFirmware\": \"$lCurrentFirmware\",
     \"UpgradeFirmware\": \"$lUpgradeFirmware\",
