@@ -53,23 +53,38 @@ services:
       - "127.0.0.1:27018:8081"
 
   influxdb:
-    image: influxdb:2.7
+    image: influxdb:3-core
     container_name: rtsys-influxdb
     restart: unless-stopped
-
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USERNAME}
-      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD}
-      DOCKER_INFLUXDB_INIT_ORG: rtsys
-      DOCKER_INFLUXDB_INIT_BUCKET: rc_telemetry
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN}
+    command:
+      - influxdb3
+      - serve
+      - --node-id=rtsys-node
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
 
     ports:
-      - "0.0.0.0:8086:8086"
+      - "127.0.0.1:8181:8181"
 
     volumes:
-      - ./data/influxdb:/var/lib/influxdb2
+      - ./data/influxdb3:/var/lib/influxdb3/data
+
+  influxdb3-explorer:
+    image: influxdata/influxdb3-ui:1.11.2
+    container_name: rtsys-influxdb3-explorer
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    command: ["--mode=admin"]
+
+    environment:
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:?Set SESSION_SECRET_KEY}
+
+    ports:
+      - "127.0.0.1:8888:8080"
+
+    volumes:
+      - ./data/influxdb3-explorer:/db:rw
 
   openspeedtest:
     build:
@@ -83,5 +98,5 @@ services:
       - "3001:3001"
 
 # to Run the services, execute the following commands in the terminal:
-# mkdir -p data/mongodb data/influxdb
+# mkdir -p data/mongodb data/influxdb3 data/influxdb3-explorer
 # docker compose up -d --build
