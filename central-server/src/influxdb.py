@@ -17,6 +17,7 @@ MEASUREMENT_WAN = "wan"
 
 # Placeholder values sent by the router when a value is unavailable
 _EMPTY_VALUES = {"", "none"}
+NULL_VALUE = "null"
 
 
 class InfluxDBWriter:
@@ -74,13 +75,15 @@ def _flatten(data: Dict[str, Any], prefix: str = "", exclude: set = frozenset())
 
 
 def _to_fields(flat: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert values to InfluxDB-compatible field types, dropping unavailable values."""
+    """Convert values to InfluxDB-compatible field types; unavailable values are stored as 'null'."""
     fields = {}
     for name, value in flat.items():
         if value is None:
+            fields[name] = NULL_VALUE
             continue
         if isinstance(value, str):
             if value.strip().lower() in _EMPTY_VALUES:
+                fields[name] = NULL_VALUE
                 continue
             try:
                 number = float(value)
