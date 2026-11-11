@@ -6,9 +6,9 @@ from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from loguru import logger
 
-INFLUX_URL = os.getenv("INFLUX_URL", "http://localhost:8086")
-INFLUX_TOKEN = os.getenv("INFLUX_TOKEN", "")
-INFLUX_ORG = os.getenv("INFLUX_ORG", "rtsys")
+INFLUX_URL = os.getenv("INFLUX_URL")
+INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
+INFLUX_ORG = os.getenv("INFLUX_ORG")
 
 BUCKET_RTSYS = "rtsys"
 MEASUREMENT_WAN = "wan"
@@ -29,6 +29,8 @@ class InfluxDBWriter:
 
     def _get_write_api(self, bucket: str):
         if self._client is None:
+            if not self.token:
+                raise RuntimeError("INFLUX_TOKEN is not set; export it before starting the server")
             self._client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
             self._write_api = self._client.write_api(write_options=SYNCHRONOUS)
 
