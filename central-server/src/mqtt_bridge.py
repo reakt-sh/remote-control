@@ -6,6 +6,7 @@ from typing import Dict, Callable, Optional
 import paho.mqtt.client as mqtt
 from loguru import logger
 from globals import MQTT_TOPICS
+from influxdb import influx_writer
 
 class MqttBridge:
 
@@ -100,6 +101,7 @@ class MqttBridge:
 
             if topic == MQTT_TOPICS.WAN:
                 logger.debug(f"Received WAN message: {payload}")
+                influx_writer.write_wan(json.loads(payload))
 
             elif topic == MQTT_TOPICS.TELEMETRY:
                 logger.debug(f"Received Telemetry message: {payload}")

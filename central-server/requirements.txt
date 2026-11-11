@@ -11,6 +11,9 @@ aioredis # Optional for Redis pub/sub
 # MQTT Support
 paho-mqtt
 
+# InfluxDB
+influxdb-client
+
 # WebRTC Support
 aiortc
 aioice
