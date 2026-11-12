@@ -64,8 +64,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
         self.train_client_id = self.initialize_train_client_id()
         self.helper = Helper()
-        offset = self.helper.get_ntp_offset()
-        print(f"NTP offset: {int(offset)} ms")
+        self.device_mac = self.helper.get_device_mac()
 
         self.keepalive_sequence = 0
 
@@ -241,7 +240,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.start()
 
         # MQTT
-        self.network_worker_mqtt = NetworkWorkerMqtt(self.train_client_id)
+        self.network_worker_mqtt = NetworkWorkerMqtt(self.train_client_id, self.on_mqtt_message_received)
 
         self.networkspeed = NetworkSpeed(duration=5)
         self.networkspeed.speed_calculated.connect(self.on_network_speed_calculated)
@@ -267,6 +266,23 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 f"NTP sync from {result.server_used} via {result.network_connection} failed: "
                 f"{result.error_message}"
             )
+        payload = {
+            "device_mac": self.device_mac,
+            "client_type": "train",
+            "timestamp_ms": result.timestamp_ms,
+            "offset_ms": result.offset_ms,
+            "round_trip_delay_ms": result.round_trip_delay_ms,
+            "server_used": result.server_used,
+            "is_success": result.is_success,
+            "error_message": result.error_message,
+            "network_connection": result.network_connection,
+        }
+        data = json.dumps(payload).encode('utf-8')
+        self.network_worker_mqtt.send_data(data, MQTT_TOPICS.CLOCK_TRAIN)
+
+    def on_mqtt_message_received(self, topic, payload):
+        # Runs on the paho network thread
+        logger.info(f"MQTT message received on {topic}: {payload.decode('utf-8', errors='replace')}")
 
     def on_quic_connected(self):
         logger.info("QUIC connection established")
@@ -606,7 +622,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             # Send telemetry on all active connections
             # self.network_worker_quic.enqueue_stream_packet(packet)
             # self.network_worker_ws.enqueue_packet(packet)
-            self.network_worker_mqtt.send_data(packet_data)
+            self.network_worker_mqtt.send_data(packet_data, MQTT_TOPICS.TELEMETRY)
 
     def on_imu_data(self, data):
         pass

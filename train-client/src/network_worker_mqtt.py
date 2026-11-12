@@ -2,22 +2,28 @@ import paho.mqtt.client as mqtt
 from app_logger import logger
 from globals import *
 
+SUBSCRIBED_TOPICS = [
+    MQTT_TOPICS.CLOCK_TRAIN,
+    MQTT_TOPICS.CLOCK_RC,
+]
+
 class NetworkWorkerMqtt:
-    def __init__(self, train_id):
+    def __init__(self, train_id, on_message_callback=None):
         # Use callback_api_version for paho-mqtt 2.0+ compatibility
         self.mqtt_client = mqtt.Client(
             client_id=train_id,
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1
         )
         self.train_id = train_id
-        self.topic = MQTT_TOPICS.TELEMETRY  # Default topic for telemetry data
         self.is_connected = False
+        # Called as on_message_callback(topic, payload) when a subscribed message arrives
+        self.on_message_callback = on_message_callback
 
         # Set up callbacks
         self.mqtt_client.on_connect = self._on_connect
         self.mqtt_client.on_disconnect = self._on_disconnect
         self.mqtt_client.on_publish = self._on_publish
-
+        self.mqtt_client.on_message = self._on_message
         self.connect()
 
     def connect(self):
@@ -34,6 +40,10 @@ class NetworkWorkerMqtt:
         if rc == 0:
             self.is_connected = True
             logger.success(f"Connected to MQTT broker with result code {rc}")
+            # Subscribe here so subscriptions are restored after every reconnect
+            for topic in SUBSCRIBED_TOPICS:
+                client.subscribe(topic, qos=1)
+                logger.info(f"Subscribed to MQTT topic: {topic}")
         else:
             self.is_connected = False
             logger.error(f"Failed to connect to MQTT broker with result code {rc}")
@@ -48,14 +58,22 @@ class NetworkWorkerMqtt:
     def _on_publish(self, client, userdata, mid):
         pass
 
-    def send_data(self, data):
+    def _on_message(self, client, userdata, msg):
+        if self.on_message_callback is None:
+            return
+        try:
+            self.on_message_callback(msg.topic, msg.payload)
+        except Exception as e:
+            logger.error(f"Error in MQTT message callback for topic {msg.topic}: {e}")
+
+    def send_data(self, data, mqtt_topic):
         if not self.is_connected:
             logger.warning("Cannot send data: MQTT client not connected")
             return False
 
         try:
             result = self.mqtt_client.publish(
-                topic=self.topic,
+                topic=mqtt_topic,
                 payload=data,
                 qos=1,  # Quality of Service level 1 ensures message delivery at least once
             )
