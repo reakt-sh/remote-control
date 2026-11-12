@@ -9,7 +9,7 @@ load_dotenv()
 
 RTSP_URL_FRONT = os.getenv("RTSP_URL_FRONT")
 RTSP_URL_REAR = os.getenv("RTSP_URL_REAR")
-RECONNECT_DELAY = os.getenv("RECONNECT_DELAY")
+RECONNECT_DELAY = float(os.getenv("RECONNECT_DELAY"))
 
 class _Signal:
     """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""

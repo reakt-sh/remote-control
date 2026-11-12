@@ -19,6 +19,8 @@ from sensor.imu import IMU
 from encoder import Encoder
 from hw_info import HWInfo
 from helper import Helper
+from sntp_client import SntpClient
+from ntp_sync_thread import NtpSyncThread
 import threading
 
 """
@@ -134,6 +136,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.imu.start()
         self.send_keepalive_packets()
 
+        self.sntp_client = SntpClient()
+        self.ntp_sync_thread = NtpSyncThread(self.sntp_client, "pool.ntp.org")
+        self.ntp_sync_thread.finished.connect(self.on_ntp_result)
+        self.ntp_sync_thread.start()
 
     def generate_hw_info(self):
         self.hw_info.get_hw_info(write_to_file=True)
@@ -249,6 +255,18 @@ class BaseClient(ABC, metaclass=QABCMeta):
             f"Upload: {data['upload_speed']:.2f} Mbps"
         )
         self.telemetry.set_network_speed(data['download_speed'], data['upload_speed'], data['jitter'], data['ping'])
+
+    def on_ntp_result(self, result):
+        if result.is_success:
+            logger.info(
+                f"NTP sync from {result.server_used} via {result.network_connection} - "
+                f"Offset: {result.offset_ms:.2f} ms, RTT: {result.round_trip_delay_ms:.2f} ms"
+            )
+        else:
+            logger.warning(
+                f"NTP sync from {result.server_used} via {result.network_connection} failed: "
+                f"{result.error_message}"
+            )
 
     def on_quic_connected(self):
         logger.info("QUIC connection established")
@@ -663,6 +681,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.video_source_rear.stop()
         self.telemetry.stop()
         self.encoder.close()
+        self.ntp_sync_thread.stop()
         self.network_worker_ws.stop()
         self.network_worker_quic.stop()
         self.output_file_front.close()
