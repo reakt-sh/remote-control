@@ -1,6 +1,7 @@
 import math
 import os
 from typing import Any, Dict
+from globals import control_session_id
 
 import pyarrow as pa
 from dotenv import load_dotenv
@@ -37,14 +38,15 @@ class InfluxDBWriter:
 
     def write_wan(self, data: Dict[str, Any]) -> None:
         """Store a WAN status message in database 'rtsys', measurement 'wan'."""
-        identity = str(data.get("identity", "unknown"))
-        fields = _to_fields(_flatten(data, exclude={"identity"}))
+        fields = _to_fields(_flatten(data))
 
         if not fields:
-            logger.warning(f"WAN message from {identity} has no storable fields")
+            logger.warning(f"WAN message from {control_session_id} has no storable fields")
             return
 
-        point = Point(MEASUREMENT_WAN).tag("identity", identity)
+        # include control session as a tag so we can filter WAN messages by session in InfluxDB
+        point = Point(MEASUREMENT_WAN).tag("session_id", control_session_id)
+
         for name, value in fields.items():
             point = point.field(name, value)
 

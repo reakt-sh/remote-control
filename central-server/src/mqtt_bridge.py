@@ -102,7 +102,6 @@ class MqttBridge:
             if topic == MQTT_TOPICS.WAN:
                 logger.debug(f"Received WAN message: {payload}")
                 influx_writer.write_wan(json.loads(payload))
-
             elif topic == MQTT_TOPICS.TELEMETRY:
                 logger.debug(f"Received Telemetry message: {payload}")
             elif topic == MQTT_TOPICS.FRAME_LATENCY:
