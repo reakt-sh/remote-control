@@ -457,6 +457,7 @@ export const useTrainStore = defineStore('train', () => {
               remote_control_ntp_offset: remote_control_ntp_offset.value,
               latency: latency,
             }
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
           }
           else
           {
