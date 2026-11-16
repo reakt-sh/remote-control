@@ -6,12 +6,13 @@ import { ref } from 'vue'
  * @param {Object} deps - Shared reactive refs from trainStore
  * @param {import('vue').Ref} deps.averageClockOffset
  * @param {import('vue').Ref} deps.indexedDBStorageEnabled
+ * @param {import('vue').Ref} deps.influxDBStorageEnabled
  * @param {Object}            deps.dataStorage
  * @param {import('vue').Ref} deps.selectedTrainId
  * @param {import('vue').Ref} deps.train_ntp_offset
  * @param {import('vue').Ref} deps.remote_control_ntp_offset
  */
-export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset }) {
+export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset }) {
 
   // Per-camera frame references (consumed by video renderer components)
   const frameRefFront = ref(null)
@@ -94,6 +95,10 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
         latency: frameLatency,
         cameraId: cameraId,
       })
+    }
+
+    if (influxDBStorageEnabled.value) {
+      // Also store it to InfluxDB
     }
 
     if(enableStatistics.value) {

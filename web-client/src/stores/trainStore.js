@@ -9,7 +9,7 @@ import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
 import { useDataStorage } from '@/scripts/dataStorage'
-import { SERVER_URL } from '@/scripts/config'
+import { SERVER_URL, MQTT_TOPICS } from '@/scripts/config'
 import { useVideoFrameHandler } from '@/scripts/videoFrameHandler'
 import { useNotificationStore } from '@/stores/notificationStore'
 
@@ -84,8 +84,10 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
-  const indexedDBStorageEnabled = ref(true)
+  const indexedDBStorageEnabled = ref(false)
   const commandCounter = ref(0)
+
+  const influxDBStorageEnabled = ref(true)
 
   // NTP offset for clock synchronization
   const train_ntp_offset = ref(null)
@@ -116,6 +118,7 @@ export const useTrainStore = defineStore('train', () => {
     connectMqtt,
     subscribeToMQTT,
     unsubscribeFromMQTT,
+    publish,
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
   const dataStorage = useDataStorage("TrainDataStorage", 1)
@@ -133,7 +136,7 @@ export const useTrainStore = defineStore('train', () => {
     last_100_frame_latencies_front,
     last_100_frame_latencies_rear,
     handleFrameComplete,
-  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset})
+  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset})
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -418,7 +421,7 @@ export const useTrainStore = defineStore('train', () => {
         const timestamp = Date.now()
 
         let latency = 0
-        if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) 
+        if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
         {
           // calculate latency with NTP based solution
           let train_client_timestamp = jsonData.timestamp + train_ntp_offset.value
@@ -435,8 +438,39 @@ export const useTrainStore = defineStore('train', () => {
             trainId: jsonData.train_id,
             data: jsonData,
             latency: latency,
-          protocol: 'ws'
+            protocol: 'ws'
           })
+        }
+
+        if (influxDBStorageEnabled.value)
+        {
+          // Also store it to InfluxDB
+          if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
+          {
+            // Use the NTP-based payload
+            let payload = {
+              train_id: jsonData.train_id,
+              remote_control_id: remoteControlId.value,
+              train_timestamp: jsonData.timestamp,
+              train_ntp_offset: train_ntp_offset.value,
+              remote_control_timestamp: timestamp,
+              remote_control_ntp_offset: remote_control_ntp_offset.value,
+              latency: latency,
+            }
+          }
+          else
+          {
+            // Use the default payload
+            let payload = {
+              train_id: jsonData.train_id,
+              remote_control_id: remoteControlId.value,
+              train_timestamp: jsonData.timestamp,
+              remote_control_timestamp: timestamp,
+              latency: latency,
+              clock_offset: averageClockOffset.value,
+            }
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
+          }
         }
 
         break
@@ -491,6 +525,10 @@ export const useTrainStore = defineStore('train', () => {
               latency: latency,
               protocol: 'wt'
             })
+          }
+
+          if (influxDBStorageEnabled.value) {
+            // Also store it to InfluxDB
           }
 
           direction.value = jsonData.direction
@@ -643,6 +681,10 @@ export const useTrainStore = defineStore('train', () => {
             latency: latency,
             protocol: 'mqtt'
           })
+        }
+
+        if (influxDBStorageEnabled.value) {
+          // Also store it to InfluxDB
         }
 
         // Assign to telemetryData also Add to telemetry history

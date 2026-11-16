@@ -1,12 +1,6 @@
 import { ref } from 'vue'
 import { Client, Message } from 'paho-mqtt'
-import { MQTT_BROKER_URL } from '@/scripts/config'
-
-export const MQTT_TOPICS = {
-  TELEMETRY: "rtsys/telemetry",
-  CLOCK_TRAIN: "rtsys/clockoffset_train",
-  CLOCK_RC: "rtsys/clockoffset_rc"
-}
+import { MQTT_BROKER_URL, MQTT_TOPICS } from '@/scripts/config'
 
 /**
  * MQTT Client for Web Browser using Paho MQTT JavaScript library
@@ -261,7 +255,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
     unsubscribe(MQTT_TOPICS.CLOCK_TRAIN)
   }
 
-  function publish(topic, messagePayload, qos = 1, retained = false) {
+  function publish(topic, messagePayload, qos = 0, retained = false) {
     if (!mqttClient.value || !isMqttConnected.value) {
       console.warn('Cannot publish: MQTT client not connected')
       return false

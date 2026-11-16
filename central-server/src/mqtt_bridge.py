@@ -104,6 +104,8 @@ class MqttBridge:
                 influx_writer.write_wan(json.loads(payload))
             elif topic == MQTT_TOPICS.TELEMETRY:
                 logger.debug(f"Received Telemetry message: {payload}")
+            elif topic == MQTT_TOPICS.TELEMETRY_LATENCY:
+                logger.debug(f"Received Telemetry Latency message: {payload}")
             elif topic == MQTT_TOPICS.FRAME_LATENCY:
                 logger.debug(f"Received Frame Latency message: {payload}")
             elif topic == MQTT_TOPICS.COMMAND_LATENCY:

@@ -52,6 +52,7 @@ class MQTT_TOPICS(StrEnum):
     WAN             = "rtsys/wan/rtsys-cau-01"
     TELEMETRY       = "rtsys/telemetry"
     FRAME_LATENCY   = "rtsys/frame_latency"
+    TELEMETRY_LATENCY = "rtsys/telemetry_latency"
     COMMAND_LATENCY = "rtsys/command_latency"
     CLOCK_TRAIN     = "rtsys/clockoffset_train"
     CLOCK_RC        = "rtsys/clockoffset_rc"
