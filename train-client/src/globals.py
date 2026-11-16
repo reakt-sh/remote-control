@@ -21,6 +21,8 @@ H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, '
 LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency')
 HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
 LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency_keepalive')
+TRAIN_NTP_OFFSET_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'train_ntp_offset')
+REMOTE_NTP_OFFSET_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'remote_ntp_offset')
 
 class MQTT_TOPICS(StrEnum):
     WAN             = "rtsys/wan/rtsys-cau-01"

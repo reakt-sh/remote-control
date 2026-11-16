@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import datetime
+import statistics
 import os
 import uuid
 import json
@@ -23,6 +24,7 @@ from sntp_client import SntpClient
 from ntp_sync_thread import NtpSyncThread
 from app_context import AppContext
 import threading
+
 
 """
 # ROS2: configuration and imports
@@ -64,8 +66,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         super().__init__()
         self.appcontext = AppContext()
         self.appcontext.train_client_id = self.initialize_train_client_id()
-        self.appcontext.latency_command_output_file =self.create_dump_file_for_latency(LATENCY_DUMP)
+        self.appcontext.latency_command_output_file = self.create_dump_file_for_latency(LATENCY_DUMP)
         self.appcontext.latency_keepalive_output_file = self.create_dump_file_for_latency(LATENCY_KEEPALIVE_DUMP)
+        self.appcontext.train_ntp_offset_output_file = self.create_dump_file_for_latency(TRAIN_NTP_OFFSET_DUMP)
+        self.appcontext.remote_ntp_offset_output_file = self.create_dump_file_for_latency(REMOTE_NTP_OFFSET_DUMP)
 
         self.helper = Helper()
         self.device_mac = self.helper.get_device_mac()
@@ -275,16 +279,28 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_mqtt_message_received(self, topic, payload):
         # Runs on the paho network thread
         # logger.info(f"MQTT message received on {topic}: {payload.decode('utf-8', errors='replace')}")
-        if topic == MQTT_TOPICS.CLOCK_RC:
+        if topic == MQTT_TOPICS.CLOCK_TRAIN:
             try:
                 message = json.loads(payload.decode('utf-8'))
                 logger.info(f"MQTT CLOCK_RC message received: {message}")
+                self.appcontext.train_ntp_offset_samples.append(message.get('offset_ms'))
+                if len(self.appcontext.train_ntp_offset_samples) > self.appcontext.offset_history_max_size:
+                    self.appcontext.train_ntp_offset_samples.pop(0)
+                self.appcontext.train_ntp_offset = statistics.median(self.appcontext.train_ntp_offset_samples)
+                self.appcontext.train_ntp_offset_output_file.write(json.dumps(message) + "\n")
+                self.appcontext.train_ntp_offset_output_file.flush()
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to decode MQTT CLOCK_RC message: {e}. Payload: {payload}")
-        elif topic == MQTT_TOPICS.CLOCK_TRAIN:
+        elif topic == MQTT_TOPICS.CLOCK_RC:
             try:
                 message = json.loads(payload.decode('utf-8'))
                 logger.info(f"MQTT CLOCK_TRAIN message received: {message}")
+                self.appcontext.remote_control_ntp_offset_samples.append(message.get('offset_ms'))
+                if len(self.appcontext.remote_control_ntp_offset_samples) > self.appcontext.offset_history_max_size:
+                    self.appcontext.remote_control_ntp_offset_samples.pop(0)
+                self.appcontext.remote_control_ntp_offset = statistics.median(self.appcontext.remote_control_ntp_offset_samples)
+                self.appcontext.remote_ntp_offset_output_file.write(json.dumps(message) + "\n")
+                self.appcontext.remote_ntp_offset_output_file.flush()
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to decode MQTT CLOCK_TRAIN message: {e}. Payload: {payload}")
 
@@ -488,7 +504,15 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def calculate_latency(self, remote_control_id, remote_timestamp):
         current_time = int(datetime.datetime.now().timestamp() * 1000)
+        if self.appcontext.train_ntp_offset is not None and self.appcontext.remote_control_ntp_offset is not None:
+            # If both NTP offsets are available, calculate latency using adjusted timestamps
+            train_time = current_time + self.appcontext.train_ntp_offset
+            remote_time = remote_timestamp + self.appcontext.remote_control_ntp_offset
+            latency = train_time - remote_time
+            return latency
 
+
+        # Otherwise, if NTP offsets are not available, use clock offset if available
         # Check if clock offset has been calculated for this remote control
         if remote_control_id not in self.appcontext.clock_offsets:
             logger.warning(f"Clock offset not available for remote_control_id: {remote_control_id}. Cannot calculate accurate latency. Clock offsets: {self.appcontext.clock_offsets}")
@@ -706,7 +730,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.stop()
         self.output_file_front.close()
         self.output_file_rear.close()
+        self.appcontext.close_output_files()
         # self.hw_info_generator_timer.stop()
+
         logger.info("BaseClient closed.")
 
     @abstractmethod

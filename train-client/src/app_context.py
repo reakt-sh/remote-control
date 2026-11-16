@@ -29,6 +29,8 @@ class AppContext:
         self.latency_command_output_file = None
         self.frame_output_file = None
         self.latency_keepalive_output_file = None
+        self.train_ntp_offset_output_file = None
+        self.remote_ntp_offset_output_file = None
 
         self.keepalive_sequence = 0  # Sequence number for keepalive packets
         self.target_speed_value = 0
@@ -40,7 +42,20 @@ class AppContext:
         self.train_ntp_offset_samples = []
         self.remote_control_ntp_offset = None
         self.remote_control_ntp_offset_samples = []
+        self.offset_history_max_size = 10  # Maximum number of offset samples to keep for averaging
 
     def init_telemetry(self):
         self.telemetryObj = Telemetry(self.train_client_id)
         self.telemetryObj.start()
+
+    def close_output_files(self):
+        if self.latency_command_output_file:
+            self.latency_command_output_file.close()
+        if self.frame_output_file:
+            self.frame_output_file.close()
+        if self.latency_keepalive_output_file:
+            self.latency_keepalive_output_file.close()
+        if self.train_ntp_offset_output_file:
+            self.train_ntp_offset_output_file.close()
+        if self.remote_ntp_offset_output_file:
+            self.remote_ntp_offset_output_file.close()
