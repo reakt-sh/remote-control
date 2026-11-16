@@ -16,6 +16,10 @@ class NetworkWorkerMqtt:
         )
         self.train_id = train_id
         self.is_connected = False
+
+        # Retry with exponential backoff (1s..5s) if the broker is unreachable or the connection drops
+        self.mqtt_client.reconnect_delay_set(min_delay=1, max_delay=5)
+
         # Called as on_message_callback(topic, payload) when a subscribed message arrives
         self.on_message_callback = on_message_callback
 
@@ -29,7 +33,7 @@ class NetworkWorkerMqtt:
     def connect(self):
         try:
             logger.info(f"Connecting to MQTT broker at {SERVER}:{MQTT_PORT}")
-            self.mqtt_client.connect(SERVER, MQTT_PORT, keepalive=60)
+            self.mqtt_client.connect_async(SERVER, MQTT_PORT, keepalive=1)
             # Start the network loop to process callbacks
             self.mqtt_client.loop_start()
         except Exception as e:
