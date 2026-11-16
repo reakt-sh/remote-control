@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { median } from 'simple-statistics'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useWebRTC } from '@/scripts/webrtc'
@@ -11,6 +12,8 @@ import { useDataStorage } from '@/scripts/dataStorage'
 import { SERVER_URL } from '@/scripts/config'
 import { useVideoFrameHandler } from '@/scripts/videoFrameHandler'
 import { useNotificationStore } from '@/stores/notificationStore'
+
+
 
 
 
@@ -85,11 +88,11 @@ export const useTrainStore = defineStore('train', () => {
   const commandCounter = ref(0)
 
   // NTP offset for clock synchronization
-  // const train_ntp_offset = ref(null)
-  // const train_ntp_offset_samples = ref([])
-  // const remote_control_ntp_offset = ref(null)
-  // const remote_control_ntp_offset_samples = ref([])
-  // const offset_history_max_size = ref(10)  // Maximum number of offset samples to keep for averaging
+  const train_ntp_offset = ref(null)
+  const train_ntp_offset_samples = ref([])
+  const remote_control_ntp_offset = ref(null)
+  const remote_control_ntp_offset_samples = ref([])
+  const offset_history_max_size = ref(10)  // Maximum number of offset samples to keep for averaging
 
   const {
     isWSConnected,
@@ -630,6 +633,14 @@ export const useTrainStore = defineStore('train', () => {
           const offset = data.offset_ms
           const timestamp = data.timestamp_ms
           console.log(`📡 Received CLOCK_RC message: Offset = ${offset.toFixed(3)} ms, Timestamp = ${timestamp}`)
+
+          remote_control_ntp_offset_samples.value.push(offset)
+          if (remote_control_ntp_offset_samples.value.length > offset_history_max_size.value) {
+            remote_control_ntp_offset_samples.value.shift() // Remove oldest sample
+          }
+          remote_control_ntp_offset.value = median(remote_control_ntp_offset_samples.value)
+          console.log(`📡 Updated remote control NTP offset: ${remote_control_ntp_offset.value.toFixed(3)} ms`)
+
         } catch (error) {
           console.error('❌ Error handling CLOCK_RC message:', error, payload)
         }
@@ -642,6 +653,12 @@ export const useTrainStore = defineStore('train', () => {
           const offset = data.offset_ms
           const timestamp = data.timestamp_ms
           console.log(`📡 Received CLOCK_TRAIN message: Offset = ${offset.toFixed(3)} ms, Timestamp = ${timestamp}`)
+          train_ntp_offset_samples.value.push(offset)
+          if (train_ntp_offset_samples.value.length > offset_history_max_size.value) {
+            train_ntp_offset_samples.value.shift() // Remove oldest sample
+          }
+          train_ntp_offset.value = median(train_ntp_offset_samples.value)
+          console.log(`📡 Updated train NTP offset: ${train_ntp_offset.value.toFixed(3)} ms`)
         } catch (error) {
           console.error('❌ Error handling CLOCK_TRAIN message:', error, payload)
         }
