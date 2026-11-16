@@ -4,7 +4,7 @@ from connection_info import get_network_connection
 from models import NtpSyncResult
 from sntp_client import SntpClient
 
-SYNC_PERIOD_SECONDS = 2.0
+SYNC_PERIOD_SECONDS = 5.0
 
 
 class _Signal:

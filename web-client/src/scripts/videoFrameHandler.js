@@ -121,17 +121,27 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
    }
 
     // Per-frame latency history (last 100) for analysis
-    if (enableStatistics.value) {
-      if (lastFrameIdRef.value === 0 || completedFrame.frameId === lastFrameIdRef.value + 1) {
+    if (enableStatistics.value)
+    {
+      if (lastFrameIdRef.value === 0 || completedFrame.frameId === lastFrameIdRef.value + 1)
+      {
         frameLatenciesRef.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
         if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
-      } else {
-        for (let missingId = lastFrameIdRef.value + 1; missingId < completedFrame.frameId; missingId++) {
+      }
+      else
+      {
+        // Only the most recent 99 missing frames can remain in the 100-entry history.
+        const firstMissingId = Math.max(lastFrameIdRef.value + 1, completedFrame.frameId - 99)
+        for (let missingId = firstMissingId; missingId < completedFrame.frameId; missingId++)
+        {
           frameLatenciesRef.value.push({ frameId: missingId, latency: null })
-          if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
+          if (frameLatenciesRef.value.length > 100)
+            frameLatenciesRef.value.shift()
         }
+
         frameLatenciesRef.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
-        if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
+        if (frameLatenciesRef.value.length > 100)
+          frameLatenciesRef.value.shift()
       }
     }
 
