@@ -133,7 +133,7 @@ export const useTrainStore = defineStore('train', () => {
     last_100_frame_latencies_front,
     last_100_frame_latencies_rear,
     handleFrameComplete,
-  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId })
+  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset})
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -416,7 +416,18 @@ export const useTrainStore = defineStore('train', () => {
 
         // get system timestamp
         const timestamp = Date.now()
-        const latency = timestamp - jsonData.timestamp + averageClockOffset.value
+
+        let latency = 0
+        if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) 
+        {
+          // calculate latency with NTP based solution
+          let train_client_timestamp = jsonData.timestamp + train_ntp_offset.value
+          let remote_control_timestamp = timestamp + remote_control_ntp_offset.value
+          latency = remote_control_timestamp - train_client_timestamp
+        } else {
+          latency = timestamp - jsonData.timestamp + averageClockOffset.value
+        }
+
 
         if (indexedDBStorageEnabled.value) {
           // Also store it to indexDB
@@ -461,7 +472,16 @@ export const useTrainStore = defineStore('train', () => {
 
           // get system timestamp
           const timestamp = Date.now()
-          const latency = timestamp - jsonData.timestamp + averageClockOffset.value
+          let latency = 0
+
+          if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) {
+            // calculate latency with NTP based solution
+            let train_client_timestamp = jsonData.timestamp + train_ntp_offset.value
+            let remote_control_timestamp = timestamp + remote_control_ntp_offset.value
+            latency = remote_control_timestamp - train_client_timestamp
+          } else {
+            latency = timestamp - jsonData.timestamp + averageClockOffset.value
+          }
 
           if (indexedDBStorageEnabled.value) {
             // Also store it to indexDB
@@ -604,7 +624,15 @@ export const useTrainStore = defineStore('train', () => {
           console.error('Failed to parse MQTT payload:', e)
           return
         }
-        const latency = timestamp - data.timestamp + averageClockOffset.value
+        let latency = 0
+        if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) {
+          // calculate latency with NTP based solution
+          let train_client_timestamp = data.timestamp + train_ntp_offset.value
+          let remote_control_timestamp = timestamp + remote_control_ntp_offset.value
+          latency = remote_control_timestamp - train_client_timestamp
+        } else {
+          latency = timestamp - data.timestamp + averageClockOffset.value
+        }
         let trainId = data.train_id
 
         if (indexedDBStorageEnabled.value) {

@@ -282,7 +282,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         if topic == MQTT_TOPICS.CLOCK_TRAIN:
             try:
                 message = json.loads(payload.decode('utf-8'))
-                logger.info(f"MQTT CLOCK_RC message received: {message}")
+                logger.info(f"MQTT CLOCK_TRAIN message received: {message}")
                 self.appcontext.train_ntp_offset_samples.append(message.get('offset_ms'))
                 if len(self.appcontext.train_ntp_offset_samples) > self.appcontext.offset_history_max_size:
                     self.appcontext.train_ntp_offset_samples.pop(0)
@@ -290,11 +290,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.appcontext.train_ntp_offset_output_file.write(json.dumps(message) + "\n")
                 self.appcontext.train_ntp_offset_output_file.flush()
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to decode MQTT CLOCK_RC message: {e}. Payload: {payload}")
+                logger.error(f"Failed to decode MQTT CLOCK_TRAIN message: {e}. Payload: {payload}")
         elif topic == MQTT_TOPICS.CLOCK_RC:
             try:
                 message = json.loads(payload.decode('utf-8'))
-                logger.info(f"MQTT CLOCK_TRAIN message received: {message}")
+                logger.info(f"MQTT CLOCK_RC message received: {message}")
                 self.appcontext.remote_control_ntp_offset_samples.append(message.get('offset_ms'))
                 if len(self.appcontext.remote_control_ntp_offset_samples) > self.appcontext.offset_history_max_size:
                     self.appcontext.remote_control_ntp_offset_samples.pop(0)
@@ -302,7 +302,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 self.appcontext.remote_ntp_offset_output_file.write(json.dumps(message) + "\n")
                 self.appcontext.remote_ntp_offset_output_file.flush()
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to decode MQTT CLOCK_TRAIN message: {e}. Payload: {payload}")
+                logger.error(f"Failed to decode MQTT CLOCK_RC message: {e}. Payload: {payload}")
 
     def on_quic_connected(self):
         logger.info("QUIC connection established")

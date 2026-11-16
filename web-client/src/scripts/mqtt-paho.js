@@ -151,7 +151,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
 
     if (topic == MQTT_TOPICS.TELEMETRY)
     {
-      console.log('📥 Received telemetry message:', payload)
       messageHandler({
         messageType: 'telemetry',
         payload: payload,
@@ -160,7 +159,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     }
     else if (topic == MQTT_TOPICS.CLOCK_RC)
     {
-      console.log('📥 Received CLOCK_RC message:', payload)
       messageHandler({
         messageType: 'clock_rc',
         payload: payload,
@@ -169,7 +167,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
     }
     else if (topic == MQTT_TOPICS.CLOCK_TRAIN)
     {
-      console.log('📥 Received CLOCK_TRAIN message:', payload)
       messageHandler({
         messageType: 'clock_train',
         payload: payload,

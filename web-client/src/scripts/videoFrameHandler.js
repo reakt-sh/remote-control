@@ -8,8 +8,10 @@ import { ref } from 'vue'
  * @param {import('vue').Ref} deps.indexedDBStorageEnabled
  * @param {Object}            deps.dataStorage
  * @param {import('vue').Ref} deps.selectedTrainId
+ * @param {import('vue').Ref} deps.train_ntp_offset
+ * @param {import('vue').Ref} deps.remote_control_ntp_offset
  */
-export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId }) {
+export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset }) {
 
   // Per-camera frame references (consumed by video renderer components)
   const frameRefFront = ref(null)
@@ -50,8 +52,18 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
     const cameraId = completedFrame.cameraId
     const isFront = cameraId === 'front'
 
-    // Calculate latency with clock offset
-    const frameLatency = completedFrame.latency + averageClockOffset.value
+    let frameLatency = 0
+    if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) {
+      // Calculate latency with NTP based solution
+      let train_client_timestamp = completedFrame.created_at + train_ntp_offset.value
+      let remote_control_timestamp = completedFrame.received_at + remote_control_ntp_offset.value
+      frameLatency = remote_control_timestamp - train_client_timestamp
+      // console.log(`📡 Frame ${completedFrame.frameId} [${cameraId}] latency calculated using NTP offsets: ${frameLatency.toFixed(0)} ms`)
+    } else {
+      // Calculate latency with average clock offset based solution
+      frameLatency = completedFrame.latency + averageClockOffset.value
+    }
+
 
     // Drop frames with excessive latency
     if (frameLatency > 1000) {

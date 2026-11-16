@@ -21,7 +21,7 @@ export class useAssembler {
     this.cameraId = cameraId
     this.frameBuffer = new Map()
     this.frameOrderQueue = []
-    
+
     // Pre-create reusable objects for performance
     this.textDecoder = new TextDecoder()
     this.tempDataView = null

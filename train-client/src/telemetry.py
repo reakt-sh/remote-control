@@ -20,7 +20,7 @@ class _Signal:
 
 
 class Telemetry:
-    def __init__(self, train_id: str, poll_interval_ms=200, parent=None):
+    def __init__(self, train_id: str, poll_interval_ms=500, parent=None):
         self.telemetry_ready = _Signal()
         self.sequence_number = 0
         self._running = False
