@@ -684,8 +684,36 @@ export const useTrainStore = defineStore('train', () => {
           })
         }
 
-        if (influxDBStorageEnabled.value) {
+        if (influxDBStorageEnabled.value)
+        {
           // Also store it to InfluxDB
+          if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
+          {
+            // Use the NTP-based payload
+            let payload = {
+              train_id: data.train_id,
+              remote_control_id: remoteControlId.value,
+              train_timestamp: data.timestamp,
+              train_ntp_offset: train_ntp_offset.value,
+              remote_control_timestamp: timestamp,
+              remote_control_ntp_offset: remote_control_ntp_offset.value,
+              latency: latency,
+            }
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
+          }
+          else
+          {
+            // Use the default payload
+            let payload = {
+              train_id: data.train_id,
+              remote_control_id: remoteControlId.value,
+              train_timestamp: data.timestamp,
+              remote_control_timestamp: timestamp,
+              latency: latency,
+              clock_offset: averageClockOffset.value,
+            }
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
+          }
         }
 
         // Assign to telemetryData also Add to telemetry history
