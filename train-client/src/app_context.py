@@ -24,7 +24,7 @@ class AppContext:
         self.clock_offset_calculated = False
         self.connected_remote_control_ids = set()
         self.remote_control_client_id = None
-        self.number_of_rtt_packets = 10
+        self.number_of_rtt_packets = 5
 
         self.latency_command_output_file = None
         self.frame_output_file = None
@@ -36,7 +36,10 @@ class AppContext:
         self.current_speed_value = 0
         self.current_mode_value = None
 
-        self.ntp_offset = None
+        self.train_ntp_offset = None
+        self.train_ntp_offset_samples = []
+        self.remote_control_ntp_offset = None
+        self.remote_control_ntp_offset_samples = []
 
     def init_telemetry(self):
         self.telemetryObj = Telemetry(self.train_client_id)

@@ -21,6 +21,7 @@ from hw_info import HWInfo
 from helper import Helper
 from sntp_client import SntpClient
 from ntp_sync_thread import NtpSyncThread
+from app_context import AppContext
 import threading
 
 """
@@ -61,12 +62,13 @@ class Bridge(Node):
 class BaseClient(ABC, metaclass=QABCMeta):
     def __init__(self, video_source_front, video_source_rear, has_motor=False):
         super().__init__()
+        self.appcontext = AppContext()
+        self.appcontext.train_client_id = self.initialize_train_client_id()
+        self.appcontext.latency_command_output_file =self.create_dump_file_for_latency(LATENCY_DUMP)
+        self.appcontext.latency_keepalive_output_file = self.create_dump_file_for_latency(LATENCY_KEEPALIVE_DUMP)
 
-        self.train_client_id = self.initialize_train_client_id()
         self.helper = Helper()
         self.device_mac = self.helper.get_device_mac()
-
-        self.keepalive_sequence = 0
 
         # FPS calculation variables (per camera type)
         self.last_few_frame_ids = {}  # dict[camera_type -> list[(frame_id, timestamp_ms)]]
@@ -78,13 +80,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.is_sending = False
         self.target_speed = 0
         self._running = True
-        self.connected_remote_control_ids = set()
-        self.clock_offsets = {}  # Clock offset between train and remote controls (ms)
-        self.clock_offset_calculation_completed = False
-        self.number_of_rtt_packets = 5
-        self.clock_offset_samples = {}
-        self.latency_output_file =self.create_dump_file_for_latency(LATENCY_DUMP)
-        self.latency_output_file_for_keepalive = self.create_dump_file_for_latency(LATENCY_KEEPALIVE_DUMP)
 
         # Keepalive timer for safety
         self.keepalive_timer = QTimer()
@@ -93,7 +88,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.keepalive_timer.timeout.connect(self.on_keepalive_timeout)
 
         # Initialize components
-        self.telemetry = Telemetry(self.train_client_id)
+        self.telemetry = Telemetry(self.appcontext.train_client_id)
+        self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
+        self.telemetry.start()
+
         self.imu = IMU()
         self.encoder = Encoder()
         self.init_network()
@@ -128,10 +126,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
         # rclpy.shutdown()
         """
 
-        self.telemetry.telemetry_ready.connect(self.on_telemetry_data)
         self.imu.imu_ready.connect(self.on_imu_data)
         self.encoder.encode_ready.connect(self.on_encoded_frame)
-        self.telemetry.start()
         self.imu.start()
         self.send_keepalive_packets()
 
@@ -227,12 +223,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def init_network(self):
         # WebSocket
-        self.network_worker_ws = NetworkWorkerWS(self.train_client_id)
+        self.network_worker_ws = NetworkWorkerWS(self.appcontext.train_client_id)
         self.network_worker_ws.recieved_data.connect(self.on_new_command)
         self.network_worker_ws.start()
 
         # QUIC
-        self.network_worker_quic = NetworkWorkerQUIC(self.train_client_id)
+        self.network_worker_quic = NetworkWorkerQUIC(self.appcontext.train_client_id)
         self.network_worker_quic.connection_established.connect(self.on_quic_connected)
         self.network_worker_quic.connection_failed.connect(self.on_quic_failed)
         self.network_worker_quic.connection_closed.connect(self.on_quic_closed)
@@ -240,7 +236,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
         self.network_worker_quic.start()
 
         # MQTT
-        self.network_worker_mqtt = NetworkWorkerMqtt(self.train_client_id, self.on_mqtt_message_received)
+        self.network_worker_mqtt = NetworkWorkerMqtt(self.appcontext.train_client_id, self.on_mqtt_message_received)
 
         self.networkspeed = NetworkSpeed(duration=5)
         self.networkspeed.speed_calculated.connect(self.on_network_speed_calculated)
@@ -257,15 +253,11 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_ntp_result(self, result):
         if result.is_success:
-            logger.info(
-                f"NTP sync from {result.server_used} via {result.network_connection} - "
-                f"Offset: {result.offset_ms:.2f} ms, RTT: {result.round_trip_delay_ms:.2f} ms"
-            )
+            logger.info(f"NTP sync from {result.server_used} via {result.network_connection} - Offset: {result.offset_ms:.2f} ms, RTT: {result.round_trip_delay_ms:.2f} ms")
         else:
-            logger.warning(
-                f"NTP sync from {result.server_used} via {result.network_connection} failed: "
-                f"{result.error_message}"
-            )
+            logger.warning(f"NTP sync from {result.server_used} via {result.network_connection} failed: {result.error_message}")
+            return
+
         payload = {
             "device_mac": self.device_mac,
             "client_type": "train",
@@ -282,7 +274,19 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_mqtt_message_received(self, topic, payload):
         # Runs on the paho network thread
-        logger.info(f"MQTT message received on {topic}: {payload.decode('utf-8', errors='replace')}")
+        # logger.info(f"MQTT message received on {topic}: {payload.decode('utf-8', errors='replace')}")
+        if topic == MQTT_TOPICS.CLOCK_RC:
+            try:
+                message = json.loads(payload.decode('utf-8'))
+                logger.info(f"MQTT CLOCK_RC message received: {message}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to decode MQTT CLOCK_RC message: {e}. Payload: {payload}")
+        elif topic == MQTT_TOPICS.CLOCK_TRAIN:
+            try:
+                message = json.loads(payload.decode('utf-8'))
+                logger.info(f"MQTT CLOCK_TRAIN message received: {message}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to decode MQTT CLOCK_TRAIN message: {e}. Payload: {payload}")
 
     def on_quic_connected(self):
         logger.info("QUIC connection established")
@@ -310,10 +314,10 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 ## Map CONNECT received: data =  b'{"type": "mapping_connect", "remote_control_id": "44ffefc5-878e-4558-b846-37a3acdfd8af"}'
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
-                    self.connected_remote_control_ids.add(remote_control_id)
+                    self.appcontext.connected_remote_control_ids.add(remote_control_id)
                     logger.info(f"Map CONNECT received from remote control ID: {remote_control_id}")
                     # Reset samples for this remote and start RTT measurement
-                    self.clock_offset_samples[remote_control_id] = []
+                    self.appcontext.clock_offset_samples[remote_control_id] = []
                     self.send_rtt_packets(remote_control_id)
                     self.hw_info.notify_new_remote_control_connected(remote_control_id)
 
@@ -326,8 +330,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
                     logger.warning(f"Map DISCONNECT received from remote control ID: {remote_control_id}")
-                    if remote_control_id in self.connected_remote_control_ids:
-                        self.connected_remote_control_ids.remove(remote_control_id)
+                    if remote_control_id in self.appcontext.connected_remote_control_ids:
+                        self.appcontext.connected_remote_control_ids.remove(remote_control_id)
                         logger.info(f"Remote control ID {remote_control_id} removed from connected set due to DISCONNECT")
                     else:
                         logger.warning(f"Received map_disconnect for unknown remote control ID: {remote_control_id}")
@@ -360,30 +364,30 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     clock_offset = remote_control_timestamp - (train_timestamp_sent + rtt / 2)
 
                     # Collect offset samples per remote and compute average after N samples
-                    samples = self.clock_offset_samples.setdefault(remote_control_id, [])
+                    samples = self.appcontext.clock_offset_samples.setdefault(remote_control_id, [])
                     samples.append(clock_offset)
 
                     logger.info(
                         f"RTT packet received - "
                         f"RTT: {rtt}ms, "
                         f"Clock Offset sample: {clock_offset:.2f}ms, "
-                        f"Sample count for {remote_control_id}: {len(samples)}/{self.number_of_rtt_packets}, "
+                        f"Sample count for {remote_control_id}: {len(samples)}/{self.appcontext.number_of_rtt_packets}, "
                         f"Remote timestamp: {remote_control_timestamp}, "
                         f"Train timestamp sent: {train_timestamp_sent}, "
                         f"Current time: {current_time}"
                     )
 
-                    if len(samples) >= self.number_of_rtt_packets:
-                        avg_offset = sum(samples[:self.number_of_rtt_packets]) / self.number_of_rtt_packets
+                    if len(samples) >= self.appcontext.number_of_rtt_packets:
+                        avg_offset = sum(samples[:self.appcontext.number_of_rtt_packets]) / self.appcontext.number_of_rtt_packets
                         avg_offset = round(avg_offset)
-                        self.clock_offsets[remote_control_id] = avg_offset
-                        self.clock_offset_calculation_completed = True
+                        self.appcontext.clock_offsets[remote_control_id] = avg_offset
+                        self.appcontext.clock_offset_calculated = True
                         logger.info(
                             f"Clock offset established for {remote_control_id}: {avg_offset:.2f}ms "
-                            f"(averaged over {self.number_of_rtt_packets} RTT samples)"
+                            f"(averaged over {self.appcontext.number_of_rtt_packets} RTT samples)"
                         )
                         # Reset samples to avoid unbounded growth; new ACK can re-initiate measurement
-                        self.clock_offset_samples[remote_control_id] = []
+                        self.appcontext.clock_offset_samples[remote_control_id] = []
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse rtt_train JSON: {e}")
             elif packet_type == PACKET_TYPE.KEEPALIVE:
@@ -405,8 +409,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                             "size" : len(payload),
                             "sequence" : message.get('sequence', None),
                         }
-                        self.latency_output_file_for_keepalive.write(json.dumps(latency_log_entry) + "\n")
-                        self.latency_output_file_for_keepalive.flush()
+                        self.appcontext.latency_keepalive_output_file.write(json.dumps(latency_log_entry) + "\n")
+                        self.appcontext.latency_keepalive_output_file.flush()
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse keepalive JSON: {e}")
             elif packet_type == PACKET_TYPE.RTT:
@@ -442,12 +446,12 @@ class BaseClient(ABC, metaclass=QABCMeta):
             rtt_train_packet = self.helper.get_length_prefixed_packet(rtt_train_packet)
 
             self.network_worker_quic.enqueue_stream_packet(rtt_train_packet)
-            logger.debug(f"Sent RTT packet {packet_index + 1}/{self.number_of_rtt_packets} to {remote_control_id}")
+            logger.debug(f"Sent RTT packet {packet_index + 1}/{self.appcontext.number_of_rtt_packets} to {remote_control_id}")
 
         def _sender():
             import time
             time.sleep(2.0)  # initial 2000ms delay
-            for i in range(self.number_of_rtt_packets):
+            for i in range(self.appcontext.number_of_rtt_packets):
                 send_packet(i)
                 time.sleep(0.2)  # 200ms between packets
 
@@ -458,20 +462,20 @@ class BaseClient(ABC, metaclass=QABCMeta):
             keepalive_packet = {
                 "type": "keepalive",
                 "protocol": "quic",
-                "train_id": self.train_client_id,
+                "train_id": self.appcontext.train_client_id,
                 "timestamp": self.helper.get_timestamp(),
-                "sequence": self.keepalive_sequence,
+                "sequence": self.appcontext.keepalive_sequence,
             }
 
             # Increment the sequence for next time
-            self.keepalive_sequence += 1
+            self.appcontext.keepalive_sequence += 1
 
             keepalive_packet = json.dumps(keepalive_packet).encode('utf-8')
             keepalive_packet = struct.pack("B", PACKET_TYPE.KEEPALIVE) + keepalive_packet
             keepalive_packet = self.helper.get_length_prefixed_packet(keepalive_packet)
 
             self.network_worker_quic.enqueue_stream_packet(keepalive_packet)
-            logger.debug(f"Sent keepalive packet with sequence {self.keepalive_sequence}")
+            logger.debug(f"Sent keepalive packet with sequence {self.appcontext.keepalive_sequence}")
 
         def _sender():
             import time
@@ -486,13 +490,13 @@ class BaseClient(ABC, metaclass=QABCMeta):
         current_time = int(datetime.datetime.now().timestamp() * 1000)
 
         # Check if clock offset has been calculated for this remote control
-        if remote_control_id not in self.clock_offsets:
-            logger.warning(f"Clock offset not available for remote_control_id: {remote_control_id}. Cannot calculate accurate latency. Clock offsets: {self.clock_offsets}")
+        if remote_control_id not in self.appcontext.clock_offsets:
+            logger.warning(f"Clock offset not available for remote_control_id: {remote_control_id}. Cannot calculate accurate latency. Clock offsets: {self.appcontext.clock_offsets}")
             return None
 
         # Adjust remote timestamp to local time by subtracting clock offset
         # Clock offset = remote_time - local_time, so local_time = remote_time - clock_offset
-        adjusted_remote_time = remote_timestamp - self.clock_offsets[remote_control_id]
+        adjusted_remote_time = remote_timestamp - self.appcontext.clock_offsets[remote_control_id]
         # Latency = current_time - adjusted_remote_time
         latency = current_time - adjusted_remote_time
         return latency
@@ -529,8 +533,8 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     "direction": message.get('direction', None),
                     "quality": message.get('quality', None),
                 }
-                self.latency_output_file.write(json.dumps(latency_log_entry) + "\n")
-                self.latency_output_file.flush()
+                self.appcontext.latency_command_output_file.write(json.dumps(latency_log_entry) + "\n")
+                self.appcontext.latency_command_output_file.flush()
             else:
                 logger.info(f"Received command: {message} (latency not available - clock not synchronized)")
 
