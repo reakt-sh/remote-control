@@ -84,6 +84,13 @@ export const useTrainStore = defineStore('train', () => {
   const indexedDBStorageEnabled = ref(true)
   const commandCounter = ref(0)
 
+  // NTP offset for clock synchronization
+  // const train_ntp_offset = ref(null)
+  // const train_ntp_offset_samples = ref([])
+  // const remote_control_ntp_offset = ref(null)
+  // const remote_control_ntp_offset_samples = ref([])
+  // const offset_history_max_size = ref(10)  // Maximum number of offset samples to keep for averaging
+
   const {
     isWSConnected,
     connectWebSocket,
@@ -104,8 +111,8 @@ export const useTrainStore = defineStore('train', () => {
   const {
     isMqttConnected,
     connectMqtt,
-    subscribeToTrain,
-    unsubscribeFromTrain,
+    subscribeToMQTT,
+    unsubscribeFromMQTT,
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
   const dataStorage = useDataStorage("TrainDataStorage", 1)
@@ -192,7 +199,7 @@ export const useTrainStore = defineStore('train', () => {
     if (!trainId) return
     telemetryData.value = {}
     if (selectedTrainId.value !== trainId) {
-      unsubscribeFromTrain()
+      unsubscribeFromMQTT()
 
       // also reset telemetry history
       telemetryHistory.value = []
@@ -242,7 +249,7 @@ export const useTrainStore = defineStore('train', () => {
     await sendWtMessage(prepareMapConnectionMessage(remoteControlId.value, trainId));
 
     // Subscribe to MQTT telemetry for this specific train
-    subscribeToTrain()
+    subscribeToMQTT()
 
     // Send multiple RTT messages to calibrate clock offset
     await performRTTCalibration()
@@ -424,7 +431,7 @@ export const useTrainStore = defineStore('train', () => {
         const notification = JSON.parse(new TextDecoder().decode(payload))
         if (notification.train_id === selectedTrainId.value && notification.event === 'disconnected') {
           router.push('/')
-          unsubscribeFromTrain()
+          unsubscribeFromMQTT()
         }
         fetchAvailableTrains()
         break
@@ -617,9 +624,33 @@ export const useTrainStore = defineStore('train', () => {
         break
       }
 
+      case 'clock_rc':{
+        try {
+          const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+          const offset = data.offset_ms
+          const timestamp = data.timestamp_ms
+          console.log(`📡 Received CLOCK_RC message: Offset = ${offset.toFixed(3)} ms, Timestamp = ${timestamp}`)
+        } catch (error) {
+          console.error('❌ Error handling CLOCK_RC message:', error, payload)
+        }
+        break
+      }
+
+      case 'clock_train': {
+        try {
+          const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+          const offset = data.offset_ms
+          const timestamp = data.timestamp_ms
+          console.log(`📡 Received CLOCK_TRAIN message: Offset = ${offset.toFixed(3)} ms, Timestamp = ${timestamp}`)
+        } catch (error) {
+          console.error('❌ Error handling CLOCK_TRAIN message:', error, payload)
+        }
+        break
+      }
+
       case 'onConnect':
         if (selectedTrainId.value) {
-          subscribeToTrain()
+          subscribeToMQTT()
         }
         break
 
@@ -697,7 +728,7 @@ export const useTrainStore = defineStore('train', () => {
     performRTTCalibration,
     setRTTCalibrationCount,
     // MQTT methods
-    subscribeToTrain,
-    unsubscribeFromTrain,
+    subscribeToMQTT,
+    unsubscribeFromMQTT,
   }
 })
