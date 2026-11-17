@@ -579,7 +579,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     }
                 self.appcontext.latency_command_output_file.write(json.dumps(latency_log_entry) + "\n")
                 self.appcontext.latency_command_output_file.flush()
-                self.network_worker_mqtt.send_data(json.dumps(latency_log_entry).encode('utf-8'), MQTT_TOPICS.LATENCY_COMMAND, 0)
+                self.network_worker_mqtt.send_data(json.dumps(latency_log_entry).encode('utf-8'), MQTT_TOPICS.COMMAND_LATENCY, 0)
 
             else:
                 logger.info(f"Received command: {message} (latency not available - clock not synchronized)")
