@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import {MQTT_TOPICS} from './config.js'
 
 /**
  * Composable that owns all per-camera frame state and the frame-complete handler.
@@ -11,8 +12,9 @@ import { ref } from 'vue'
  * @param {import('vue').Ref} deps.selectedTrainId
  * @param {import('vue').Ref} deps.train_ntp_offset
  * @param {import('vue').Ref} deps.remote_control_ntp_offset
+ * @param {Function}          deps.publish
  */
-export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset }) {
+export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, remoteControlId, train_ntp_offset, remote_control_ntp_offset, publish}) {
 
   // Per-camera frame references (consumed by video renderer components)
   const frameRefFront = ref(null)
@@ -99,6 +101,37 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
 
     if (influxDBStorageEnabled.value) {
       // Also store it to InfluxDB
+      if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
+      {
+        let payload = {
+          frame_id : completedFrame.frameId,
+          train_id : selectedTrainId.value,
+          remote_control_id : remoteControlId.value,
+          train_timestamp : completedFrame.created_at,
+          train_ntp_offset : train_ntp_offset.value,
+          remote_control_timestamp : completedFrame.received_at,
+          remote_control_ntp_offset : remote_control_ntp_offset.value,
+          latency : frameLatency,
+          camera : cameraId,
+        }
+
+        publish(MQTT_TOPICS.FRAME_LATENCY, payload)
+      }
+      else
+      {
+        let payload = {
+          frame_id : completedFrame.frameId,
+          train_id : selectedTrainId.value,
+          remote_control_id : remoteControlId.value,
+          train_timestamp : completedFrame.created_at,
+          remote_control_timestamp : completedFrame.received_at,
+          latency : frameLatency,
+          clock_offset : averageClockOffset.value,
+          camera : cameraId,
+        }
+
+        publish(MQTT_TOPICS.FRAME_LATENCY, payload)
+      }
     }
 
     if(enableStatistics.value) {

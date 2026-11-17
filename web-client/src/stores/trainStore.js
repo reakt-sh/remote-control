@@ -136,7 +136,7 @@ export const useTrainStore = defineStore('train', () => {
     last_100_frame_latencies_front,
     last_100_frame_latencies_rear,
     handleFrameComplete,
-  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, train_ntp_offset, remote_control_ntp_offset})
+  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, remoteControlId, train_ntp_offset, remote_control_ntp_offset, publish})
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
