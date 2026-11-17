@@ -1,7 +1,7 @@
 import math
 import os
 from typing import Any, Dict
-from globals import control_session_id
+import globals as app_globals
 
 import pyarrow as pa
 from dotenv import load_dotenv
@@ -15,6 +15,14 @@ INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 
 DATABASE_RTSYS = "rtsys"
 MEASUREMENT_WAN = "wan"
+MEASUREMENT_TELEMETRY = "telemetry"
+MEASUREMENT_TELEMETRY_LATENCY = "telemetry_latency"
+MEASUREMENT_FRAME_LATENCY = "frame_latency"
+MEASUREMENT_COMMAND_LATENCY = "command_latency"
+MEASUREMENT_CLOCK_TRAIN = "clock_train"
+MEASUREMENT_CLOCK_RC = "clock_rc"
+
+
 
 # Placeholder values sent by the router when a value is unavailable
 _EMPTY_VALUES = {"", "none"}
@@ -41,13 +49,79 @@ class InfluxDBWriter:
         fields = _to_fields(_flatten(data))
 
         if not fields:
-            logger.warning(f"WAN message from {control_session_id} has no storable fields")
+            logger.warning(f"WAN message from {app_globals.control_session_id} has no storable fields")
             return
 
         # include control session as a tag so we can filter WAN messages by session in InfluxDB
-        point = Point(MEASUREMENT_WAN).tag("session_id", control_session_id)
+        point = Point(MEASUREMENT_WAN).tag("session_id", app_globals.control_session_id)
 
         for name, value in fields.items():
+            point = point.field(name, value)
+
+        self._get_client().write(record=point)
+
+    def write_telemetry_latency(self, data: Dict[str, Any]) -> None:
+        if not data:
+            logger.warning(f"Telemetry latency message from {app_globals.control_session_id} has no storable fields")
+            return
+
+        point = Point(MEASUREMENT_TELEMETRY_LATENCY).tag("session_id", app_globals.control_session_id)
+        for name, value in data.items():
+            point = point.field(name, value)
+
+        self._get_client().write(record=point)
+
+    def write_frame_latency(self, data: Dict[str, Any]) -> None:
+        if not data:
+            logger.warning(f"Frame latency message from {app_globals.control_session_id} has no storable fields")
+            return
+
+        point = Point(MEASUREMENT_FRAME_LATENCY).tag("session_id", app_globals.control_session_id)
+        for name, value in data.items():
+            point = point.field(name, value)
+
+        self._get_client().write(record=point)
+
+    def write_command_latency(self, data: Dict[str, Any]) -> None:
+        if not data:
+            logger.warning(f"Command latency message from {app_globals.control_session_id} has no storable fields")
+            return
+
+        point = Point(MEASUREMENT_COMMAND_LATENCY).tag("session_id", app_globals.control_session_id)
+        for name, value in data.items():
+            point = point.field(name, value)
+
+        self._get_client().write(record=point)
+
+    def write_clock_train(self, data: Dict[str, Any]) -> None:
+        if not data:
+            logger.warning(f"Clock offset (train) message from {app_globals.control_session_id} has no storable fields")
+            return
+
+        point = Point(MEASUREMENT_CLOCK_TRAIN).tag("session_id", app_globals.control_session_id)
+        for name, value in data.items():
+            point = point.field(name, value)
+
+        self._get_client().write(record=point)
+
+    def write_clock_rc(self, data: Dict[str, Any]) -> None:
+        if not data:
+            logger.warning(f"Clock offset (remote control) message from {app_globals.control_session_id} has no storable fields")
+            return
+
+        point = Point(MEASUREMENT_CLOCK_RC).tag("session_id", app_globals.control_session_id)
+        for name, value in data.items():
+            point = point.field(name, value)
+
+        self._get_client().write(record=point)
+
+    def write_telemetry(self, data: Dict[str, Any]) -> None:
+        if not data:
+            logger.warning(f"Telemetry message from {app_globals.control_session_id} has no storable fields")
+            return
+
+        point = Point(MEASUREMENT_TELEMETRY).tag("session_id", app_globals.control_session_id)
+        for name, value in data.items():
             point = point.field(name, value)
 
         self._get_client().write(record=point)

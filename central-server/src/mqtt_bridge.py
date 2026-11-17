@@ -100,20 +100,19 @@ class MqttBridge:
             payload = msg.payload.decode('utf-8')
 
             if topic == MQTT_TOPICS.WAN:
-                logger.debug(f"Received WAN message: {payload}")
                 influx_writer.write_wan(json.loads(payload))
             elif topic == MQTT_TOPICS.TELEMETRY:
-                logger.debug(f"Received Telemetry message: {payload}")
+                influx_writer.write_telemetry(json.loads(payload))
             elif topic == MQTT_TOPICS.TELEMETRY_LATENCY:
-                logger.debug(f"Received Telemetry Latency message: {payload}")
+                influx_writer.write_telemetry_latency(json.loads(payload))
             elif topic == MQTT_TOPICS.FRAME_LATENCY:
-                logger.debug(f"Received Frame Latency message: {payload}")
+                influx_writer.write_frame_latency(json.loads(payload))
             elif topic == MQTT_TOPICS.COMMAND_LATENCY:
-                logger.debug(f"Received Command Latency message: {payload}")
+                influx_writer.write_command_latency(json.loads(payload))
             elif topic == MQTT_TOPICS.CLOCK_TRAIN:
-                logger.debug(f"Received Clock Offset (Train) message: {payload}")
+                influx_writer.write_clock_train(json.loads(payload))
             elif topic == MQTT_TOPICS.CLOCK_RC:
-                logger.debug(f"Received Clock Offset (Remote Control) message: {payload}")
+                influx_writer.write_clock_rc(json.loads(payload))
             else:
                 logger.warning(f"Invalid topic format: {topic}")
 
