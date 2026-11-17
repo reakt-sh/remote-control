@@ -255,7 +255,7 @@ export function useMqttClient(remoteControlId, messageHandler) {
     unsubscribe(MQTT_TOPICS.CLOCK_TRAIN)
   }
 
-  function publish(topic, messagePayload, qos = 0, retained = false) {
+  function publish(topic, messagePayload, qos = 1, retained = false) {
     if (!mqttClient.value || !isMqttConnected.value) {
       console.warn('Cannot publish: MQTT client not connected')
       return false
