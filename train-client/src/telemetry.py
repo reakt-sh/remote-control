@@ -154,11 +154,11 @@ class Telemetry:
 
         self.battery_level -= random.uniform(0.1, 0.4)  # Simulate battery drain
         if self.battery_level < 0:
-            self.battery_level = 0
+            self.battery_level = 0.0
 
         self.fuel_level -= random.uniform(0.1, 0.4) # Simulate fuel drain
         if self.fuel_level < 0:
-            self.fuel_level = 0
+            self.fuel_level = 0.0
 
 
     def _poll_telemetry(self):
