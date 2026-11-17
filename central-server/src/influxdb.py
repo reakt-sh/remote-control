@@ -61,34 +61,28 @@ class InfluxDBWriter:
         self._get_client().write(record=point)
 
     def write_telemetry_latency(self, data: Dict[str, Any]) -> None:
-        if not data:
-            logger.warning(f"Telemetry latency message from {app_globals.control_session_id} has no storable fields")
-            return
-
-        point = Point(MEASUREMENT_TELEMETRY_LATENCY).tag("session_id", app_globals.control_session_id)
-        for name, value in data.items():
-            point = point.field(name, value)
-
-        self._get_client().write(record=point)
+        self._write_latency(MEASUREMENT_TELEMETRY_LATENCY, "Telemetry latency", data)
 
     def write_frame_latency(self, data: Dict[str, Any]) -> None:
-        if not data:
-            logger.warning(f"Frame latency message from {app_globals.control_session_id} has no storable fields")
-            return
-
-        point = Point(MEASUREMENT_FRAME_LATENCY).tag("session_id", app_globals.control_session_id)
-        for name, value in data.items():
-            point = point.field(name, value)
-
-        self._get_client().write(record=point)
+        self._write_latency(MEASUREMENT_FRAME_LATENCY, "Frame latency", data)
 
     def write_command_latency(self, data: Dict[str, Any]) -> None:
+        self._write_latency(MEASUREMENT_COMMAND_LATENCY, "Command latency", data)
+
+    def _write_latency(self, measurement: str, description: str, data: Dict[str, Any]) -> None:
+        """Store latency rounded to integer milliseconds (ties to even)."""
         if not data:
-            logger.warning(f"Command latency message from {app_globals.control_session_id} has no storable fields")
+            logger.warning(f"{description} message from {app_globals.control_session_id} has no storable fields")
             return
 
-        point = Point(MEASUREMENT_COMMAND_LATENCY).tag("session_id", app_globals.control_session_id)
+        point = Point(measurement).tag("session_id", app_globals.control_session_id)
         for name, value in data.items():
+            if name == "latency":
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ValueError("latency must be a finite number in milliseconds")
+                if isinstance(value, float) and not math.isfinite(value):
+                    raise ValueError("latency must be a finite number in milliseconds")
+                value = round(value)
             point = point.field(name, value)
 
         self._get_client().write(record=point)

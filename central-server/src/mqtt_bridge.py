@@ -117,7 +117,7 @@ class MqttBridge:
                 logger.warning(f"Invalid topic format: {topic}")
 
         except Exception as e:
-            logger.error(f"Error handling MQTT message: {e}")
+            logger.error(f"Error handling MQTT message on topic {msg.topic}: {e}")
 
     def _subscribe_to_topics(self):
         topics = [
