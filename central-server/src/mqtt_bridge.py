@@ -47,7 +47,7 @@ class MqttBridge:
             self.client.on_subscribe = self._on_subscribe
 
             # Connect to broker
-            self.client.connect_async(self.broker_host, self.broker_port, keepalive=1)
+            self.client.connect_async(self.broker_host, self.broker_port, keepalive=10)
 
             # Start the MQTT loop in a separate thread
             self.is_running = True
