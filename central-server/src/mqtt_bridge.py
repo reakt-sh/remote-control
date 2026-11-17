@@ -136,8 +136,9 @@ class MqttBridge:
         while not self._worker_stop.is_set() or not self._messages.empty():
             try:
                 logger.debug(f"MQTT message queue size: {self._messages.qsize()}")
-                msg = self._messages.get(timeout=0.5)
+                msg = self._messages.getnowait()
             except Empty:
+                threading.sleep(0.1) # Sleep briefly to avoid busy waiting
                 continue
             try:
                 self._handle_message(msg)
