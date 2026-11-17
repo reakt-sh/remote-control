@@ -135,7 +135,7 @@ class MqttBridge:
         topics = [
             (MQTT_TOPICS.WAN, 1), # (topic, qos)
             (MQTT_TOPICS.TELEMETRY, 1),  # (topic, qos)
-            (MQTT_TOPICS.TELEMETRY_LATENCY, 1), # (topic, qos)
+            (MQTT_TOPICS.TELEMETRY_LATENCY, 0), # (topic, qos)
             (MQTT_TOPICS.FRAME_LATENCY, 0), # (topic, qos)
             (MQTT_TOPICS.COMMAND_LATENCY, 1), # (topic, qos)
             (MQTT_TOPICS.CLOCK_TRAIN, 1), # (topic, qos)

@@ -657,7 +657,7 @@ export const useTrainStore = defineStore('train', () => {
           if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
           {
             // Use the NTP-based payload
-            let payload = {
+            let dataToSend = {
               train_id: data.train_id,
               remote_control_id: remoteControlId.value,
               sequence_number: data.sequence_number,
@@ -668,12 +668,12 @@ export const useTrainStore = defineStore('train', () => {
               latency: latency,
               size: length(payload),
             }
-            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 0)
           }
           else
           {
             // Use the default payload
-            let payload = {
+            let dataToSend = {
               train_id: data.train_id,
               remote_control_id: remoteControlId.value,
               sequence_number: data.sequence_number,
@@ -683,7 +683,7 @@ export const useTrainStore = defineStore('train', () => {
               latency: latency,
               size: length(payload),
             }
-            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 0)
           }
         }
 
