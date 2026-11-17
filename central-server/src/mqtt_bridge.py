@@ -2,6 +2,7 @@ import asyncio
 import json
 import threading
 import time
+from queue import Empty, Full, Queue
 from typing import Dict, Callable, Optional
 import paho.mqtt.client as mqtt
 from loguru import logger
@@ -21,6 +22,9 @@ class MqttBridge:
         # Threading for async integration
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.mqtt_thread: Optional[threading.Thread] = None
+        self._messages = Queue(maxsize=10000)
+        self._worker_stop = threading.Event()
+        self._worker: Optional[threading.Thread] = None
 
         logger.info(f"MQTT Bridge initialized for broker {broker_host}:{broker_port}")
 
@@ -28,6 +32,9 @@ class MqttBridge:
         if self.is_running:
             logger.warning("MQTT Bridge is already running")
             return
+
+        if self._worker and self._worker.is_alive():
+            raise RuntimeError("Cannot restart MQTT bridge while its message worker is still stopping")
 
         try:
             logger.info(f"Connecting to NanoMQ broker at {self.broker_host}:{self.broker_port}")
@@ -49,6 +56,10 @@ class MqttBridge:
             # Connect to broker
             self.client.connect_async(self.broker_host, self.broker_port, keepalive=10)
 
+            self._worker_stop.clear()
+            self._worker = threading.Thread(target=self._process_messages, daemon=True)
+            self._worker.start()
+
             # Start the MQTT loop in a separate thread
             self.is_running = True
             result = self.client.loop_start()
@@ -60,6 +71,9 @@ class MqttBridge:
         except Exception as e:
             logger.error(f"Failed to start MQTT bridge: {e}")
             self.is_running = False
+            self._worker_stop.set()
+            if self._worker and self._worker.is_alive():
+                self._worker.join(timeout=5)
             self.client = None
             raise
 
@@ -77,6 +91,12 @@ class MqttBridge:
                 logger.error(f"Error disconnecting from MQTT broker: {e}")
             finally:
                 self.client.loop_stop()
+
+        self._worker_stop.set()
+        if self._worker:
+            self._worker.join(timeout=5)
+            if self._worker.is_alive():
+                logger.warning("MQTT message worker is still draining messages after shutdown")
 
         self.is_connected = False
         self.client = None
@@ -99,7 +119,7 @@ class MqttBridge:
     def _on_disconnect(self, client, userdata, rc):
         self.is_connected = False
         if rc != 0:
-            logger.warning(f"Unexpected disconnection from MQTT broker (code: {rc}); retrying")
+            logger.warning(f"Unexpected disconnection from MQTT broker (code: {rc}, {mqtt.error_string(rc)}); retrying")
         else:
             logger.info("Disconnected from MQTT broker")
 
@@ -107,6 +127,23 @@ class MqttBridge:
         logger.info(f"Subscription confirmed with QoS: {granted_qos}")
 
     def _on_message(self, client, userdata, msg):
+        try:
+            self._messages.put_nowait(msg)
+        except Full:
+            logger.error(f"MQTT message queue is full; dropping message on topic {msg.topic}")
+
+    def _process_messages(self):
+        while not self._worker_stop.is_set() or not self._messages.empty():
+            try:
+                msg = self._messages.get(timeout=0.5)
+            except Empty:
+                continue
+            try:
+                self._handle_message(msg)
+            finally:
+                self._messages.task_done()
+
+    def _handle_message(self, msg):
         try:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
@@ -169,8 +206,6 @@ class MqttBridge:
 
 
 def run_mqtt_bridge():
-    """Example usage of MqttBridge"""
-
     # Create MQTT bridge instance
     mqtt_bridge = MqttBridge(
         broker_host="localhost",  # Your NanoMQ host
