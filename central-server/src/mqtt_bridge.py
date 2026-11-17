@@ -33,26 +33,34 @@ class MqttBridge:
             logger.info(f"Connecting to NanoMQ broker at {self.broker_host}:{self.broker_port}")
 
             # Create MQTT client
-            self.client = mqtt.Client(client_id=self.client_id)
+            self.client = mqtt.Client(
+                client_id=self.client_id,
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
+            )
+            self.client.reconnect_delay_set(min_delay=1, max_delay=5)
 
             # Set up callbacks
             self.client.on_connect = self._on_connect
+            self.client.on_connect_fail = self._on_connect_fail
             self.client.on_disconnect = self._on_disconnect
             self.client.on_message = self._on_message
             self.client.on_subscribe = self._on_subscribe
 
             # Connect to broker
-            self.client.connect(self.broker_host, self.broker_port, keepalive=60)
+            self.client.connect_async(self.broker_host, self.broker_port, keepalive=1)
 
             # Start the MQTT loop in a separate thread
-            self.client.loop_start()
             self.is_running = True
+            result = self.client.loop_start()
+            if result != mqtt.MQTT_ERR_SUCCESS:
+                raise RuntimeError(f"Failed to start MQTT network loop: {result}")
 
-            logger.success(f"MQTT Bridge started, connecting to broker...")
+            logger.info("MQTT Bridge started, connecting to broker...")
 
         except Exception as e:
             logger.error(f"Failed to start MQTT bridge: {e}")
             self.is_running = False
+            self.client = None
             raise
 
     def stop(self):
@@ -63,11 +71,12 @@ class MqttBridge:
 
         if self.client:
             try:
-                self.client.loop_stop()
                 self.client.disconnect()
                 logger.info("Disconnected from MQTT broker")
             except Exception as e:
                 logger.error(f"Error disconnecting from MQTT broker: {e}")
+            finally:
+                self.client.loop_stop()
 
         self.is_connected = False
         self.client = None
@@ -84,10 +93,13 @@ class MqttBridge:
             self.is_connected = False
             logger.error(f"Failed to connect to MQTT broker with result code {rc}")
 
+    def _on_connect_fail(self, client, userdata):
+        logger.warning("MQTT broker connection failed; retrying")
+
     def _on_disconnect(self, client, userdata, rc):
         self.is_connected = False
         if rc != 0:
-            logger.warning(f"Unexpected disconnection from MQTT broker (code: {rc})")
+            logger.warning(f"Unexpected disconnection from MQTT broker (code: {rc}); retrying")
         else:
             logger.info("Disconnected from MQTT broker")
 

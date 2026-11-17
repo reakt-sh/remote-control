@@ -540,7 +540,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
     def on_new_command(self, payload):
         try:
             message = json.loads(payload.decode('utf-8'))
-            remote_control_id = message.get('remote_control_id', 0)
+            remote_control_id = message.get('remote_control_id', "unknown")
             latency = self.calculate_latency(remote_control_id, message.get('remote_control_timestamp', 0))
 
             if latency is not None:
