@@ -545,20 +545,42 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
             if latency is not None:
                 logger.info(f"Received command: {message} with latency: {latency}ms")
-                latency_log_entry = {
-                    "remote_control_id": remote_control_id,
-                    "command_id": message.get("command_id"),
-                    "instruction": message['instruction'],
-                    "latency": latency,
-                    "created_at": message.get('remote_control_timestamp', 0),
-                    "received_at": int(datetime.datetime.now().timestamp() * 1000),
-                    "size" : len(payload),
-                    "target_speed": message.get('target_speed', None),
-                    "direction": message.get('direction', None),
-                    "quality": message.get('quality', None),
-                }
+                latency_log_entry = None
+                if self.appcontext.train_ntp_offset is None or self.appcontext.remote_control_ntp_offset is None:
+                    latency_log_entry = {
+                        "remote_control_id": remote_control_id,
+                        "train_id": self.appcontext.train_client_id,
+                        "command_id": message.get("command_id"),
+                        "instruction": message['instruction'],
+                        "remote_control_timestamp": message.get('remote_control_timestamp', 0),
+                        "train_timestamp": int(datetime.datetime.now().timestamp() * 1000),
+                        "clock_offset": self.appcontext.clock_offsets[remote_control_id],
+                        "latency": latency,
+                        "size" : len(payload),
+                        "target_speed": message.get('target_speed', None),
+                        "direction": message.get('direction', None),
+                        "quality": message.get('quality', None),
+                    }
+                else:
+                    latency_log_entry = {
+                        "remote_control_id": remote_control_id,
+                        "train_id": self.appcontext.train_client_id,
+                        "command_id": message.get("command_id"),
+                        "instruction": message['instruction'],
+                        "remote_control_timestamp": message.get('remote_control_timestamp', 0),
+                        "remote_control_ntp_offset": self.appcontext.remote_control_ntp_offset,
+                        "train_timestamp": int(datetime.datetime.now().timestamp() * 1000),
+                        "train_ntp_offset": self.appcontext.train_ntp_offset,
+                        "latency": latency,
+                        "size" : len(payload),
+                        "target_speed": message.get('target_speed', None),
+                        "direction": message.get('direction', None),
+                        "quality": message.get('quality', None),
+                    }
                 self.appcontext.latency_command_output_file.write(json.dumps(latency_log_entry) + "\n")
                 self.appcontext.latency_command_output_file.flush()
+                self.network_worker_mqtt.send_data(json.dumps(latency_log_entry).encode('utf-8'), MQTT_TOPICS.LATENCY_COMMAND, 0)
+
             else:
                 logger.info(f"Received command: {message} (latency not available - clock not synchronized)")
 

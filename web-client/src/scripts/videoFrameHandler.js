@@ -113,6 +113,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
           remote_control_ntp_offset : remote_control_ntp_offset.value,
           latency : frameLatency,
           camera : cameraId,
+          size : completedFrame.data.length,
         }
 
         publish(MQTT_TOPICS.FRAME_LATENCY, payload)
@@ -125,9 +126,10 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
           remote_control_id : remoteControlId.value,
           train_timestamp : completedFrame.created_at,
           remote_control_timestamp : completedFrame.received_at,
-          latency : frameLatency,
           clock_offset : averageClockOffset.value,
+          latency : frameLatency,
           camera : cameraId,
+          size : completedFrame.data.length,
         }
 
         publish(MQTT_TOPICS.FRAME_LATENCY, payload)

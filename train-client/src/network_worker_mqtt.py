@@ -70,7 +70,7 @@ class NetworkWorkerMqtt:
         except Exception as e:
             logger.error(f"Error in MQTT message callback for topic {msg.topic}: {e}")
 
-    def send_data(self, data, mqtt_topic):
+    def send_data(self, data, mqtt_topic, qos=1):
         if not self.is_connected:
             logger.warning("Cannot send data: MQTT client not connected")
             return False
@@ -79,7 +79,7 @@ class NetworkWorkerMqtt:
             result = self.mqtt_client.publish(
                 topic=mqtt_topic,
                 payload=data,
-                qos=1,  # Quality of Service level 1 ensures message delivery at least once
+                qos=qos,  # Quality of Service level 1 ensures message delivery at least once
             )
 
             if result.rc == mqtt.MQTT_ERR_SUCCESS:

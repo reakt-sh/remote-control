@@ -441,39 +441,6 @@ export const useTrainStore = defineStore('train', () => {
             protocol: 'ws'
           })
         }
-
-        if (influxDBStorageEnabled.value)
-        {
-          // Also store it to InfluxDB
-          if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
-          {
-            // Use the NTP-based payload
-            let payload = {
-              train_id: jsonData.train_id,
-              remote_control_id: remoteControlId.value,
-              train_timestamp: jsonData.timestamp,
-              train_ntp_offset: train_ntp_offset.value,
-              remote_control_timestamp: timestamp,
-              remote_control_ntp_offset: remote_control_ntp_offset.value,
-              latency: latency,
-            }
-            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
-          }
-          else
-          {
-            // Use the default payload
-            let payload = {
-              train_id: jsonData.train_id,
-              remote_control_id: remoteControlId.value,
-              train_timestamp: jsonData.timestamp,
-              remote_control_timestamp: timestamp,
-              latency: latency,
-              clock_offset: averageClockOffset.value,
-            }
-            publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
-          }
-        }
-
         break
       }
       case PACKET_TYPE.notification: {
@@ -693,11 +660,13 @@ export const useTrainStore = defineStore('train', () => {
             let payload = {
               train_id: data.train_id,
               remote_control_id: remoteControlId.value,
+              sequence_number: data.sequence_number,
               train_timestamp: data.timestamp,
               train_ntp_offset: train_ntp_offset.value,
               remote_control_timestamp: timestamp,
               remote_control_ntp_offset: remote_control_ntp_offset.value,
               latency: latency,
+              size: length(payload),
             }
             publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
           }
@@ -707,10 +676,12 @@ export const useTrainStore = defineStore('train', () => {
             let payload = {
               train_id: data.train_id,
               remote_control_id: remoteControlId.value,
+              sequence_number: data.sequence_number,
               train_timestamp: data.timestamp,
               remote_control_timestamp: timestamp,
-              latency: latency,
               clock_offset: averageClockOffset.value,
+              latency: latency,
+              size: length(payload),
             }
             publish(MQTT_TOPICS.TELEMETRY_LATENCY, payload)
           }
