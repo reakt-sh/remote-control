@@ -110,12 +110,13 @@ class InfluxDBWriter:
         self._get_client().write(record=point)
 
     def write_telemetry(self, data: Dict[str, Any]) -> None:
-        if not data:
+        fields = _flatten(data)
+        if not fields:
             logger.warning(f"Telemetry message from {app_globals.control_session_id} has no storable fields")
             return
 
         point = Point(MEASUREMENT_TELEMETRY).tag("session_id", app_globals.control_session_id)
-        for name, value in data.items():
+        for name, value in fields.items():
             point = point.field(name, value)
 
         self._get_client().write(record=point)
