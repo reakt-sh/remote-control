@@ -3,11 +3,21 @@ import json
 import threading
 import time
 from queue import Empty, Full, Queue
-from typing import Dict, Callable, Optional
+from typing import Dict, Optional
 import paho.mqtt.client as mqtt
 from loguru import logger
 from globals import MQTT_TOPICS
-from influxdb import influx_writer
+from influxdb import InfluxDBWriter
+
+MQTT_SUBSCRIPTIONS = (
+    (MQTT_TOPICS.WAN, 1),
+    (MQTT_TOPICS.TELEMETRY, 1),
+    (MQTT_TOPICS.TELEMETRY_LATENCY, 0),
+    (MQTT_TOPICS.FRAME_LATENCY, 0),
+    (MQTT_TOPICS.COMMAND_LATENCY, 1),
+    (MQTT_TOPICS.CLOCK_TRAIN, 1),
+    (MQTT_TOPICS.CLOCK_RC, 1),
+)
 
 class MqttBridge:
 
@@ -22,9 +32,9 @@ class MqttBridge:
         # Threading for async integration
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.mqtt_thread: Optional[threading.Thread] = None
-        self._messages = Queue(maxsize=10000)
+        self._messages = {topic: Queue(maxsize=10000) for topic, _ in MQTT_SUBSCRIPTIONS}
         self._worker_stop = threading.Event()
-        self._worker: Optional[threading.Thread] = None
+        self._workers: Dict[str, threading.Thread] = {}
 
         logger.info(f"MQTT Bridge initialized for broker {broker_host}:{broker_port}")
 
@@ -33,7 +43,7 @@ class MqttBridge:
             logger.warning("MQTT Bridge is already running")
             return
 
-        if self._worker and self._worker.is_alive():
+        if any(worker.is_alive() for worker in self._workers.values()):
             raise RuntimeError("Cannot restart MQTT bridge while its message worker is still stopping")
 
         try:
@@ -57,8 +67,14 @@ class MqttBridge:
             self.client.connect_async(self.broker_host, self.broker_port, keepalive=10)
 
             self._worker_stop.clear()
-            self._worker = threading.Thread(target=self._process_messages, daemon=True)
-            self._worker.start()
+            self._workers = {}
+            for topic, messages in self._messages.items():
+                worker = threading.Thread(
+                    target=self._process_messages, args=(topic, messages), daemon=True,
+                    name=f"mqtt-{topic}",
+                )
+                worker.start()
+                self._workers[topic] = worker
 
             # Start the MQTT loop in a separate thread
             self.is_running = True
@@ -71,9 +87,7 @@ class MqttBridge:
         except Exception as e:
             logger.error(f"Failed to start MQTT bridge: {e}")
             self.is_running = False
-            self._worker_stop.set()
-            if self._worker and self._worker.is_alive():
-                self._worker.join(timeout=5)
+            self._stop_workers()
             self.client = None
             raise
 
@@ -92,14 +106,18 @@ class MqttBridge:
             finally:
                 self.client.loop_stop()
 
-        self._worker_stop.set()
-        if self._worker:
-            self._worker.join(timeout=5)
-            if self._worker.is_alive():
-                logger.warning("MQTT message worker is still draining messages after shutdown")
+        self._stop_workers()
 
         self.is_connected = False
         self.client = None
+
+    def _stop_workers(self):
+        self._worker_stop.set()
+        deadline = time.monotonic() + 5
+        for topic, worker in self._workers.items():
+            worker.join(timeout=max(0, deadline - time.monotonic()))
+            if worker.is_alive():
+                logger.warning(f"MQTT message worker for {topic} is still draining messages after shutdown")
 
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -127,43 +145,53 @@ class MqttBridge:
         logger.info(f"Subscription confirmed with QoS: {granted_qos}")
 
     def _on_message(self, client, userdata, msg):
+        messages = self._messages.get(msg.topic)
+        if messages is None:
+            logger.warning(f"Invalid topic format: {msg.topic}")
+            return
         try:
-            self._messages.put_nowait(msg)
+            messages.put_nowait(msg)
         except Full:
             logger.error(f"MQTT message queue is full; dropping message on topic {msg.topic}")
 
-    def _process_messages(self):
-        while not self._worker_stop.is_set() or not self._messages.empty():
+    def _process_messages(self, topic, messages):
+        writer = InfluxDBWriter()
+        try:
+            while not self._worker_stop.is_set() or not messages.empty():
+                try:
+                    msg = messages.get(timeout=0.5)
+                except Empty:
+                    continue
+                try:
+                    logger.debug(f"MQTT message queue size for {topic}: {messages.qsize()}")
+                    self._handle_message(msg, writer)
+                finally:
+                    messages.task_done()
+        finally:
             try:
-                logger.debug(f"MQTT message queue size: {self._messages.qsize()}")
-                msg = self._messages.get_nowait()
-            except Empty:
-                time.sleep(0.1) # Sleep briefly to avoid busy waiting
-                continue
-            try:
-                self._handle_message(msg)
-            finally:
-                self._messages.task_done()
+                writer.close()
+            except Exception as e:
+                logger.error(f"Error closing InfluxDB writer for topic {topic}: {e}")
 
-    def _handle_message(self, msg):
+    def _handle_message(self, msg, writer: InfluxDBWriter):
         try:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
 
             if topic == MQTT_TOPICS.WAN:
-                influx_writer.write_wan(json.loads(payload))
+                writer.write_wan(json.loads(payload))
             elif topic == MQTT_TOPICS.TELEMETRY:
-                influx_writer.write_telemetry(json.loads(payload))
+                writer.write_telemetry(json.loads(payload))
             elif topic == MQTT_TOPICS.TELEMETRY_LATENCY:
-                influx_writer.write_telemetry_latency(json.loads(payload))
+                writer.write_telemetry_latency(json.loads(payload))
             elif topic == MQTT_TOPICS.FRAME_LATENCY:
-                influx_writer.write_frame_latency(json.loads(payload))
+                writer.write_frame_latency(json.loads(payload))
             elif topic == MQTT_TOPICS.COMMAND_LATENCY:
-                influx_writer.write_command_latency(json.loads(payload))
+                writer.write_command_latency(json.loads(payload))
             elif topic == MQTT_TOPICS.CLOCK_TRAIN:
-                influx_writer.write_clock_train(json.loads(payload))
+                writer.write_clock_train(json.loads(payload))
             elif topic == MQTT_TOPICS.CLOCK_RC:
-                influx_writer.write_clock_rc(json.loads(payload))
+                writer.write_clock_rc(json.loads(payload))
             else:
                 logger.warning(f"Invalid topic format: {topic}")
 
@@ -171,17 +199,7 @@ class MqttBridge:
             logger.error(f"Error handling MQTT message on topic {msg.topic}: {e}")
 
     def _subscribe_to_topics(self):
-        topics = [
-            (MQTT_TOPICS.WAN, 1), # (topic, qos)
-            (MQTT_TOPICS.TELEMETRY, 1),  # (topic, qos)
-            (MQTT_TOPICS.TELEMETRY_LATENCY, 0), # (topic, qos)
-            (MQTT_TOPICS.FRAME_LATENCY, 0), # (topic, qos)
-            (MQTT_TOPICS.COMMAND_LATENCY, 1), # (topic, qos)
-            (MQTT_TOPICS.CLOCK_TRAIN, 1), # (topic, qos)
-            (MQTT_TOPICS.CLOCK_RC, 1), # (topic, qos)
-        ]
-
-        for topic, qos in topics:
+        for topic, qos in MQTT_SUBSCRIPTIONS:
             result, mid = self.client.subscribe(topic, qos=qos)
             if result == mqtt.MQTT_ERR_SUCCESS:
                 logger.info(f"Subscribed to MQTT topic: {topic} (QoS: {qos})")
