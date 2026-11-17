@@ -26,8 +26,8 @@ import struct
 # Connector related imports
 # from connector.test.context import Connection, Status, Control, Mode
 
-from connector.connector.connection import Connection
-from connector.connector.data import Status, Control, Mode, ConnectionProblem
+from connector import ControlCenter
+from connector import Status, Control, Mode, ConnectionProblem
 
 
 MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
@@ -42,8 +42,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         self.status = None
         self.last_log_time = 0
         self.connection = None
-        logging.basicConfig(filename='reaktor_driver.log', encoding='utf-8', level=logging.INFO)
-
+        
         if IS_REAKTOR_DRIVER_ENABLED:
             self.reaktor_driver_event = asyncio.new_event_loop()
             asyncio.set_event_loop(self.reaktor_driver_event)
@@ -54,9 +53,10 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
-        self.connection = Connection()
-        self.connection.add_status_listener(lambda x: self.set_status(x))
-        await self.connection.open("/dev/ttyUSB0")
+        cc = ControlCenter(store_path="./reaktor-data", log_level=logging.DEBUG)
+        self.connection = cc.get_reaktor_connection()
+        self.connection.add_data_listener(lambda x: self.set_status(x))
+        await cc.start()
 
         # Test if connection is ready
         if not self.connection.is_ready():
