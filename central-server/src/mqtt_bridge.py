@@ -163,7 +163,7 @@ class MqttBridge:
                 except Empty:
                     continue
                 try:
-                    logger.debug(f"MQTT message queue size for {topic}: {messages.qsize()}")
+                    # logger.debug(f"MQTT message queue size for {topic}: {messages.qsize()}")
                     self._handle_message(msg, writer)
                 finally:
                     messages.task_done()
