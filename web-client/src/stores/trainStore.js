@@ -668,7 +668,7 @@ export const useTrainStore = defineStore('train', () => {
               latency: latency,
               size: length(payload),
             }
-            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 0)
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 1)
           }
           else
           {
@@ -683,7 +683,7 @@ export const useTrainStore = defineStore('train', () => {
               latency: latency,
               size: length(payload),
             }
-            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 0)
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 1)
           }
         }
 

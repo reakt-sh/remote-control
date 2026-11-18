@@ -116,7 +116,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
           size : completedFrame.data.length,
         }
 
-        publish(MQTT_TOPICS.FRAME_LATENCY, payload, 0)
+        publish(MQTT_TOPICS.FRAME_LATENCY, payload, 1)
       }
       else
       {
@@ -132,7 +132,7 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
           size : completedFrame.data.length,
         }
 
-        publish(MQTT_TOPICS.FRAME_LATENCY, payload, 0)
+        publish(MQTT_TOPICS.FRAME_LATENCY, payload, 1)
       }
     }
 
