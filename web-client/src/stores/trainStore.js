@@ -617,6 +617,12 @@ export const useTrainStore = defineStore('train', () => {
     handleWtMessage(packetType, payload)
   }
 
+  function getPayloadSize(payload) {
+    if (typeof payload === 'string') return new TextEncoder().encode(payload).length
+    if (payload && typeof payload.byteLength === 'number') return payload.byteLength
+    return new TextEncoder().encode(JSON.stringify(payload)).length
+  }
+
   function handleMqttMessage(mqttMessage) {
     const { messageType, payload, timestamp } = mqttMessage
 
@@ -666,7 +672,7 @@ export const useTrainStore = defineStore('train', () => {
               remote_control_timestamp: timestamp,
               remote_control_ntp_offset: remote_control_ntp_offset.value,
               latency: latency,
-              size: length(payload),
+              size: getPayloadSize(payload),
             }
             publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 1)
           }
@@ -681,7 +687,7 @@ export const useTrainStore = defineStore('train', () => {
               remote_control_timestamp: timestamp,
               clock_offset: averageClockOffset.value,
               latency: latency,
-              size: length(payload),
+              size: getPayloadSize(payload),
             }
             publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 1)
           }

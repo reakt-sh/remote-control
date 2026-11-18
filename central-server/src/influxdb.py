@@ -25,6 +25,7 @@ MEASUREMENT_CLOCK_RC = "clock_rc"
 
 FRAME_LATENCY_BATCH_SIZE = 200
 TELEMETRY_BATCH_SIZE = 20
+TELEMETRY_LATENCY_BATCH_SIZE = 20
 
 
 
@@ -37,6 +38,7 @@ class InfluxDBWriter:
         self._client: InfluxDBClient3 | None = None
         self._frame_latency_buffer: List[Point] = []
         self._telemetry_buffer: List[Point] = []
+        self._telemetry_latency_buffer: List[Point] = []
 
     def _get_client(self) -> InfluxDBClient3:
         if self._client is None:
@@ -62,7 +64,23 @@ class InfluxDBWriter:
         self._get_client().write(record=point)
 
     def write_telemetry_latency(self, data: Dict[str, Any]) -> None:
-        self._write_latency(MEASUREMENT_TELEMETRY_LATENCY, "Telemetry latency", data)
+        """Buffer telemetry latency points and write them in batches to limit InfluxDB write calls."""
+        point = self._build_latency_point(MEASUREMENT_TELEMETRY_LATENCY, "Telemetry latency", data)
+        if point is None:
+            return
+
+        # explicit timestamp: buffered points would otherwise all get the server write time
+        self._telemetry_latency_buffer.append(point.time(time.time_ns(), WritePrecision.NS))
+        if len(self._telemetry_latency_buffer) >= TELEMETRY_LATENCY_BATCH_SIZE:
+            self.flush_telemetry_latency()
+
+    def flush_telemetry_latency(self) -> None:
+        if not self._telemetry_latency_buffer:
+            return
+
+        points = self._telemetry_latency_buffer
+        self._telemetry_latency_buffer = []
+        self._get_client().write(record=points)
 
     def write_frame_latency(self, data: Dict[str, Any]) -> None:
         """Buffer frame latency points and write them in batches to limit InfluxDB write calls."""
@@ -167,6 +185,10 @@ class InfluxDBWriter:
             self.flush_telemetry()
         except Exception as e:
             logger.error(f"Failed to flush buffered telemetry points: {e}")
+        try:
+            self.flush_telemetry_latency()
+        except Exception as e:
+            logger.error(f"Failed to flush buffered telemetry latency points: {e}")
         if self._client is not None:
             self._client.close()
             self._client = None
