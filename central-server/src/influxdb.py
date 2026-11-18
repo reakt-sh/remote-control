@@ -69,8 +69,8 @@ class InfluxDBWriter:
         if point is None:
             return
 
-        # explicit timestamp: buffered points would otherwise all get the server write time
-        self._telemetry_latency_buffer.append(point.time(time.time_ns(), WritePrecision.NS))
+        # explicit timestamp: we set the timestamp to the remote control recevied it
+        self._telemetry_latency_buffer.append(point.time(data['remote_control_timestamp'], WritePrecision.NS))
         if len(self._telemetry_latency_buffer) >= TELEMETRY_LATENCY_BATCH_SIZE:
             self.flush_telemetry_latency()
 
@@ -88,8 +88,8 @@ class InfluxDBWriter:
         if point is None:
             return
 
-        # explicit timestamp: buffered points would otherwise all get the server write time
-        self._frame_latency_buffer.append(point.time(time.time_ns(), WritePrecision.NS))
+        # explicit timestamp: we set the timestamp to the remote control received it
+        self._frame_latency_buffer.append(point.time(data['remote_control_timestamp'], WritePrecision.NS))
         if len(self._frame_latency_buffer) >= FRAME_LATENCY_BATCH_SIZE:
             self.flush_frame_latency()
 
@@ -159,8 +159,8 @@ class InfluxDBWriter:
         for name, value in fields.items():
             point = point.field(name, value)
 
-        # explicit timestamp: buffered points would otherwise all get the server write time
-        self._telemetry_buffer.append(point.time(time.time_ns(), WritePrecision.NS))
+        # explicit timestamp: we set the timestamp when train client send it
+        self._telemetry_buffer.append(point.time(data['timestamp'], WritePrecision.NS))
         if len(self._telemetry_buffer) >= TELEMETRY_BATCH_SIZE:
             self.flush_telemetry()
 
