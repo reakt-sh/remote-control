@@ -1,11 +1,12 @@
 import math
 import os
-from typing import Any, Dict
+import time
+from typing import Any, Dict, List
 import globals as app_globals
 
 import pyarrow as pa
 from dotenv import load_dotenv
-from influxdb_client_3 import InfluxDBClient3, Point
+from influxdb_client_3 import InfluxDBClient3, Point, WritePrecision
 from loguru import logger
 
 load_dotenv()
@@ -22,6 +23,8 @@ MEASUREMENT_COMMAND_LATENCY = "command_latency"
 MEASUREMENT_CLOCK_TRAIN = "clock_train"
 MEASUREMENT_CLOCK_RC = "clock_rc"
 
+FRAME_LATENCY_BATCH_SIZE = 200
+
 
 
 class InfluxDBWriter:
@@ -31,6 +34,7 @@ class InfluxDBWriter:
         self.token = token
         self.database = database
         self._client: InfluxDBClient3 | None = None
+        self._frame_latency_buffer: List[Point] = []
 
     def _get_client(self) -> InfluxDBClient3:
         if self._client is None:
@@ -59,16 +63,37 @@ class InfluxDBWriter:
         self._write_latency(MEASUREMENT_TELEMETRY_LATENCY, "Telemetry latency", data)
 
     def write_frame_latency(self, data: Dict[str, Any]) -> None:
-        self._write_latency(MEASUREMENT_FRAME_LATENCY, "Frame latency", data)
+        """Buffer frame latency points and write them in batches to limit InfluxDB write calls."""
+        point = self._build_latency_point(MEASUREMENT_FRAME_LATENCY, "Frame latency", data)
+        if point is None:
+            return
+
+        # explicit timestamp: buffered points would otherwise all get the server write time
+        self._frame_latency_buffer.append(point.time(time.time_ns(), WritePrecision.NS))
+        if len(self._frame_latency_buffer) >= FRAME_LATENCY_BATCH_SIZE:
+            self.flush_frame_latency()
+
+    def flush_frame_latency(self) -> None:
+        if not self._frame_latency_buffer:
+            return
+
+        points = self._frame_latency_buffer
+        self._frame_latency_buffer = []
+        self._get_client().write(record=points)
 
     def write_command_latency(self, data: Dict[str, Any]) -> None:
         self._write_latency(MEASUREMENT_COMMAND_LATENCY, "Command latency", data)
 
     def _write_latency(self, measurement: str, description: str, data: Dict[str, Any]) -> None:
-        """Store latency rounded to integer milliseconds (ties to even)."""
+        point = self._build_latency_point(measurement, description, data)
+        if point is not None:
+            self._get_client().write(record=point)
+
+    def _build_latency_point(self, measurement: str, description: str, data: Dict[str, Any]) -> Point | None:
+        """Build a latency point with latency rounded to integer milliseconds (ties to even)."""
         if not data:
             logger.warning(f"{description} message from {app_globals.control_session_id} has no storable fields")
-            return
+            return None
 
         point = Point(measurement).tag("session_id", app_globals.control_session_id)
         for name, value in data.items():
@@ -80,7 +105,7 @@ class InfluxDBWriter:
                 value = round(value)
             point = point.field(name, value)
 
-        self._get_client().write(record=point)
+        return point
 
     def write_clock_train(self, data: Dict[str, Any]) -> None:
         if not data:
@@ -121,6 +146,10 @@ class InfluxDBWriter:
         return self._get_client().query(query=sql, language="sql", mode="all")
 
     def close(self) -> None:
+        try:
+            self.flush_frame_latency()
+        except Exception as e:
+            logger.error(f"Failed to flush buffered frame latency points: {e}")
         if self._client is not None:
             self._client.close()
             self._client = None
