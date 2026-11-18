@@ -24,6 +24,7 @@ MEASUREMENT_CLOCK_TRAIN = "clock_train"
 MEASUREMENT_CLOCK_RC = "clock_rc"
 
 FRAME_LATENCY_BATCH_SIZE = 200
+TELEMETRY_BATCH_SIZE = 20
 
 
 
@@ -35,6 +36,7 @@ class InfluxDBWriter:
         self.database = database
         self._client: InfluxDBClient3 | None = None
         self._frame_latency_buffer: List[Point] = []
+        self._telemetry_buffer: List[Point] = []
 
     def _get_client(self) -> InfluxDBClient3:
         if self._client is None:
@@ -139,7 +141,18 @@ class InfluxDBWriter:
         for name, value in fields.items():
             point = point.field(name, value)
 
-        self._get_client().write(record=point)
+        # explicit timestamp: buffered points would otherwise all get the server write time
+        self._telemetry_buffer.append(point.time(time.time_ns(), WritePrecision.NS))
+        if len(self._telemetry_buffer) >= TELEMETRY_BATCH_SIZE:
+            self.flush_telemetry()
+
+    def flush_telemetry(self) -> None:
+        if not self._telemetry_buffer:
+            return
+
+        points = self._telemetry_buffer
+        self._telemetry_buffer = []
+        self._get_client().write(record=points)
 
     def query(self, sql: str) -> pa.Table:
         """Run an SQL query against the rtsys database and return the result as a pyarrow Table."""
@@ -150,6 +163,10 @@ class InfluxDBWriter:
             self.flush_frame_latency()
         except Exception as e:
             logger.error(f"Failed to flush buffered frame latency points: {e}")
+        try:
+            self.flush_telemetry()
+        except Exception as e:
+            logger.error(f"Failed to flush buffered telemetry points: {e}")
         if self._client is not None:
             self._client.close()
             self._client = None
