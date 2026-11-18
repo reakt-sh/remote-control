@@ -270,7 +270,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
       message.retained = retained
 
       mqttClient.value.send(message)
-      console.log(`📤 Published to MQTT topic ${topic}:`, payload)
       return true
     } catch (error) {
       console.error(`❌ Failed to publish to ${topic}:`, error)

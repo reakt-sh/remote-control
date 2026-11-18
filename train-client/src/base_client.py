@@ -342,6 +342,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
                     logger.info("Keepalive timer started (on map_connect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_connect JSON: {e}")
+
+                if not self.is_sending:
+                    self.toggle_sending()
             elif packet_type == PACKET_TYPE.MAP_DISCONNECT:
                 try:
                     remote_control_id = json.loads(payload.decode('utf-8')).get('remote_control_id')
@@ -360,6 +363,9 @@ class BaseClient(ABC, metaclass=QABCMeta):
                         logger.info("Keepalive timer stopped (on map_disconnect)")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to parse map_disconnect JSON: {e}")
+
+                if self.is_sending:
+                    self.toggle_sending()
             elif packet_type == PACKET_TYPE.RTT_TRAIN:
                 try:
                     jsonString = payload.decode('utf-8')
@@ -587,12 +593,6 @@ class BaseClient(ABC, metaclass=QABCMeta):
             if message['instruction'] == 'CHANGE_TARGET_SPEED':
                 self.target_speed = message['target_speed']
                 self.update_speed(self.target_speed)
-            elif message['instruction'] == 'STOP_SENDING_DATA':
-                if self.is_sending:
-                    self.toggle_sending()
-            elif message['instruction'] == 'START_SENDING_DATA':
-                if not self.is_sending:
-                    self.toggle_sending()
             elif message['instruction'] == 'POWER_ON':
                 self.telemetry.set_status(TRAIN_STATUS.POWER_ON)
                 self.target_speed = max(self.target_speed, MAX_SPEED)
