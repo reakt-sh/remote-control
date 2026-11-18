@@ -271,7 +271,7 @@ class QUICRelayProtocol(QuicConnectionProtocol):
         authority = request_headers.get(b":authority")
         path = request_headers.get(b":path")
         self.session_id = stream_id
-        logger.info(f"QUIC: WebTransport handshake received on stream {stream_id}, authority: {authority}, path: {path}")
+        logger.debug(f"QUIC: WebTransport handshake received on stream {stream_id}, authority: {authority}, path: {path}")
         self._send_response(stream_id, 200, end_stream=False)
 
     def _send_response(self, stream_id: int, status_code: int, end_stream=False) -> None:
