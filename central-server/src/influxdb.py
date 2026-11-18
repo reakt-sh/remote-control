@@ -28,6 +28,9 @@ TELEMETRY_BATCH_SIZE = 20
 TELEMETRY_LATENCY_BATCH_SIZE = 20
 
 
+def _ms_to_ns(timestamp_ms: int | float) -> int:
+    return int(timestamp_ms * 1_000_000)
+
 
 class InfluxDBWriter:
 
@@ -70,7 +73,7 @@ class InfluxDBWriter:
             return
 
         # explicit timestamp: we set the timestamp to the remote control recevied it
-        self._telemetry_latency_buffer.append(point.time(data['remote_control_timestamp'], WritePrecision.NS))
+        self._telemetry_latency_buffer.append(point.time(_ms_to_ns(data['remote_control_timestamp']), WritePrecision.NS))
         if len(self._telemetry_latency_buffer) >= TELEMETRY_LATENCY_BATCH_SIZE:
             self.flush_telemetry_latency()
 
@@ -89,7 +92,7 @@ class InfluxDBWriter:
             return
 
         # explicit timestamp: we set the timestamp to the remote control received it
-        self._frame_latency_buffer.append(point.time(data['remote_control_timestamp'], WritePrecision.NS))
+        self._frame_latency_buffer.append(point.time(_ms_to_ns(data['remote_control_timestamp']), WritePrecision.NS))
         if len(self._frame_latency_buffer) >= FRAME_LATENCY_BATCH_SIZE:
             self.flush_frame_latency()
 
