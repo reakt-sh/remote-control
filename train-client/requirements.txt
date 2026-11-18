@@ -1,4 +1,5 @@
-opencv-python
+PyQt5
+opencv-python-headless
 av
 ffmpeg-python
 qasync
