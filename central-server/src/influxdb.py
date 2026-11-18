@@ -51,7 +51,6 @@ class InfluxDBWriter:
         return self._client
 
     def write_wan(self, data: Dict[str, Any]) -> None:
-        """Store a WAN status message in database 'rtsys', measurement 'wan'."""
         fields = _to_fields(_flatten(data))
 
         if not fields:
@@ -67,7 +66,6 @@ class InfluxDBWriter:
         self._get_client().write(record=point)
 
     def write_telemetry_latency(self, data: Dict[str, Any]) -> None:
-        """Buffer telemetry latency points and write them in batches to limit InfluxDB write calls."""
         point = self._build_latency_point(MEASUREMENT_TELEMETRY_LATENCY, "Telemetry latency", data)
         if point is None:
             return
@@ -86,7 +84,6 @@ class InfluxDBWriter:
         self._get_client().write(record=points)
 
     def write_frame_latency(self, data: Dict[str, Any]) -> None:
-        """Buffer frame latency points and write them in batches to limit InfluxDB write calls."""
         point = self._build_latency_point(MEASUREMENT_FRAME_LATENCY, "Frame latency", data)
         if point is None:
             return
@@ -113,7 +110,6 @@ class InfluxDBWriter:
             self._get_client().write(record=point)
 
     def _build_latency_point(self, measurement: str, description: str, data: Dict[str, Any]) -> Point | None:
-        """Build a latency point with latency rounded to integer milliseconds (ties to even)."""
         if not data:
             logger.warning(f"{description} message from {app_globals.control_session_id} has no storable fields")
             return None
@@ -163,7 +159,7 @@ class InfluxDBWriter:
             point = point.field(name, value)
 
         # explicit timestamp: we set the timestamp when train client send it
-        self._telemetry_buffer.append(point.time(data['timestamp'], WritePrecision.NS))
+        self._telemetry_buffer.append(point.time(_ms_to_ns(data['timestamp']), WritePrecision.NS))
         if len(self._telemetry_buffer) >= TELEMETRY_BATCH_SIZE:
             self.flush_telemetry()
 
@@ -176,7 +172,6 @@ class InfluxDBWriter:
         self._get_client().write(record=points)
 
     def query(self, sql: str) -> pa.Table:
-        """Run an SQL query against the rtsys database and return the result as a pyarrow Table."""
         return self._get_client().query(query=sql, language="sql", mode="all")
 
     def close(self) -> None:
@@ -198,7 +193,6 @@ class InfluxDBWriter:
 
 
 def _flatten(data: Dict[str, Any], prefix: str = "", exclude: set = frozenset()) -> Dict[str, Any]:
-    """Flatten nested dicts into 'parent_child' keys, skipping excluded top-level keys."""
     flat = {}
     for key, value in data.items():
         if not prefix and key in exclude:
@@ -212,7 +206,6 @@ def _flatten(data: Dict[str, Any], prefix: str = "", exclude: set = frozenset())
 
 
 def _to_fields(flat: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert values to InfluxDB-compatible field types, skipping unavailable values."""
     fields = {}
     for name, value in flat.items():
         if value is None:
