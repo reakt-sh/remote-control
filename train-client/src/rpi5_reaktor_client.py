@@ -53,7 +53,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
-        cc = ControlCenter(store_dir="./reaktor-data", log_level=logging.DEBUG)
+        cc = ControlCenter(storage_dir="./reaktor-data", log_level=logging.DEBUG)
         self.connection = cc.get_reaktor_connection()
         self.connection.add_data_listener(lambda x: self.set_status(x))
         await cc.start()
