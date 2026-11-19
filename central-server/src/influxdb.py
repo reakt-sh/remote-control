@@ -27,6 +27,8 @@ FRAME_LATENCY_BATCH_SIZE = 200
 TELEMETRY_BATCH_SIZE = 20
 TELEMETRY_LATENCY_BATCH_SIZE = 20
 
+ENABLE_INFLUX_WRITE = False
+
 
 def _ms_to_ns(timestamp_ms: int | float) -> int:
     return int(timestamp_ms * 1_000_000)
@@ -63,7 +65,8 @@ class InfluxDBWriter:
         for name, value in fields.items():
             point = point.field(name, value)
 
-        self._get_client().write(record=point)
+        if ENABLE_INFLUX_WRITE:
+            self._get_client().write(record=point)
 
     def write_telemetry_latency(self, data: Dict[str, Any]) -> None:
         point = self._build_latency_point(MEASUREMENT_TELEMETRY_LATENCY, "Telemetry latency", data)
@@ -81,7 +84,8 @@ class InfluxDBWriter:
 
         points = self._telemetry_latency_buffer
         self._telemetry_latency_buffer = []
-        self._get_client().write(record=points)
+        if ENABLE_INFLUX_WRITE:
+            self._get_client().write(record=points)
 
     def write_frame_latency(self, data: Dict[str, Any]) -> None:
         point = self._build_latency_point(MEASUREMENT_FRAME_LATENCY, "Frame latency", data)
@@ -99,14 +103,15 @@ class InfluxDBWriter:
 
         points = self._frame_latency_buffer
         self._frame_latency_buffer = []
-        self._get_client().write(record=points)
+        if ENABLE_INFLUX_WRITE:
+            self._get_client().write(record=points)
 
     def write_command_latency(self, data: Dict[str, Any]) -> None:
         self._write_latency(MEASUREMENT_COMMAND_LATENCY, "Command latency", data)
 
     def _write_latency(self, measurement: str, description: str, data: Dict[str, Any]) -> None:
         point = self._build_latency_point(measurement, description, data)
-        if point is not None:
+        if point is not None and ENABLE_INFLUX_WRITE:
             self._get_client().write(record=point)
 
     def _build_latency_point(self, measurement: str, description: str, data: Dict[str, Any]) -> Point | None:
@@ -135,7 +140,9 @@ class InfluxDBWriter:
         for name, value in data.items():
             point = point.field(name, value)
 
-        self._get_client().write(record=point)
+
+        if ENABLE_INFLUX_WRITE:
+            self._get_client().write(record=point)
 
     def write_clock_rc(self, data: Dict[str, Any]) -> None:
         if not data:
@@ -146,7 +153,8 @@ class InfluxDBWriter:
         for name, value in data.items():
             point = point.field(name, value)
 
-        self._get_client().write(record=point)
+        if ENABLE_INFLUX_WRITE:
+            self._get_client().write(record=point)
 
     def write_telemetry(self, data: Dict[str, Any]) -> None:
         fields = _flatten(data)
@@ -169,7 +177,8 @@ class InfluxDBWriter:
 
         points = self._telemetry_buffer
         self._telemetry_buffer = []
-        self._get_client().write(record=points)
+        if ENABLE_INFLUX_WRITE:
+            self._get_client().write(record=points)
 
     def query(self, sql: str) -> pa.Table:
         return self._get_client().query(query=sql, language="sql", mode="all")
