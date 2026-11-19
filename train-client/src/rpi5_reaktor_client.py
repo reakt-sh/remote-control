@@ -42,7 +42,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
         self.status = None
         self.last_log_time = 0
         self.connection = None
-        
+
         if IS_REAKTOR_DRIVER_ENABLED:
             self.reaktor_driver_event = asyncio.new_event_loop()
             asyncio.set_event_loop(self.reaktor_driver_event)
@@ -53,7 +53,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
-        cc = ControlCenter(store_path="./reaktor-data", log_level=logging.DEBUG)
+        cc = ControlCenter(store_dir="./reaktor-data", log_level=logging.DEBUG)
         self.connection = cc.get_reaktor_connection()
         self.connection.add_data_listener(lambda x: self.set_status(x))
         await cc.start()
