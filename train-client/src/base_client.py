@@ -651,6 +651,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
 
     def on_new_frame(self, frame_id, frame, width, height, is_encoded, camera_type):
         self.encoder.enqueue_frame(frame_id, frame, width, height, is_encoded, camera_type)
+        logger.debug(f"FrameID: {frame_id}, Width: {width}, Height: {height}, Camera: {camera_type}, Encoded: {is_encoded}, thread name: {threading.current_thread().name}")
 
         # calculate continuous FPS per camera
         # frames = self.last_few_frame_ids.setdefault(camera_type, [])

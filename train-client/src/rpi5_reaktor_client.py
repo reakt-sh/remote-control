@@ -72,7 +72,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     def set_status(self, s: Status):
         self.status = s
-        logger.info(f"New status: {s}")
+        logger.debug(f"New status: {s}, thread name: {threading.current_thread().name}")
 
 
         if isinstance(s, ConnectionProblem):
@@ -146,7 +146,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info(f"Sending new target speed: {control.target_speed}")
+            logger.info(f"Sending new target speed: {control.target_speed}, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error updating speed: {e}")
@@ -158,7 +158,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info(f"Powering on motor with target speed: {control.target_speed}")
+            logger.info(f"Powering on motor with target speed: {control.target_speed}, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error powering ON motor: {e}")
@@ -172,7 +172,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info("Stopping the REAKTOR")
+            logger.info(f"Stopping the REAKTOR, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error Stopping motor: {e}")
@@ -200,7 +200,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info(f"Changing direction to: {self.mode}. Sending control: {control}")
+            logger.info(f"Changing direction to: {self.mode}. Sending control: {control}, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error changing direction: {e}")

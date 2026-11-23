@@ -236,6 +236,7 @@ class NetworkWorkerQUIC:
                     result = self._client.transmit()
                     if result is not None:
                         await result
+                logger.debug(f"Sent frame {frame_id} with {len(packet_list)} packets over QUIC, thread name: {threading.current_thread().name}")
 
             except ConnectionError as e:
                 logger.warning(f"Connection lost: {e}")
