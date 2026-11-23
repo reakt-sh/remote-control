@@ -112,10 +112,13 @@ const props = defineProps({
   currentSpeed: {
     type: Number,
     default: 0
+  },
+
+  maxSpeed: {
+    type: Number,
   }
 })
 
-const MAX_SPEED = 20
 const ARC_LENGTH = 251.2 // Approximate length of the arc path (80px radius, 180° arc)
 
 const formattedSpeed = computed(() => {
@@ -123,7 +126,7 @@ const formattedSpeed = computed(() => {
 })
 
 const speedRatio = computed(() => {
-  return Math.min(props.currentSpeed / MAX_SPEED, 1)
+  return Math.min(props.currentSpeed / props.maxSpeed, 1)
 })
 
 // Arc path: (80 * PI) ≈ 251.33 for a semicircle of radius 80
@@ -171,7 +174,7 @@ const majorTicks = computed(() => {
     const angle = -180 + fraction * 180
     const angleRad = (angle * Math.PI) / 180
     const labelR = r - 14
-    const value = Math.round(fraction * MAX_SPEED)
+    const value = Math.round(fraction * props.maxSpeed)
 
     return {
       index: i,

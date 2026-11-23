@@ -13,7 +13,7 @@
     <div class="control-half">
       <SpeedControl
         :target-speed="targetSpeed"
-        :max-speed="maxSpeed"
+        :max-speed="MAX_SPEED"
         @update:targetSpeed="onTargetSpeedChange"
         @change:targetSpeed="onTargetSpeedCommit"
       />
@@ -29,6 +29,7 @@ import { useTrainStore } from '@/stores/trainStore'
 
 import SpeedControl from './SpeedControl.vue'
 import DriveDirectionControls from './DriveDirectionControls.vue'
+import { MAX_SPEED } from '@/scripts/config.js'
 // import LightControl from './LightControl.vue'
 // import HornControl from './HornControl.vue'
 // import VideoQuality from './VideoQuality.vue'
@@ -38,7 +39,6 @@ const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
 
 // State
-const maxSpeed = ref(13)
 const targetSpeed = ref(0)
 const powerLevel = ref(0)
 // const videoQuality = ref('medium')
