@@ -82,7 +82,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
     def set_power_data(self, power_data : PowerConsumption):
         logger.debug(f"Received Power Consumption data: {power_data}")
-        self.telemetry.set_power_data(power_data)
+        self.telemetry.set_power_consumption_data(power_data)
 
     def set_status(self, s: Status):
         self.status = s

@@ -699,6 +699,16 @@ export const useTrainStore = defineStore('train', () => {
         // if (telemetryHistory.value.length > 300) {
         //   telemetryHistory.value.pop()
         // }
+        // print those values # GNSS data attributes
+        // self.latitude: Optional[float] = 0.0
+        // self.longitude: Optional[float] = 0.0
+
+        // # Power consumption data attributes
+        // self.voltage_v: float = 0.0 # Voltage in volts
+        // self.current_a: float = 0.0 # Current in amperes
+        // self.power_w: float   = 0.0 # Power in watts
+        // self.energy_wh: float = 0.0 # Energy in watt-hours
+        console.log(`Latitued : ${data.latitude}, Longitude : ${data.longitude}, Voltage : ${data.voltage_v} V, Current : ${data.current_a} A, Power : ${data.power_w} W, Energy : ${data.energy_wh} Wh`)
         direction.value = data.direction
         break
       }
