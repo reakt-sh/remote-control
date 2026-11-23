@@ -116,6 +116,7 @@ class Encoder:
                 logger.warning(f"Encoder queue full, dropping frame {frame_id}")
 
     def _encode_worker(self):
+        os.sched_setaffinity(threading.get_native_id(), {2})
         while not self._stop_event.is_set():
             try:
                 item = self._frame_queue.get(timeout=0.01)

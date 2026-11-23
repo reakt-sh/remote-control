@@ -1,4 +1,5 @@
 import threading
+import os
 
 from connection_info import get_network_connection
 from models import NtpSyncResult
@@ -42,6 +43,7 @@ class NtpSyncThread:
             self._thread.join(timeout=timeout)
 
     def _run(self):
+        os.sched_setaffinity(threading.get_native_id(), {2})
         while not self._stop_event.is_set():
             network_connection = get_network_connection(self._host)
             result: NtpSyncResult = self._client.query_server(self._host)

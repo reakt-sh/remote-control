@@ -1,3 +1,4 @@
+import os
 import asyncio
 import datetime
 import threading
@@ -28,13 +29,13 @@ class MotorActuator():
     def _start_event_loop(self):
         """Start a background daemon thread with a persistent event loop."""
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._run_event_loop, daemon=True, name="async-event-loop")
+        self._thread = threading.Thread(target=self._run_event_loop, daemon=True, name="reactor-driver-connector")
         self._thread.start()
         # Schedule the async setup on the persistent event loop
         asyncio.run_coroutine_threadsafe(self.setup_connection(), self._loop)
 
     def _run_event_loop(self):
-        """Run the event loop forever in the background thread."""
+        os.sched_setaffinity(threading.get_native_id(), {3})
         asyncio.set_event_loop(self._loop)
         self._loop.run_forever()
 

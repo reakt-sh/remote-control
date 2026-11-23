@@ -74,6 +74,7 @@ class RTSPStream:
         return container, video_stream
 
     def _stream_loop(self):
+        os.sched_setaffinity(threading.get_native_id(), {2})
         while self._running:
             container = None
             try:

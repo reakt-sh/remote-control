@@ -8,6 +8,7 @@ import struct
 from PyQt5.QtCore import QThread, QDateTime, QTimer
 from PyQt5.QtCore import QMetaObject, Qt
 from PyQt5.QtCore import QObject
+import time
 
 from app_logger import logger
 from globals import *
@@ -471,7 +472,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.appcontext.number_of_rtt_packets} to {remote_control_id}")
 
         def _sender():
-            import time
+            os.sched_setaffinity(threading.get_native_id(), {2})
             time.sleep(2.0)  # initial 2000ms delay
             for i in range(self.appcontext.number_of_rtt_packets):
                 send_packet(i)
@@ -500,7 +501,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.debug(f"Sent keepalive packet with sequence {self.appcontext.keepalive_sequence}")
 
         def _sender():
-            import time
+            os.sched_setaffinity(threading.get_native_id(), {2})
             while True:
                 send_packet()
                 time.sleep(10)

@@ -1,3 +1,4 @@
+import os
 import asyncio
 import queue
 import ssl
@@ -86,6 +87,7 @@ class NetworkWorkerQUIC:
         self._thread.start()
 
     def _run(self):
+        os.sched_setaffinity(threading.get_native_id(), {2})
         self._running = True
         try:
             # Create a new event loop for this thread
