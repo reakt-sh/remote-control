@@ -12,8 +12,6 @@ from globals import *
 
 
 class _Signal:
-    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
-
     def __init__(self):
         self._callbacks = []
 
