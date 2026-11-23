@@ -97,8 +97,9 @@ class Telemetry:
         return self.motor_mode
 
     def set_gnss_data(self, gnss_data):
-        self.latitude = gnss_data.latitude
-        self.longitude = gnss_data.longitude
+        if gnss_data.latitude is not None and gnss_data.longitude is not None:
+            self.latitude = gnss_data.latitude
+            self.longitude = gnss_data.longitude
 
     def set_power_consumption_data(self, power_data):
         self.voltage_v = power_data.voltage_v
