@@ -8,7 +8,7 @@ from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES, ERROR_MESSAGE_CODE_MAP
+from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES, ERROR_MESSAGE_CODE_MAP, MAX_SPEED
 from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 import logging
@@ -30,7 +30,7 @@ from connector import ControlCenter
 from connector import Status, Control, Mode, ConnectionProblem
 
 
-MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
+MAX_SPEED_REAKTOR = MAX_SPEED / 3.6  # Maximum speed in m/s
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
@@ -45,11 +45,16 @@ class RPi5ReaktorClient(BaseClient, QThread):
 
         if IS_REAKTOR_DRIVER_ENABLED:
             self.reaktor_driver_event = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.reaktor_driver_event)
-            self.reaktor_driver_event.run_until_complete(self.setup_connection())
-
-            self.reaktor_driver_thread = threading.Thread(target=self.reaktor_driver_event.run_forever, daemon=True)
+            self.reaktor_driver_thread = threading.Thread(target=self._run_reaktor_driver_loop, daemon=True, name='reaktor-driver-connector')
             self.reaktor_driver_thread.start()
+
+            # Schedule setup_connection() on the driver thread's loop and block here
+            asyncio.run_coroutine_threadsafe(self.setup_connection(), self.reaktor_driver_event).result()
+
+    def _run_reaktor_driver_loop(self):
+        os.sched_setaffinity(threading.get_native_id(), {3})
+        asyncio.set_event_loop(self.reaktor_driver_event)
+        self.reaktor_driver_event.run_forever()
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
