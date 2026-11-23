@@ -2,14 +2,13 @@ import asyncio
 import datetime
 import threading
 from app_logger import logger
-from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
+from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED, MAX_SPEED
 from app_context import AppContext
 
 # Connector related imports
 from connector.test.context import Connection, Status, Control, Mode
 
-INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
-MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
+MAX_SPEED_REAKTOR = MAX_SPEED / 3.6  # Maximum speed in m/s
 
 class MotorActuator():
     def __init__(self):
@@ -78,7 +77,7 @@ class MotorActuator():
 
         self.appcontext.telemetryObj.set_speed(current_speed_kmh)
         self.appcontext.telemetryObj.set_mode(current_mode)
-        
+
 
     def set_speed(self, speed): # speed here in KM/H
         try:

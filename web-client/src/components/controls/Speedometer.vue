@@ -115,7 +115,7 @@ const props = defineProps({
   }
 })
 
-const MAX_SPEED = 13
+const MAX_SPEED = 20
 const ARC_LENGTH = 251.2 // Approximate length of the arc path (80px radius, 180° arc)
 
 const formattedSpeed = computed(() => {

@@ -171,7 +171,7 @@ LOW_FPS = 15
 MEDIUM_FPS = 30
 HIGH_FPS = 60
 
-MAX_SPEED = 13 # KM/H
+MAX_SPEED = 20 # KM/H
 SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
 
 # Camera Configuration for video capture
