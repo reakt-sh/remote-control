@@ -1,4 +1,5 @@
 import os
+from cpu_affinity import pin_current_thread
 import asyncio
 import datetime
 import threading
@@ -35,7 +36,7 @@ class MotorActuator():
         asyncio.run_coroutine_threadsafe(self.setup_connection(), self._loop)
 
     def _run_event_loop(self):
-        os.sched_setaffinity(threading.get_native_id(), {3})
+        pin_current_thread({3})
         asyncio.set_event_loop(self._loop)
         self._loop.run_forever()
 

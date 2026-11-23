@@ -21,6 +21,7 @@ from sensor.imu import IMU
 from encoder import Encoder
 from hw_info import HWInfo
 from helper import Helper
+from cpu_affinity import pin_current_thread
 from sntp_client import SntpClient
 from ntp_sync_thread import NtpSyncThread
 from app_context import AppContext
@@ -472,7 +473,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.debug(f"Sent RTT packet {packet_index + 1}/{self.appcontext.number_of_rtt_packets} to {remote_control_id}")
 
         def _sender():
-            os.sched_setaffinity(threading.get_native_id(), {2})
+            pin_current_thread({2})
             time.sleep(2.0)  # initial 2000ms delay
             for i in range(self.appcontext.number_of_rtt_packets):
                 send_packet(i)
@@ -501,7 +502,7 @@ class BaseClient(ABC, metaclass=QABCMeta):
             logger.debug(f"Sent keepalive packet with sequence {self.appcontext.keepalive_sequence}")
 
         def _sender():
-            os.sched_setaffinity(threading.get_native_id(), {2})
+            pin_current_thread({2})
             while True:
                 send_packet()
                 time.sleep(10)

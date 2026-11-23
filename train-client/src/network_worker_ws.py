@@ -1,4 +1,5 @@
 import asyncio
+from cpu_affinity import pin_current_thread
 import queue
 import json
 import struct
@@ -42,7 +43,7 @@ class NetworkWorkerWS:
         self._thread.start()
 
     def _run(self):
-        os.sched_setaffinity(threading.get_native_id(), {2})
+        pin_current_thread({2})
         self.running = True
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)

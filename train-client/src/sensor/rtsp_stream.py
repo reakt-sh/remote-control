@@ -2,6 +2,7 @@ import av
 import threading
 import time
 from app_logger import logger
+from cpu_affinity import pin_current_thread
 from globals import CAMERA_TYPE
 from dotenv import load_dotenv
 import os
@@ -74,7 +75,7 @@ class RTSPStream:
         return container, video_stream
 
     def _stream_loop(self):
-        os.sched_setaffinity(threading.get_native_id(), {2})
+        pin_current_thread({2})
         while self._running:
             container = None
             try:

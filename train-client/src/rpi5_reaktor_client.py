@@ -1,5 +1,6 @@
 import asyncio
 import os
+from cpu_affinity import pin_current_thread
 import random
 import datetime
 import threading
@@ -52,7 +53,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
             asyncio.run_coroutine_threadsafe(self.setup_connection(), self.reaktor_driver_event).result()
 
     def _run_reaktor_driver_loop(self):
-        os.sched_setaffinity(threading.get_native_id(), {3})
+        pin_current_thread({3})
         asyncio.set_event_loop(self.reaktor_driver_event)
         self.reaktor_driver_event.run_forever()
 

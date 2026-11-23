@@ -1,4 +1,5 @@
 import os
+from cpu_affinity import pin_current_thread
 import datetime
 import random
 import threading
@@ -139,7 +140,7 @@ class Telemetry:
         self.headlight_status = status
 
     def _poll_loop(self):
-        os.sched_setaffinity(threading.get_native_id(), {2})
+        pin_current_thread({2})
         interval = self.poll_interval_ms / 1000.0
         while self._running:
             t0 = time.monotonic()
