@@ -27,7 +27,7 @@ import struct
 # from connector.test.context import Connection, Status, Control, Mode
 
 from connector import ControlCenter
-from connector import Status, Control, Mode, ConnectionProblem
+from connector import Status, Control, Mode, ConnectionProblem, Position, PowerConsumption
 
 
 MAX_SPEED_REAKTOR = MAX_SPEED / 3.6  # Maximum speed in m/s
@@ -61,6 +61,12 @@ class RPi5ReaktorClient(BaseClient, QThread):
         cc = ControlCenter(storage_dir="./reaktor-data", log_level=logging.DEBUG)
         self.connection = cc.get_reaktor_connection()
         self.connection.add_data_listener(lambda x: self.set_status(x))
+
+        self.gnss_connection = cc.get_gnss_connection()
+        self.gnss_connection.add_data_listener(lambda x: self.set_gnss_data(x))
+
+        self.power_connection = cc.get_power_connection()
+        self.power_connection.add_data_listener(lambda x: self.set_power_data(x))
         await cc.start()
 
         # Test if connection is ready
@@ -69,6 +75,14 @@ class RPi5ReaktorClient(BaseClient, QThread):
         while not self.status:
             logger.warning("Waiting for initial status...")
             await asyncio.sleep(.1)
+
+    def set_gnss_data(self, gps_data : Position):
+        logger.debug(f"Received GNSS data: {gps_data}")
+        self.telemetry.set_gnss_data(gps_data)
+
+    def set_power_data(self, power_data : PowerConsumption):
+        logger.debug(f"Received Power Consumption data: {power_data}")
+        self.telemetry.set_power_data(power_data)
 
     def set_status(self, s: Status):
         self.status = s
