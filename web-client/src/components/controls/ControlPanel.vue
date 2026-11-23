@@ -39,7 +39,7 @@ const trainStore = useTrainStore()
 const { telemetryData, direction } = storeToRefs(trainStore)
 
 // State
-const targetSpeed = ref(0)
+const targetSpeed = ref(0.0)
 const powerLevel = ref(0)
 // const videoQuality = ref('medium')
 // const isScenarioRunning = ref(false)

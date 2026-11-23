@@ -14,6 +14,6 @@ const MQTT_TOPICS = {
   CLOCK_RC: "rtsys/clockoffset_rc"
 }
 
-const MAX_SPEED = 20 // KM/H
+const MAX_SPEED = 20.0 // KM/H
 
 export { SERVER_URL, WS_URL, QUIC_URL, MQTT_BROKER_URL, MQTT_TOPICS, MAX_SPEED }

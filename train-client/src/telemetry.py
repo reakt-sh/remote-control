@@ -32,7 +32,7 @@ class Telemetry:
         self.train_id = train_id
         self.status = TRAIN_STATUS.POWER_OFF
         self.direction = DIRECTION.FORWARD
-        self.speed = 0
+        self.speed = 0.0
         self.max_speed = MAX_SPEED
         self.brake_status = "released"
         self.location_index = random.randint(0, len(STATION_LIST) - 1)
@@ -85,9 +85,9 @@ class Telemetry:
         return self.motor_mode
 
     def set_speed(self, speed: float):
-        if 0 <= speed <= self.max_speed:
+        if 0.0 <= speed <= self.max_speed:
             self.speed = speed
-            if speed == 0:
+            if speed == 0.0:
                 self.brake_status = "applied"
             else:
                 self.brake_status = "released"
