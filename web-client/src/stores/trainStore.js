@@ -799,6 +799,8 @@ export const useTrainStore = defineStore('train', () => {
     availableTrains,
     selectedTrainId,
     telemetryData,
+    train_ntp_offset,
+    remote_control_ntp_offset,
     frameRefFront,
     frameRefRear,
     enableStatistics,
