@@ -1,4 +1,5 @@
 import asyncio
+from cpu_affinity import pin_current_thread
 import queue
 import json
 import struct
@@ -12,8 +13,6 @@ from globals import *
 
 
 class _Signal:
-    """Lightweight callback signal, drop-in for pyqtSignal in non-Qt threads."""
-
     def __init__(self):
         self._callbacks = []
 
@@ -26,7 +25,10 @@ class _Signal:
 
 
 class NetworkWorkerWS:
+    RECONNECT_INTERVAL = 5  # seconds
+
     def __init__(self, train_client_id, parent=None):
+        self.connected = False
         self.recieved_data = _Signal()
         self.packet_queue = queue.Queue()
         self.train_client_id = train_client_id
@@ -41,6 +43,7 @@ class NetworkWorkerWS:
         self._thread.start()
 
     def _run(self):
+        pin_current_thread({2})
         self.running = True
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -51,10 +54,25 @@ class NetworkWorkerWS:
             self.running = False
 
     async def websocket_handler(self):
+        """Keep a connection alive, retrying every RECONNECT_INTERVAL seconds until stopped."""
+        while self.running:
+            await self._connect_and_serve()
+            if not self.running:
+                break
+            logger.warning(f"WebSocket: Disconnected, retrying in {self.RECONNECT_INTERVAL} seconds...")
+            for _ in range(int(self.RECONNECT_INTERVAL * 10)):
+                if not self.running:
+                    return
+                await asyncio.sleep(0.1)
+
+    async def _connect_and_serve(self):
         ssl_context = ssl._create_unverified_context()
         try:
             async with websockets.connect(self.server_url, ssl=ssl_context) as websocket:
-                print(f"WebSocket: Connected to server at {self.server_url}")
+                logger.info(f"WebSocket: Connected to server at {self.server_url}")
+                # Drop frames queued while disconnected; they are stale
+                self._clear_queue()
+                self.connected = True
                 # Create tasks
                 tasks = [
                     asyncio.create_task(self.websocket_sender(websocket)),
@@ -74,10 +92,20 @@ class NetworkWorkerWS:
                     except asyncio.CancelledError:
                         pass
         except Exception as e:
-            print(f"WebSocket: connection error: {e}")
+            logger.error(f"WebSocket: connection error: {e}")
+        finally:
+            self.connected = False
+            self._clear_queue()
+
+    def _clear_queue(self):
+        try:
+            while True:
+                self.packet_queue.get_nowait()
+        except queue.Empty:
+            pass
 
     async def websocket_sender(self, websocket):
-        print("WebSocket: Sender task started")
+        logger.debug("WebSocket: Sender task started")
         while self.running:
             try:
                 packet = self.packet_queue.get_nowait()
@@ -86,33 +114,33 @@ class NetworkWorkerWS:
             except queue.Empty:
                 await asyncio.sleep(0.1)  # Increased sleep to yield to other tasks
             except Exception as e:
-                print(f"WebSocket: Sender error: {e}")
+                logger.error(f"WebSocket: Sender error: {e}")
                 break
 
     async def websocket_receiver(self, websocket):
-        print("WebSocket: Receiver task started")
+        logger.debug("WebSocket: Receiver task started")
         while self.running:
             try:
                 packet = await asyncio.wait_for(websocket.recv(), timeout=1.0)
                 if packet:
-                    print(f"WebSocket: Received packet of size {len(packet)}")
+                    logger.debug(f"WebSocket: Received packet of size {len(packet)}")
                     packet_type = packet[0]
                     payload = packet[1:]
                     if packet_type == PACKET_TYPE.KEEPALIVE:
                         message = json.loads(payload.decode('utf-8'))
-                        print(f"WebSocket: Keepalive message: {message}")
+                        logger.debug(f"WebSocket: Keepalive message: {message}")
                     elif packet_type == PACKET_TYPE.COMMAND:
                         self.recieved_data.emit(payload)
                     else:
-                        print(f"WebSocket: Received packet type {packet_type}, not handled")
+                        logger.warning(f"WebSocket: Received packet type {packet_type}, not handled")
             except asyncio.TimeoutError:
                 continue
             except Exception as e:
-                print(f"WebSocket: Receiver error: {e}")
+                logger.error(f"WebSocket: Receiver error: {e}")
                 break
 
     async def keepalive(self, websocket):
-        print("WebSocket: Keepalive task started")
+        logger.debug("WebSocket: Keepalive task started")
         self.keepalive_sequence = 0
         while self.running:
             try:
@@ -127,7 +155,7 @@ class NetworkWorkerWS:
                 await websocket.send(packet)
                 await asyncio.sleep(25)
             except Exception as e:
-                print(f"WebSocket: Keepalive error: {e}")
+                logger.error(f"WebSocket: Keepalive error: {e}")
                 break
 
     def stop(self):
@@ -164,4 +192,6 @@ class NetworkWorkerWS:
             self.enqueue_packet(packet_with_type)
 
     def enqueue_packet(self, packet):
+        if not self.connected:
+            return  # avoid unbounded queue growth while offline
         self.packet_queue.put(packet)

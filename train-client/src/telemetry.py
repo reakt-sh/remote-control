@@ -1,7 +1,10 @@
+import os
+from cpu_affinity import pin_current_thread
 import datetime
 import random
 import threading
 import time
+from typing import Optional
 from globals import *
 
 
@@ -20,7 +23,7 @@ class _Signal:
 
 
 class Telemetry:
-    def __init__(self, train_id: str, poll_interval_ms=200, parent=None):
+    def __init__(self, train_id: str, poll_interval_ms=500, parent=None):
         self.telemetry_ready = _Signal()
         self.sequence_number = 0
         self._running = False
@@ -31,7 +34,7 @@ class Telemetry:
         self.train_id = train_id
         self.status = TRAIN_STATUS.POWER_OFF
         self.direction = DIRECTION.FORWARD
-        self.speed = 0
+        self.speed = 0.0
         self.max_speed = MAX_SPEED
         self.brake_status = "released"
         self.location_index = random.randint(0, len(STATION_LIST) - 1)
@@ -64,6 +67,17 @@ class Telemetry:
 
         self.horn_status = "OFF"
         self.headlight_status = "OFF"
+        self.gnss_data = None
+
+        # GNSS data attributes
+        self.latitude: Optional[float] = 0.0
+        self.longitude: Optional[float] = 0.0
+
+        # Power consumption data attributes
+        self.voltage_v: float = 0.0 # Voltage in volts
+        self.current_a: float = 0.0 # Current in amperes
+        self.power_w: float   = 0.0 # Power in watts
+        self.energy_wh: float = 0.0 # Energy in watt-hours
 
     def get_next_station(self, current_station: int) -> int:
         return (current_station + 1) % len(STATION_LIST)
@@ -83,10 +97,21 @@ class Telemetry:
     def get_mode(self):
         return self.motor_mode
 
+    def set_gnss_data(self, gnss_data):
+        if gnss_data.latitude is not None and gnss_data.longitude is not None:
+            self.latitude = gnss_data.latitude
+            self.longitude = gnss_data.longitude
+
+    def set_power_consumption_data(self, power_data):
+        self.voltage_v = power_data.voltage_v
+        self.current_a = power_data.current_a
+        self.power_w = power_data.power_w
+        self.energy_wh = power_data.energy_wh
+
     def set_speed(self, speed: float):
-        if 0 <= speed <= self.max_speed:
+        if 0.0 <= speed <= self.max_speed:
             self.speed = speed
-            if speed == 0:
+            if speed == 0.0:
                 self.brake_status = "applied"
             else:
                 self.brake_status = "released"
@@ -115,6 +140,7 @@ class Telemetry:
         self.headlight_status = status
 
     def _poll_loop(self):
+        pin_current_thread({2})
         interval = self.poll_interval_ms / 1000.0
         while self._running:
             t0 = time.monotonic()
@@ -154,11 +180,11 @@ class Telemetry:
 
         self.battery_level -= random.uniform(0.1, 0.4)  # Simulate battery drain
         if self.battery_level < 0:
-            self.battery_level = 0
+            self.battery_level = 0.0
 
         self.fuel_level -= random.uniform(0.1, 0.4) # Simulate fuel drain
         if self.fuel_level < 0:
-            self.fuel_level = 0
+            self.fuel_level = 0.0
 
 
     def _poll_telemetry(self):
@@ -177,10 +203,6 @@ class Telemetry:
             "temperature": self.temperature,
             "battery_level": self.battery_level,
             "video_stream_url": self.video_stream_url,
-            "gps": {
-                "latitude": STATION_LIST[self.location_index]["latitude"],
-                "longitude": STATION_LIST[self.location_index]["longitude"],
-            },
             "timestamp": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in milliseconds,
             "engine_temperature": random.randint(self.engine_temperature_min, self.engine_temperature_max),
             "fuel_level": self.fuel_level,
@@ -194,6 +216,12 @@ class Telemetry:
             "reaktor_control_mode" : self.control_mode,
             "horn_status": self.horn_status,
             "headlight_status": self.headlight_status,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "voltage_v": self.voltage_v,
+            "current_a": self.current_a,
+            "power_w": self.power_w,
+            "energy_wh": self.energy_wh
         }
 
         self.simulate_data()

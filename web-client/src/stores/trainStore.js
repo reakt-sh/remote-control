@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { median } from 'simple-statistics'
 import { useWebSocket } from '@/scripts/websocket'
 import { useWebTransport } from '@/scripts/webtransport'
 import { useWebRTC } from '@/scripts/webrtc'
@@ -8,9 +9,11 @@ import { useAssembler } from '@/scripts/assembler'
 import { useNetworkSpeed } from '@/scripts/networkspeed'
 import { useMqttClient } from '@/scripts/mqtt-paho'
 import { useDataStorage } from '@/scripts/dataStorage'
-import { SERVER_URL } from '@/scripts/config'
+import { SERVER_URL, MQTT_TOPICS } from '@/scripts/config'
 import { useVideoFrameHandler } from '@/scripts/videoFrameHandler'
 import { useNotificationStore } from '@/stores/notificationStore'
+
+
 
 
 
@@ -81,8 +84,17 @@ export const useTrainStore = defineStore('train', () => {
   const rttCalibrationIndex = ref(0)
   const averageClockOffset = ref(0)
 
-  const indexedDBStorageEnabled = ref(true)
+  const indexedDBStorageEnabled = ref(false)
   const commandCounter = ref(0)
+
+  const influxDBStorageEnabled = ref(true)
+
+  // NTP offset for clock synchronization
+  const train_ntp_offset = ref(null)
+  const train_ntp_offset_samples = ref([])
+  const remote_control_ntp_offset = ref(null)
+  const remote_control_ntp_offset_samples = ref([])
+  const offset_history_max_size = ref(10)  // Maximum number of offset samples to keep for averaging
 
   const {
     isWSConnected,
@@ -104,8 +116,9 @@ export const useTrainStore = defineStore('train', () => {
   const {
     isMqttConnected,
     connectMqtt,
-    subscribeToTrain,
-    unsubscribeFromTrain,
+    subscribeToMQTT,
+    unsubscribeFromMQTT,
+    publish,
   } = useMqttClient(remoteControlId, handleMqttMessage)
 
   const dataStorage = useDataStorage("TrainDataStorage", 1)
@@ -123,7 +136,7 @@ export const useTrainStore = defineStore('train', () => {
     last_100_frame_latencies_front,
     last_100_frame_latencies_rear,
     handleFrameComplete,
-  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId })
+  } = useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, remoteControlId, train_ntp_offset, remote_control_ntp_offset, publish})
 
   function generateUUID() {
     // RFC4122 version 4 compliant UUID
@@ -192,7 +205,7 @@ export const useTrainStore = defineStore('train', () => {
     if (!trainId) return
     telemetryData.value = {}
     if (selectedTrainId.value !== trainId) {
-      unsubscribeFromTrain(selectedTrainId.value)
+      unsubscribeFromMQTT()
 
       // also reset telemetry history
       telemetryHistory.value = []
@@ -242,7 +255,7 @@ export const useTrainStore = defineStore('train', () => {
     await sendWtMessage(prepareMapConnectionMessage(remoteControlId.value, trainId));
 
     // Subscribe to MQTT telemetry for this specific train
-    subscribeToTrain(trainId)
+    subscribeToMQTT()
 
     // Send multiple RTT messages to calibrate clock offset
     await performRTTCalibration()
@@ -406,7 +419,18 @@ export const useTrainStore = defineStore('train', () => {
 
         // get system timestamp
         const timestamp = Date.now()
-        const latency = timestamp - jsonData.timestamp + averageClockOffset.value
+
+        let latency = 0
+        if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
+        {
+          // calculate latency with NTP based solution
+          let train_client_timestamp = jsonData.timestamp + train_ntp_offset.value
+          let remote_control_timestamp = timestamp + remote_control_ntp_offset.value
+          latency = remote_control_timestamp - train_client_timestamp
+        } else {
+          latency = timestamp - jsonData.timestamp + averageClockOffset.value
+        }
+
 
         if (indexedDBStorageEnabled.value) {
           // Also store it to indexDB
@@ -414,17 +438,16 @@ export const useTrainStore = defineStore('train', () => {
             trainId: jsonData.train_id,
             data: jsonData,
             latency: latency,
-          protocol: 'ws'
+            protocol: 'ws'
           })
         }
-
         break
       }
       case PACKET_TYPE.notification: {
         const notification = JSON.parse(new TextDecoder().decode(payload))
         if (notification.train_id === selectedTrainId.value && notification.event === 'disconnected') {
           router.push('/')
-          unsubscribeFromTrain(selectedTrainId.value)
+          unsubscribeFromMQTT()
         }
         fetchAvailableTrains()
         break
@@ -451,7 +474,16 @@ export const useTrainStore = defineStore('train', () => {
 
           // get system timestamp
           const timestamp = Date.now()
-          const latency = timestamp - jsonData.timestamp + averageClockOffset.value
+          let latency = 0
+
+          if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) {
+            // calculate latency with NTP based solution
+            let train_client_timestamp = jsonData.timestamp + train_ntp_offset.value
+            let remote_control_timestamp = timestamp + remote_control_ntp_offset.value
+            latency = remote_control_timestamp - train_client_timestamp
+          } else {
+            latency = timestamp - jsonData.timestamp + averageClockOffset.value
+          }
 
           if (indexedDBStorageEnabled.value) {
             // Also store it to indexDB
@@ -461,6 +493,10 @@ export const useTrainStore = defineStore('train', () => {
               latency: latency,
               protocol: 'wt'
             })
+          }
+
+          if (influxDBStorageEnabled.value) {
+            // Also store it to InfluxDB
           }
 
           direction.value = jsonData.direction
@@ -581,15 +617,35 @@ export const useTrainStore = defineStore('train', () => {
     handleWtMessage(packetType, payload)
   }
 
+  function getPayloadSize(payload) {
+    if (typeof payload === 'string') return new TextEncoder().encode(payload).length
+    if (payload && typeof payload.byteLength === 'number') return payload.byteLength
+    return new TextEncoder().encode(JSON.stringify(payload)).length
+  }
+
   function handleMqttMessage(mqttMessage) {
-    const { trainId, messageType, data } = mqttMessage
+    const { messageType, payload, timestamp } = mqttMessage
 
     switch (messageType) {
       case 'telemetry': {
 
-        // get system timestamp
-        const timestamp = Date.now()
-        const latency = timestamp - data.timestamp + averageClockOffset.value
+        let data
+        try {
+          data = typeof payload === 'string' ? JSON.parse(payload) : payload
+        } catch (e) {
+          console.error('Failed to parse MQTT payload:', e)
+          return
+        }
+        let latency = 0
+        if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) {
+          // calculate latency with NTP based solution
+          let train_client_timestamp = data.timestamp + train_ntp_offset.value
+          let remote_control_timestamp = timestamp + remote_control_ntp_offset.value
+          latency = remote_control_timestamp - train_client_timestamp
+        } else {
+          latency = timestamp - data.timestamp + averageClockOffset.value
+        }
+        let trainId = data.train_id
 
         if (indexedDBStorageEnabled.value) {
           // Also store it to indexDB
@@ -601,28 +657,103 @@ export const useTrainStore = defineStore('train', () => {
           })
         }
 
+        if (influxDBStorageEnabled.value)
+        {
+          // Also store it to InfluxDB
+          if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
+          {
+            // Use the NTP-based payload
+            let dataToSend = {
+              train_id: data.train_id,
+              remote_control_id: remoteControlId.value,
+              sequence_number: data.sequence_number,
+              train_timestamp: data.timestamp,
+              train_ntp_offset: train_ntp_offset.value,
+              remote_control_timestamp: timestamp,
+              remote_control_ntp_offset: remote_control_ntp_offset.value,
+              latency: latency,
+              size: getPayloadSize(payload),
+            }
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 1)
+          }
+          else
+          {
+            // Use the default payload
+            let dataToSend = {
+              train_id: data.train_id,
+              remote_control_id: remoteControlId.value,
+              sequence_number: data.sequence_number,
+              train_timestamp: data.timestamp,
+              remote_control_timestamp: timestamp,
+              clock_offset: averageClockOffset.value,
+              latency: latency,
+              size: getPayloadSize(payload),
+            }
+            publish(MQTT_TOPICS.TELEMETRY_LATENCY, dataToSend, 1)
+          }
+        }
+
         // Assign to telemetryData also Add to telemetry history
         telemetryData.value = data
         // telemetryHistory.value.unshift({ ...data });
         // if (telemetryHistory.value.length > 300) {
         //   telemetryHistory.value.pop()
         // }
+        // print those values # GNSS data attributes
+        // self.latitude: Optional[float] = 0.0
+        // self.longitude: Optional[float] = 0.0
+
+        // # Power consumption data attributes
+        // self.voltage_v: float = 0.0 # Voltage in volts
+        // self.current_a: float = 0.0 # Current in amperes
+        // self.power_w: float   = 0.0 # Power in watts
+        // self.energy_wh: float = 0.0 # Energy in watt-hours
+        console.log(`Latitued : ${data.latitude}, Longitude : ${data.longitude}, Voltage : ${data.voltage_v} V, Current : ${data.current_a} A, Power : ${data.power_w} W, Energy : ${data.energy_wh} Wh`)
         direction.value = data.direction
         break
       }
 
-      case 'rtsys-cau-01': {
-          // Also store it to indexDB
-          dataStorage.storeWANData({
-            trainId: selectedTrainId.value,
-            data: data,
-          })
+      case 'clock_rc':{
+        try {
+          const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+          const offset = data.offset_ms
+          const timestamp = data.timestamp_ms
+          console.log(`📡 Received CLOCK_RC message: Offset = ${offset.toFixed(3)} ms, Timestamp = ${timestamp}`)
+
+          remote_control_ntp_offset_samples.value.push(offset)
+          if (remote_control_ntp_offset_samples.value.length > offset_history_max_size.value) {
+            remote_control_ntp_offset_samples.value.shift() // Remove oldest sample
+          }
+          remote_control_ntp_offset.value = median(remote_control_ntp_offset_samples.value)
+          console.log(`📡 Updated remote control NTP offset: ${remote_control_ntp_offset.value.toFixed(3)} ms`)
+
+        } catch (error) {
+          console.error('❌ Error handling CLOCK_RC message:', error, payload)
+        }
+        break
+      }
+
+      case 'clock_train': {
+        try {
+          const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+          const offset = data.offset_ms
+          const timestamp = data.timestamp_ms
+          console.log(`📡 Received CLOCK_TRAIN message: Offset = ${offset.toFixed(3)} ms, Timestamp = ${timestamp}`)
+          train_ntp_offset_samples.value.push(offset)
+          if (train_ntp_offset_samples.value.length > offset_history_max_size.value) {
+            train_ntp_offset_samples.value.shift() // Remove oldest sample
+          }
+          train_ntp_offset.value = median(train_ntp_offset_samples.value)
+          console.log(`📡 Updated train NTP offset: ${train_ntp_offset.value.toFixed(3)} ms`)
+        } catch (error) {
+          console.error('❌ Error handling CLOCK_TRAIN message:', error, payload)
+        }
         break
       }
 
       case 'onConnect':
         if (selectedTrainId.value) {
-          subscribeToTrain(selectedTrainId.value)
+          subscribeToMQTT()
         }
         break
 
@@ -668,6 +799,8 @@ export const useTrainStore = defineStore('train', () => {
     availableTrains,
     selectedTrainId,
     telemetryData,
+    train_ntp_offset,
+    remote_control_ntp_offset,
     frameRefFront,
     frameRefRear,
     enableStatistics,
@@ -700,7 +833,7 @@ export const useTrainStore = defineStore('train', () => {
     performRTTCalibration,
     setRTTCalibrationCount,
     // MQTT methods
-    subscribeToTrain,
-    unsubscribeFromTrain,
+    subscribeToMQTT,
+    unsubscribeFromMQTT,
   }
 })

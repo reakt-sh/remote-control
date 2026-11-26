@@ -1,0 +1,102 @@
+services:
+
+  nanomq:
+    image: emqx/nanomq:latest-full
+    container_name: nanomq
+    restart: unless-stopped
+    command: nanomq start --conf /etc/nanomq.conf
+
+    ports:
+      - "1883:1883"
+      - "8081:8081"
+      - "8083:8083"
+      - "8084:8084"
+      - "8883:8883"
+
+    volumes:
+      - /etc/letsencrypt/archive/wt.rtsys-lab.de/fullchain6.pem:/etc/fullchain1.pem:ro
+      - /etc/letsencrypt/archive/wt.rtsys-lab.de/chain6.pem:/etc/chain1.pem:ro
+      - /etc/letsencrypt/archive/wt.rtsys-lab.de/privkey6.pem:/etc/privkey1.pem:ro
+      - /home/rcd/Desktop/Workspace/remote-control/central-server/NanoMQ/nanomq.conf:/etc/nanomq.conf:ro
+
+    cpus: 0.5
+    mem_limit: 100m
+    memswap_limit: 200m
+
+  mongodb:
+    image: mongo:8
+    container_name: rtsys-mongodb
+    restart: unless-stopped
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+
+    ports:
+      - "0.0.0.0:27017:27017"
+
+    volumes:
+      - ./data/mongodb:/data/db
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_URL: ${MONGO_EXPRESS_MONGODB_URL:?Set MONGO_EXPRESS_MONGODB_URL}
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:?Set MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:?Set MONGO_EXPRESS_PASSWORD}
+    ports:
+      - "127.0.0.1:27018:8081"
+
+  influxdb:
+    image: influxdb:3-core
+    container_name: rtsys-influxdb
+    restart: unless-stopped
+    command:
+      - influxdb3
+      - serve
+      - --node-id=rtsys-node
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+
+    ports:
+      - "127.0.0.1:8181:8181"
+
+    volumes:
+      - ./data/influxdb3:/var/lib/influxdb3/data
+
+  influxdb3-explorer:
+    image: influxdata/influxdb3-ui:1.11.2
+    container_name: rtsys-influxdb3-explorer
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    command: ["--mode=admin"]
+
+    environment:
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:?Set SESSION_SECRET_KEY}
+
+    ports:
+      - "127.0.0.1:8888:8080"
+
+    volumes:
+      - ./data/influxdb3-explorer:/db:rw
+
+  openspeedtest:
+    build:
+      context: /home/rcd/Desktop/Workspace/OpenSpeedTest
+    image: custom-openspeedtest
+    container_name: custom-openspeedtest
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+
+# to Run the services, execute the following commands in the terminal:
+# mkdir -p data/mongodb data/influxdb3 data/influxdb3-explorer
+# docker compose up -d --build

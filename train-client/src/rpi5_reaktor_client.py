@@ -1,5 +1,6 @@
 import asyncio
 import os
+from cpu_affinity import pin_current_thread
 import random
 import datetime
 import threading
@@ -8,7 +9,7 @@ from sensor.camera import Camera
 from sensor.camera_rpi_5 import CameraRPi5
 from motor_actuator import MotorActuator
 from base_client import BaseClient
-from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES, ERROR_MESSAGE_CODE_MAP
+from globals import MOTOR_MODE, CONTROL_MODE, DIRECTION, IS_REAKTOR_DRIVER_ENABLED, ERROR_CODES, ERROR_MESSAGE_CODE_MAP, MAX_SPEED
 from PyQt5.QtCore import QThread
 from sensor.rtsp_stream import RTSP_URL_FRONT, RTSP_URL_REAR, RTSPStream
 import logging
@@ -26,11 +27,11 @@ import struct
 # Connector related imports
 # from connector.test.context import Connection, Status, Control, Mode
 
-from connector.connector.connection import Connection
-from connector.connector.data import Status, Control, Mode, ConnectionProblem
+from connector import ControlCenter
+from connector import Status, Control, Mode, ConnectionProblem, Position, PowerConsumption
 
 
-MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
+MAX_SPEED_REAKTOR = MAX_SPEED / 3.6  # Maximum speed in m/s
 
 class RPi5ReaktorClient(BaseClient, QThread):
     def __init__(self):
@@ -42,21 +43,32 @@ class RPi5ReaktorClient(BaseClient, QThread):
         self.status = None
         self.last_log_time = 0
         self.connection = None
-        logging.basicConfig(filename='reaktor_driver.log', encoding='utf-8', level=logging.INFO)
 
         if IS_REAKTOR_DRIVER_ENABLED:
             self.reaktor_driver_event = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.reaktor_driver_event)
-            self.reaktor_driver_event.run_until_complete(self.setup_connection())
-
-            self.reaktor_driver_thread = threading.Thread(target=self.reaktor_driver_event.run_forever, daemon=True)
+            self.reaktor_driver_thread = threading.Thread(target=self._run_reaktor_driver_loop, daemon=True, name='reaktor-driver-connector')
             self.reaktor_driver_thread.start()
+
+            # Schedule setup_connection() on the driver thread's loop and block here
+            asyncio.run_coroutine_threadsafe(self.setup_connection(), self.reaktor_driver_event).result()
+
+    def _run_reaktor_driver_loop(self):
+        pin_current_thread({3})
+        asyncio.set_event_loop(self.reaktor_driver_event)
+        self.reaktor_driver_event.run_forever()
 
     async def setup_connection(self):
         logger.info("Setting up connection...")
-        self.connection = Connection()
-        self.connection.add_status_listener(lambda x: self.set_status(x))
-        await self.connection.open("/dev/ttyUSB0")
+        cc = ControlCenter(storage_dir="./reaktor-data", log_level=logging.DEBUG)
+        self.connection = cc.get_reaktor_connection()
+        self.connection.add_data_listener(lambda x: self.set_status(x))
+
+        self.gnss_connection = cc.get_gnss_connection()
+        self.gnss_connection.add_data_listener(lambda x: self.set_gnss_data(x))
+
+        self.power_connection = cc.get_power_connection()
+        self.power_connection.add_data_listener(lambda x: self.set_power_data(x))
+        await cc.start()
 
         # Test if connection is ready
         if not self.connection.is_ready():
@@ -65,9 +77,17 @@ class RPi5ReaktorClient(BaseClient, QThread):
             logger.warning("Waiting for initial status...")
             await asyncio.sleep(.1)
 
+    def set_gnss_data(self, gps_data : Position):
+        logger.debug(f"Received GNSS data: {gps_data}")
+        self.telemetry.set_gnss_data(gps_data)
+
+    def set_power_data(self, power_data : PowerConsumption):
+        logger.debug(f"Received Power Consumption data: {power_data}")
+        self.telemetry.set_power_consumption_data(power_data)
+
     def set_status(self, s: Status):
         self.status = s
-        logger.info(f"New status: {s}")
+        logger.debug(f"New status: {s}, thread name: {threading.current_thread().name}")
 
 
         if isinstance(s, ConnectionProblem):
@@ -141,7 +161,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info(f"Sending new target speed: {control.target_speed}")
+            logger.info(f"Sending new target speed: {control.target_speed}, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error updating speed: {e}")
@@ -153,7 +173,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info(f"Powering on motor with target speed: {control.target_speed}")
+            logger.info(f"Powering on motor with target speed: {control.target_speed}, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error powering ON motor: {e}")
@@ -167,7 +187,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info("Stopping the REAKTOR")
+            logger.info(f"Stopping the REAKTOR, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error Stopping motor: {e}")
@@ -195,7 +215,7 @@ class RPi5ReaktorClient(BaseClient, QThread):
                 mode = self.mode,
                 target_speed = self.speed
             )
-            logger.info(f"Changing direction to: {self.mode}. Sending control: {control}")
+            logger.info(f"Changing direction to: {self.mode}. Sending control: {control}, thread name: {threading.current_thread().name}")
             self.connection.send_control(control)
         except Exception as e:
             logger.error(f"Error changing direction: {e}")

@@ -1,4 +1,5 @@
 import av
+from cpu_affinity import pin_current_thread
 import datetime
 import queue
 import threading
@@ -116,6 +117,7 @@ class Encoder:
                 logger.warning(f"Encoder queue full, dropping frame {frame_id}")
 
     def _encode_worker(self):
+        pin_current_thread({2})
         while not self._stop_event.is_set():
             try:
                 item = self._frame_queue.get(timeout=0.01)

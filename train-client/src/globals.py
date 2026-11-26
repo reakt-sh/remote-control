@@ -21,6 +21,18 @@ H264_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, '
 LATENCY_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency')
 HW_USAGE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'hw_usage')
 LATENCY_KEEPALIVE_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'latency_keepalive')
+TRAIN_NTP_OFFSET_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'train_ntp_offset')
+REMOTE_NTP_OFFSET_DUMP = os.path.join(BASE_DIR, '..', 'dump_collection', SYSTEM_START_TIME, 'remote_ntp_offset')
+
+class MQTT_TOPICS(StrEnum):
+    WAN             = "rtsys/wan/rtsys-cau-01"
+    TELEMETRY       = "rtsys/telemetry"
+    FRAME_LATENCY   = "rtsys/frame_latency"
+    TELEMETRY_LATENCY = "rtsys/telemetry_latency"
+    COMMAND_LATENCY = "rtsys/command_latency"
+    CLOCK_TRAIN     = "rtsys/clockoffset_train"
+    CLOCK_RC        = "rtsys/clockoffset_rc"
+
 
 # Packet Types
 class PACKET_TYPE(IntEnum):
@@ -159,7 +171,7 @@ LOW_FPS = 15
 MEDIUM_FPS = 30
 HIGH_FPS = 60
 
-MAX_SPEED = 13 # KM/H
+MAX_SPEED = 20.0 # KM/H
 SCALE_FACTOR_PWM = 3.75  # Scale factor to convert speed to PWM duty cycle
 
 # Camera Configuration for video capture

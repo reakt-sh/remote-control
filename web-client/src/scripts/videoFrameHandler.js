@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import {MQTT_TOPICS} from './config.js'
 
 /**
  * Composable that owns all per-camera frame state and the frame-complete handler.
@@ -6,10 +7,14 @@ import { ref } from 'vue'
  * @param {Object} deps - Shared reactive refs from trainStore
  * @param {import('vue').Ref} deps.averageClockOffset
  * @param {import('vue').Ref} deps.indexedDBStorageEnabled
+ * @param {import('vue').Ref} deps.influxDBStorageEnabled
  * @param {Object}            deps.dataStorage
  * @param {import('vue').Ref} deps.selectedTrainId
+ * @param {import('vue').Ref} deps.train_ntp_offset
+ * @param {import('vue').Ref} deps.remote_control_ntp_offset
+ * @param {Function}          deps.publish
  */
-export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, dataStorage, selectedTrainId }) {
+export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabled, influxDBStorageEnabled, dataStorage, selectedTrainId, remoteControlId, train_ntp_offset, remote_control_ntp_offset, publish}) {
 
   // Per-camera frame references (consumed by video renderer components)
   const frameRefFront = ref(null)
@@ -50,8 +55,18 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
     const cameraId = completedFrame.cameraId
     const isFront = cameraId === 'front'
 
-    // Calculate latency with clock offset
-    const frameLatency = completedFrame.latency + averageClockOffset.value
+    let frameLatency = 0
+    if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null) {
+      // Calculate latency with NTP based solution
+      let train_client_timestamp = completedFrame.created_at + train_ntp_offset.value
+      let remote_control_timestamp = completedFrame.received_at + remote_control_ntp_offset.value
+      frameLatency = remote_control_timestamp - train_client_timestamp
+      // console.log(`📡 Frame ${completedFrame.frameId} [${cameraId}] latency calculated using NTP offsets: ${frameLatency.toFixed(0)} ms`)
+    } else {
+      // Calculate latency with average clock offset based solution
+      frameLatency = completedFrame.latency + averageClockOffset.value
+    }
+
 
     // Drop frames with excessive latency
     if (frameLatency > 1000) {
@@ -84,6 +99,43 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
       })
     }
 
+    if (influxDBStorageEnabled.value) {
+      // Also store it to InfluxDB
+      if (train_ntp_offset.value !== null && remote_control_ntp_offset.value !== null)
+      {
+        let payload = {
+          frame_id : completedFrame.frameId,
+          train_id : selectedTrainId.value,
+          remote_control_id : remoteControlId.value,
+          train_timestamp : completedFrame.created_at,
+          train_ntp_offset : train_ntp_offset.value,
+          remote_control_timestamp : completedFrame.received_at,
+          remote_control_ntp_offset : remote_control_ntp_offset.value,
+          latency : frameLatency,
+          camera : cameraId,
+          size : completedFrame.data.length,
+        }
+
+        publish(MQTT_TOPICS.FRAME_LATENCY, payload, 1)
+      }
+      else
+      {
+        let payload = {
+          frame_id : completedFrame.frameId,
+          train_id : selectedTrainId.value,
+          remote_control_id : remoteControlId.value,
+          train_timestamp : completedFrame.created_at,
+          remote_control_timestamp : completedFrame.received_at,
+          clock_offset : averageClockOffset.value,
+          latency : frameLatency,
+          camera : cameraId,
+          size : completedFrame.data.length,
+        }
+
+        publish(MQTT_TOPICS.FRAME_LATENCY, payload, 1)
+      }
+    }
+
     if(enableStatistics.value) {
       // Average latency of last 30 frames
       if (latencyHistory.value.length >= 30) {
@@ -109,17 +161,27 @@ export function useVideoFrameHandler({ averageClockOffset, indexedDBStorageEnabl
    }
 
     // Per-frame latency history (last 100) for analysis
-    if (enableStatistics.value) {
-      if (lastFrameIdRef.value === 0 || completedFrame.frameId === lastFrameIdRef.value + 1) {
+    if (enableStatistics.value)
+    {
+      if (lastFrameIdRef.value === 0 || completedFrame.frameId === lastFrameIdRef.value + 1)
+      {
         frameLatenciesRef.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
         if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
-      } else {
-        for (let missingId = lastFrameIdRef.value + 1; missingId < completedFrame.frameId; missingId++) {
+      }
+      else
+      {
+        // Only the most recent 99 missing frames can remain in the 100-entry history.
+        const firstMissingId = Math.max(lastFrameIdRef.value + 1, completedFrame.frameId - 99)
+        for (let missingId = firstMissingId; missingId < completedFrame.frameId; missingId++)
+        {
           frameLatenciesRef.value.push({ frameId: missingId, latency: null })
-          if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
+          if (frameLatenciesRef.value.length > 100)
+            frameLatenciesRef.value.shift()
         }
+
         frameLatenciesRef.value.push({ frameId: completedFrame.frameId, latency: frameLatency })
-        if (frameLatenciesRef.value.length > 100) frameLatenciesRef.value.shift()
+        if (frameLatenciesRef.value.length > 100)
+          frameLatenciesRef.value.shift()
       }
     }
 

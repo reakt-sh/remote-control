@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { Client, Message } from 'paho-mqtt'
-import { MQTT_BROKER_URL } from '@/scripts/config'
+import { MQTT_BROKER_URL, MQTT_TOPICS } from '@/scripts/config'
 
 /**
  * MQTT Client for Web Browser using Paho MQTT JavaScript library
@@ -141,51 +141,35 @@ export function useMqttClient(remoteControlId, messageHandler) {
     }
   }
 
-  /**
-   * Handle parsed MQTT messages
-   */
   function handleMqttMessage(topic, payload) {
-    // Parse topic to extract train_id and message type
-    const topicParts = topic.split('/')
-    try {
-      // Parse JSON payload
-      let data
-      try {
-        data = typeof payload === 'string' ? JSON.parse(payload) : payload
-      } catch (e) {
-        console.error('Failed to parse MQTT payload:', e)
-        return
-      }
 
-      if (topicParts[0] == "rtsys")
-      {
-        const messageType = topicParts[2]
-        if (messageHandler) {
-          messageHandler({
-            topic,
-            trainId: '',
-            messageType,
-            data,
-            timestamp: Date.now()
-          })
-        }
-        return
-      }
-      const trainId = topicParts[1]
-      const messageType = topicParts[2]
-
-      // Call the message handler with structured data
-      if (messageHandler) {
-        messageHandler({
-          topic,
-          trainId,
-          messageType,
-          data,
-          timestamp: Date.now()
-        })
-      }
-    } catch (error) {
-      console.error('Error handling MQTT message:', error)
+    if (topic == MQTT_TOPICS.TELEMETRY)
+    {
+      messageHandler({
+        messageType: 'telemetry',
+        payload: payload,
+        timestamp: Date.now()
+      })
+    }
+    else if (topic == MQTT_TOPICS.CLOCK_RC)
+    {
+      messageHandler({
+        messageType: 'clock_rc',
+        payload: payload,
+        timestamp: Date.now()
+      })
+    }
+    else if (topic == MQTT_TOPICS.CLOCK_TRAIN)
+    {
+      messageHandler({
+        messageType: 'clock_train',
+        payload: payload,
+        timestamp: Date.now()
+      })
+    }
+    else
+    {
+      console.warn('⚠️ Received message on unknown topic:', topic)
     }
   }
 
@@ -259,33 +243,18 @@ export function useMqttClient(remoteControlId, messageHandler) {
     }
   }
 
-  /**
-   * Subscribe to telemetry from a specific train
-   */
-  function subscribeToTrain(trainId) {
-    const topics = [
-      `train/${trainId}/telemetry`,
-      "rtsys/wan/rtsys-cau-01"
-    ]
-
-    topics.forEach(topic => subscribe(topic))
+  function subscribeToMQTT() {
+    subscribe(MQTT_TOPICS.TELEMETRY)
+    subscribe(MQTT_TOPICS.CLOCK_RC)
+    subscribe(MQTT_TOPICS.CLOCK_TRAIN)
   }
 
-  /**
-   * Unsubscribe from telemetry from a specific train
-   */
-  function unsubscribeFromTrain(trainId) {
-    const topics = [
-      `train/${trainId}/telemetry`,
-      `captnfoerdeareal/wan/CAU-8388`
-    ]
-
-    topics.forEach(topic => unsubscribe(topic))
+  function unsubscribeFromMQTT() {
+    unsubscribe(MQTT_TOPICS.TELEMETRY)
+    unsubscribe(MQTT_TOPICS.CLOCK_RC)
+    unsubscribe(MQTT_TOPICS.CLOCK_TRAIN)
   }
 
-  /**
-   * Publish a message to MQTT broker
-   */
   function publish(topic, messagePayload, qos = 1, retained = false) {
     if (!mqttClient.value || !isMqttConnected.value) {
       console.warn('Cannot publish: MQTT client not connected')
@@ -301,7 +270,6 @@ export function useMqttClient(remoteControlId, messageHandler) {
       message.retained = retained
 
       mqttClient.value.send(message)
-      console.log(`📤 Published to MQTT topic ${topic}:`, payload)
       return true
     } catch (error) {
       console.error(`❌ Failed to publish to ${topic}:`, error)
@@ -349,8 +317,8 @@ export function useMqttClient(remoteControlId, messageHandler) {
     // Subscription methods
     subscribe,
     unsubscribe,
-    subscribeToTrain,
-    unsubscribeFromTrain,
+    subscribeToMQTT,
+    unsubscribeFromMQTT,
 
     // Publishing methods
     publish,

@@ -1,3 +1,5 @@
+import os
+from cpu_affinity import pin_current_thread
 import asyncio
 import queue
 import ssl
@@ -47,6 +49,8 @@ class _Signal:
 
 
 class NetworkWorkerQUIC:
+    RECONNECT_INTERVAL = 5  # seconds
+
     def __init__(self, train_client_id: str, parent=None):
         self.connection_established = _Signal()
         self.connection_failed = _Signal()
@@ -70,7 +74,8 @@ class NetworkWorkerQUIC:
         self.server_port = QUIC_PORT
         self.frame_queue = queue.Queue(maxsize=30)  # Use asyncio.Queue
         self.stream_packet_queue = queue.Queue()  # Use asyncio.Queue
-        self._running = False
+        self._running = False  # worker should keep running (cleared by stop())
+        self._connected = False  # a QUIC session is currently established
         self._client: Optional[QuicConnection] = None
         self._stream_id: Optional[int] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -83,6 +88,7 @@ class NetworkWorkerQUIC:
         self._thread.start()
 
     def _run(self):
+        pin_current_thread({2})
         self._running = True
         try:
             # Create a new event loop for this thread
@@ -98,9 +104,22 @@ class NetworkWorkerQUIC:
             if self._loop:
                 self._loop.close()
             self._running = False
-            self.connection_closed.emit()
 
     async def run_client(self):
+        """Keep a connection alive, retrying every RECONNECT_INTERVAL seconds until stopped."""
+        while self._running:
+            await self._run_session()
+            if not self._running:
+                break
+            logger.warning(f"QUIC disconnected, retrying in {self.RECONNECT_INTERVAL} seconds...")
+            for _ in range(int(self.RECONNECT_INTERVAL * 10)):
+                if not self._running:
+                    return
+                await asyncio.sleep(0.1)
+
+    async def _run_session(self):
+        established = False
+        sender_task = None
         try:
             async with connect(
                 self.server_host,
@@ -111,6 +130,11 @@ class NetworkWorkerQUIC:
             )
             ) as client:
                 self._client = client
+                # Drop data queued while offline; it is stale
+                self._clear_queues()
+                self._connected = True
+                established = True
+                logger.info(f"QUIC connected to {self.server_host}:{self.server_port}")
                 self.connection_established.emit()
 
                 # Get a new stream ID for communication
@@ -124,7 +148,7 @@ class NetworkWorkerQUIC:
                     await result
                 logger.info(f"QUIC handshake sent on stream {self._stream_id}")
 
-                asyncio.create_task(self.send_stream_reliable())  # Start sending stream packets
+                sender_task = asyncio.create_task(self.send_stream_reliable())  # Start sending stream packets
 
                 # Main sending loop
                 await self.send_datagram_unreliable()
@@ -132,6 +156,27 @@ class NetworkWorkerQUIC:
         except Exception as e:
             logger.error(f"QUIC connection error: {e}")
             self.connection_failed.emit(str(e))
+        finally:
+            self._connected = False
+            if sender_task:
+                sender_task.cancel()
+                try:
+                    await sender_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+            self._client = None
+            self._stream_id = None
+            self._clear_queues()
+            if established:
+                self.connection_closed.emit()
+
+    def _clear_queues(self):
+        for q in (self.frame_queue, self.stream_packet_queue):
+            try:
+                while True:
+                    q.get_nowait()
+            except queue.Empty:
+                pass
 
     def prepareConnectMessage(self):
         connect_packet = {
@@ -153,7 +198,7 @@ class NetworkWorkerQUIC:
         return bytes(length_prefixed_packet)
 
     async def send_stream_reliable(self):
-        while self._running:
+        while self._running and self._connected:
             try:
                 packet = self.stream_packet_queue.get_nowait()
                 self._client._quic.send_stream_data(self._stream_id, packet, end_stream=False)
@@ -164,10 +209,14 @@ class NetworkWorkerQUIC:
             except queue.Empty:
                 await asyncio.sleep(0.1)
                 continue
+            except Exception as e:
+                logger.error(f"QUIC stream send error: {e}")
+                self._connected = False  # triggers reconnect
+                break
 
 
     async def send_datagram_unreliable(self):
-        while self._running:
+        while self._running and self._connected:
             try:
                 # Get frame from queue with timeout
                 try:
@@ -179,7 +228,7 @@ class NetworkWorkerQUIC:
                 # Split frame into packets and send
                 packet_list = self.create_packets(frame_id, timestamp, frame, camera_type)
                 for packet in packet_list:
-                    if not self._running:
+                    if not self._running or not self._connected:
                         break
                     if self._client is None:
                         raise ConnectionError("Client not connected")
@@ -188,9 +237,10 @@ class NetworkWorkerQUIC:
                     result = self._client.transmit()
                     if result is not None:
                         await result
+                logger.debug(f"Sent frame {frame_id} with {len(packet_list)} packets over QUIC, thread name: {threading.current_thread().name}")
 
             except ConnectionError as e:
-                logger.error(f"Connection lost: {e}")
+                logger.warning(f"Connection lost: {e}")
                 break
             except Exception as e:
                 logger.error(f"Error in send loop: {e}")
@@ -223,18 +273,18 @@ class NetworkWorkerQUIC:
         return packet_list
 
     def enqueue_frame(self, frame_id: int, timestamp: int, frame: bytes, camera_type: str):
-        if not self._running or not self._loop:
-            logger.warning("Cannot enqueue frame - client not running")
-            return
+        if not self._running or not self._loop or not self._connected:
+            return  # offline: frames are dropped until the connection is re-established
         try:
-            self.frame_queue.put((frame_id, timestamp, frame, camera_type))
+            self.frame_queue.put_nowait((frame_id, timestamp, frame, camera_type))
+        except queue.Full:
+            pass
         except Exception as e:
             logger.error(f"Error enqueuing frame: {e}")
 
     def enqueue_stream_packet(self, data: bytes):
-        if not self._running or not self._loop:
-            logger.warning("Cannot enqueue stream packet - client not running")
-            return
+        if not self._running or not self._loop or not self._connected:
+            return  # offline: packets are dropped until the connection is re-established
         self.stream_packet_queue.put(data)
 
     def stop(self):
@@ -249,10 +299,9 @@ class QuicClientProtocol(QuicConnectionProtocol):  # <-- inherit from QuicConnec
 
     def quic_event_received(self, event: QuicEvent):
         if isinstance(event, ConnectionTerminated):
-            logger.error(f"QUIC connection terminated! Error code: {event.error_code}, "
+            logger.warning(f"QUIC connection terminated! Error code: {event.error_code}, "
                         f"Reason: {event.reason_phrase}")
-            self.network_worker._running = False
-            self.network_worker.connection_closed.emit()
+            self.network_worker._connected = False  # session loop emits connection_closed and reconnects
             return
 
         if isinstance(event, StreamReset):

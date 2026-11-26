@@ -19,6 +19,7 @@
       </Tabs> -->
       <div class="control-tab">
         <VideoPanel />
+        <InfoPanel />
         <ControlPanel />
       </div>
     </main>
@@ -32,6 +33,7 @@ import { onMounted, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 // import Tabs from '@/components/Tabs.vue'
 import VideoPanel from '@/components/VideoPanel.vue'
+import InfoPanel from '@/components/InfoPanel.vue'
 // import TelemetryPanel from '@/components/telemetry/TelemetryPanel.vue'
 import ControlPanel from '@/components/controls/ControlPanel.vue'
 import { useTrainStore } from '@/stores/trainStore'

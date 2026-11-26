@@ -1,4 +1,0 @@
-exclude .gitignore
-exclude .editorconfig
-exclude pylintrc.toml
-recursive-exclude test *

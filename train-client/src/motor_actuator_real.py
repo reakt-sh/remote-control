@@ -1,15 +1,16 @@
+import os
+from cpu_affinity import pin_current_thread
 import asyncio
 import datetime
 import threading
 from app_logger import logger
-from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED
+from globals import DIRECTION, IS_REAKTOR_DRIVER_ENABLED, MAX_SPEED
 from app_context import AppContext
 
 # Connector related imports
 from connector.test.context import Connection, Status, Control, Mode
 
-INITIAL_SPEED_REAKTOR = 3.0  # Initial speed in m/s
-MAX_SPEED_REAKTOR = 6.0  # Maximum speed in m/s
+MAX_SPEED_REAKTOR = MAX_SPEED / 3.6  # Maximum speed in m/s
 
 class MotorActuator():
     def __init__(self):
@@ -29,13 +30,13 @@ class MotorActuator():
     def _start_event_loop(self):
         """Start a background daemon thread with a persistent event loop."""
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._run_event_loop, daemon=True, name="async-event-loop")
+        self._thread = threading.Thread(target=self._run_event_loop, daemon=True, name="reactor-driver-connector")
         self._thread.start()
         # Schedule the async setup on the persistent event loop
         asyncio.run_coroutine_threadsafe(self.setup_connection(), self._loop)
 
     def _run_event_loop(self):
-        """Run the event loop forever in the background thread."""
+        pin_current_thread({3})
         asyncio.set_event_loop(self._loop)
         self._loop.run_forever()
 
@@ -78,7 +79,7 @@ class MotorActuator():
 
         self.appcontext.telemetryObj.set_speed(current_speed_kmh)
         self.appcontext.telemetryObj.set_mode(current_mode)
-        
+
 
     def set_speed(self, speed): # speed here in KM/H
         try:

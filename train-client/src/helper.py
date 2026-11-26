@@ -37,12 +37,6 @@ class Helper:
             file = open(output_filename, "w")
             return file
 
-    def get_ntp_offset(self, server="pool.ntp.org", timeout=5):
-        client = ntplib.NTPClient()
-        response = client.request(server, version=3, timeout=timeout)
-
-        # offset = how far your system clock is from true time (seconds)
-        # positive = your clock is ahead, negative = your clock is behind
-        offset = response.offset * 1000  # Convert to milliseconds
-
-        return offset
+    def get_device_mac(self) -> str:
+        node = f"{uuid.getnode():012X}"
+        return ":".join(node[i:i + 2] for i in range(0, 12, 2))

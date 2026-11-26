@@ -13,7 +13,7 @@
       </div>
       <!-- Fills the leftover space below the smaller (non-active-direction) panel -->
       <div v-if="!isForward" class="video-column__extra">
-        <Speedometer :current-speed="currentSpeed" />
+        <Speedometer :current-speed="currentSpeed" :max-speed="MAX_SPEED" />
         <div class="mode-card">
           <span class="mode-label">Motor Mode</span>
           <span class="mode-value" :class="motorModeClass">{{ motorMode || 'UNKNOWN' }}</span>
@@ -37,7 +37,7 @@
         </div>
       </div>
       <div v-if="isForward" class="video-column__extra">
-        <Speedometer :current-speed="currentSpeed" />
+        <Speedometer :current-speed="currentSpeed" :max-speed="MAX_SPEED" />
         <div class="mode-card">
           <span class="mode-label">Motor Mode</span>
           <span class="mode-value" :class="motorModeClass">{{ motorMode || 'UNKNOWN' }}</span>
@@ -57,6 +57,7 @@ import { storeToRefs } from 'pinia'
 import { useTrainStore } from '@/stores/trainStore'
 import { useVideoPanel } from '@/composables/useVideoPanel'
 import Speedometer from '@/components/controls/Speedometer.vue'
+import { MAX_SPEED } from '@/scripts/config.js'
 
 const {
   frameRefFront,

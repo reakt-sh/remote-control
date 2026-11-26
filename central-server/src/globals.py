@@ -1,6 +1,16 @@
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum, IntEnum, StrEnum
+
+def set_control_session_state(active: bool) -> None:
+    global control_session_id
+    state = "active" if active else "inactive"
+    control_session_id = f"{datetime.now():%Y%m%d_%H%M%S}_{state}"
+
+
+control_session_id = ""
+set_control_session_state(False)
 
 # Packet Types
 class PACKET_TYPE(IntEnum):
@@ -37,6 +47,15 @@ CLIENT_TYPE_TRAIN = "TRAIN"
 CLIENT_TYPE_REMOTE_CONTROL = "REMOTE_CONTROL"
 
 STREAM_MESSAGE_SIZE_LIMIT = 300  # bytes, will adjust if needed after testing
+
+class MQTT_TOPICS(StrEnum):
+    WAN             = "rtsys/wan/rtsys-cau-01"
+    TELEMETRY       = "rtsys/telemetry"
+    FRAME_LATENCY   = "rtsys/frame_latency"
+    TELEMETRY_LATENCY = "rtsys/telemetry_latency"
+    COMMAND_LATENCY = "rtsys/command_latency"
+    CLOCK_TRAIN     = "rtsys/clockoffset_train"
+    CLOCK_RC        = "rtsys/clockoffset_rc"
 
 
 @dataclass

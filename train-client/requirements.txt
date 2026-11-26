@@ -1,4 +1,5 @@
-opencv-python
+PyQt5
+opencv-python-headless
 av
 ffmpeg-python
 qasync
@@ -8,10 +9,8 @@ aioquic
 loguru
 websockets
 paho-mqtt
-bitprotolib==1.0.1
-pyserial-asyncio==0.6
-pydantic==2.12.5
 psutil
 qtawesome
-pygame
 ntplib
+https://github.com/reakt-sh/reaktor-driver/releases/download/v0.2.1/reaktor_driver_connector-0.2.1-py3-none-any.whl
+

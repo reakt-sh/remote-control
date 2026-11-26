@@ -313,8 +313,8 @@ class TrainClient(BaseClient, QMainWindow):
         self.update_speed(self.actual_speed)
 
     def on_power_off(self):
-        self.actual_speed = 0
-        self.update_speed(0)
+        self.actual_speed = 0.0
+        self.update_speed(0.0)
 
     def on_change_direction(self, direction):
         if self.actual_speed > 0:
