@@ -32,7 +32,6 @@
 *.cer
 *.csr
 *.der
-*.csv
 *.xlsx
 yt-dlp
 yt-dlp_linux
